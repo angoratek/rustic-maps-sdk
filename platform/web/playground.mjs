@@ -6814,8 +6814,7 @@
 
       function move_center_by_ground_delta(delta_x_pixels, delta_y_pixels) {
         apply_camera_pose(resolved_or_null(() =>
-          window.mapTest.panCameraByScreenPixels(
-            build_camera(),
+          build_camera().panByScreenPixels(
             delta_x_pixels,
             delta_y_pixels,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES,
@@ -6882,8 +6881,7 @@
         const zoom_target = Math.min(
           MAXIMUM_ZOOM_LEVEL, camera_state.zoomLevel() + DOUBLE_TAP_ZOOM_STEP);
         const double_tap_pose = resolved_or_null(() =>
-          window.mapTest.zoomCameraByLevelsAroundScreenPoint(
-            build_camera(),
+          build_camera().zoomByLevelsAroundScreenPoint(
             zoom_target - camera_state.zoomLevel(),
             canvas_point.x_pixels, canvas_point.y_pixels,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES,
@@ -6968,8 +6966,7 @@
           MINIMUM_ZOOM_LEVEL,
           camera_state.zoomLevel() - event.deltaY * ZOOM_WHEEL_SCALE));
         const wheel_pose = resolved_or_null(() =>
-          window.mapTest.zoomCameraByLevelsAroundScreenPoint(
-            build_camera(),
+          build_camera().zoomByLevelsAroundScreenPoint(
             zoom_target - camera_state.zoomLevel(),
             overlay_canvas.width / 2, overlay_canvas.height / 2,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES,
@@ -7032,8 +7029,8 @@
         const zoom_target = Math.min(MAXIMUM_ZOOM_LEVEL, Math.max(
           MINIMUM_ZOOM_LEVEL, camera_state.zoomLevel() + delta_zoom_levels));
         const zoom_pose = resolved_or_null(() =>
-          window.mapTest.zoomCameraByLevelsAroundScreenPoint(
-            build_camera(), zoom_target - camera_state.zoomLevel(),
+          build_camera().zoomByLevelsAroundScreenPoint(
+            zoom_target - camera_state.zoomLevel(),
             overlay_canvas.width / 2, overlay_canvas.height / 2,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES));
         if (!apply_camera_pose(zoom_pose)) {
@@ -7045,8 +7042,8 @@
         note_camera_gesture_in_progress();
         follow_demo_note_camera_gesture();
         const rotate_pose = resolved_or_null(() =>
-          window.mapTest.rotateCameraByDegreesAroundScreenPoint(
-            build_camera(), delta_bearing_degrees,
+          build_camera().rotateByDegreesAroundScreenPoint(
+            delta_bearing_degrees,
             overlay_canvas.width / 2, overlay_canvas.height / 2,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES));
         if (!apply_camera_pose(rotate_pose)) {
@@ -7268,7 +7265,6 @@
               : window.mapTest.TileResolution.Standard;
           gpu_map_canvas = new window.mapTest.MapView(
             map_canvas,
-            window.mapTest.maps,
             tile_resolution,
           );
           renderer_detail = `GPU adapter ${await gpu_map_canvas.initialize()}`;

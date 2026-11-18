@@ -72,7 +72,7 @@ test.beforeEach(async ({ page }) => {
     });
   });
   await page.goto('/?advanced');
-  // The Rust-side `initializeSdk` promise gates every assertion.
+  // `uniffiInitAsync` and the page bootstrap gate every assertion.
   await waitForMapTestReady(page);
 });
 
@@ -82,7 +82,14 @@ test('sdk loads and reports its compiled version', async ({ page }) => {
   );
   expect(typeof compiled_version).toBe('string');
   expect(compiled_version.length).toBeGreaterThan(0);
-  expect(await page.evaluate(() => window.__sdkReady)).toBe(true);
+  // `window.mapTestReady` (awaited in the hook) is the readiness contract;
+  // the generated namespace and the canvas glue are both live beside it.
+  expect(
+    await page.evaluate(() => ({
+      map_sdk: typeof window.mapTest.MapView,
+      version_helper: typeof window.mapTest.getSdkCompiledVersion,
+    })),
+  ).toEqual({ map_sdk: 'function', version_helper: 'function' });
 });
 
 test('center projects to the viewport center', async ({ page }) => {

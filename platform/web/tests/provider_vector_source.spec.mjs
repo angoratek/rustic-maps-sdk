@@ -60,7 +60,7 @@ async function create_probe_view(page) {
     canvas.style.position = 'fixed';
     canvas.style.left = '-10000px';
     document.body.appendChild(canvas);
-    const map_view = new window.mapTest.MapView(canvas, window.mapTest.maps);
+    const map_view = new window.mapTest.MapView(canvas);
     await map_view.initialize();
     window.providerVectorSourceProbeView = map_view;
     return true;

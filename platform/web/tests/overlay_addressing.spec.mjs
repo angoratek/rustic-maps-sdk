@@ -21,7 +21,6 @@ test('the wasm MapView addresses overlays by identifier', async ({ page }) => {
     document.body.appendChild(canvas);
     const view = new window.mapTest.MapView(
       canvas,
-      window.mapTest.maps,
       window.mapTest.TileResolution.Standard,
     );
 

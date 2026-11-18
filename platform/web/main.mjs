@@ -12,7 +12,7 @@
 //   failures and the pure projection/offline calls, initialized explicitly by
 //   `uniffiInitAsync`;
 // - the wasm-bindgen glue (`./generated/rustic_maps_bg.js`): the canvas
-//   `MapView`, its camera and the keyless URL-template raster fallback.
+//   `BrowserMapView`, its camera and the keyless URL-template raster fallback.
 //   Objects never cross the two ABIs, so the page keeps the glue's
 //   `MapCamera` for canvas frames and the generated record types never reach
 //   the canvas.
@@ -51,19 +51,15 @@ import {
   uniffiInitAsync,
 } from './generated/index.js';
 import {
+  BrowserMapView,
   MapCamera,
-  MapView as BrowserMapView,
-  MapsSdk,
   TileResolution,
   clearProviderRegistrations as canvas_clear_provider_registrations,
   clearSharedProviderSlots,
   clearUrlTemplateRasterTileSource,
   devicePixelRatioThreshold,
-  panCameraByScreenPixels,
   registerUrlTemplateRasterTileSource,
-  rotateCameraByDegreesAroundScreenPoint,
   setProviderBaseUrl,
-  zoomCameraByLevelsAroundScreenPoint,
 } from './generated/rustic_maps_bg.js';
 
 /** The module the generated entrypoint opens, staged beside it. */
@@ -1091,22 +1087,22 @@ window.mapTestReady = (async () => {
   // constructor installs the process-wide diagnostics subscriber the
   // readout below reads; a second constructor is the page's Clear act.
   let generated_map_sdk = new GeneratedMapSdk();
-  // The SDK root the page creates once and hands to its MapViews
-  // (`new MapView(canvas, maps)`). The generated contract `MapSdk` is not
-  // this root: the canvas classes come from the wasm-bindgen glue and only
-  // that root's constructor accepts them.
-  const maps = await MapsSdk.create();
-  const compiled_version = maps.compiledVersion;
+  // The compiled version the readiness status reports; the generated contract
+  // and the canvas are one module, so the namespace helper is the one source.
+  const compiled_version = getSdkCompiledVersion();
   window.mapTest = {
-    // The canvas surface keeps the wasm-bindgen classes. The generated
-    // contract `MapView` is stripped from the browser contract and must never
-    // reach the page; the alias names the one canvas class the page owns.
+    // The canvas surface is the generated glue's `BrowserMapView`. The
+    // generated contract `MapView` is stripped from the browser contract and
+    // must never reach the page; the alias names the one canvas class the
+    // page owns.
     MapCamera,
     MapView: BrowserMapView,
-    MapsSdk,
+    // The generated contract root, the worked example's `mapSdk` identifier
+    // on every platform. The page's provider calls below bind to the same
+    // instance; the Clear act replaces it.
+    mapSdk: generated_map_sdk,
     Navigator: PageNavigator,
     PositionController: PagePositionController,
-    maps,
     TileResolution,
     SdkLogSeverity,
     // The contract-only pure calls run on the generated surface. Their
@@ -1141,9 +1137,6 @@ window.mapTestReady = (async () => {
       ),
     getSdkCompiledVersion,
     devicePixelRatioThreshold,
-    panCameraByScreenPixels,
-    zoomCameraByLevelsAroundScreenPoint,
-    rotateCameraByDegreesAroundScreenPoint,
     offlineRouteFromArchiveBytes: (
       archive_bytes,
       start_latitude,
@@ -1184,6 +1177,7 @@ window.mapTestReady = (async () => {
       canvas_clear_provider_registrations();
       clearSharedProviderSlots();
       generated_map_sdk = new GeneratedMapSdk();
+      window.mapTest.mapSdk = generated_map_sdk;
     },
     providerRegistrations: () =>
       generated_map_sdk.providerRegistrations().map((registration) => ({

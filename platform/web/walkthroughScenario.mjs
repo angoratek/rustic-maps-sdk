@@ -97,8 +97,8 @@ export async function runWalkthroughScenario({
   referenceScenes,
   offlineGraphUrl,
 }) {
-  const mapSdk = mapTest.maps;
-  const mapView = new mapTest.MapView(canvas, mapSdk);
+  const mapSdk = mapTest.mapSdk;
+  const mapView = new mapTest.MapView(canvas);
   await mapView.initialize();
 
   const originSearchQuery = WALKTHROUGH_ORIGIN_QUERY;

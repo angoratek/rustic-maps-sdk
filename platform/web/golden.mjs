@@ -23,9 +23,8 @@
 import { uniffiInitAsync } from './generated/index.js';
 import {
   TileResolution,
-  MapView,
+  BrowserMapView,
   MapCamera,
-  MapsSdk,
 } from './generated/rustic_maps_bg.js';
 import { SACRAMENTO_OVERLAY_SCENES } from './overlay_scenes.mjs';
 
@@ -314,7 +313,6 @@ window.mapGoldenReady = (async () => {
   await uniffiInitAsync(new URL('./generated/rustic_maps.wasm', import.meta.url));
   // The golden harness pins its tile resolution instead of following the
   // device ratio: the captured golden frames were rendered at that scale.
-  const golden_maps = await MapsSdk.create();
   const golden_sizes = {};
   for (const golden_file_name of [TOP_DOWN_GOLDEN_FILE, PITCHED_GOLDEN_FILE]) {
     const golden = await golden_pixels(golden_file_name);
@@ -325,9 +323,8 @@ window.mapGoldenReady = (async () => {
   }
   try {
     gpu_map_canvas_promise = (async () => {
-      const canvas_renderer = new MapView(
+      const canvas_renderer = new BrowserMapView(
         gpu_canvas,
-        golden_maps,
         GOLDEN_TILE_RESOLUTION,
       );
       renderer_detail = `GPU adapter ${await canvas_renderer.initialize()}`;

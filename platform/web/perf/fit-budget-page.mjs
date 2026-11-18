@@ -57,7 +57,7 @@ window.perfReady = (async () => {
   await window.mapTestReady;
   const canvas = document.getElementById('fit-budget-canvas');
   const MapView = window.mapTest.MapView;
-  view = new MapView(canvas, window.mapTest.maps, window.mapTest.TileResolution.Standard);
+  view = new MapView(canvas, window.mapTest.TileResolution.Standard);
   const adapter_detail = await view.initialize();
   // The harness reads the surface's status between frames; keep the one view
   // reachable without guessing a binding.
@@ -74,7 +74,7 @@ window.perfReady = (async () => {
   });
   return {
     adapterDetail: adapter_detail,
-    rendererMode: window.mapTest.maps ? 'gpu' : 'unknown',
+    rendererMode: 'gpu',
     width: canvas.width,
     height: canvas.height,
   };

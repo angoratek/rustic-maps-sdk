@@ -21,7 +21,7 @@ test('the canvas MapView reports the contract surface-unavailable code', async (
     canvas.getContext('2d');
     document.body.append(canvas);
     try {
-      new window.mapTest.MapView(canvas, window.mapTest.maps);
+      new window.mapTest.MapView(canvas);
       return null;
     } catch (error) {
       return {

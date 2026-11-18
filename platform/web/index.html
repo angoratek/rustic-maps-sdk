@@ -10,13 +10,15 @@
          this import map names the browser builds, and `serve.mjs` serves the
          installed files under `/generated-runtime/@ubjs/...`. Relative imports
          inside those files resolve against their served paths, so no further
-         entries are needed. -->
+         entries are needed. The mapping is relative so a copy of the harness
+         served under a subpath (the docs site's /demo) resolves its own
+         runtime beside it. -->
     <script type="importmap">
       {
         "imports": {
-          "@ubjs/core": "/generated-runtime/@ubjs/core/dist/esm/index.js",
-          "@ubjs/wasm": "/generated-runtime/@ubjs/wasm/dist/browser/src/index.js",
-          "@ubjs/wasm/core": "/generated-runtime/@ubjs/wasm/dist/core/src/index.js"
+          "@ubjs/core": "./generated-runtime/@ubjs/core/dist/esm/index.js",
+          "@ubjs/wasm": "./generated-runtime/@ubjs/wasm/dist/browser/src/index.js",
+          "@ubjs/wasm/core": "./generated-runtime/@ubjs/wasm/dist/core/src/index.js"
         }
       }
     </script>
