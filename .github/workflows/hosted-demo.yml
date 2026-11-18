@@ -1,7 +1,7 @@
 name: hosted-demo
 
-# Publishes the hosted mobile demo's builds (M24, docs/history/research/
-# hosted-mobile-demo-appetize.md §6).
+# Publishes the hosted mobile demo's builds (see `docs/Providers.md`, the
+# hosted-demo exception).
 #
 # Builds the Android reference application (APK) and the iOS reference
 # application (a zipped Simulator `.app`, which is what Appetize runs), then
