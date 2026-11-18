@@ -22,6 +22,13 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   history are removed; every table, constant, path and test name survives.
 - Dated entries in `PLAN.md` and `CHANGELOG.md` keep the document names in use
   at the time; `docs/README.md` and this section name the current set.
+- Gate on the merged tree: formatting, workspace clippy, the workspace tests,
+  the wasm closure, generation drift, the rebuilt browser package and its
+  freshness gate, contract sync, the provider guard and parity floor, snippets,
+  docs references, provider docs, style coverage, DCO, release plan, actionlint,
+  the full browser suite (241 passed, 2 skipped), the Android AAR and
+  reference-app bindings, the iOS XCFramework and unit tests, React Native
+  typecheck and Jest, and the documentation-site build with a clean scrub.
 
 ### Changed (2026-11-17 — the public record is revision-independent)
 
