@@ -105,7 +105,9 @@ function provider_rows(content) {
       .replace(/^\||\|$/g, '')
       .split('|')
       .map((cell) => cell.trim());
-    if (cells.length !== 5) {
+    // A row may carry the attribution and terms cells after the five
+    // structural columns; the key and the Serves cell keep their positions.
+    if (cells.length < 5) {
       continue;
     }
     const key_match = cells[1].match(/^`([a-z0-9_]+)`$/);
@@ -206,7 +208,14 @@ function findings() {
     const file_path = path.join(BOOK_SOURCE_DIRECTORY, page_name);
     const content = readFileSync(file_path, 'utf8');
     const availability_key = PAGE_AVAILABILITY_KEYS.get(page_name);
-    for (const row of provider_rows(content)) {
+    const rows = provider_rows(content);
+    if (rows.length === 0) {
+      failures.push(
+        `${page_name} carries no provider table row the gate can read`,
+      );
+      continue;
+    }
+    for (const row of rows) {
       const descriptor = descriptors_by_key.get(row.key);
       if (descriptor === undefined) {
         failures.push(
