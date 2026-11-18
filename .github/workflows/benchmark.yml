@@ -1,0 +1,54 @@
+name: benchmark
+
+# The M7 offline-routing benchmark (M7 slice 6): records the criterion
+# numbers for the A*-vs-Dijkstra reference benchmark and the archive
+# compile-and-load path, and uploads them as job artifacts.
+#
+# Informational by design — shared-runner wall clock is too noisy to gate
+# on, so this job never blocks a merge. The enforced perf alarm is the
+# coarse budget test (cargo-test level, generous bound) inside rustic-maps-core's
+# `offline_routing_benchmark`, run by the ordinary test workflow.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/rustic-maps-core/**"
+      - "crates/rustic-maps-offline-graph-archive/**"
+      - "crates/rustic-maps-offline-graph-compiler/**"
+      - ".github/workflows/benchmark.yml"
+  pull_request:
+    paths:
+      - "crates/rustic-maps-core/**"
+      - "crates/rustic-maps-offline-graph-archive/**"
+      - "crates/rustic-maps-offline-graph-compiler/**"
+      - ".github/workflows/benchmark.yml"
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  criterion-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Criterion benchmark suite (informational, artifacts only)
+        # Only the criterion bench target: plain `cargo bench -p rustic-maps-core`
+        # also runs the libtest unit-test binary, which rejects the
+        # criterion-only `--save-baseline` flag (seen on CI in the
+        # workflow's first run).
+        run: cargo bench -p rustic-maps-core --bench offline_search_benchmark -- --save-baseline ci-recorded-baseline
+      - name: Upload the criterion numbers
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: criterion-benchmark-results
+          path: target/criterion

@@ -1,0 +1,6 @@
+<!-- The new-architecture manifest the generated `platform/rn/android/build.gradle`
+     expects by name (`manifest.srcFile "src/main/AndroidManifestNew.xml"`).
+     Deliberately empty: the library namespace comes from the gradle `namespace`
+     property, and the app shell's merged manifest supplies everything else. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+</manifest>

@@ -1,0 +1,23 @@
+{
+  "formatVersion": "0.0.12",
+  "routes": [
+    {
+      "summary": {
+        "lengthInMeters": 947000,
+        "travelTimeInSeconds": 32400
+      },
+      "legs": [
+        {
+          "summary": {
+            "lengthInMeters": 947000,
+            "travelTimeInSeconds": 32400
+          },
+          "points": [
+            { "latitude": 52.52, "longitude": 13.405 },
+            { "latitude": 51.5, "longitude": -0.12 }
+          ]
+        }
+      ]
+    }
+  ]
+}

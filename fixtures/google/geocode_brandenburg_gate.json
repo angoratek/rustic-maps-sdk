@@ -1,0 +1,63 @@
+{
+  "results": [
+    {
+      "formatted_address": "Brandenburger Tor, 10117 Berlin, Germany",
+      "geometry": {
+        "location": {
+          "lat": 52.5163,
+          "lng": 13.3777
+        },
+        "location_type": "ROOFTOP",
+        "viewport": {
+          "northeast": {
+            "lat": 52.5176,
+            "lng": 13.379
+          },
+          "southwest": {
+            "lat": 52.5151,
+            "lng": 13.3764
+          }
+        }
+      },
+      "place_id": "ChIJiQ7xR0ROqEcRkR7QsRVEs",
+      "types": [
+        "street_address",
+        "political"
+      ],
+      "address_components": [
+        {
+          "long_name": "Brandenburger Tor",
+          "short_name": "Brandenburger Tor",
+          "types": [
+            "point_of_interest",
+            "tourist_attraction"
+          ]
+        },
+        {
+          "long_name": "10117",
+          "short_name": "10117",
+          "types": [
+            "postal_code"
+          ]
+        },
+        {
+          "long_name": "Berlin",
+          "short_name": "Berlin",
+          "types": [
+            "locality",
+            "political"
+          ]
+        },
+        {
+          "long_name": "Germany",
+          "short_name": "DE",
+          "types": [
+            "country",
+            "political"
+          ]
+        }
+      ]
+    }
+  ],
+  "status": "OK"
+}

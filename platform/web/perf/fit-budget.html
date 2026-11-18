@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vector fit-budget measurement</title>
+    <style>
+      /* One bare GPU surface: no controls, no page pump, no overlay canvas. */
+      html, body { margin: 0; padding: 0; background: #101418; }
+      #fit-budget-canvas { display: block; width: 1920px; height: 1080px; }
+    </style>
+  </head>
+  <body>
+    <canvas id="fit-budget-canvas" width="1920" height="1080"></canvas>
+    <!-- main.mjs loads the wasm module and exposes window.mapTest; the page
+         module below creates the one MapView this scenario measures. The
+         playground (and its own frame pump) is deliberately not loaded. -->
+    <script type="module" src="../main.mjs"></script>
+    <script type="module" src="./fit-budget-page.mjs"></script>
+  </body>
+</html>

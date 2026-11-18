@@ -1,0 +1,41 @@
+[package]
+name = "rustic-maps-providers"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "The provider catalog table and vendor construction shared by the SDK's native and browser bindings"
+publish = false
+
+[features]
+# The opt-in `style-smoke` binary compiles and styles a fetched style
+# document and tile for `scripts/live-style-smoke.mjs`. Normal builds never
+# carry the rendering dependency.
+style-smoke = [
+    "dep:rustic-maps-style",
+    "dep:rustic-maps-rendering",
+    "dep:rustic-maps-vector-tiles",
+    "dep:geospatial-traits",
+]
+
+[[bin]]
+name = "style-smoke"
+path = "src/bin/style_smoke.rs"
+required-features = ["style-smoke"]
+
+[dependencies]
+async-trait.workspace = true
+everymap-core.workspace = true
+everymap-providers-here.workspace = true
+everymap-providers-google.workspace = true
+everymap-providers-tomtom.workspace = true
+everymap-providers-mapbox.workspace = true
+everymap-providers-radar.workspace = true
+geospatial-types.workspace = true
+rustic-maps-core = { path = "../rustic-maps-core" }
+
+# Optional dependencies of the opt-in `style-smoke` binary only.
+geospatial-traits = { workspace = true, optional = true }
+rustic-maps-rendering = { workspace = true, optional = true }
+rustic-maps-style = { workspace = true, optional = true }
+rustic-maps-vector-tiles = { workspace = true, optional = true }

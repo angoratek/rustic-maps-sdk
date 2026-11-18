@@ -1,0 +1,19 @@
+[package]
+name = "rustic-maps-navigation"
+description = "Turn-by-turn navigation state machine for the Maps SDK"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+geospatial-types.workspace = true
+# The wall clock and monotonic time source: `std::time` panics on
+# `wasm32-unknown-unknown` (the browser has no OS clock), while `web-time`
+# reads the browser's clocks there and re-exports `std::time` elsewhere.
+web-time.workspace = true
+
+[dev-dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+proptest.workspace = true

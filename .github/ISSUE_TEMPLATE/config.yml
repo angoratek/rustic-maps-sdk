@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and usage help
+    url: https://github.com/angoratek/rustic-maps-sdk/discussions
+    about: Ask a question about installation, an API, a provider, or a platform in GitHub Discussions.
+  - name: Report a security vulnerability
+    url: https://github.com/angoratek/rustic-maps-sdk/security/advisories/new
+    about: Report a vulnerability privately. Read SECURITY.md first. Never open a public issue for a security report.
+  - name: Read the documentation
+    url: https://angoratek.github.io/rustic-maps-sdk-docs/
+    about: The published guide, API reference, and live browser demo.

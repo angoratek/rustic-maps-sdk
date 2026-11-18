@@ -1,0 +1,5 @@
+# Produced by scripts/build-android.sh for the JVM smoke test: the
+# Apple-host cdylib.
+jni/
+build/
+.gradle/

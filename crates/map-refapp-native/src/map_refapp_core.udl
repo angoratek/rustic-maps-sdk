@@ -1,0 +1,368 @@
+// Reference-application binding contract.
+//
+// This contract is refapp-only: it exposes the shared behavior math the
+// reference applications would otherwise mirror in platform code. The math
+// itself lives in `map-refapp-core`; every member here delegates to it, and
+// no SDK type, credential or provider name crosses this surface.
+//
+// All members are synchronous and exchange primitives, crate-local records
+// and crate-local enums. Timestamps and durations are milliseconds, so the
+// same values travel through Kotlin and Swift without a unit conversion at
+// each call site.
+
+namespace map_refapp_core {
+    /// The follow camera's zoom toward trip end.
+    ///
+    /// # Parameters
+    /// - `remaining_distance_fraction` — the trip's remaining distance over
+    ///   its total distance; values outside `[0, 1]` are clamped.
+    ///
+    /// # Returns
+    /// The follow zoom at that progress: the base zoom at the trip start,
+    /// ramping to the maximum at arrival.
+    double follow_zoom_toward_trip_end(double remaining_distance_fraction);
+
+    /// Smoothstep easing (`3t² − 2t³`).
+    ///
+    /// # Parameters
+    /// - `linear_progress` — the linear progress fraction; values outside
+    ///   `[0, 1]` are clamped.
+    ///
+    /// # Returns
+    /// The eased progress in `[0, 1]`.
+    double smoothstep_eased_progress(double linear_progress);
+
+    /// The bearing's smallest angular distance from north.
+    ///
+    /// # Parameters
+    /// - `bearing_degrees` — a bearing in degrees clockwise from north; any
+    ///   real value wraps into the full circle.
+    ///
+    /// # Returns
+    /// The deviation from north in degrees, always in `[0, 180]`.
+    double bearing_off_north_degrees(double bearing_degrees);
+
+    /// Selects the scale bar's ladder distance for one camera.
+    ///
+    /// The ladder is the conventional 1-2-3-5-10 sequence per decade. The
+    /// selection is the largest ladder distance whose physical width does not
+    /// exceed `maximum_width_pixels`, provided that width also reaches
+    /// `minimum_width_pixels`.
+    ///
+    /// # Parameters
+    /// - `ground_meters_per_screen_pixel` — the camera's ground answer.
+    /// - `minimum_width_pixels` — the bar's width floor.
+    /// - `maximum_width_pixels` — the bar's width ceiling.
+    ///
+    /// # Returns
+    /// The selected scale, or null when the ground answer or the width range
+    /// is not usable (the bar then renders no distance).
+    SelectedScaleBarScale? scale_bar_selection(
+        double ground_meters_per_screen_pixel,
+        double minimum_width_pixels,
+        double maximum_width_pixels
+    );
+
+    /// The scale bar's metric label for one ladder distance.
+    ///
+    /// # Parameters
+    /// - `distance_meters` — the selected ladder distance.
+    ///
+    /// # Returns
+    /// Whole metres below one kilometre, rounded kilometres at and above it,
+    /// such as `100 m` or `2 km`.
+    string scale_bar_distance_label(double distance_meters);
+
+    /// The replay dispatch interval of a recorded trace.
+    ///
+    /// # Parameters
+    /// - `recorded_sample_interval_seconds` — the trace's recorded interval.
+    /// - `playback_acceleration_factor` — the acceleration the caller folds
+    ///   the selected speed multiplier into.
+    ///
+    /// # Returns
+    /// The whole-millisecond interval between dispatches, never below one
+    /// millisecond. A non-finite or non-positive input takes that floor.
+    u64 trace_dispatch_interval_milliseconds(
+        double recorded_sample_interval_seconds,
+        double playback_acceleration_factor
+    );
+};
+
+/// The camera values captured at trip start and restored at trip end.
+dictionary PreTripCamera {
+    /// Camera centre latitude in degrees.
+    double center_latitude_degrees;
+    /// Camera centre longitude in degrees.
+    double center_longitude_degrees;
+    /// Camera zoom level.
+    double zoom_level;
+    /// Camera bearing in degrees clockwise from north.
+    double bearing_degrees;
+    /// Camera pitch in degrees.
+    double pitch_degrees;
+};
+
+/// One chosen scale-bar scale.
+dictionary SelectedScaleBarScale {
+    /// The bar's labelled distance in metres.
+    double distance_meters;
+    /// The bar's physical width for that distance, in viewport pixels.
+    double width_pixels;
+};
+
+/// One step of an easing move.
+dictionary EasedValue {
+    /// The current eased value.
+    double value;
+    /// Whether the move finished on this step.
+    boolean finished;
+};
+
+/// The follow camera's engage, gesture-break and re-engage states.
+/// How the follow camera treats its bearing while a trip runs.
+enum FollowBearingMode {
+    /// The camera turns with the trip's smoothed course.
+    "CourseUp",
+    /// The visitor chose north-up: the camera holds bearing 0.
+    "NorthUp",
+};
+
+enum FollowPhase {
+    /// No trip is running.
+    "Disengaged",
+    /// The camera follows the trip's fixes.
+    "Engaged",
+    /// A user gesture broke follow; only an explicit re-engage resumes it.
+    "BrokenByGesture",
+};
+
+/// The navigation follow camera's state machine.
+///
+/// While a guided trip runs the camera centres on the guided fix, holds the
+/// follow zoom, and eases its bearing toward a median-smoothed
+/// course-over-ground. A gesture breaks follow immediately; a later fix
+/// re-targets the state but does not snap the visitor's panned view back. The
+/// my-location control re-engages explicitly.
+interface FollowCamera {
+    /// Creates a disengaged camera.
+    constructor();
+
+    /// The current follow phase.
+    FollowPhase phase();
+
+    /// The captured pre-trip camera, or null outside a trip.
+    PreTripCamera? pre_trip_camera();
+
+    /// The target centre latitude in degrees.
+    double target_center_latitude_degrees();
+
+    /// The target centre longitude in degrees.
+    double target_center_longitude_degrees();
+
+    /// The target zoom level.
+    double target_zoom_level();
+
+    /// The target bearing in degrees, or null until a fix reports a course.
+    double? target_bearing_degrees();
+
+    /// How the camera treats its bearing: course-up or north-up.
+    FollowBearingMode bearing_mode();
+
+    /// Chooses how the camera treats its bearing.
+    ///
+    /// North-up pins the target at bearing 0 and holds it across every
+    /// following fix; course-up resumes the eased chase on the next fix.
+    void set_bearing_mode(FollowBearingMode bearing_mode);
+
+    /// Applies the trip's follow camera.
+    ///
+    /// Captures the pre-trip camera for the later restore, applies the fixed
+    /// deep zoom immediately, and leaves centre and bearing at their current
+    /// values until the first location fix re-targets them.
+    void engage_trip(
+        double current_center_latitude_degrees,
+        double current_center_longitude_degrees,
+        double current_zoom_level,
+        double current_bearing_degrees,
+        double current_pitch_degrees
+    );
+
+    /// A user gesture (drag, pinch or rotate) breaks follow immediately.
+    void break_on_gesture();
+
+    /// Applies one location fix of the active trip.
+    ///
+    /// The fix always re-targets centre, smoothed bearing and ramped zoom, but
+    /// a follow broken by a gesture stays broken until `reengage`.
+    void on_fix(
+        double latitude_degrees,
+        double longitude_degrees,
+        double? course_heading_degrees,
+        double remaining_distance_fraction
+    );
+
+    /// The my-location control's explicit re-engage.
+    void reengage();
+
+    /// Ends the trip and returns the captured pre-trip camera to restore.
+    PreTripCamera? restore_pre_trip_camera();
+};
+
+/// A fixed-window circular median over recent course-over-ground samples.
+interface CourseMedianSmoother {
+    /// Creates a smoother over `window_fix_count` recent samples.
+    ///
+    /// A zero-length window is valid and reports no median.
+    constructor(u32 window_fix_count);
+
+    /// The window length in fixes.
+    u32 window_fix_count();
+
+    /// Adds one fix's course-over-ground, dropping the oldest sample once the
+    /// window is full.
+    void add(double course_degrees);
+
+    /// The circular median, or null while the window holds no sample.
+    double? median();
+
+    /// Empties the window.
+    void reset();
+
+    /// The windowed samples, oldest first.
+    sequence<double> samples();
+};
+
+/// A linear-in-time, smoothstep-eased value move.
+interface SmoothstepTimedEase {
+    /// Creates an idle ease with no target.
+    constructor();
+
+    /// Begins, or restarts, an ease from one value to another.
+    ///
+    /// # Parameters
+    /// - `start_milliseconds` — the frame-clock timestamp the ease starts at.
+    /// - `from_value` — the value at the start.
+    /// - `to_value` — the value at the end.
+    /// - `duration_milliseconds` — the move's duration.
+    void begin(
+        double start_milliseconds,
+        double from_value,
+        double to_value,
+        double duration_milliseconds
+    );
+
+    /// Stops an in-flight ease without applying anything.
+    void reset();
+
+    /// Whether an ease is in flight.
+    boolean is_running();
+
+    /// The ease's target value.
+    double target_value();
+
+    /// Advances the ease at `now_milliseconds`.
+    ///
+    /// # Parameters
+    /// - `now_milliseconds` — the current frame-clock timestamp.
+    ///
+    /// # Returns
+    /// The current eased value and whether the move finished on this call. An
+    /// idle ease reports its target and a finished step.
+    EasedValue advance(double now_milliseconds);
+};
+
+/// An exponential chase toward a moving target.
+interface ExponentialValueChase {
+    /// Creates a chase with the given time constant in milliseconds.
+    constructor(double time_constant_milliseconds);
+
+    /// The chase's time constant in milliseconds.
+    double time_constant_milliseconds();
+
+    /// Advances the chase toward `target` at `now_milliseconds`.
+    ///
+    /// The first call after a reset folds one display frame of catching up. A
+    /// non-finite or non-positive time constant snaps to the target.
+    double advance(double current, double target, double now_milliseconds);
+
+    /// Clears the frame clock so the next call is treated as a first frame.
+    void reset();
+};
+
+/// A forward-only cursor over a recorded trace's samples.
+interface TraceCursor {
+    /// Creates a cursor at the first sample of a trace with `sample_count`
+    /// samples.
+    constructor(u32 sample_count);
+
+    /// The trace's sample count.
+    u32 sample_count();
+
+    /// The next sample's index, or null when every sample was delivered.
+    u32? next_sample_index();
+
+    /// The next sample's index without consuming it.
+    u32? peek();
+
+    /// Consumes and returns the next sample's index, or null at the end.
+    u32? advance();
+
+    /// Whether every sample was delivered.
+    boolean is_finished();
+
+    /// The number of samples not yet delivered.
+    u32 remaining_sample_count();
+
+    /// Rewinds the cursor to the first sample.
+    void reset();
+
+    /// Moves the cursor to `sample_index`, clamped to the trace's bounds.
+    void seek_to_sample_index(u32 sample_index);
+};
+
+/// One pose the platforms draw for the location puck.
+dictionary LocationPose {
+    /// Latitude to draw at, in degrees.
+    double latitude_degrees;
+    /// Longitude to draw at, in degrees.
+    double longitude_degrees;
+    /// Course to draw with, in degrees clockwise from north, when known.
+    double? course_degrees;
+    /// Accuracy radius to draw, in meters, when known.
+    double? horizontal_accuracy_meters;
+    /// Whether a motion is still running, so the shell keeps drawing.
+    boolean is_animating;
+};
+
+/// The location puck's interpolation between fixes.
+///
+/// `push_fix` starts (or retargets) a motion toward the measured position;
+/// `pose_at` answers the pose to draw at the given instant, so a platform's
+/// frame clock can draw a puck that glides instead of hopping.
+interface LocationPoseAnimator {
+    /// Creates an animator with no fix yet.
+    constructor();
+
+    /// Starts or retargets the motion toward one measured position.
+    ///
+    /// # Parameters
+    /// - `latitude_degrees`, `longitude_degrees` — the measured position.
+    /// - `course_degrees` — course over ground clockwise from north, when
+    ///   reported.
+    /// - `horizontal_accuracy_meters` — accuracy radius, when reported.
+    /// - `received_at_milliseconds` — when the fix was received.
+    void push_fix(
+        double latitude_degrees,
+        double longitude_degrees,
+        double? course_degrees,
+        double? horizontal_accuracy_meters,
+        double received_at_milliseconds
+    );
+
+    /// The pose to draw at `now_milliseconds`, or null before the first fix.
+    LocationPose? pose_at(double now_milliseconds);
+
+    /// Forgets every fix, so the next one draws immediately.
+    void reset();
+};

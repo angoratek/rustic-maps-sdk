@@ -1,0 +1,43 @@
+{
+  "routes": [
+    {
+      "distanceMeters": 1052000,
+      "duration": "36720s",
+      "staticDuration": "36000s",
+      "polyline": {
+        "encodedPolyline": "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
+      },
+      "viewport": {
+        "high": { "latitude": 52.517, "longitude": 13.378 },
+        "low": { "latitude": 48.8566, "longitude": 2.3522 }
+      },
+      "legs": [
+        {
+          "distanceMeters": 1052000,
+          "duration": "36720s",
+          "startLocation": { "latLng": { "latitude": 52.5163, "longitude": 13.3777 } },
+          "endLocation": { "latLng": { "latitude": 48.8566, "longitude": 2.3522 } },
+          "steps": [
+            {
+              "distanceMeters": 500,
+              "staticDuration": "60s",
+              "startLocation": { "latLng": { "latitude": 52.5163, "longitude": 13.3777 } },
+              "endLocation": { "latLng": { "latitude": 52.517, "longitude": 13.378 } },
+              "navigationInstruction": { "instructions": "Head north" },
+              "travelMode": "DRIVE"
+            },
+            {
+              "distanceMeters": 1051500,
+              "staticDuration": "36660s",
+              "startLocation": { "latLng": { "latitude": 52.517, "longitude": 13.378 } },
+              "endLocation": { "latLng": { "latitude": 48.8566, "longitude": 2.3522 } },
+              "navigationInstruction": { "instructions": "Continue to Paris" },
+              "travelMode": "DRIVE"
+            }
+          ]
+        }
+      ],
+      "routeLabels": ["DEFAULT_ROUTE"]
+    }
+  ]
+}

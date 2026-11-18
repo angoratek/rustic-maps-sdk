@@ -1,0 +1,22 @@
+#!/bin/sh
+# Fast pre-commit check: formatting only. The compile gates (clippy, the
+# workspace tests) are too slow to block every commit; the pre-push hook
+# (scripts/git-hooks/pre-push) runs the full CI gate before anything leaves
+# the machine.
+#
+# Bypass once with MAPS_SDK_SKIP_HOOKS=1, e.g.
+#
+#     MAPS_SDK_SKIP_HOOKS=1 git commit
+#
+# Install (repo-local, one-off): scripts/install-git-hooks
+set -u
+
+if [ -n "${MAPS_SDK_SKIP_HOOKS:-}" ]; then
+    printf '%s\n' 'maps-sdk pre-commit: MAPS_SDK_SKIP_HOOKS is set; skipping the format check.'
+    exit 0
+fi
+
+if ! cargo fmt --all --check; then
+    printf '\nmaps-sdk pre-commit: cargo fmt --all --check failed (output above). Run `cargo fmt --all`, stage the result, and commit again, or bypass once with MAPS_SDK_SKIP_HOOKS=1.\n' >&2
+    exit 1
+fi

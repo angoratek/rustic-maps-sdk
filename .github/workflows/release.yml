@@ -1,0 +1,1214 @@
+name: release
+
+# Tag-driven release pipeline (M10, docs/PackagingAndRelease.md §3).
+#
+# A `vX.Y.Z` tag push runs the standard gate set on the tagged tree, builds
+# the platform packages in a matrix, and assembles a *draft* GitHub Release:
+# the packaged assets, per-file and aggregate SHA-256 checksums, keyless
+# Sigstore signature bundles, the regenerated third-party notices, and
+# changelog-derived notes. Publishing the draft stays the owner's deliberate
+# step. A `workflow_dispatch` run executes the same gates, builds and assembly
+# as a dry run and uploads the assembled bundle as a workflow artifact
+# instead of calling the release API.
+#
+# A re-run reuses a platform package whose inputs are unchanged: the `plan`
+# job compares each platform's input hash with the record beside the prior
+# run's artifact (docs/PackagingAndRelease.md §3.5), the `restore` job
+# republishes it after re-hashing the bytes, and the `assemble` job still
+# asserts the exact asset set.
+#
+# Honest limits of this form (each is a separate M10 item, not a gap in the
+# gates):
+#   - the React Native tarball is self-contained: the `rn` job takes the
+#     compiled payload from the `android` and `ios` jobs (the static archive
+#     cargo emits beside each ABI's cdylib, and the built XCFramework) and
+#     packs it with `scripts/package-rn-npm.sh --with-native-payload`; the
+#     `rn` job therefore waits for both platform builds instead of running on
+#     its own. `scripts/verify-rn-package.mjs` reads the packaged podspec,
+#     Gradle file, CMakeLists.txt and package.json out of the tarball and
+#     fails the job when any artifact they name is absent.
+#   - the WebAssembly package ships one tarball, the npm-shaped
+#     `@angoratek/rustic-maps-sdk-web`: it also serves a static host, which
+#     extracts it and serves its `package/` directory.
+#   - the `swift-package` branch is force-pushed by a tag run after the draft
+#     release uploads its assets; a `workflow_dispatch` rehearsal skips it.
+#
+# No credential is embedded: `GITHUB_TOKEN` is the only token (draft release),
+# and keyless Sigstore signing consumes the workflow's ambient OIDC identity
+# (`id-token: write`), so no signing key is stored anywhere.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# Least privilege: only the assemble job may write contents or mint an OIDC
+# token; every other job reads the repository.
+permissions:
+  contents: read
+
+jobs:
+  # The gate set of CLAUDE.md, run on the exact ref being packaged (a prior
+  # green main-branch run is deliberately not trusted as a proxy).
+  gates:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Resolve and verify the one version line
+        id: release_version
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            version="${GITHUB_REF_NAME#v}"
+            ./scripts/check-workspace-version.sh --tag "${GITHUB_REF_NAME}"
+          else
+            version="$(./scripts/check-workspace-version.sh --print-version)"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Workspace clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # The same wasm32 closure wasm-e2e enforces; workspace-wide wasm clippy
+      # is out of scope because the MapQuest provider's tokio features are
+      # native-only.
+      - name: Wasm-closure clippy (lib targets)
+        run: >-
+          cargo clippy --target wasm32-unknown-unknown
+          -p geospatial-types
+          -p geospatial-traits
+          -p rustic-maps-offline-graph-archive
+          -p rustic-maps-core
+          -p rustic-maps-rendering
+          -p rustic-maps-navigation
+          -p rustic-maps-positioning
+          -p rustic-maps-web-bindings
+          -p rustic-maps-vector-tiles
+          -p rustic-maps-style
+          -p rustic-maps-glyphs
+          -p everymap-providers-photon
+          -p everymap-core
+          -p everymap-providers-mapquest
+          -p everymap-providers-url-template-vector
+          -p everymap-providers-url-template-raster
+          --lib -- -D warnings
+
+      - name: Workspace tests
+        run: cargo test --workspace
+
+      - name: Compile the wasm bindings for the browser suite
+        run: cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
+
+      - name: Resolve the pinned wasm-bindgen version
+        # The CLI must match the crate exactly; deriving the version from the
+        # locked graph avoids a hand-maintained duplicate.
+        id: wasm_bindgen_version
+        run: |
+          version="$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version' \
+            | head -n1)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Bind the wasm module for the browser
+        run: cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
+
+      - name: Install the wasm optimizer
+        run: sudo apt-get update && sudo apt-get install --yes binaryen
+
+      - name: Generate the optimized browser package
+        # One build path for the harness and the release: wasm-opt is required
+        # so the published module is optimized and reproducible, and the build
+        # records the source fingerprint the packaging gate verifies.
+        run: ./scripts/build-wasm.sh --require-optimize
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            platform/web/package-lock.json
+            platform/rn/app-shell/package-lock.json
+
+      - name: Release plan and workflow gates self-test
+        # The input-hash decision logic and the release workflow's gate
+        # structure are checked before this revision can be packaged.
+        run: node --test scripts/release-plan.test.mjs
+
+      - name: Install the Playwright suite and browser
+        run: npm ci && npx playwright install chromium --with-deps
+        working-directory: platform/web
+
+      - name: Browser e2e against the served harness
+        run: npx playwright test
+        working-directory: platform/web
+
+      - name: Install the React Native app-shell dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: platform/rn/app-shell
+
+      - name: Jest (React Native screen + speech consumer)
+        run: npx jest --ci
+        working-directory: platform/rn/app-shell
+
+      - name: Strict TypeScript (React Native shell)
+        run: npx tsc --noEmit
+        working-directory: platform/rn/app-shell
+
+  plan:
+    # Decides which platform builds can be reused. A platform is skipped only
+    # when its recorded input hash equals the current tree's hash and the
+    # prior run recorded the artifact bytes; the restore and assemble jobs
+    # verify that proof again. An absent or incomplete record means the
+    # platform builds.
+    needs: gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      android: ${{ steps.plan.outputs.android }}
+      android_hash: ${{ steps.plan.outputs.android_hash }}
+      ios: ${{ steps.plan.outputs.ios }}
+      ios_hash: ${{ steps.plan.outputs.ios_hash }}
+      wasm: ${{ steps.plan.outputs.wasm }}
+      wasm_hash: ${{ steps.plan.outputs.wasm_hash }}
+      rn: ${{ steps.plan.outputs.rn }}
+      rn_hash: ${{ steps.plan.outputs.rn_hash }}
+      prior_run_id: ${{ steps.prior_run.outputs.prior_run_id }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          # The plan names the previous release tag and the changed files.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Find the newest completed run for this revision
+        # A re-run (a new workflow run for the same commit, or a re-run-all
+        # attempt of this run) may already hold the artifacts this run needs.
+        id: prior_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A failed lookup is not fatal: no prior record means every
+          # platform builds, which is the safe direction.
+          prior_run_id="$({
+            gh run list --workflow=release.yml --limit 50 \
+              --json databaseId,headSha,status,createdAt \
+              | jq -r --arg sha "${GITHUB_SHA}" --arg current "${GITHUB_RUN_ID}" '
+                  [.[] | select(.headSha == $sha and .status == "completed"
+                                and ((.databaseId | tostring) != $current))]
+                  | sort_by(.createdAt) | reverse | .[0].databaseId // empty'
+          } || true)"
+          if [ -z "${prior_run_id}" ]; then
+            # A re-run-all attempt keeps this run's id, so its previous
+            # attempt's artifacts (if any) are still addressable.
+            prior_run_id="${GITHUB_RUN_ID}"
+          fi
+          echo "prior_run_id=${prior_run_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Collect the prior run's input records
+        # A missing record is not an error: the platform simply builds.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ steps.prior_run.outputs.prior_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p prior
+          for platform in android ios wasm rn; do
+            gh run download "${PRIOR_RUN_ID}" \
+              --name "release-artifact-${platform}" \
+              --dir "prior/${platform}" >/dev/null 2>&1 || true
+          done
+
+      - name: List the prior run's artifacts
+        # A reused platform must still hold every artifact its job uploads,
+        # including the React Native payload companions.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ steps.prior_run.outputs.prior_run_id }}
+        run: |
+          set -euo pipefail
+          : > prior/artifacts.txt
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${PRIOR_RUN_ID}/artifacts?per_page=100" \
+            --jq '.artifacts[].name' > prior/artifacts.txt || true
+
+      - name: Decide which platform builds can be reused
+        id: plan
+        run: |
+          set -euo pipefail
+          base="$(git describe --tags --abbrev=0 \
+            --match 'v[0-9]*.[0-9]*.[0-9]*' HEAD 2>/dev/null || true)"
+          base_arguments=()
+          if [ -n "${base}" ]; then
+            base_arguments=(--base "${base}")
+          fi
+          node scripts/release-plan.mjs \
+            --version "${{ needs.gates.outputs.version }}" \
+            --commit "${GITHUB_SHA}" \
+            --head HEAD \
+            "${base_arguments[@]}" \
+            --prior-directory prior \
+            --available-artifacts prior/artifacts.txt \
+            --require-artifact-proof \
+            --output release-plan.json
+          for platform in android ios wasm rn; do
+            echo "${platform}=$(jq -r ".platforms.${platform}.decision" release-plan.json)" >> "${GITHUB_OUTPUT}"
+            echo "${platform}_hash=$(jq -r ".platforms.${platform}.inputHash" release-plan.json)" >> "${GITHUB_OUTPUT}"
+          done
+
+      - name: Upload the release plan
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-plan
+          path: release-plan.json
+          overwrite: true
+
+  android:
+    needs: [gates, plan]
+    # An unchanged platform reuses the prior run's artifact (restored and
+    # re-hashed below) instead of rebuilding it.
+    if: ${{ needs.plan.outputs.android == 'run' }}
+    runs-on: ubuntu-latest
+    env:
+      # Mirrors android-platform-build.yml: the GitHub Ubuntu runners
+      # preinstall the SDK here and scripts/build-android.sh reads
+      # ANDROID_HOME.
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_NDK_VERSION: "28.2.13676358"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.4
+        with:
+          # scripts/build-android.sh regenerates the wrapper at this version.
+          gradle-version: "9.5.1"
+
+      - name: Install the pinned Android NDK
+        run: |
+          if [ ! -d "${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}" ]; then
+            yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${ANDROID_NDK_VERSION}"
+          fi
+
+      - name: Cross-build the Rust cdylibs, regenerate the Kotlin bindings, assemble the AAR
+        run: ./scripts/build-android.sh
+
+      - name: Name the Android AAR for the release
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          # One artifact: the generated bindings, the per-ABI Rust libraries
+          # and the `MapView` wrapper are compiled into `:maps-sdk`'s AAR.
+          android_aar="$(find platform/android/maps-sdk/build/outputs/aar -maxdepth 1 -type f -name '*-release.aar' | sort | head -n1)"
+          test -n "${android_aar}"
+          cp "${android_aar}" "dist/rustic-maps-sdk-android-v${{ needs.gates.outputs.version }}.aar"
+
+      - name: Assert the Android artifact is one complete package
+        run: |
+          set -euo pipefail
+          inspection_directory="$(mktemp -d)"
+          unzip -q "dist/rustic-maps-sdk-android-v${VERSION}.aar" -d "${inspection_directory}"
+          test -s "${inspection_directory}/classes.jar"
+          class_listing="$(unzip -l "${inspection_directory}/classes.jar")"
+          grep -q "uniffi/rustic_maps/" <<< "${class_listing}"
+          grep -q "com/rusticmaps/sdk/MapView.class" <<< "${class_listing}"
+          # The published AAR carries SDK code only: no refapp-only binding
+          # crate, demo scenes loader/model, UX theme or demo artifact
+          # (audit C10).
+          aar_listing="$(unzip -l "dist/rustic-maps-sdk-android-v${VERSION}.aar")"
+          for marker in map_refapp ReferenceScenesLoader ReferenceScenesArtifact \
+              ReferenceAppUXTheme ReferenceAppUXDimensions reference-scenes; do
+            if grep -qi -- "${marker}" <<< "${aar_listing}"; then
+              echo "the Android AAR carries refapp-only content (${marker})" >&2
+              exit 1
+            fi
+            if grep -qi -- "${marker}" <<< "${class_listing}"; then
+              echo "the Android AAR classes carry refapp-only content (${marker})" >&2
+              exit 1
+            fi
+          done
+          for android_abi in arm64-v8a armeabi-v7a x86_64; do
+            test -s "${inspection_directory}/jni/${android_abi}/librustic_maps.so"
+          done
+          rm -rf "${inspection_directory}"
+
+      - name: Upload the Android AAR
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-android
+          path: dist/*.aar
+          overwrite: true
+
+      - name: Record the input hash and artifact bytes
+        # The record lets a re-run prove this artifact matches the revision
+        # without rebuilding it (scripts/release-plan.mjs).
+        run: >-
+          node scripts/release-plan.mjs --record-artifact android
+          --version "${{ needs.gates.outputs.version }}"
+          --commit "${GITHUB_SHA}"
+          --input-hash "${{ needs.plan.outputs.android_hash }}"
+          --artifact "dist/rustic-maps-sdk-android-v${{ needs.gates.outputs.version }}.aar"
+          --output "dist/release-artifact-android.json"
+
+      - name: Upload the artifact input record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-artifact-android
+          path: dist/release-artifact-android.json
+          overwrite: true
+
+      - name: Archive the Rust static archives for the React Native package
+        # cargo emits the staticlib beside the cdylib in the same build, so the
+        # React Native package's Android payload costs no second build. The
+        # directory names are the ABI names the generated Gradle file builds.
+        run: |
+          set -euo pipefail
+          declare -a abi_target_pairs=(
+            "arm64-v8a aarch64-linux-android"
+            "armeabi-v7a armv7-linux-androideabi"
+            "x86_64 x86_64-linux-android"
+          )
+          for abi_target_pair in "${abi_target_pairs[@]}"; do
+            android_abi="${abi_target_pair%% *}"
+            rust_target="${abi_target_pair#* }"
+            source_archive="target/${rust_target}/release/librustic_maps.a"
+            test -s "${source_archive}"
+            mkdir -p "dist/rn-static/${android_abi}"
+            cp "${source_archive}" "dist/rn-static/${android_abi}/librustic_maps.a"
+          done
+
+      - name: Upload the React Native Android payload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-android-static
+          path: dist/rn-static
+          overwrite: true
+
+  ios:
+    needs: [gates, plan]
+    if: ${{ needs.plan.outputs.ios == 'run' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Build the XCFramework and verify the SwiftPM package
+        run: ./scripts/build-ios.sh
+
+      - name: Zip the XCFramework
+        # SPM's binaryTarget(url:checksum:) consumes a zip whose root is the
+        # `.xcframework` directory, which is what `--keepParent` produces.
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent \
+            platform/ios/artifacts/rustic_mapsFFI.xcframework \
+            "dist/rustic-maps-sdk-ios-v${{ needs.gates.outputs.version }}.xcframework.zip"
+
+      - name: Upload the iOS XCFramework
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-ios
+          path: dist/*.zip
+          overwrite: true
+
+      - name: Record the input hash and artifact bytes
+        run: >-
+          node scripts/release-plan.mjs --record-artifact ios
+          --version "${{ needs.gates.outputs.version }}"
+          --commit "${GITHUB_SHA}"
+          --input-hash "${{ needs.plan.outputs.ios_hash }}"
+          --artifact "dist/rustic-maps-sdk-ios-v${{ needs.gates.outputs.version }}.xcframework.zip"
+          --output "dist/release-artifact-ios.json"
+
+      - name: Upload the artifact input record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-artifact-ios
+          path: dist/release-artifact-ios.json
+          overwrite: true
+
+      - name: Archive the XCFramework for the React Native package
+        # The pod vendors `AngoratekRusticMapsSdkFramework.xcframework`; the
+        # built framework is renamed to that name, headers and module map
+        # included, so the pod's Swift `canImport(rustic_mapsFFI)` resolves.
+        run: |
+          set -euo pipefail
+          mkdir -p dist/rn-framework
+          cp -R platform/ios/artifacts/rustic_mapsFFI.xcframework \
+            dist/rn-framework/AngoratekRusticMapsSdkFramework.xcframework
+
+      - name: Upload the React Native iOS payload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-ios-framework
+          path: dist/rn-framework
+          overwrite: true
+
+      - name: Stage the Swift package sources
+        # The generated Swift bindings and the MapNativeCoreUI wrapper are the
+        # source half of the package the `swift-package` branch publishes; they
+        # are captured here, from the same build that produced the XCFramework.
+        run: |
+          set -euo pipefail
+          mkdir -p target/swift-package-sources
+          cp -R platform/ios/Sources target/swift-package-sources/Sources
+
+      - name: Upload the Swift package sources
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-ios-sources
+          path: target/swift-package-sources
+          overwrite: true
+
+  wasm:
+    needs: [gates, plan]
+    if: ${{ needs.plan.outputs.wasm == 'run' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          # Pinned so `npm pack` produces the same tarball shape as the
+          # gates/rn jobs (packaging is deterministic per npm version).
+          node-version: 22
+
+      - name: Compile the wasm bindings
+        run: cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
+
+      - name: Resolve the pinned wasm-bindgen version
+        id: wasm_bindgen_version
+        run: |
+          version="$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version' \
+            | head -n1)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Bind the wasm module for the web
+        run: cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
+
+      - name: Generate the browser package
+        run: >-
+          wasm-bindgen --target web --out-dir platform/web/pkg
+          target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
+
+      - name: Package the one WebAssembly tarball
+        # Stamps the committed platform/web/npm manifest, copies the generated
+        # pkg/ tree and the licenses/notices, runs npm pack and asserts the
+        # tarball's exact member set (no app shell, fixtures or keystores).
+        run: ./scripts/package-web-npm.sh --output-dir dist
+
+      - name: Record the input hash and artifact bytes
+        run: >-
+          node scripts/release-plan.mjs --record-artifact wasm
+          --version "${{ needs.gates.outputs.version }}"
+          --commit "${GITHUB_SHA}"
+          --input-hash "${{ needs.plan.outputs.wasm_hash }}"
+          --artifact "dist/rustic-maps-sdk-web-v${{ needs.gates.outputs.version }}.tgz"
+          --output "dist/release-artifact-wasm.json"
+
+      - name: Upload the wasm packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-wasm
+          path: |
+            dist/*.tgz
+          overwrite: true
+
+      - name: Upload the artifact input record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-artifact-wasm
+          path: dist/release-artifact-wasm.json
+          overwrite: true
+
+  rn:
+    # The tarball is self-contained, so it waits for the two platform builds
+    # that produce the compiled payload it carries. It adds no Rust build of
+    # its own: the static archives and the XCFramework arrive as artifacts,
+    # from this run or from the restore job.
+    needs: [gates, plan, android, ios, restore]
+    if: >-
+      ${{ !cancelled() && needs.plan.result == 'success'
+      && needs.plan.outputs.rn == 'run'
+      && needs.restore.result == 'success'
+      && (needs.android.result == 'success' || needs.android.result == 'skipped')
+      && (needs.ios.result == 'success' || needs.ios.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/rn/package-lock.json
+
+      - name: Download the React Native Android payload
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-android-static
+          path: platform/rn/android/src/main/jniLibs
+
+      - name: Download the React Native iOS payload
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-ios-framework
+          path: platform/rn
+
+      - name: Install the React Native package dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: platform/rn
+
+      - name: Regenerate the JSI bindings and TurboModule glue (no native build)
+        # The same generation scripts/build-rn.sh performs; the native
+        # Android/iOS app builds stay with that script and the platform
+        # workflows.
+        run: |
+          set -euo pipefail
+          (
+            cd crates/rustic-maps-native-core
+            "${GITHUB_WORKSPACE}/platform/rn/node_modules/.bin/ubrn" generate jsi bindings \
+              "${GITHUB_WORKSPACE}/crates/rustic-maps-native-core/src/rustic_maps.udl" \
+              --crate rustic-maps-native-core \
+              --ts-dir "${GITHUB_WORKSPACE}/platform/rn/src/generated" \
+              --cpp-dir "${GITHUB_WORKSPACE}/platform/rn/cpp/generated"
+          )
+          (
+            cd platform/rn
+            ./node_modules/.bin/ubrn generate jsi turbo-module rustic_maps \
+              --config ubrn.config.yaml
+          )
+
+      - name: Typecheck the generated package
+        run: npx tsc --noEmit
+        working-directory: platform/rn
+
+      - name: Package the React Native npm tarball
+        # Regenerates the bindings from the frozen UDL (idempotent), stages the
+        # @angoratek/rustic-maps-sdk package with the licenses, the notices and
+        # the downloaded native payload, and asserts the exact member set: the
+        # app shell, fixtures and the debug keystore can never ride along.
+        run: ./scripts/package-rn-npm.sh --output-dir dist --with-native-payload
+
+      - name: Verify the tarball carries everything its manifests name
+        run: >-
+          node scripts/verify-rn-package.mjs
+          "dist/rustic-maps-sdk-rn-v${{ needs.gates.outputs.version }}.tgz"
+          "${{ needs.gates.outputs.version }}"
+
+      - name: Record the input hash and artifact bytes
+        run: >-
+          node scripts/release-plan.mjs --record-artifact rn
+          --version "${{ needs.gates.outputs.version }}"
+          --commit "${GITHUB_SHA}"
+          --input-hash "${{ needs.plan.outputs.rn_hash }}"
+          --artifact "dist/rustic-maps-sdk-rn-v${{ needs.gates.outputs.version }}.tgz"
+          --output "dist/release-artifact-rn.json"
+
+      - name: Upload the React Native tarball
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-rn
+          path: dist/*.tgz
+          overwrite: true
+
+      - name: Upload the artifact input record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-artifact-rn
+          path: dist/release-artifact-rn.json
+          overwrite: true
+
+  restore:
+    # Republishes the prior run's artifacts for the platforms the plan marked
+    # reusable, after checking every byte against the recorded SHA-256. The
+    # assemble job's exact asset-set assertion still decides completeness.
+    needs: [gates, plan]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Download the release plan
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-plan
+          path: target/release-plan
+
+      - name: Restore the Android artifact
+        if: ${{ needs.plan.outputs.android == 'reuse' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ needs.plan.outputs.prior_run_id }}
+        run: >-
+          ./scripts/restore-release-artifact.sh
+          android "${PRIOR_RUN_ID}" target/release-plan/release-plan.json
+
+      - name: Upload the restored Android artifact
+        if: ${{ needs.plan.outputs.android == 'reuse' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-android
+          path: target/restored-release/android/package
+          overwrite: true
+
+      - name: Restore the React Native Android payload
+        # The payload is an output of the same skipped Android job and is
+        # covered by the same verified input hash.
+        if: ${{ needs.plan.outputs.android == 'reuse' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ needs.plan.outputs.prior_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p target/restored-release/android/static
+          gh run download "${PRIOR_RUN_ID}" \
+            --name release-android-static \
+            --dir target/restored-release/android/static
+
+      - name: Upload the restored React Native Android payload
+        if: ${{ needs.plan.outputs.android == 'reuse' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-android-static
+          path: target/restored-release/android/static
+          overwrite: true
+
+      - name: Restore the iOS artifact
+        if: ${{ needs.plan.outputs.ios == 'reuse' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ needs.plan.outputs.prior_run_id }}
+        run: >-
+          ./scripts/restore-release-artifact.sh
+          ios "${PRIOR_RUN_ID}" target/release-plan/release-plan.json
+
+      - name: Upload the restored iOS artifact
+        if: ${{ needs.plan.outputs.ios == 'reuse' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-ios
+          path: target/restored-release/ios/package
+          overwrite: true
+
+      - name: Restore the React Native iOS payload
+        # The framework and the Swift package sources are outputs of the same
+        # skipped iOS job and share its verified input hash.
+        if: ${{ needs.plan.outputs.ios == 'reuse' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ needs.plan.outputs.prior_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p target/restored-release/ios/framework
+          mkdir -p target/restored-release/ios/sources
+          gh run download "${PRIOR_RUN_ID}" \
+            --name release-ios-framework \
+            --dir target/restored-release/ios/framework
+          gh run download "${PRIOR_RUN_ID}" \
+            --name release-ios-sources \
+            --dir target/restored-release/ios/sources
+
+      - name: Upload the restored React Native iOS payload
+        if: ${{ needs.plan.outputs.ios == 'reuse' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-ios-framework
+          path: target/restored-release/ios/framework
+          overwrite: true
+
+      - name: Upload the restored Swift package sources
+        if: ${{ needs.plan.outputs.ios == 'reuse' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-ios-sources
+          path: target/restored-release/ios/sources
+          overwrite: true
+
+      - name: Restore the wasm artifact
+        if: ${{ needs.plan.outputs.wasm == 'reuse' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ needs.plan.outputs.prior_run_id }}
+        run: >-
+          ./scripts/restore-release-artifact.sh
+          wasm "${PRIOR_RUN_ID}" target/release-plan/release-plan.json
+
+      - name: Upload the restored wasm artifact
+        if: ${{ needs.plan.outputs.wasm == 'reuse' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-wasm
+          path: target/restored-release/wasm/package
+          overwrite: true
+
+      - name: Restore the React Native artifact
+        if: ${{ needs.plan.outputs.rn == 'reuse' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ needs.plan.outputs.prior_run_id }}
+        run: >-
+          ./scripts/restore-release-artifact.sh
+          rn "${PRIOR_RUN_ID}" target/release-plan/release-plan.json
+
+      - name: Upload the restored React Native artifact
+        if: ${{ needs.plan.outputs.rn == 'reuse' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-rn
+          path: target/restored-release/rn/package
+          overwrite: true
+
+  assemble:
+    needs: [gates, plan, android, ios, wasm, rn, restore]
+    # A skipped build job is expected when its artifact is reused, so the
+    # assembly must still run. A failed build or restore is not accepted.
+    if: >-
+      ${{ !cancelled() && needs.gates.result == 'success'
+      && needs.plan.result == 'success'
+      && needs.restore.result == 'success'
+      && (needs.android.result == 'success' || needs.android.result == 'skipped')
+      && (needs.ios.result == 'success' || needs.ios.result == 'skipped')
+      && (needs.wasm.result == 'success' || needs.wasm.result == 'skipped')
+      && (needs.rn.result == 'success' || needs.rn.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      # Draft release creation needs contents: write; keyless cosign needs the
+      # ambient OIDC token; the plan artifact is read with actions: read.
+      contents: write
+      id-token: write
+      actions: read
+    env:
+      VERSION: ${{ needs.gates.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # Credentials stay enabled in this write job: the swift-package
+      # branch push below uses this checkout's authenticated remote.
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+
+      - name: Download the release plan
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-plan
+          path: target/release-plan
+
+      - name: Download the Android AAR
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-android
+          path: dist
+
+      - name: Download the iOS XCFramework
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-ios
+          path: dist
+
+      - name: Download the wasm packages
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-wasm
+          path: dist
+
+      - name: Download the React Native tarball
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-rn
+          path: dist
+
+      - name: Download the Swift package sources
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-ios-sources
+          path: target/ios-sources
+
+      - name: Assert reused artifacts match their recorded inputs
+        # A skipped build job must prove the artifact it contributes matches
+        # this revision: the current input hash equals the recorded one, and
+        # the bytes still hash to the value recorded beside the artifact.
+        run: |
+          set -euo pipefail
+          plan="target/release-plan/release-plan.json"
+          test -s "${plan}"
+          planned_commit="$(jq -r '.commit' "${plan}")"
+          if [ "${planned_commit}" != "${GITHUB_SHA}" ]; then
+            echo "error: the release plan was computed for ${planned_commit}, not ${GITHUB_SHA}" >&2
+            exit 1
+          fi
+          for platform in android ios wasm rn; do
+            decision="$(jq -r ".platforms.${platform}.decision" "${plan}")"
+            case "${decision}" in
+              run) continue ;;
+              reuse) ;;
+              *)
+                echo "error: the plan has an unknown ${platform} decision ${decision}" >&2
+                exit 1
+                ;;
+            esac
+            input_hash="$(jq -r ".platforms.${platform}.inputHash" "${plan}")"
+            reference_hash="$(jq -r ".platforms.${platform}.referenceInputHash" "${plan}")"
+            if [ "${input_hash}" != "${reference_hash}" ]; then
+              echo "error: the reused ${platform} artifact's input hash does not match this revision" >&2
+              exit 1
+            fi
+            artifact_name="$(jq -r ".platforms.${platform}.artifacts[0].name" "${plan}")"
+            expected_sha256="$(jq -r ".platforms.${platform}.artifacts[0].sha256" "${plan}")"
+            if [ -z "${artifact_name}" ] || [ "${artifact_name}" = "null" ]; then
+              echo "error: the reused ${platform} artifact has no recorded name" >&2
+              exit 1
+            fi
+            if [ ! -f "dist/${artifact_name}" ]; then
+              echo "error: the reused ${platform} artifact dist/${artifact_name} is missing" >&2
+              exit 1
+            fi
+            actual_sha256="$(sha256sum "dist/${artifact_name}" | awk '{print $1}')"
+            if [ "${actual_sha256}" != "${expected_sha256}" ]; then
+              echo "error: the reused ${platform} artifact does not match its recorded SHA-256" >&2
+              exit 1
+            fi
+          done
+
+      - name: Assert the package-level licenses and notices
+        # Every shipped package carries the dual license and the third-party
+        # notices (docs/PackagingAndRelease.md §4.4). A packaging change that
+        # silently drops them fails the release here.
+        run: |
+          set -euo pipefail
+          # Capture each listing instead of piping into `grep -q`: the early
+          # close would trip `set -o pipefail` with SIGPIPE on a long listing.
+          aar_listing="$(unzip -l "dist/rustic-maps-sdk-android-v${VERSION}.aar")"
+          grep -q "assets/licenses/LICENSE-MIT" <<< "${aar_listing}"
+          ios_listing="$(unzip -l "dist/rustic-maps-sdk-ios-v${VERSION}.xcframework.zip")"
+          grep -q "LICENSE-MIT" <<< "${ios_listing}"
+          for archive in \
+            "dist/rustic-maps-sdk-web-v${VERSION}.tgz" \
+            "dist/rustic-maps-sdk-rn-v${VERSION}.tgz"; do
+            archive_listing="$(tar -tzf "${archive}")"
+            grep -q "THIRD_PARTY_NOTICES.md" <<< "${archive_listing}"
+            grep -q "LICENSE-MIT" <<< "${archive_listing}"
+          done
+
+      # The notices generator resolves with `cargo metadata --offline`, which
+      # consults the local registry index cache even with a complete lockfile;
+      # prime it as docs-publication.yml does before the offline consumer.
+      - name: Prime the registry index for offline resolution
+        run: cargo metadata --format-version 1 > /dev/null
+
+      - name: Regenerate and assert the third-party notices (fail-closed)
+        run: |
+          set -euo pipefail
+          ./scripts/generate-third-party-notices
+          git diff --exit-code -- docs/THIRD_PARTY_NOTICES.md
+          cp docs/THIRD_PARTY_NOTICES.md "dist/rustic-maps-sdk-notices-v${VERSION}.md"
+
+      - name: Ship the dual license files
+        run: |
+          set -euo pipefail
+          cp LICENSE-MIT LICENSE-APACHE dist/
+
+      - name: Generate the install-snippet README asset
+        # Assembled from the version and repository only (no timestamp), so
+        # its bytes are deterministic; it ships beside the packages and is
+        # covered by the checksum manifest and the signatures below.
+        run: >-
+          ./scripts/generate-release-readme.sh
+          --version "${VERSION}"
+          --repository "${GITHUB_REPOSITORY}"
+          --output "dist/rustic-maps-sdk-v${VERSION}-README.md"
+
+      - name: Assert the expected asset set (fail-closed)
+        # Exact set equality in both directions: a missing artifact (a build
+        # job that silently produced nothing) and an unexpected extra file
+        # both abort the release.
+        run: |
+          set -euo pipefail
+          for directory in dist/*/; do
+            if [ -d "${directory}" ]; then
+              echo "error: dist/ contains the subdirectory ${directory}; the release asset set must be flat" >&2
+              exit 1
+            fi
+          done
+          expected=(
+            "rustic-maps-sdk-android-v${VERSION}.aar"
+            "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
+            "rustic-maps-sdk-web-v${VERSION}.tgz"
+            "rustic-maps-sdk-rn-v${VERSION}.tgz"
+            "rustic-maps-sdk-notices-v${VERSION}.md"
+            "rustic-maps-sdk-v${VERSION}-README.md"
+            "LICENSE-MIT"
+            "LICENSE-APACHE"
+          )
+          declare -a expected_sorted=() actual=()
+          while IFS= read -r name; do expected_sorted+=("${name}"); done \
+            < <(printf '%s\n' "${expected[@]}" | sort)
+          for path in dist/*; do
+            if [ -f "${path}" ]; then
+              actual+=("${path##*/}")
+            fi
+          done
+          if ! diff -u <(printf '%s\n' "${expected_sorted[@]}") <(printf '%s\n' "${actual[@]:-}"); then
+            echo "error: dist/ does not hold exactly the expected release asset set" >&2
+            exit 1
+          fi
+
+      - name: Write the per-file checksums and SHA256SUMS.txt
+        run: |
+          set -euo pipefail
+          assets=(
+            "rustic-maps-sdk-android-v${VERSION}.aar"
+            "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
+            "rustic-maps-sdk-web-v${VERSION}.tgz"
+            "rustic-maps-sdk-rn-v${VERSION}.tgz"
+            "rustic-maps-sdk-notices-v${VERSION}.md"
+            "rustic-maps-sdk-v${VERSION}-README.md"
+            "LICENSE-MIT"
+            "LICENSE-APACHE"
+          )
+          (
+            cd dist
+            sha256sum -b "${assets[@]}" | sort -k2 > SHA256SUMS.txt
+            for asset in "${assets[@]}"; do
+              sha256sum -b "${asset}" > "${asset}.sha256"
+            done
+          )
+
+      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+      - name: Sign every asset and the checksum manifest with keyless Sigstore
+        # `--bundle` writes the signature and the certificate together;
+        # `--yes` is required in non-interactive CI. The OIDC certificate binds
+        # each signature to this workflow file and tag ref.
+        run: |
+          set -euo pipefail
+          assets=(
+            "rustic-maps-sdk-android-v${VERSION}.aar"
+            "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
+            "rustic-maps-sdk-web-v${VERSION}.tgz"
+            "rustic-maps-sdk-rn-v${VERSION}.tgz"
+            "rustic-maps-sdk-notices-v${VERSION}.md"
+            "rustic-maps-sdk-v${VERSION}-README.md"
+            "LICENSE-MIT"
+            "LICENSE-APACHE"
+            "SHA256SUMS.txt"
+          )
+          (
+            cd dist
+            for asset in "${assets[@]}"; do
+              cosign sign-blob --yes --bundle "${asset}.sigstore.json" "${asset}"
+            done
+          )
+
+      - name: Assert the assembled file set (fail-closed)
+        # The assets plus their `.sha256` sidecars, SHA256SUMS.txt, and one
+        # `.sigstore.json` bundle per signed file — nothing more, nothing less.
+        run: |
+          set -euo pipefail
+          assets=(
+            "rustic-maps-sdk-android-v${VERSION}.aar"
+            "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
+            "rustic-maps-sdk-web-v${VERSION}.tgz"
+            "rustic-maps-sdk-rn-v${VERSION}.tgz"
+            "rustic-maps-sdk-notices-v${VERSION}.md"
+            "rustic-maps-sdk-v${VERSION}-README.md"
+            "LICENSE-MIT"
+            "LICENSE-APACHE"
+          )
+          declare -a expected=() actual=()
+          expected+=("${assets[@]}")
+          for asset in "${assets[@]}"; do expected+=("${asset}.sha256"); done
+          expected+=("SHA256SUMS.txt")
+          for asset in "${assets[@]}" "SHA256SUMS.txt"; do
+            expected+=("${asset}.sigstore.json")
+          done
+          declare -a expected_sorted=()
+          while IFS= read -r name; do expected_sorted+=("${name}"); done \
+            < <(printf '%s\n' "${expected[@]}" | sort)
+          for path in dist/*; do
+            if [ -f "${path}" ]; then
+              actual+=("${path##*/}")
+            fi
+          done
+          if ! diff -u <(printf '%s\n' "${expected_sorted[@]}") <(printf '%s\n' "${actual[@]:-}"); then
+            echo "error: the assembled release bundle does not hold exactly the expected files" >&2
+            exit 1
+          fi
+
+      - name: Draft the changelog-derived release notes
+        run: |
+          set -euo pipefail
+          mkdir -p target
+          awk -v version="${VERSION}" '
+            index($0, "## [" version "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > target/changelog-section.md
+          if ! grep -q '[^[:space:]]' target/changelog-section.md; then
+            echo "error: CHANGELOG.md has no populated section headed \"## [${VERSION}]\"" >&2
+            exit 1
+          fi
+          workflow_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/tags/${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF_NAME}" != v* ]]; then
+            # A workflow_dispatch rehearsal is not on a tag; name the tag this
+            # tree would be released as, so the notes stay coherent.
+            workflow_identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/tags/v${VERSION}"
+          fi
+          {
+            cat target/changelog-section.md
+            cat <<EOF
+
+          ## Release assets
+
+          - \`rustic-maps-sdk-android-v${VERSION}.aar\` — the Android package: Kotlin bindings, native libraries (arm64-v8a, armeabi-v7a, x86_64) and the \`MapView\` wrapper in one artifact
+          - \`rustic-maps-sdk-ios-v${VERSION}.xcframework.zip\` — iOS static XCFramework (arm64 device + arm64 simulator slices)
+          - \`rustic-maps-sdk-web-v${VERSION}.tgz\` — the npm package \`@angoratek/rustic-maps-sdk-web\`
+          - \`rustic-maps-sdk-rn-v${VERSION}.tgz\` — the npm package \`@angoratek/rustic-maps-sdk\` with the compiled Android libraries and iOS framework
+          - \`rustic-maps-sdk-notices-v${VERSION}.md\` — third-party notices for every package
+          - \`rustic-maps-sdk-v${VERSION}-README.md\` — install snippets and verification per platform
+          - \`LICENSE-MIT\`, \`LICENSE-APACHE\` — the dual license
+          - \`SHA256SUMS.txt\` and per-file \`.sha256\` sidecars — the integrity manifest
+
+          Swift Package Manager consumers use the generated \`swift-package\` branch
+          (\`https://github.com/${GITHUB_REPOSITORY}\`), whose \`binaryTarget\` points at
+          this release's XCFramework zip.
+
+          ## Verifying the release assets
+
+          Every asset is signed with Sigstore keyless signing; the certificate binds the
+          signature to this repository's release workflow at this tag. After downloading
+          an asset and its \`.sigstore.json\` bundle, verify it with:
+
+          \`\`\`bash
+          cosign verify-blob --bundle <asset>.sigstore.json \\
+            --certificate-identity-regexp "${workflow_identity}" \\
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \\
+            <asset>
+          \`\`\`
+          EOF
+          } > target/release-notes.md
+
+      - name: Draft the GitHub Release
+        # Only a tag push publishes (as a draft); a workflow_dispatch run is the
+        # dry run and stops at the bundle upload below.
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prerelease_flag=""
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            prerelease_flag="--prerelease"
+          fi
+          gh release create "${GITHUB_REF_NAME}" \
+            --draft \
+            --title "Rustic Maps SDK ${GITHUB_REF_NAME}" \
+            --notes-file target/release-notes.md \
+            ${prerelease_flag} \
+            dist/*
+
+      - name: Publish the swift-package branch
+        # The SPM manifest must point at the *uploaded* asset, so this runs
+        # after the release upload. A workflow_dispatch rehearsal never pushes
+        # (it is not on a tag). The branch is a single commit per release:
+        # manifest + the generated Swift sources and wrapper captured by the
+        # ios job + the licenses and notices.
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          archive="dist/rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
+          checksum="$(sha256sum "${archive}" | awk '{print $1}')"
+          archive_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/$(basename "${archive}")"
+          branch_dir="$(mktemp -d)"
+          cleanup_branch_worktree() {
+            git worktree remove --force "${branch_dir}" >/dev/null 2>&1 || true
+            rm -rf "${branch_dir}"
+          }
+          trap cleanup_branch_worktree EXIT
+          mkdir -p target/swift-package
+          ./scripts/generate-swift-package-manifest.sh \
+            --version "${GITHUB_REF_NAME}" \
+            --url "${archive_url}" \
+            --checksum "${checksum}" \
+            --output target/swift-package/Package.swift
+          if [ ! -d target/ios-sources/Sources ]; then
+            echo "error: the ios job's Swift package sources are missing" >&2
+            exit 1
+          fi
+          cp -R target/ios-sources/Sources target/swift-package/Sources
+          cp LICENSE-MIT LICENSE-APACHE docs/THIRD_PARTY_NOTICES.md target/swift-package/
+          git worktree add --detach "${branch_dir}" HEAD
+          (
+            cd "${branch_dir}"
+            git checkout --orphan swift-package
+            git rm -rf --ignore-unmatch . >/dev/null
+            cp -R "${GITHUB_WORKSPACE}/target/swift-package/." .
+            git add -A
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -q -m "chore: publish the Swift package manifest for ${GITHUB_REF_NAME}"
+            # One commit per release is the branch model (design §2.2), so a
+            # superseding release replaces the previous state instead of
+            # accumulating an unbuildable history.
+            git push --force origin swift-package
+          )
+          cleanup_branch_worktree
+          trap - EXIT
+
+      - name: Upload the assembled bundle (dry run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-bundle
+          path: dist
+          retention-days: 90
+          overwrite: true

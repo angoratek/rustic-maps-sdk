@@ -1,0 +1,132 @@
+name: format-and-lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "fixtures/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - "rust-toolchain.toml"
+      - "platform/rn/package.json"
+      - "platform/rn/ubrn.config.yaml"
+      - "platform/web/npm/package.json"
+      - "platform/android/maps-sdk/build.gradle.kts"
+      - "platform/ios/Package.swift"
+      - "platform/reference-tokens.json"
+      - "scripts/check_ux_parity.mjs"
+      - "scripts/check-style-layer-coverage.mjs"
+      - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/ux/**"
+      - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationState.kt"
+      - "platform/ios/Sources/MapNativeCoreUI/**"
+      - "platform/ios/reference-application/Sources/ReferenceApplicationModel.swift"
+      - "platform/ios/reference-application/Sources/ReferenceAppUXTheme.swift"
+      - "platform/ios/reference-application/Sources/ReferenceApplicationConfiguration.swift"
+      - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationConstants.kt"
+      - "platform/rn/app-shell/App.tsx"
+      - "platform/rn/app-shell/android/app/src/main/java/com/rusticmaps/sdk/refapprn/RefappConstants.kt"
+      - "platform/rn/app-shell/ios/MapsSdkRefappRn/RefappConstants.swift"
+      - "platform/web/ui_strings.mjs"
+      - "docs/ReferenceAppUX.md"
+      - "platform/rn/app-shell/src/theme.ts"
+      - "platform/rn/app-shell/src/mapControls.ts"
+      - "platform/rn/app-shell/src/sheetLayout.ts"
+      - "platform/web/index.html"
+      - "platform/web/map_controls.mjs"
+      - ".github/workflows/format-and-lint.yml"
+  pull_request:
+    paths:
+      - "crates/**"
+      - "fixtures/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - "rust-toolchain.toml"
+      - "platform/rn/package.json"
+      - "platform/rn/ubrn.config.yaml"
+      - "platform/web/npm/package.json"
+      - "platform/android/maps-sdk/build.gradle.kts"
+      - "platform/ios/Package.swift"
+      - "platform/reference-tokens.json"
+      - "scripts/check_ux_parity.mjs"
+      - "scripts/check-style-layer-coverage.mjs"
+      - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/ux/**"
+      - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationState.kt"
+      - "platform/ios/Sources/MapNativeCoreUI/**"
+      - "platform/ios/reference-application/Sources/ReferenceApplicationModel.swift"
+      - "platform/ios/reference-application/Sources/ReferenceAppUXTheme.swift"
+      - "platform/ios/reference-application/Sources/ReferenceApplicationConfiguration.swift"
+      - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationConstants.kt"
+      - "platform/rn/app-shell/App.tsx"
+      - "platform/rn/app-shell/android/app/src/main/java/com/rusticmaps/sdk/refapprn/RefappConstants.kt"
+      - "platform/rn/app-shell/ios/MapsSdkRefappRn/RefappConstants.swift"
+      - "platform/web/ui_strings.mjs"
+      - "docs/ReferenceAppUX.md"
+      - "platform/rn/app-shell/src/theme.ts"
+      - "platform/rn/app-shell/src/mapControls.ts"
+      - "platform/rn/app-shell/src/sheetLayout.ts"
+      - "platform/web/index.html"
+      - "platform/web/map_controls.mjs"
+      - ".github/workflows/format-and-lint.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  format-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Workspace version sync
+        # docs/PackagingAndRelease.md §5: one version line. Cheap (bash only),
+        # so it rides the ordinary lint gate as well as the release workflow.
+        run: ./scripts/check-workspace-version.sh
+      - name: UX token and error-text parity
+        # C3 / M12 Phase 0: platform/reference-tokens.json is the single source
+        # for the §2 design tokens and the unified SDK error details; this gate
+        # fails when any platform mirror drifts. Node only, no toolchain needed.
+        run: node scripts/check_ux_parity.mjs
+      - name: Style layer coverage
+        # Every committed vector-tile fixture's name/ref-bearing source layers
+        # must be painted by a committed style artifact or documented in the
+        # audit's allow-list. Node only, no toolchain needed.
+        run: node scripts/check-style-layer-coverage.mjs
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Format check
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      # The unit/integration suite runs in this job instead of a separate
+      # workflow: clippy and nextest both compile the workspace, and a
+      # second workflow paid for a cold target directory every time
+      # (PLAN M16). The shared rust-cache and the already-built artifacts
+      # make the test step incremental.
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@e800962fea8b802cd1bd32c4e6f08fbda4bb0048 # nextest
+      - name: Unit and integration tests
+        run: cargo nextest run --all-features
+      # Runnable rustdoc examples are a standing convention; this step runs
+      # them and fails on any broken one. It currently runs zero tests (no
+      # `/// ``` ` fences exist yet) and is still a real gate: the first doc
+      # test that lands runs here and must pass.
+      - name: Documentation tests (runnable rustdoc examples)
+        run: cargo test --workspace --doc
+      - name: Third-party license and advisory gates
+        # Pinned: cargo-deny's config schema has drifted across versions
+        # (the M0-era `[licensing]` section broke once already); the allow
+        # list and the `[advisories]` section are parsed against exactly this
+        # tool version.
+        run: |
+          cargo install --locked cargo-deny@0.20.2
+          cargo deny check licenses advisories

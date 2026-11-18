@@ -1,0 +1,1945 @@
+{
+  "version": 8,
+  "name": "vector-style-openmaptiles-dark",
+  "metadata": {
+    "source_artifact": "vector-style-openmaptiles-dark.json"
+  },
+  "sources": {
+    "base": {
+      "type": "vector"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": [
+          24.999945,
+          24.999945,
+          28.00002,
+          1
+        ]
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-0",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landcover",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "grass"
+      ],
+      "paint": {
+        "fill-color": [
+          24.000089999999997,
+          31.99995,
+          24.999945,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-1",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landcover",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "wood"
+      ],
+      "paint": {
+        "fill-color": [
+          22.000125,
+          33.999915,
+          26.000055,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-2",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "residential"
+      ],
+      "paint": {
+        "fill-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-3",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "suburb"
+      ],
+      "paint": {
+        "fill-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-4",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "quarter"
+      ],
+      "paint": {
+        "fill-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-5",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "commercial"
+      ],
+      "paint": {
+        "fill-color": [
+          28.00002,
+          26.99991,
+          29.999985,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-6",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "industrial"
+      ],
+      "paint": {
+        "fill-color": [
+          26.000055,
+          28.00002,
+          29.999985,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-7",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "school"
+      ],
+      "paint": {
+        "fill-color": [
+          28.999875000000003,
+          28.00002,
+          31.99995,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-8",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "college"
+      ],
+      "paint": {
+        "fill-color": [
+          28.999875000000003,
+          28.00002,
+          31.99995,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-9",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "library"
+      ],
+      "paint": {
+        "fill-color": [
+          28.999875000000003,
+          28.00002,
+          31.99995,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-10",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "stadium"
+      ],
+      "paint": {
+        "fill-color": [
+          31.99995,
+          33.999915,
+          40.000065,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-11",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "pitch"
+      ],
+      "paint": {
+        "fill-color": [
+          24.000089999999997,
+          40.000065,
+          28.00002,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-12",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "park",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "national_park"
+      ],
+      "paint": {
+        "fill-color": [
+          22.99998,
+          36.999990000000004,
+          26.99991,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-13",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "park",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "protected_area"
+      ],
+      "paint": {
+        "fill-color": [
+          22.99998,
+          36.999990000000004,
+          26.99991,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-14",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": [
+          14.00001,
+          33.999915,
+          51,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-15",
+      "type": "line",
+      "source": "base",
+      "source-layer": "waterway",
+      "paint": {
+        "line-color": [
+          14.00001,
+          33.999915,
+          51,
+          1
+        ],
+        "line-width": 1.8,
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-16",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "building",
+      "paint": {
+        "fill-color": [
+          36.999990000000004,
+          38.999955,
+          43.999995000000006,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-17",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "rail"
+      ],
+      "paint": {
+        "line-color": [
+          51,
+          52.999965,
+          58.000004999999994,
+          1
+        ],
+        "line-width": 1.2,
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-18",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 4,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "paint": {
+        "line-color": [
+          42.000029999999995,
+          38.0001,
+          31.99995,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          1.08,
+          8,
+          1.08,
+          10,
+          2.52,
+          12,
+          4.32,
+          14,
+          7.2,
+          18,
+          8.28
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-19",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 4,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "trunk"
+      ],
+      "paint": {
+        "line-color": [
+          42.000029999999995,
+          38.0001,
+          31.99995,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          1.08,
+          8,
+          1.08,
+          10,
+          2.52,
+          12,
+          4.32,
+          14,
+          7.2,
+          18,
+          8.28
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-20",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 4,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "paint": {
+        "line-color": [
+          73.99998000000001,
+          63.9999,
+          47.999925000000005,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          0.81,
+          8,
+          0.81,
+          10,
+          1.89,
+          12,
+          3.24,
+          14,
+          5.4,
+          18,
+          6.21
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-21",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 4,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "trunk"
+      ],
+      "paint": {
+        "line-color": [
+          73.99998000000001,
+          63.9999,
+          47.999925000000005,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          0.81,
+          8,
+          0.81,
+          10,
+          1.89,
+          12,
+          3.24,
+          14,
+          5.4,
+          18,
+          6.21
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-22",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 6,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "primary"
+      ],
+      "paint": {
+        "line-color": [
+          75.00009,
+          66.999975,
+          52.999965,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          0.63,
+          8,
+          0.63,
+          10,
+          1.47,
+          12,
+          2.52,
+          14,
+          4.2,
+          18,
+          4.83
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-23",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 8,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "secondary"
+      ],
+      "paint": {
+        "line-color": [
+          61.000080000000004,
+          56.999895,
+          51,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          0.51,
+          10,
+          1.19,
+          12,
+          2.04,
+          14,
+          3.4,
+          18,
+          3.91
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-24",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 10,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "tertiary"
+      ],
+      "paint": {
+        "line-color": [
+          51,
+          52.00011,
+          58.000004999999994,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0.945,
+          12,
+          1.62,
+          14,
+          2.7,
+          18,
+          3.105
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-25",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 12,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "minor"
+      ],
+      "paint": {
+        "line-color": [
+          43.999995000000006,
+          45.99996,
+          51,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          1.26,
+          14,
+          2.1,
+          18,
+          2.415
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-26",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 14,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "service"
+      ],
+      "paint": {
+        "line-color": [
+          38.0001,
+          40.000065,
+          45.000105,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          1.6,
+          18,
+          1.84
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-27",
+      "type": "line",
+      "source": "base",
+      "source-layer": "boundary",
+      "paint": {
+        "line-color": [
+          58.000004999999994,
+          52.999965,
+          70.999905,
+          1
+        ],
+        "line-width": 1.1,
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-28",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "city"
+      ],
+      "paint": {
+        "circle-color": [
+          137.99988,
+          144.00003,
+          153,
+          0.7
+        ],
+        "circle-radius": 1.6,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-29",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "town"
+      ],
+      "paint": {
+        "circle-color": [
+          137.99988,
+          144.00003,
+          153,
+          0.7
+        ],
+        "circle-radius": 1.6,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-30",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "village"
+      ],
+      "paint": {
+        "circle-color": [
+          137.99988,
+          144.00003,
+          153,
+          0.7
+        ],
+        "circle-radius": 1.6,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-31",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "suburb"
+      ],
+      "paint": {
+        "circle-color": [
+          137.99988,
+          144.00003,
+          153,
+          0.7
+        ],
+        "circle-radius": 1.6,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-32",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "quarter"
+      ],
+      "paint": {
+        "circle-color": [
+          137.99988,
+          144.00003,
+          153,
+          0.7
+        ],
+        "circle-radius": 1.6,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-33",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "neighbourhood"
+      ],
+      "paint": {
+        "circle-color": [
+          137.99988,
+          144.00003,
+          153,
+          0.7
+        ],
+        "circle-radius": 1.6,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-34",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "hamlet"
+      ],
+      "paint": {
+        "circle-color": [
+          137.99988,
+          144.00003,
+          153,
+          0.7
+        ],
+        "circle-radius": 1.6,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-35",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 10,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          11,
+          14,
+          13,
+          18,
+          17
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          188.99988,
+          195.00003,
+          205.00011,
+          1
+        ],
+        "text-halo-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          0.9
+        ],
+        "text-halo-width": 1.3
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-36",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 12,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "primary"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          10,
+          14,
+          12,
+          18,
+          15
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          188.99988,
+          195.00003,
+          205.00011,
+          1
+        ],
+        "text-halo-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          0.9
+        ],
+        "text-halo-width": 1.3
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-37",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 13,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "secondary"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          10,
+          14,
+          11,
+          18,
+          14
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          188.99988,
+          195.00003,
+          205.00011,
+          1
+        ],
+        "text-halo-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          0.9
+        ],
+        "text-halo-width": 1.3
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-38",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 14,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "tertiary"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          10,
+          18,
+          13
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          188.99988,
+          195.00003,
+          205.00011,
+          1
+        ],
+        "text-halo-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          0.9
+        ],
+        "text-halo-width": 1.3
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-39",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 14,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "minor"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          9,
+          18,
+          12
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          188.99988,
+          195.00003,
+          205.00011,
+          1
+        ],
+        "text-halo-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          0.9
+        ],
+        "text-halo-width": 1.3
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-40",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "poi",
+      "minzoom": 14,
+      "maxzoom": 24,
+      "filter": [
+        "all",
+        [
+          "case",
+          [
+            "in",
+            [
+              "get",
+              "class"
+            ],
+            [
+              "literal",
+              [
+                "atm",
+                "bank",
+                "bar",
+                "beer",
+                "bicycle_parking",
+                "bicycle_rental",
+                "bus",
+                "butcher",
+                "cafe",
+                "car",
+                "clothing_store",
+                "dentist",
+                "drinking_water",
+                "escape_game",
+                "fast_food",
+                "fuel",
+                "grocery",
+                "ice_cream",
+                "lodging",
+                "office",
+                "parking",
+                "railway",
+                "recycling",
+                "restaurant",
+                "running",
+                "shelter",
+                "shop",
+                "toilets",
+                "veterinary",
+                "waste_basket"
+              ]
+            ]
+          ],
+          [
+            "step",
+            [
+              "zoom"
+            ],
+            false,
+            16,
+            true
+          ],
+          true
+        ],
+        [
+          "<=",
+          [
+            "max",
+            0,
+            [
+              "min",
+              4294967295,
+              [
+                "floor",
+                [
+                  "coalesce",
+                  [
+                    "get",
+                    "rank"
+                  ],
+                  4294967295
+                ]
+              ]
+            ]
+          ],
+          [
+            "step",
+            [
+              "zoom"
+            ],
+            6,
+            16,
+            16,
+            18,
+            4294967295
+          ]
+        ]
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          10,
+          18,
+          14
+        ],
+        "symbol-placement": "point",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          188.99988,
+          195.00003,
+          205.00011,
+          1
+        ],
+        "text-halo-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          0.9
+        ],
+        "text-halo-width": 1.5
+      }
+    },
+    {
+      "id": "vector-style-openmaptiles-dark-41",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "place",
+      "minzoom": 8,
+      "maxzoom": 24,
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          10,
+          14,
+          13,
+          18,
+          18
+        ],
+        "symbol-placement": "point",
+        "symbol-sort-key": 1,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          216.000045,
+          218.00001,
+          223.99990499999998,
+          1
+        ],
+        "text-halo-color": [
+          24.999945,
+          26.99991,
+          31.000094999999998,
+          0.9
+        ],
+        "text-halo-width": 1.5
+      }
+    }
+  ]
+}

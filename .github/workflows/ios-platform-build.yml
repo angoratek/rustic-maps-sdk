@@ -1,0 +1,70 @@
+name: ios-platform-build
+
+# Builds the iOS platform slice on macOS, without a device or simulator run:
+# the release `staticlib` builds of `rustic-maps-native-core` for the device and
+# simulator targets, the uniffi Swift bindings regenerated from the frozen
+# UDL metadata, the two-slice XCFramework join, and the SwiftPM package
+# build for the generic iOS-simulator destination (via scripts/build-ios.sh,
+# whose verification step is the scheme build). No API key is involved:
+# the package build consumes no key, and the refapps take provider
+# credentials at runtime through the settings surface (M13); no key is ever
+# set or echoed here.
+
+on:
+  workflow_dispatch:
+  # The full platform matrix runs nightly on a schedule instead of on
+  # every main push (Actions minutes are budgeted); a pull request keeps
+  # the per-change gate for iOS.
+  schedule:
+    - cron: "17 4 * * *"
+  pull_request:
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "platform/ios/**"
+      - "scripts/build-ios.sh"
+      - "scripts/build-refapp-core.sh"
+      - "scripts/build-ios-reference-application.sh"
+      - ".github/workflows/ios-platform-build.yml"
+
+concurrency:
+  group: ios-platform-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ios-platform-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      # The staticlib cross-builds for `aarch64-apple-ios` and
+      # `aarch64-apple-ios-sim`; the script installs both rust-std targets
+      # on demand, so plain stable is enough here.
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Build the XCFramework and verify the SwiftPM package
+        run: ./scripts/build-ios.sh
+
+      - name: Generate the refapp-only bindings for the reference application
+        run: ./scripts/build-refapp-core.sh ios
+
+      - name: Install xcodegen for the reference application project
+        run: brew install xcodegen
+
+      - name: Build the reference application and run its unit suite
+        run: |
+          ./scripts/build-ios-reference-application.sh
+          xcodebuild test \
+            -project platform/ios/reference-application/ReferenceApplication.xcodeproj \
+            -scheme ReferenceApplication \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -derivedDataPath platform/ios/reference-application/build \
+            -only-testing:ReferenceApplicationTests

@@ -1,0 +1,29 @@
+[package]
+name = "map-refapp-native"
+description = "Refapp-only UniFFI bindings over the shared reference-application math"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+# The pure behavior math this crate mirrors across the UniFFI boundary. The
+# binding crate owns no math of its own: every wrapper delegates to this crate.
+map-refapp-core = { path = "../map-refapp-core" }
+# The pinned UniFFI release; the `uniffi-bindgen` CLI that generates the
+# refapp Kotlin and Swift lives in `rustic-maps-native-core` at this same
+# version, so both platforms regenerate from one pinned tool.
+uniffi.workspace = true
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"] }
+
+[lib]
+# The Rust library target keeps the package's own name so it cannot collide
+# with the `map-refapp-core` dependency it wraps. The foreign artifact name is
+# separate: `uniffi.toml` sets the generated Kotlin loader's cdylib name, and
+# `scripts/build-refapp-core.sh` stages the built library under that name.
+# A refapp-only artifact: the published AAR and XCFramework must never carry
+# it.
+name = "map_refapp_native"
+crate-type = ["lib", "cdylib", "staticlib"]

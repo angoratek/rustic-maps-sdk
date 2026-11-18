@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rustic Maps SDK live demo</title>
+    <link rel="stylesheet" href="./styles/playground.css" />
+  </head>
+  <body>
+    <!-- The first focus stop: keyboard and screen-reader visitors reach the
+         control sheet without crossing the map surface. It is visually hidden
+         until focused (styles/playground.css). -->
+    <a class="skip-link" href="#controls">Skip to map controls</a>
+    <!-- The GPU surface renders on #map-canvas; #map-overlay sits above it
+         so a WebGPU-locked canvas never needs a 2D context: all input, the
+         degraded 2D tile grid, and the debug overlay draw here. The overlay
+         is the keyboard focus target: its arrow/zoom/rotate model and the
+         live status line make the map usable without a pointer. -->
+    <canvas id="map-canvas" aria-hidden="true"></canvas>
+    <canvas id="map-overlay" tabindex="0" role="application"
+            aria-roledescription="interactive map" aria-label="Interactive map"
+            aria-describedby="map-keyboard-instructions"
+            aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown Home"></canvas>
+    <!-- The turn banner at the map's top-center during a simulated trip
+         (docs/ReferenceAppUX.md §1/§7.1): the first thing the driver must
+         read, with the then line under it and the deviation alert beneath
+         both. The navigation panel keeps the progress rows and controls. -->
+    <div id="navigation-banner-overlay" hidden aria-live="polite">
+      <div class="turn-banner">
+        <p id="banner-distance-phrase-text" class="turn-banner-distance"></p>
+        <p id="banner-instruction-text" class="turn-banner-text"></p>
+      </div>
+      <p id="upcoming-instruction-text" class="then-line"></p>
+      <p id="deviation-alert-preview" hidden></p>
+    </div>
+    <aside id="controls" tabindex="-1" aria-label="Live demo controls">
+      <header id="controls-header">
+        <div class="demo-title">
+          <h1>Rustic Maps SDK <span class="demo-title-suffix">live demo</span></h1>
+          <p class="demo-subtitle">Search, route and drive a simulated trip.</p>
+        </div>
+        <div id="controls-header-actions">
+          <a id="docs-back-link" href="../" hidden>&larr; Docs</a>
+          <!-- The hosted mobile demo beside this page: the published site
+               serves it under /demo/mobile/ (relative `mobile/`), the local
+               harness under /mobile-demo/ (relative `mobile-demo/`). The page
+               sets the target from the same local/published signal as the
+               docs link, so neither path is guessed in the markup. -->
+          <a id="mobile-demo-link" href="mobile-demo/">Mobile demo</a>
+          <!-- Consumer copy (M28): the canonical text sits in the markup as a
+               no-script-safe default and `data-ui-label` names the shared row;
+               `data-ui-label-attribute` fills an attribute instead of the text.
+               `data-ui-label-aria` fills the accessible name when it reads a
+               different row than the visible text. playground.mjs re-applies
+               every marked value from ui_strings.mjs on load. -->
+          <button id="settings-control" type="button" aria-label="Open settings"
+                  aria-haspopup="dialog" aria-controls="settings-dialog"
+                  title="Open settings" data-ui-label="settings.open_accessibility"
+                  data-ui-label-attribute="aria-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section id="trip-planner" aria-labelledby="trip-planner-title"
+               aria-describedby="provider-credential-status">
+        <h2 class="group-label" id="trip-planner-title"
+            data-ui-label="plan.search_heading">Plan a route</h2>
+        <p class="trip-subtitle">Enter an origin and a destination, plan the route,
+          then start the trip simulation.</p>
+        <!-- The two labelled endpoint fields (docs/design/ReferenceApplicationBehavior.md
+             §Search, route card and navigation UX): a visible Origin/Destination
+             label, the field's own search action, and its My location chip. The
+             swap action beside the Origin label exchanges both the text and the
+             resolved place of the pair. -->
+        <div class="trip-field-label-row">
+          <label class="trip-field-label" for="trip-origin-input">
+            <span class="trip-field-marker" aria-hidden="true">A</span>
+            <span class="trip-field-label-text"
+                  data-ui-label="plan.origin_label">Origin</span>
+          </label>
+          <button id="trip-swap-control" type="button" class="trip-swap-control"
+                  aria-label="Swap origin and destination"
+                  data-ui-label="plan.swap_action"
+                  data-ui-label-attribute="aria-label"
+                  title="Swap origin and destination">&#8645; Swap</button>
+        </div>
+        <div class="trip-search">
+          <svg class="trip-search-icon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m16.2 16.2 4.3 4.3" />
+          </svg>
+          <input id="trip-origin-input" type="search"
+                 placeholder="Search an origin" autocomplete="off"
+                 aria-label="Search an origin"
+                 data-ui-label="plan.origin_hint"
+                 data-ui-label-attribute="placeholder"
+                 data-ui-label-aria="plan.origin_hint" />
+          <button id="trip-origin-search-control" type="button"
+                  aria-label="Search origin"
+                  data-ui-label="plan.search_action">Search</button>
+        </div>
+        <!-- The field's "My location" chip: starts the device source when it
+             is off and fills this field alone from the latest fix. -->
+        <button id="origin-my-location" type="button"
+                class="trip-my-location-chip"
+                aria-label="Use my location as the origin">My location</button>
+        <label class="trip-field-label" for="trip-destination-input">
+          <span class="trip-field-marker" aria-hidden="true">B</span>
+          <span class="trip-field-label-text"
+                data-ui-label="plan.destination_label">Destination</span>
+        </label>
+        <div class="trip-search">
+          <svg class="trip-search-icon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m16.2 16.2 4.3 4.3" />
+          </svg>
+          <input id="trip-destination-input" type="search"
+                 placeholder="Search a destination" autocomplete="off"
+                 aria-label="Search a destination"
+                 data-ui-label="plan.destination_placeholder"
+                 data-ui-label-attribute="placeholder"
+                 data-ui-label-aria="plan.destination_placeholder" />
+          <button id="trip-destination-search-control" type="button"
+                  aria-label="Search destination"
+                  data-ui-label="plan.search_action">Search</button>
+        </div>
+        <button id="destination-my-location" type="button"
+                class="trip-my-location-chip"
+                aria-label="Use my location as the destination">My location</button>
+        <p class="trip-suggestions-heading" id="trip-suggestions-heading"
+           data-ui-label="plan.demo_places_heading">Demo places</p>
+        <div id="trip-suggestions" class="trip-suggestions" role="group"
+             aria-labelledby="trip-suggestions-heading"></div>
+        <ul id="trip-search-results" hidden></ul>
+        <div class="trip-credential">
+          <p id="provider-credential-status" class="trip-status" role="status"
+             data-ui-label="readiness.chip_loading">Loading…</p>
+          <button id="trip-credential-action" type="button" class="credential-action"
+                  data-state="keyless" aria-haspopup="dialog"
+                  aria-controls="settings-dialog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <circle cx="8" cy="15" r="4" />
+              <path d="m11 12 9-9m-3 3 3 3m-6 0 3 3" />
+            </svg>
+            <span class="credential-action-label">Add a provider key</span>
+          </button>
+        </div>
+        <!-- The selected demo plan, named as the trip source (the same line the
+             native peeks carry), so Start never leaves its source implicit. -->
+        <p id="trip-source-line" class="trip-footnote" hidden></p>
+        <p id="trip-plan-route-reason" class="reason-strip"
+           data-ui-label="plan.missing_both">Enter an origin and a destination
+          to plan the route.</p>
+        <!-- The route card (docs/design/ReferenceApplicationBehavior.md §Route
+             card): destination title, distance · duration, the mode · strategy
+             caption, the ETA line and the maneuver note. The same card carries a
+             recorded demo route's honesty note. -->
+        <div id="trip-route-result" class="trip-route-result" hidden>
+          <p id="trip-route-title" class="trip-route-title"></p>
+          <p id="trip-route-facts" class="trip-route-facts"></p>
+          <p id="trip-route-directions" class="trip-route-directions"></p>
+          <p id="trip-route-eta" class="trip-route-eta"></p>
+          <p id="trip-route-maneuver" class="trip-route-maneuver"></p>
+          <p id="trip-route-note" class="trip-route-note"></p>
+        </div>
+        <!-- The trip card's ETA-distance line while a trip runs: the same
+             prefix and labelled remaining values the native drawers show. -->
+        <p id="trip-navigation-eta-line" class="then-line" hidden></p>
+        <!-- Directions (docs/design/DirectionsModesAndStrategy.md): the mode and
+             strategy every route plan carries. Both are two-value button
+             groups with the page's pressed-choice pattern; Car and Fastest
+             are the defaults. Strategy applies to automobile plans, so its
+             row is hidden while Walk is chosen. The control sits directly
+             under the plan action so the card's primary action stays above
+             the fold on a phone. -->
+        <div class="trip-actions">
+          <button id="trip-plan-route-control" type="button" disabled
+                  data-ui-label="plan.plan_route_action">Plan route</button>
+          <button id="follow-demo-start-control" type="button" class="primary"
+                  data-ui-label="route.start_action">Start simulated navigation</button>
+        </div>
+        <div id="trip-directions" class="trip-directions" role="group"
+             aria-label="Directions">
+          <div class="trip-direction-row">
+            <span class="trip-directions-label" id="directions-mode-label">Mode</span>
+            <div id="directions-mode-controls" class="trip-direction-choices"
+                 role="group" aria-labelledby="directions-mode-label">
+              <button id="directions-mode-car" type="button"
+                      aria-pressed="true">Car</button>
+              <button id="directions-mode-walk" type="button"
+                      aria-pressed="false">Walk</button>
+            </div>
+          </div>
+          <div id="directions-strategy-row" class="trip-direction-row">
+            <span class="trip-directions-label"
+                  id="directions-strategy-label">Strategy</span>
+            <div id="directions-strategy-controls" class="trip-direction-choices"
+                 role="group" aria-labelledby="directions-strategy-label">
+              <button id="directions-strategy-fastest" type="button"
+                      aria-pressed="true">Fastest</button>
+              <button id="directions-strategy-shortest" type="button"
+                      aria-pressed="false">Shortest</button>
+            </div>
+          </div>
+        </div>
+        <div id="follow-demo-playback" class="trip-playback" role="group" hidden>
+          <span class="trip-playback-label" data-ui-label="navigation.speed_label">Speed</span>
+          <div id="follow-demo-speed-controls" class="trip-speed-controls" role="group"></div>
+          <button id="follow-demo-pause-control" type="button"
+                  data-ui-label="navigation.pause_action">Pause</button>
+          <div id="follow-demo-seek-row" class="trip-seek">
+            <label class="trip-playback-label" for="follow-demo-seek-control"
+                   data-ui-label="navigation.seek_label">Seek</label>
+            <input id="follow-demo-seek-control" type="range" min="0" max="0"
+                   step="any" value="0" />
+          </div>
+        </div>
+        <p id="follow-demo-live-line" class="trip-footnote">The recorded Capitol Park
+          &harr; Tower Bridge route drives the follow camera.</p>
+      </section>
+
+      <details id="advanced-panel" class="control-group">
+        <summary>Advanced</summary>
+        <div id="advanced-content">
+
+<section class="control-group" id="camera-controls">
+        <h2 class="group-label" data-ui-label="camera.presets_heading">Camera presets</h2>
+        <label>Zoom <span class="value-line"><span id="zoom-value"></span><span>0–20</span></span>
+          <input id="zoom-control" type="range" min="0" max="20" step="0.1" value="14" aria-label="Zoom level" />
+        </label>
+        <label>Bearing <span class="value-line"><span id="bearing-value"></span><span>0–360°</span></span>
+          <input id="bearing-control" type="range" min="0" max="360" step="1" value="0" aria-label="Bearing degrees" />
+        </label>
+        <label>Pitch <span class="value-line"><span id="pitch-value"></span><span>0–60°</span></span>
+          <input id="pitch-control" type="range" min="0" max="60" step="1" value="0" aria-label="Pitch degrees" />
+        </label>
+        <div id="camera-preset-controls" role="group" aria-label="Camera presets"></div>
+      </section>
+
+<section class="control-group" id="debug-controls">
+        <h2 class="group-label">Debug</h2>
+        <label class="toggle-row">
+          <input id="overlay-control" type="checkbox" aria-label="Tile grid overlay" />
+          tile grid overlay (debug)
+        </label>
+        <label class="toggle-row">
+          <input id="renderer-readout-control" type="checkbox"
+                 aria-label="Show renderer readout" />
+          Show renderer readout
+        </label>
+      </section>
+
+<section class="control-group" id="offline-maps-controls" aria-describedby="offline-maps-status">
+        <h2 class="group-label" data-ui-label="offline.heading">Offline maps</h2>
+        <p class="reason-strip">Plan over the committed routing graph the browser
+          loads from bytes; no provider and no network round trip.</p>
+        <button id="offline-route-control" type="button" class="primary"
+                data-ui-label="offline.plan_route_action">Plan offline route</button>
+        <div id="offline-route-result" class="trip-route-result" hidden>
+          <p><strong data-ui-label="offline.recorded_graph_route_title">Offline demo route</strong>
+            <span id="offline-route-facts"></span></p>
+          <p class="trip-footnote"
+             data-ui-label="offline.recorded_graph_note">Planned offline from a recorded test graph, not live data.</p>
+        </div>
+        <p id="offline-maps-status" class="reason-strip" role="status" hidden></p>
+      </section>
+
+<details id="navigation-demo-panel" class="control-group" aria-describedby="navigation-demo-reason">
+        <summary>Simulated navigation</summary>
+        <p id="navigation-demo-reason" class="reason-strip"></p>
+        <div id="navigation-demo-card">
+          <p class="navigation-phase">Phase <span id="navigation-phase-value" class="navigation-chip"></span></p>
+          <button id="navigation-voice-control" type="button"
+                  aria-pressed="false"
+                  data-ui-label="navigation.voice_toggle">Voice guidance</button>
+          <!-- The drawer's one ETA-distance line (§7.2): the same prefix and
+               labelled remaining values the native drawers show. -->
+          <p id="navigation-eta-line" class="then-line"><span
+               data-ui-label="navigation.eta_prefix">ETA</span>:
+            <span data-ui-label="navigation.eta_distance_label">Distance remaining</span>
+            <span id="navigation-eta-distance-value">—</span> ·
+            <span data-ui-label="navigation.eta_duration_label">Duration remaining</span>
+            <span id="navigation-eta-duration-value">—</span></p>
+          <p id="navigation-demo-preview-notice" class="reason-strip"></p>
+        </div>
+      </details>
+
+<section class="control-group" id="diagnostics-controls">
+        <h2 class="group-label" data-ui-label="diagnostics.title">Diagnostics</h2>
+        <!-- Diagnostics are opt-in (docs/design/ReferenceApplicationBehavior.md
+             §Diagnostics policy): opening this pane starts the one bounded
+             stream at Info; Show debug events lowers it to Debug for the rest of
+             the session. Nothing is subscribed while the pane stays closed. -->
+        <p id="diagnostics-stream-note" class="trip-footnote"
+           data-ui-label="diagnostics.stream_scope_note">Debug detail stays on
+          until the app restarts.</p>
+        <div class="diagnostics-actions">
+          <label class="toggle-row" for="diagnostics-debug-toggle">
+            <input id="diagnostics-debug-toggle" type="checkbox" />
+            <span id="diagnostics-debug-events-label"
+                  data-ui-label="diagnostics.show_debug_events">Show debug events</span>
+          </label>
+          <button id="diagnostics-clear-control" type="button"
+                  data-ui-label="diagnostics.clear_action">Clear</button>
+          <button id="diagnostics-refresh-control" type="button">Refresh recent SDK events</button>
+          <button id="diagnostics-close-control" type="button">Close diagnostics</button>
+        </div>
+        <p id="performance-strip" class="reason-strip" hidden></p>
+        <pre id="diagnostics-facts-lines"></pre>
+        <pre id="diagnostics-event-lines" aria-live="off"
+             data-ui-label="diagnostics.no_events">No SDK events recorded yet.</pre>
+      </section>
+      <p id="control-hint">Drag to pan, scroll to zoom. Scenes and camera presets
+        come from the shared demo content.</p>
+        </div>
+      </details>
+    </aside>
+    <!-- Settings (M13/M15): appearance and the runtime provider credentials,
+         which live off the map panel behind one gear control. A native modal
+         dialog carries the focus trap, Escape close and backdrop itself. -->
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <div class="settings-sheet">
+        <header class="settings-header">
+          <h2 id="settings-title">Settings</h2>
+          <button id="settings-close-control" type="button"
+                  aria-label="Close" data-ui-label="settings.close_action"
+                  data-ui-label-attribute="aria-label">&times;</button>
+        </header>
+        <div class="settings-body">
+          <section class="settings-section" id="provider-credentials-panel"
+                   aria-labelledby="provider-credentials-title">
+            <h3 class="settings-section-title" id="provider-credentials-title">Provider credentials</h3>
+            <p class="settings-note">A key unlocks live search, routing and map data.
+              If you enter one it stays in memory for this session; it is written to this
+              browser only when you choose to remember it.</p>
+            <div id="provider-credential-rows"></div>
+            <label class="toggle-row settings-toggle" for="remember-provider-credential">
+              <input id="remember-provider-credential" type="checkbox" />
+              Remember keys on this device
+            </label>
+            <p id="settings-credentials-status" class="settings-note" role="status" hidden></p>
+            <div class="settings-probe">
+              <h4 class="settings-subsection-title">Live connection check</h4>
+              <p class="settings-note">Confirm an applied key by fetching one recorded
+                map tile. This is optional.</p>
+              <button id="provider-tile-control" type="button" class="quiet">Check live connection</button>
+              <p id="provider-tile-result" class="reason-strip"></p>
+              <canvas id="provider-tile-canvas" width="128" height="128" hidden
+                      aria-label="Fetched tile preview"></canvas>
+            </div>
+          </section>
+          <!-- Provider capabilities (docs/design/ReferenceApplicationBehavior.md
+               §Provider selection, descriptors and endpoints): one row per
+               capability the registry offers on this platform. The row and every
+               picker entry compose "{display name} · {credential state}", both
+               read from platform/providers.json, so no vendor is named here. -->
+          <section class="settings-section" id="capability-providers-panel"
+                   aria-labelledby="capability-providers-title"
+                   aria-describedby="capability-provider-status" hidden>
+            <h3 class="settings-section-title" id="capability-providers-title">Provider capabilities</h3>
+            <p class="settings-note">Each capability can be served by a different
+              provider. The row names the serving provider and its credential state.</p>
+            <div id="capability-provider-controls"></div>
+            <p id="capability-provider-status" class="reason-strip" role="status" hidden></p>
+          </section>
+          <section class="settings-section" id="location-controls"
+                   aria-describedby="device-location-status">
+            <h3 class="settings-section-title">Location</h3>
+            <p class="settings-note">Device location and the map's layers live
+              on the map itself, in the layers control above the attribution
+              notice.</p>
+            <!-- One choice, one control: the device-location status and Stop
+                 action live in the map layers panel, so this row is a pointer
+                 there rather than a second copy of the same control. -->
+            <button id="device-location-control" type="button" class="quiet">Open map layers for device location</button>
+            <!-- Device-driven navigation (M33): the same location source then
+                 drives the planned route's guidance instead of the recorded
+                 trace, so the banner, ETA and camera follow real fixes. -->
+            <button id="device-navigation-control" type="button" class="quiet"
+                    aria-pressed="false">Navigate from my location</button>
+            <p id="device-location-detail" class="reason-strip" role="status" hidden></p>
+          </section>
+          <section class="settings-section" id="appearance-controls">
+            <h3 class="settings-section-title" data-ui-label="theme.heading">Theme</h3>
+            <button id="theme-toggle-control" type="button" aria-live="polite">Switch to light theme</button>
+            <!-- The remembered-choices row: the demo's own preferences live
+                 in one versioned record, separate from the provider-key store
+                 above, so resetting them never forgets a remembered key. -->
+            <div class="settings-probe">
+              <h4 class="settings-subsection-title">Remembered choices</h4>
+              <p class="settings-note">This demo remembers your theme, base map,
+                demo plan and scene, camera preset, speed and last search fields
+                in this browser.</p>
+              <button id="reset-remembered-choices-control" type="button" class="quiet">
+                Reset remembered choices
+              </button>
+              <p id="remembered-choices-status" class="settings-note" role="status" hidden></p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
+    <div id="map-control-cluster" role="group" aria-label="Map control cluster">
+      <button id="compass-control" class="map-control-button" type="button" hidden
+              aria-label="Ease the camera north up"><span id="compass-north-letter">N</span></button>
+      <button id="zoom-in-control" class="map-control-button" type="button"
+              aria-label="Zoom in one map-control step">+</button>
+      <button id="zoom-out-control" class="map-control-button" type="button"
+              aria-label="Zoom out one map-control step">−</button>
+      <button id="my-location-control" class="map-control-button" type="button"
+              aria-label="Center on my location">&#9679;</button>
+      <button id="plane-toggle-control" class="map-control-button" type="button"
+              aria-label="Toggle the 2D and 3D camera planes"
+              aria-pressed="false">2D</button>
+    </div>
+    <!-- The map's bottom-start control column (§1/§4.2): the error strip, the
+         status line and the scale bar. One column keeps the floating lines
+         from colliding. -->
+    <div id="bottom-start-dock">
+      <p id="error-report" role="alert" hidden></p>
+      <p id="status-line" data-readiness="loading" aria-live="polite"
+         data-ui-label="readiness.chip_loading">Loading…</p>
+      <div id="scale-bar-overlay" hidden>
+        <span id="scale-bar-label-text"></span>
+        <div class="scale-bar-line" id="scale-bar-line"></div>
+      </div>
+    </div>
+    <!-- The bottom-end attribution control (§1/§4.2): a small info button at
+         the map's end edge, clear of the scale bar and the search dock; its
+         panel opens upward, right-aligned, at a compact width. -->
+    <div id="bottom-end-dock">
+      <!-- The on-map layer control: a round button docked directly above the
+           attribution notice on the map's end edge. Its panel carries the
+           base map, the traffic layer, the demo overlay scenes and the device
+           location status (docs/design/MapControlsAndTrafficLayer.md). -->
+      <div id="map-layers-control-container">
+        <section id="map-layers-panel" hidden aria-label="Map layers">
+          <h2 class="map-layers-panel-title">Map layers</h2>
+          <section class="map-layers-section" aria-labelledby="map-layers-base-heading">
+            <h3 id="map-layers-base-heading">Base map</h3>
+            <div id="map-layer-base-rows" role="group" aria-label="Base map"></div>
+            <p id="map-layers-base-status" class="reason-strip" role="status" hidden></p>
+          </section>
+          <section class="map-layers-section" aria-labelledby="map-layers-traffic-heading">
+            <h3 id="map-layers-traffic-heading">Traffic</h3>
+            <div id="map-layer-traffic-row"></div>
+          </section>
+          <section class="map-layers-section" aria-labelledby="map-layers-overlays-heading">
+            <h3 id="map-layers-overlays-heading">Overlays</h3>
+            <p id="map-layers-scenes-reason" class="reason-strip" hidden></p>
+            <div id="map-layer-scene-rows"></div>
+            <button id="map-layers-clear-scenes" type="button" class="quiet"
+                    data-ui-label="overlays.clear_action">Clear overlays</button>
+          </section>
+          <section class="map-layers-section" aria-labelledby="map-layers-location-heading">
+            <h3 id="map-layers-location-heading">Device location</h3>
+            <div class="map-layers-device-location-row">
+              <p id="device-location-status" role="status">Off</p>
+              <button id="device-location-stop" type="button" class="quiet" hidden>Stop</button>
+            </div>
+          </section>
+          <p id="map-layers-status" class="reason-strip" role="status" hidden></p>
+        </section>
+        <div id="map-floating-control-row">
+          <!-- The developer console sits beside the layers control on the
+               map's end edge. Its dot lights when a warning or error reaches
+               the SDK stream while the panel is closed. -->
+          <button id="provider-console-control" type="button"
+                  aria-label="Provider console" aria-haspopup="dialog"
+                  aria-controls="provider-console-panel" aria-expanded="false"
+                  title="Provider console">
+            <span aria-hidden="true">&#9776;</span>
+            <span id="provider-console-alert-dot"
+                  class="provider-console-alert-dot" hidden
+                  aria-hidden="true"></span>
+          </button>
+          <button id="map-layers-control" type="button"
+                  aria-expanded="false" aria-controls="map-layers-panel"
+                  aria-label="Map layers" aria-haspopup="dialog">
+            <span aria-hidden="true">&#9638;</span>
+            <span class="map-layers-active-dot" hidden></span>
+          </button>
+        </div>
+      </div>
+      <!-- The provider console: the scrubbed SDK event stream newest first,
+           with one row per provider request. It reads the typed
+           provider-request facts on the diagnostics stream, never the
+           composed message line. The detail view repeats those typed fields
+           and reads the live cache counters; neither is ever written back to
+           the stream. -->
+      <section id="provider-console-panel" hidden aria-label="Provider console">
+        <div class="provider-console-header">
+          <h2 class="provider-console-title">Provider console</h2>
+          <button id="provider-console-close" type="button"
+                  aria-label="Close provider console">&times;</button>
+        </div>
+        <div class="provider-console-list-view">
+          <div class="provider-console-filters">
+            <label>Level
+              <select id="provider-console-level-filter">
+                <option value="info">Info</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+              </select>
+            </label>
+            <label>Provider
+              <select id="provider-console-provider-filter">
+                <option value="">All</option>
+              </select>
+            </label>
+            <label>Outcome
+              <select id="provider-console-outcome-filter">
+                <option value="">All</option>
+                <option value="success">Success</option>
+                <option value="redirect">Redirect</option>
+                <option value="client-error">Client error</option>
+                <option value="server-error">Server error</option>
+                <option value="transport-failure">Transport failure</option>
+                <option value="unclassified">Unclassified</option>
+              </select>
+            </label>
+          </div>
+          <p id="provider-console-registration-note" class="provider-console-note" hidden>
+            No provider is registered. Add one in Settings, then search for a
+            place, plan a route or load a tile.
+          </p>
+          <label class="provider-console-capture-row">
+            <input id="provider-console-capture" type="checkbox">
+            Capture response excerpts
+          </label>
+          <!-- The session's cache counters: the tile pipeline's counts from the
+               last settled frame beside the traffic cache's, both read from the
+               SDK's own readbacks. Read-only; never a credential or URL. -->
+          <dl class="provider-console-cache-counters" aria-label="Cache counters">
+            <dt>Tile cache</dt>
+            <dd id="provider-console-tile-cache-counters">No GPU frame settled yet.</dd>
+            <dt>Traffic cache</dt>
+            <dd id="provider-console-traffic-cache-counters">
+              Unavailable — no traffic provider is registered.
+            </dd>
+          </dl>
+          <ul id="provider-console-rows" class="provider-console-rows"></ul>
+          <p id="provider-console-empty" class="provider-console-empty">
+            No provider request yet. Search, plan a route or load a tile to see
+            one.
+          </p>
+          <div class="provider-console-actions">
+            <button id="provider-console-copy" type="button">Copy</button>
+            <button id="provider-console-export" type="button">Export</button>
+          </div>
+        </div>
+        <!-- One event's typed detail. The provider fields come from the
+             structured trace on the event; the cache rows are live reads of
+             the tile source status and the traffic cache statistics. -->
+        <section id="provider-console-detail" class="provider-console-detail"
+                 hidden aria-label="Event detail">
+          <div class="provider-console-detail-header">
+            <h3 id="provider-console-detail-title" class="provider-console-detail-title">
+              Event detail
+            </h3>
+            <button id="provider-console-detail-close" type="button">Back</button>
+          </div>
+          <dl class="provider-console-detail-fields">
+            <dt>Severity</dt>
+            <dd id="provider-console-detail-severity"></dd>
+            <dt>Target</dt>
+            <dd id="provider-console-detail-target"></dd>
+            <dt>Message</dt>
+            <dd id="provider-console-detail-message"></dd>
+          </dl>
+          <dl id="provider-console-detail-provider-fields"
+              class="provider-console-detail-fields">
+            <dt>Provider</dt>
+            <dd id="provider-console-detail-provider"></dd>
+            <dt>Provider key</dt>
+            <dd id="provider-console-detail-provider-key"></dd>
+            <dt>Contract</dt>
+            <dd id="provider-console-detail-contract"></dd>
+            <dt>Method</dt>
+            <dd id="provider-console-detail-method"></dd>
+            <dt>Redacted path</dt>
+            <dd id="provider-console-detail-path"></dd>
+            <dt>Status class</dt>
+            <dd id="provider-console-detail-status"></dd>
+            <dt>Duration</dt>
+            <dd id="provider-console-detail-duration"></dd>
+            <dt>Outcome</dt>
+            <dd id="provider-console-detail-outcome"></dd>
+            <dt>Response bytes</dt>
+            <dd id="provider-console-detail-bytes"></dd>
+            <dt id="provider-console-detail-excerpt-label">Response excerpt</dt>
+            <dd id="provider-console-detail-excerpt"></dd>
+          </dl>
+          <h4 class="provider-console-detail-title">Cache</h4>
+          <dl class="provider-console-detail-fields" aria-label="Cache readback">
+            <dt>Tile cache</dt>
+            <dd id="provider-console-detail-tile-cache">No GPU frame settled yet.</dd>
+            <dt>Traffic cache</dt>
+            <dd id="provider-console-detail-traffic-cache">
+              Unavailable — no traffic provider is registered.
+            </dd>
+          </dl>
+        </section>
+      </section>
+      <div id="attribution-control">
+        <section id="attribution-panel" hidden aria-label="Map attribution and terms">
+          <h2 class="attribution-panel-title">Map attribution and terms</h2>
+          <!-- The id stays on the element carrying the compliance text: the
+               Playwright suites read it (docs/ReferenceAppUX.md §10.1). -->
+          <p id="attribution-notice" aria-live="polite" aria-atomic="true"></p>
+        </section>
+        <button id="attribution-info-control" type="button"
+                aria-label="Map attribution and terms" aria-expanded="false"
+                aria-controls="attribution-panel">&#9432;</button>
+      </div>
+    </div>
+    <div id="readout" hidden></div>
+    <p id="map-keyboard-instructions" class="visually-hidden">
+      Interactive map. Use the arrow keys to pan, plus and minus to zoom,
+      Shift with the left and right arrow keys to rotate, Shift with the up
+      and down arrow keys to tilt, and Home to reset the view north and flat.
+      Press Escape to close an open panel.
+    </p>
+    <p id="map-status" class="visually-hidden" role="status" aria-live="polite"></p>
+    <p id="harness-status" class="visually-hidden" aria-hidden="true"
+       data-ui-label="readiness.chip_loading">Loading…</p>
+    <script type="module" src="./main.mjs"></script>
+    <script type="module" src="./playground.mjs"></script>
+  </body>
+</html>

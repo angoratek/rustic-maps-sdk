@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.49492, 38.57693] },
+      "properties": {
+        "osm_id": 101,
+        "osm_type": "W",
+        "type": "city",
+        "name": "Capitol Park",
+        "city": "Sacramento",
+        "state": "California",
+        "country": "United States"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.507447, 38.578739] },
+      "properties": {
+        "osm_id": 102,
+        "osm_type": "W",
+        "type": "street",
+        "name": "Tower Bridge",
+        "city": "Sacramento",
+        "state": "California",
+        "country": "United States"
+      }
+    }
+  ]
+}

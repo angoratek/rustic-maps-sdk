@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Regenerate docs/THIRD_PARTY_NOTICES.md from the workspace dependency graph.
+#
+# Thin wrapper around scripts/generate-third-party-notices.py so the generator
+# runs with `python3 -I` (isolated mode: no cwd/PYTHONPATH module shadowing),
+# matching the repo's other `scripts/*.sh` entry points.
+#
+# No network access: the script reads `cargo metadata --offline` plus the
+# vendored crates already present in ~/.cargo/registry. Re-run and commit the
+# refreshed notices file whenever any Cargo.toml / Cargo.lock file changes.
+set -euo pipefail
+
+readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly GENERATOR_SCRIPT="${REPO_ROOT}/scripts/generate-third-party-notices.py"
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "error: required tool 'python3' was not found on PATH" >&2
+    exit 1
+fi
+
+exec python3 -I "${GENERATOR_SCRIPT}"

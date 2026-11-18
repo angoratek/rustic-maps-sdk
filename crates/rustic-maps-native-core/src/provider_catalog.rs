@@ -1,0 +1,862 @@
+//! The provider catalog: which provider keys this build carries, the
+//! capabilities each serves, and the construction call for each.
+//!
+//! The registry in `rustic-maps-core` resolves calls per capability, so an
+//! application can serve one capability from one provider and the next from
+//! another. This module is the seam that makes that choice reachable from an
+//! application: a key names a provider the binary was built with, and
+//! [`ProviderCatalogEntry::install`] registers exactly the requested
+//! capability, leaving every other capability's slot untouched.
+//!
+//! A provider's name appears here, in its own crate, in its sample-data
+//! directory and in the shared registry descriptor — nowhere else. Adding a
+//! provider is a crate, a descriptor, and one entry in [`PROVIDER_CATALOG`].
+
+use crate::MapSdk;
+use crate::error::SdkError;
+use crate::records::{ProviderContract, ProviderRegistration};
+use everymap_providers_mapquest::{
+    MapQuestAutocompleteProvider, MapQuestClient, MapQuestDistanceMatrix, MapQuestGeocoder,
+    MapQuestPlaceSearchProvider, MapQuestProviderConfiguration, MapQuestRasterTileProvider,
+    MapQuestRouter, MapQuestTrafficProvider,
+};
+use rustic_maps_core::everymap_bridge::{
+    EveryMapDistanceMatrixProvider, EveryMapGeocoder, EveryMapPlaceSearchProvider,
+    EveryMapRasterTileProvider, EveryMapRouter, EveryMapTrafficProvider,
+    EveryMapVectorTileProvider,
+};
+use rustic_maps_core::provider_observation::EveryMapRequestObserver;
+use std::sync::Arc;
+
+/// The MapQuest terms' imagery-caching ceiling: raster-tile responses may be
+/// stored for up to 30 calendar days.
+pub(crate) const MAPQUEST_RASTER_TILE_CACHE_CEILING_SECONDS: u64 = 30 * 24 * 60 * 60;
+
+/// The deepest zoom level the MapQuest Tiles API serves.
+pub(crate) const MAPQUEST_RASTER_TILE_MAXIMUM_ZOOM_LEVEL: u8 = 20;
+
+/// One provider this build can construct, keyed by its stable registry key.
+pub(crate) struct ProviderCatalogEntry {
+    /// The provider's stable key, matching its shared-registry descriptor.
+    pub(crate) provider_key: &'static str,
+    /// The provider's display name for a settings surface.
+    pub(crate) display_name: &'static str,
+    /// Whether the provider refuses to serve without a credential.
+    pub(crate) credential_required: bool,
+    /// The capabilities [`Self::install`] can register.
+    pub(crate) served_contracts: &'static [ProviderContract],
+    /// Registers the provider implementation for one capability on the SDK.
+    pub(crate) install: fn(&MapSdk, ProviderContract, &str) -> Result<(), SdkError>,
+    /// The provider's declared raster-tile caching-terms ceiling in seconds,
+    /// or `None` when the provider declares no ceiling or serves no raster
+    /// tiles. The tile-cache settings surface clamps every requested
+    /// time-to-live through it. The wasm build installs no disk tile cache,
+    /// so it never reads the value.
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
+    pub(crate) raster_tile_cache_ceiling_seconds: Option<u64>,
+    /// The deepest raster-tile zoom level the provider declares it serves, or
+    /// `None` when the provider declares no maximum. An installed tile cache
+    /// carries it into the tile-pack manager, which refuses a region deeper
+    /// than the ceiling before downloading anything. The wasm build installs
+    /// no disk tile cache, so it never reads the value.
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
+    pub(crate) raster_tile_maximum_zoom_level: Option<u8>,
+}
+
+/// Every provider this build can construct.
+///
+/// The order is the order a settings surface lists keys in when it offers a
+/// choice: the full-service provider first, then the single-capability
+/// providers.
+pub(crate) const PROVIDER_CATALOG: &[ProviderCatalogEntry] = &[
+    ProviderCatalogEntry {
+        provider_key: "mapquest",
+        display_name: "MapQuest",
+        credential_required: true,
+        served_contracts: &[
+            ProviderContract::Geocoding,
+            ProviderContract::Routing,
+            ProviderContract::DistanceMatrix,
+            ProviderContract::PlaceSearch,
+            ProviderContract::TrafficIncidents,
+            ProviderContract::TrafficFlow,
+            ProviderContract::RasterTiles,
+        ],
+        install: install_mapquest_contract,
+        raster_tile_cache_ceiling_seconds: Some(MAPQUEST_RASTER_TILE_CACHE_CEILING_SECONDS),
+        raster_tile_maximum_zoom_level: Some(MAPQUEST_RASTER_TILE_MAXIMUM_ZOOM_LEVEL),
+    },
+    ProviderCatalogEntry {
+        provider_key: "here",
+        display_name: "HERE",
+        credential_required: true,
+        served_contracts: &[
+            ProviderContract::Geocoding,
+            ProviderContract::Routing,
+            ProviderContract::TrafficIncidents,
+            ProviderContract::TrafficFlow,
+            ProviderContract::VectorTiles,
+        ],
+        install: install_here_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+    ProviderCatalogEntry {
+        provider_key: "google",
+        display_name: "Google Maps",
+        credential_required: true,
+        served_contracts: &[ProviderContract::Geocoding, ProviderContract::Routing],
+        install: install_google_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+    ProviderCatalogEntry {
+        provider_key: "tomtom",
+        display_name: "TomTom",
+        credential_required: true,
+        served_contracts: &[
+            ProviderContract::Geocoding,
+            ProviderContract::Routing,
+            ProviderContract::TrafficIncidents,
+            ProviderContract::TrafficFlow,
+            ProviderContract::RasterTiles,
+        ],
+        install: install_tomtom_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+    ProviderCatalogEntry {
+        provider_key: "mapbox",
+        display_name: "Mapbox",
+        credential_required: true,
+        served_contracts: &[
+            ProviderContract::Geocoding,
+            ProviderContract::Routing,
+            ProviderContract::VectorTiles,
+        ],
+        install: install_mapbox_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+    ProviderCatalogEntry {
+        provider_key: "radar",
+        display_name: "Radar",
+        credential_required: true,
+        served_contracts: &[ProviderContract::Geocoding, ProviderContract::Routing],
+        install: install_radar_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+    ProviderCatalogEntry {
+        provider_key: "osrm",
+        display_name: "OSRM",
+        credential_required: false,
+        served_contracts: &[ProviderContract::Routing],
+        install: install_osrm_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+    ProviderCatalogEntry {
+        provider_key: "photon",
+        display_name: "Photon",
+        credential_required: false,
+        served_contracts: &[ProviderContract::Geocoding, ProviderContract::PlaceSearch],
+        install: install_photon_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+    ProviderCatalogEntry {
+        provider_key: "valhalla",
+        display_name: "Valhalla",
+        credential_required: false,
+        served_contracts: &[ProviderContract::Routing],
+        install: install_valhalla_contract,
+        raster_tile_cache_ceiling_seconds: None,
+        raster_tile_maximum_zoom_level: None,
+    },
+];
+
+/// The credential a keyless provider reads as an optional deployment address.
+///
+/// A self-hosted routing engine has no key: the application supplies the base
+/// URL of the deployment it uses, or leaves it empty to reach the crate's
+/// documented local default.
+fn deployment_base_url_or_default(credential: &str, default_base_url: &str) -> String {
+    let trimmed_credential = credential.trim();
+    if trimmed_credential.is_empty() {
+        default_base_url.to_string()
+    } else {
+        trimmed_credential.to_string()
+    }
+}
+
+/// Refuses a deployment address the provider layer would only reject at
+/// request time.
+///
+/// A keyless routing provider's constructor is infallible, so the
+/// registration validates the address itself: an address that is not an
+/// http(s) URL with a host never reaches the registry.
+fn validated_deployment_base_url(
+    credential: &str,
+    default_base_url: &str,
+) -> Result<String, SdkError> {
+    let base_url = deployment_base_url_or_default(credential, default_base_url);
+    let parsed = url::Url::parse(&base_url).map_err(|error| SdkError::ProviderRequestRejected {
+        detail: format!("the deployment address {base_url} is not a usable URL: {error}"),
+    })?;
+    if parsed.host_str().is_none() || !matches!(parsed.scheme(), "http" | "https") {
+        return Err(SdkError::ProviderRequestRejected {
+            detail: format!(
+                "the deployment address {base_url} must be an http or https URL with a host"
+            ),
+        });
+    }
+    Ok(base_url)
+}
+
+/// Registers the OSRM routing implementation for its one capability.
+///
+/// The credential, when non-empty, is the deployment's base URL; an empty one
+/// targets the crate's documented local default. A malformed URL is refused
+/// by the provider crate before anything is registered.
+fn install_osrm_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    if contract != ProviderContract::Routing {
+        return Err(SdkError::ProviderNotConfigured {
+            contract_name: contract_name_of(contract),
+        });
+    }
+    let configuration = everymap_providers_osrm::OsrmProviderConfiguration {
+        base_url: validated_deployment_base_url(
+            credential,
+            everymap_providers_osrm::DEFAULT_OSRM_BASE_URL,
+        )?,
+        ..Default::default()
+    };
+    let provider = everymap_providers_osrm::OsrmRouter::with_observer(
+        configuration,
+        Arc::new(EveryMapRequestObserver::new(
+            &contract_name_of(contract),
+            "osrm",
+        )),
+    );
+    map_sdk.register_routing_provider(Arc::new(EveryMapRouter::new(Arc::new(provider))));
+    Ok(())
+}
+
+/// Registers the OSRM routing implementation for every capability it serves.
+/// Registers the Photon geocoding and place-search implementations for one
+/// capability each.
+///
+/// The credential, when non-empty, is the deployment's base URL; an empty one
+/// targets the public Photon instance the crate documents. A malformed URL is
+/// refused by the provider crate before anything is registered.
+fn install_photon_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    let serves_contract = matches!(
+        contract,
+        ProviderContract::Geocoding | ProviderContract::PlaceSearch
+    );
+    if !serves_contract {
+        return Err(SdkError::ProviderNotConfigured {
+            contract_name: contract_name_of(contract),
+        });
+    }
+    let configuration = everymap_providers_photon::PhotonProviderConfiguration {
+        base_url: deployment_base_url_or_default(
+            credential,
+            everymap_providers_photon::DEFAULT_PHOTON_BASE_URL,
+        ),
+        ..Default::default()
+    };
+    let mut photon_client = everymap_providers_photon::PhotonClient::new(configuration);
+    photon_client.set_observer(Arc::new(EveryMapRequestObserver::new(
+        &contract_name_of(contract),
+        "photon",
+    )));
+    let client = Arc::new(photon_client);
+    match contract {
+        ProviderContract::Geocoding => {
+            map_sdk.register_geocoding_provider(Arc::new(EveryMapGeocoder::new(Arc::new(
+                everymap_providers_photon::PhotonGeocoder::new(Arc::clone(&client)),
+            ))));
+        }
+        ProviderContract::PlaceSearch => {
+            map_sdk.register_search_place_provider(Arc::new(EveryMapPlaceSearchProvider::new(
+                Arc::new(everymap_providers_photon::PhotonPlaceSearchProvider::new(
+                    Arc::clone(&client),
+                )),
+                Arc::new(everymap_providers_photon::PhotonAutocompleteProvider::new(
+                    client,
+                )),
+            )));
+        }
+        _ => {
+            return Err(SdkError::ProviderNotConfigured {
+                contract_name: contract_name_of(contract),
+            });
+        }
+    }
+    Ok(())
+}
+
+/// Registers the Photon implementations for every capability it serves.
+/// Registers the Valhalla routing implementation for its one capability.
+///
+/// The credential, when non-empty, is the deployment's base URL; an empty one
+/// targets the crate's documented local default.
+fn install_valhalla_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    if contract != ProviderContract::Routing {
+        return Err(SdkError::ProviderNotConfigured {
+            contract_name: contract_name_of(contract),
+        });
+    }
+    let configuration = everymap_providers_valhalla::ValhallaProviderConfiguration {
+        base_url: validated_deployment_base_url(
+            credential,
+            everymap_providers_valhalla::DEFAULT_VALHALLA_BASE_URL,
+        )?,
+        ..Default::default()
+    };
+    let provider = everymap_providers_valhalla::ValhallaRouter::with_observer(
+        configuration,
+        Arc::new(EveryMapRequestObserver::new(
+            &contract_name_of(contract),
+            "valhalla",
+        )),
+    );
+    map_sdk.register_routing_provider(Arc::new(EveryMapRouter::new(Arc::new(provider))));
+    Ok(())
+}
+
+/// Registers the Valhalla routing implementation for every capability it
+/// serves.
+/// Finds the catalog entry for a provider key.
+pub(crate) fn catalog_entry_for_key(provider_key: &str) -> Option<&'static ProviderCatalogEntry> {
+    PROVIDER_CATALOG
+        .iter()
+        .find(|entry| entry.provider_key == provider_key)
+}
+
+/// Registers one capability from the provider set the shared client serves.
+///
+/// The client is constructed per call, so a credential change takes effect
+/// immediately and the previously serving provider stays in place.
+fn install_mapquest_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    register_mapquest_contract(
+        map_sdk,
+        contract,
+        mapquest_provider_client(credential, contract),
+    )
+}
+
+/// Registers every capability the provider set serves from one shared client,
+/// so the set keeps one rate limiter and one request pipeline.
+/// Builds the provider set's client for one credential and one capability.
+///
+/// Each capability gets its own client so its request observations carry the
+/// contract they served; the provider layer has no shared pacing state to
+/// lose by not sharing one.
+fn mapquest_provider_client(credential: &str, contract: ProviderContract) -> Arc<MapQuestClient> {
+    let mut client = MapQuestClient::new(MapQuestProviderConfiguration {
+        api_key: credential.to_string(),
+        ..MapQuestProviderConfiguration::default()
+    });
+    client.set_observer(Arc::new(EveryMapRequestObserver::new(
+        &contract_name_of(contract),
+        "mapquest",
+    )));
+    Arc::new(client)
+}
+
+/// Registers one capability of the provider set onto the SDK.
+fn register_mapquest_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    provider_client: Arc<MapQuestClient>,
+) -> Result<(), SdkError> {
+    match contract {
+        ProviderContract::Geocoding => {
+            map_sdk.register_geocoding_provider(Arc::new(EveryMapGeocoder::new(Arc::new(
+                MapQuestGeocoder::new(provider_client),
+            ))));
+            Ok(())
+        }
+        ProviderContract::Routing => {
+            map_sdk.register_routing_provider(Arc::new(EveryMapRouter::new(Arc::new(
+                MapQuestRouter::new(provider_client),
+            ))));
+            Ok(())
+        }
+        ProviderContract::DistanceMatrix => {
+            map_sdk.register_distance_matrix_provider(Arc::new(
+                EveryMapDistanceMatrixProvider::new(Arc::new(MapQuestDistanceMatrix::new(
+                    provider_client,
+                ))),
+            ));
+            Ok(())
+        }
+        ProviderContract::PlaceSearch => {
+            map_sdk.register_search_place_provider(Arc::new(EveryMapPlaceSearchProvider::new(
+                Arc::new(MapQuestPlaceSearchProvider::new(Arc::clone(
+                    &provider_client,
+                ))),
+                Arc::new(MapQuestAutocompleteProvider::new(provider_client)),
+            )));
+            Ok(())
+        }
+        ProviderContract::TrafficIncidents => {
+            map_sdk.register_traffic_incident_provider(Arc::new(EveryMapTrafficProvider::new(
+                Arc::new(MapQuestTrafficProvider::new(provider_client)),
+            )));
+            Ok(())
+        }
+        ProviderContract::TrafficFlow => {
+            map_sdk.register_traffic_flow_provider(Arc::new(EveryMapTrafficProvider::new(
+                Arc::new(MapQuestTrafficProvider::new(provider_client)),
+            )));
+            Ok(())
+        }
+        ProviderContract::RasterTiles => {
+            map_sdk.register_raster_tile_provider(Arc::new(EveryMapRasterTileProvider::new(
+                Arc::new(MapQuestRasterTileProvider::new(provider_client)),
+            )));
+            Ok(())
+        }
+        // The catalog's served-contract list gates every other capability
+        // before this call, so this arm is the compiler asking for totality
+        // rather than a reachable path.
+        ProviderContract::Elevation
+        | ProviderContract::VectorTiles
+        | ProviderContract::OfflineRouting => Err(SdkError::ProviderNotConfigured {
+            contract_name: contract_name_of(contract),
+        }),
+    }
+}
+
+/// The refusal a vendor answers for a contract it does not serve.
+fn contract_not_served(contract: ProviderContract) -> SdkError {
+    SdkError::ProviderNotConfigured {
+        contract_name: contract_name_of(contract),
+    }
+}
+
+/// Builds one vendor's implementations through the shared provider crate and
+/// registers the requested capability through the bridge.
+fn install_shared_vendor(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    provider_key: &str,
+    credential: &str,
+) -> Result<(), SdkError> {
+    let implementations = rustic_maps_providers::build_vendor(
+        provider_key,
+        credential,
+        None,
+        &contract_name_of(contract),
+    )
+    .ok_or_else(|| contract_not_served(contract))?;
+    install_vendor_contract(map_sdk, contract, &implementations)
+}
+
+/// Registers one capability of a vendor's implementation set on the SDK.
+fn install_vendor_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    implementations: &rustic_maps_providers::VendorImplementations,
+) -> Result<(), SdkError> {
+    match contract {
+        ProviderContract::Geocoding => {
+            let Some(geocoder) = implementations.geocoder.as_ref() else {
+                return Err(contract_not_served(contract));
+            };
+            map_sdk
+                .register_geocoding_provider(Arc::new(EveryMapGeocoder::new(Arc::clone(geocoder))));
+            Ok(())
+        }
+        ProviderContract::Routing => {
+            let Some(router) = implementations.router.as_ref() else {
+                return Err(contract_not_served(contract));
+            };
+            map_sdk.register_routing_provider(Arc::new(EveryMapRouter::new(Arc::clone(router))));
+            Ok(())
+        }
+        ProviderContract::TrafficIncidents => {
+            let Some(traffic) = implementations.traffic.as_ref() else {
+                return Err(contract_not_served(contract));
+            };
+            map_sdk.register_traffic_incident_provider(Arc::new(EveryMapTrafficProvider::new(
+                Arc::clone(traffic),
+            )));
+            Ok(())
+        }
+        ProviderContract::TrafficFlow => {
+            let Some(traffic) = implementations.traffic.as_ref() else {
+                return Err(contract_not_served(contract));
+            };
+            map_sdk.register_traffic_flow_provider(Arc::new(EveryMapTrafficProvider::new(
+                Arc::clone(traffic),
+            )));
+            Ok(())
+        }
+        ProviderContract::RasterTiles => {
+            let Some(raster_tiles) = implementations.raster_tiles.as_ref() else {
+                return Err(contract_not_served(contract));
+            };
+            map_sdk.register_raster_tile_provider(Arc::new(EveryMapRasterTileProvider::new(
+                Arc::clone(raster_tiles),
+            )));
+            Ok(())
+        }
+        ProviderContract::VectorTiles => {
+            let Some(vector_tiles) = implementations.vector_tiles.as_ref() else {
+                return Err(contract_not_served(contract));
+            };
+            map_sdk.register_vector_tile_provider(Arc::new(EveryMapVectorTileProvider::new(
+                Arc::clone(vector_tiles),
+            )));
+            if let Some(style_resources) = implementations.style_resources.as_ref() {
+                map_sdk.register_vector_tile_style_resources(
+                    Arc::clone(style_resources),
+                    implementations
+                        .style_resource_hosts
+                        .iter()
+                        .map(|host| host.to_string())
+                        .collect(),
+                );
+            }
+            Ok(())
+        }
+        ProviderContract::DistanceMatrix
+        | ProviderContract::PlaceSearch
+        | ProviderContract::Elevation
+        | ProviderContract::OfflineRouting => Err(contract_not_served(contract)),
+    }
+}
+
+fn install_here_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    install_shared_vendor(map_sdk, contract, "here", credential)
+}
+
+fn install_google_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    install_shared_vendor(map_sdk, contract, "google", credential)
+}
+
+fn install_tomtom_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    install_shared_vendor(map_sdk, contract, "tomtom", credential)
+}
+
+fn install_mapbox_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    install_shared_vendor(map_sdk, contract, "mapbox", credential)
+}
+
+fn install_radar_contract(
+    map_sdk: &MapSdk,
+    contract: ProviderContract,
+    credential: &str,
+) -> Result<(), SdkError> {
+    install_shared_vendor(map_sdk, contract, "radar", credential)
+}
+
+/// The name a capability reports in a not-configured detail.
+pub(crate) fn contract_name_of(contract: ProviderContract) -> String {
+    contract.to_core_contract().contract_name().to_string()
+}
+
+/// Builds one readback entry from the registry state and the recorded
+/// selection.
+pub(crate) fn registration_entry(
+    contract: ProviderContract,
+    selection: Option<&ProviderSelection>,
+    registry_configured: bool,
+) -> ProviderRegistration {
+    let registered = registry_configured || selection.is_some();
+    ProviderRegistration {
+        contract,
+        provider_key: selection
+            .map(|selection| selection.provider_key.clone())
+            .unwrap_or_default(),
+        display_name: selection
+            .map(|selection| selection.display_name.clone())
+            .unwrap_or_default(),
+        registered,
+    }
+}
+
+/// The provider an application chose for one capability, kept so the readback
+/// can name it: the registry itself answers only whether its slot is filled.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ProviderSelection {
+    /// The capability the selection applies to.
+    pub(crate) contract: ProviderContract,
+    /// The provider's stable key.
+    pub(crate) provider_key: String,
+    /// The provider's display name.
+    pub(crate) display_name: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAPQUEST_RASTER_TILE_MAXIMUM_ZOOM_LEVEL, PROVIDER_CATALOG, catalog_entry_for_key};
+
+    #[test]
+    fn the_catalog_declares_the_mapquest_raster_zoom_ceiling() {
+        let mapquest_entry =
+            catalog_entry_for_key("mapquest").expect("the full-service provider is catalogued");
+        assert_eq!(
+            mapquest_entry.raster_tile_maximum_zoom_level,
+            Some(MAPQUEST_RASTER_TILE_MAXIMUM_ZOOM_LEVEL),
+            "the credentialed provider's declared ceiling reaches the tile-pack manager"
+        );
+        assert_eq!(
+            mapquest_entry.raster_tile_maximum_zoom_level,
+            Some(20),
+            "the documented MapQuest Tiles API maximum is twenty"
+        );
+    }
+
+    #[test]
+    fn the_photon_entry_serves_geocoding_and_place_search_keylessly() {
+        let photon_entry =
+            catalog_entry_for_key("photon").expect("the Photon provider is catalogued");
+        assert!(!photon_entry.credential_required);
+        assert!(
+            photon_entry
+                .served_contracts
+                .contains(&crate::records::ProviderContract::Geocoding)
+        );
+        assert!(
+            photon_entry
+                .served_contracts
+                .contains(&crate::records::ProviderContract::PlaceSearch)
+        );
+        assert_eq!(photon_entry.raster_tile_maximum_zoom_level, None);
+    }
+
+    #[test]
+    fn catalog_entries_without_raster_tiles_declare_no_zoom_ceiling() {
+        for provider_key in ["osrm", "valhalla"] {
+            let catalog_entry = catalog_entry_for_key(provider_key)
+                .expect("the single-capability routing providers are catalogued");
+            assert_eq!(
+                catalog_entry.raster_tile_maximum_zoom_level, None,
+                "{provider_key} serves no raster tiles and declares no zoom ceiling"
+            );
+        }
+        assert_eq!(
+            PROVIDER_CATALOG
+                .iter()
+                .filter(|entry| entry.raster_tile_maximum_zoom_level.is_some())
+                .count(),
+            1,
+            "only the raster-serving provider declares a zoom ceiling"
+        );
+    }
+
+    #[test]
+    fn the_catalog_matches_the_shared_provider_table() {
+        for entry in PROVIDER_CATALOG {
+            let shared =
+                rustic_maps_providers::entry_for_key(entry.provider_key).unwrap_or_else(|| {
+                    panic!(
+                        "{} is missing from the shared provider table",
+                        entry.provider_key
+                    )
+                });
+            assert_eq!(entry.display_name, shared.display_name);
+            assert_eq!(entry.credential_required, shared.credential_required);
+            let mut catalog_contracts: Vec<&str> = entry
+                .served_contracts
+                .iter()
+                .map(|contract| contract.registry_name())
+                .collect();
+            let mut shared_contracts: Vec<&str> = shared
+                .served_contracts
+                .iter()
+                .map(|contract| contract.registry_name())
+                .collect();
+            catalog_contracts.sort_unstable();
+            shared_contracts.sort_unstable();
+            assert_eq!(
+                catalog_contracts, shared_contracts,
+                "{}",
+                entry.provider_key
+            );
+        }
+        for shared in rustic_maps_providers::PROVIDER_ENTRIES {
+            assert!(
+                catalog_entry_for_key(shared.provider_key).is_some(),
+                "{} is not catalogued by this build",
+                shared.provider_key
+            );
+        }
+    }
+
+    #[test]
+    fn every_credentialed_vendor_serves_geocoding_and_routing() {
+        for provider_key in ["mapquest", "here", "google", "tomtom", "mapbox", "radar"] {
+            let catalog_entry = catalog_entry_for_key(provider_key)
+                .unwrap_or_else(|| panic!("{provider_key} is catalogued"));
+            assert!(catalog_entry.credential_required);
+            for contract in [
+                crate::records::ProviderContract::Geocoding,
+                crate::records::ProviderContract::Routing,
+            ] {
+                assert!(
+                    catalog_entry.served_contracts.contains(&contract),
+                    "{provider_key} declares {contract:?}"
+                );
+            }
+        }
+        let tomtom = catalog_entry_for_key("tomtom").expect("TomTom is catalogued");
+        assert!(
+            tomtom
+                .served_contracts
+                .contains(&crate::records::ProviderContract::RasterTiles),
+            "TomTom serves raster tiles through the registry's tile slot"
+        );
+    }
+
+    #[test]
+    fn the_vector_tile_arm_registers_the_supplied_provider() {
+        use crate::records::ProviderContract;
+        use std::sync::Arc;
+
+        // A keyless URL-template provider stands in for any vector-capable
+        // vendor: its construction validates a committed source declaration
+        // and reaches no network.
+        let vector_provider =
+            everymap_providers_url_template_vector::UrlTemplateVectorTileProvider::new(
+                everymap_providers_url_template_vector::openfreemap_vector_source(),
+            )
+            .expect("the committed source declaration builds");
+        let implementations = rustic_maps_providers::VendorImplementations {
+            geocoder: None,
+            router: None,
+            traffic: None,
+            raster_tiles: None,
+            vector_tiles: Some(Arc::new(vector_provider)),
+            style_resources: None,
+            style_resource_hosts: &[],
+        };
+        let map_sdk = crate::MapSdk::new();
+        super::install_vendor_contract(&map_sdk, ProviderContract::VectorTiles, &implementations)
+            .expect("the vector-tile arm registers a supplied provider");
+        let vector_tiles_registration = map_sdk
+            .provider_registrations()
+            .into_iter()
+            .find(|registration| registration.contract == ProviderContract::VectorTiles)
+            .expect("every capability is reported");
+        assert!(
+            vector_tiles_registration.registered,
+            "the registry's vector-tile slot is filled"
+        );
+        // A vendor set without a vector implementation is refused, so a
+        // provider that does not serve vector tiles cannot claim the slot.
+        let implementations_without_vector_tiles = rustic_maps_providers::VendorImplementations {
+            geocoder: None,
+            router: None,
+            traffic: None,
+            raster_tiles: None,
+            vector_tiles: None,
+            style_resources: None,
+            style_resource_hosts: &[],
+        };
+        assert!(
+            super::install_vendor_contract(
+                &map_sdk,
+                ProviderContract::VectorTiles,
+                &implementations_without_vector_tiles,
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn every_catalog_entry_registers_exactly_its_declared_contracts() {
+        for catalog_entry in PROVIDER_CATALOG {
+            let map_sdk = crate::MapSdk::new();
+            let credential = if catalog_entry.credential_required {
+                "placeholder-credential"
+            } else {
+                ""
+            };
+            for contract in catalog_entry.served_contracts {
+                map_sdk
+                    .configure_provider(
+                        *contract,
+                        catalog_entry.provider_key.to_string(),
+                        credential.to_string(),
+                    )
+                    .unwrap_or_else(|error| {
+                        panic!(
+                            "{} refused its declared {contract:?} capability: {error:?}",
+                            catalog_entry.provider_key
+                        )
+                    });
+            }
+            for registration in map_sdk.provider_registrations() {
+                let is_served = catalog_entry
+                    .served_contracts
+                    .contains(&registration.contract);
+                assert_eq!(
+                    registration.registered, is_served,
+                    "{} reports {:?} as registered={}",
+                    catalog_entry.provider_key, registration.contract, registration.registered
+                );
+                if is_served {
+                    assert_eq!(registration.provider_key, catalog_entry.provider_key);
+                    assert_eq!(registration.display_name, catalog_entry.display_name);
+                }
+            }
+            // A contract the entry does not declare is refused before it can
+            // fill a slot the provider cannot serve.
+            if let Some(unserved_contract) = crate::records::ProviderContract::ALL
+                .into_iter()
+                .find(|contract| !catalog_entry.served_contracts.contains(contract))
+            {
+                assert!(
+                    map_sdk
+                        .configure_provider(
+                            unserved_contract,
+                            catalog_entry.provider_key.to_string(),
+                            credential.to_string(),
+                        )
+                        .is_err(),
+                    "{} accepted an undeclared {unserved_contract:?} capability",
+                    catalog_entry.provider_key
+                );
+            }
+        }
+    }
+}

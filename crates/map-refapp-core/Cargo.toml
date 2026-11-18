@@ -1,0 +1,12 @@
+[package]
+name = "map-refapp-core"
+description = "Pure behavior math and the flow-state reducer shared by the reference applications"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+proptest.workspace = true

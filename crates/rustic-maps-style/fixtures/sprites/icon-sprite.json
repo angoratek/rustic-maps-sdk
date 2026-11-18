@@ -1,0 +1,6 @@
+{
+  "railway": { "x": 0, "y": 0, "width": 16, "height": 16, "pixelRatio": 1 },
+  "bus": { "x": 16, "y": 0, "width": 16, "height": 16, "pixelRatio": 1 },
+  "park": { "x": 32, "y": 0, "width": 16, "height": 16, "pixelRatio": 1 },
+  "water": { "x": 48, "y": 0, "width": 16, "height": 16, "pixelRatio": 1 }
+}

@@ -1,0 +1,145 @@
+name: wasm-e2e
+
+# Builds the wasm bindings for the browser harness and runs the Playwright
+# e2e suite against a locally served page, so the browser loop stays green
+# the same way the Rust core does.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/rustic-maps-web-bindings/**"
+      - "crates/rustic-maps-rendering/**"
+      - "crates/rustic-maps-vector-tiles/**"
+      - "crates/rustic-maps-core/**"
+      - "crates/rustic-maps-navigation/**"
+      - "crates/rustic-maps-offline-graph-archive/**"
+      - "crates/geospatial-types/**"
+      - "crates/geospatial-traits/**"
+      - "platform/web/**"
+      - "platform/providers.json"
+      - "platform/reference-scenes.json"
+      - "fixtures/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/wasm-e2e.yml"
+  pull_request:
+    paths:
+      - "crates/rustic-maps-web-bindings/**"
+      - "crates/rustic-maps-rendering/**"
+      - "crates/rustic-maps-vector-tiles/**"
+      - "crates/rustic-maps-core/**"
+      - "crates/rustic-maps-navigation/**"
+      - "crates/rustic-maps-offline-graph-archive/**"
+      - "crates/geospatial-types/**"
+      - "crates/geospatial-traits/**"
+      - "platform/web/**"
+      - "platform/providers.json"
+      - "platform/reference-scenes.json"
+      - "fixtures/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/wasm-e2e.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wasm-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Compile the wasm bindings
+        run: cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
+
+      - name: Resolve the pinned wasm-bindgen version
+        # The CLI must match the crate exactly; deriving the version from the
+        # locked graph removes the hand-maintained duplicate in README/CI.
+        id: wasm_bindgen_version
+        run: |
+          version="$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version' \
+            | head -n1)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the pinned wasm-bindgen CLI
+        id: wasm_bindgen_cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: wasm-bindgen-cli-${{ runner.os }}-${{ steps.wasm_bindgen_version.outputs.version }}
+      - name: Bind the wasm module for the web
+        # The cache restores the binary for an unchanged pin; a miss installs it.
+        run: |
+          wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wasm_bindgen_version.outputs.version }}" \
+            || cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
+      - name: Generate the browser package
+        run: >-
+          wasm-bindgen --target web --out-dir platform/web/pkg
+          target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/web/package-lock.json
+      - name: Cache the Playwright browser download
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('platform/web/package-lock.json') }}
+      - name: Install the Playwright suite and browser
+        run: npm ci && npx playwright install chromium --with-deps
+        working-directory: platform/web
+      - name: Browser e2e against the served harness
+        run: npx playwright test
+        working-directory: platform/web
+
+  # The local pre-commit gate ran this closure by hand; running it here makes
+  # the wasm32 compile contract enforced rather than a matter of discipline.
+  # Workspace-wide wasm clippy is out of scope: the mapquest provider's tokio
+  # features are native-only, so the closure is the honest target set.
+  wasm-closure-clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Clippy the wasm closure (lib targets)
+        run: >-
+          cargo clippy --target wasm32-unknown-unknown
+          -p geospatial-types
+          -p geospatial-traits
+          -p rustic-maps-offline-graph-archive
+          -p rustic-maps-core
+          -p rustic-maps-rendering
+          -p rustic-maps-navigation
+          -p rustic-maps-positioning
+          -p rustic-maps-web-bindings
+          -p rustic-maps-vector-tiles
+          -p rustic-maps-style
+          -p rustic-maps-glyphs
+          -p everymap-providers-photon
+          -p everymap-core
+          -p everymap-providers-mapquest
+          -p everymap-providers-url-template-vector
+          -p everymap-providers-url-template-raster
+          --lib -- -D warnings

@@ -1,0 +1,37 @@
+# Code owners for review routing. The last matching pattern wins.
+# The maintainer list and the role definitions are in MAINTAINERS.md and
+# GOVERNANCE.md.
+
+* @angoratek
+
+# Core and renderer
+/crates/rustic-maps-rendering/ @angoratek
+/crates/rustic-maps-native-core/ @angoratek
+/crates/rustic-maps-core/ @angoratek
+/crates/rustic-maps-cache/ @angoratek
+/crates/rustic-maps-style/ @angoratek
+/crates/rustic-maps-glyphs/ @angoratek
+/crates/rustic-maps-vector-tiles/ @angoratek
+/crates/rustic-maps-navigation/ @angoratek
+/crates/rustic-maps-positioning/ @angoratek
+/crates/rustic-maps-offline-graph-archive/ @angoratek
+/crates/rustic-maps-offline-graph-compiler/ @angoratek
+/crates/rustic-maps-web-bindings/ @angoratek
+/crates/geospatial-types/ @angoratek
+/crates/geospatial-traits/ @angoratek
+
+# Providers
+/crates/rustic-maps-providers/ @angoratek
+/platform/providers.json @angoratek
+/fixtures/ @angoratek
+
+# Platforms
+/platform/android/ @angoratek
+/platform/ios/ @angoratek
+/platform/rn/ @angoratek
+/platform/web/ @angoratek
+
+# Documentation, site, and repository configuration
+/docs/ @angoratek
+/site/ @angoratek
+/.github/ @angoratek

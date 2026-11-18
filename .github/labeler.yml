@@ -1,0 +1,45 @@
+# Path-based pull-request labels. The action that applies them is
+# .github/workflows/labeler.yml.
+
+core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "crates/**"
+          - "Cargo.toml"
+          - "Cargo.lock"
+
+providers:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "crates/rustic-maps-providers/**"
+          - "platform/providers.json"
+          - "fixtures/**"
+
+android:
+  - changed-files:
+      - any-glob-to-any-file: "platform/android/**"
+
+ios:
+  - changed-files:
+      - any-glob-to-any-file: "platform/ios/**"
+
+react-native:
+  - changed-files:
+      - any-glob-to-any-file: "platform/rn/**"
+
+webassembly:
+  - changed-files:
+      - any-glob-to-any-file: "platform/web/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "site/**"
+          - "*.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "scripts/**"

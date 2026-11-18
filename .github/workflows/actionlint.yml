@@ -1,0 +1,38 @@
+name: actionlint
+
+# Lints every workflow on the changes that can affect one. actionlint reads
+# the workflow files and runs shellcheck over their `run:` scripts, so a
+# broken expression or an unsafe shell line fails here instead of at runtime.
+
+on:
+  push:
+    paths:
+      - ".github/workflows/**"
+      - ".github/actionlint.yaml"
+      - ".github/actionlint.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".github/actionlint.yaml"
+      - ".github/actionlint.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint 1.7.12
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
+      - name: Lint every workflow
+        run: '"$(go env GOPATH)/bin/actionlint" -color'

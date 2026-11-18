@@ -1,0 +1,11 @@
+{
+  "flowSegmentData": {
+    "frc": "FRC0",
+    "currentSpeed": 65,
+    "freeFlowSpeed": 80,
+    "currentTravelTime": 120,
+    "freeFlowTravelTime": 95,
+    "confidence": 0.95,
+    "roadName": "A100"
+  }
+}

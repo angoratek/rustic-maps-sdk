@@ -1,0 +1,8 @@
+# Foreign artifact naming for the refapp-only contract.
+#
+# The Kotlin loader names its native library from this value. It equals the
+# library target's name by construction; stating it explicitly keeps the
+# staged Android library, the generated Kotlin loader and the generated Swift
+# FFI module (`map_refapp_coreFFI`) on the contract's one spelling.
+[bindings.kotlin]
+cdylib_name = "map_refapp_core"

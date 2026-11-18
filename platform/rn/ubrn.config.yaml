@@ -1,0 +1,26 @@
+# uniffi-bindgen-react-native project configuration for the Maps SDK.
+#
+# Consumed by `scripts/build-rn.sh`:
+#   npx ubrn generate jsi bindings <frozen UDL>  (see the script for the full
+#   command)  then `npx ubrn generate jsi turbo-module rustic_maps
+#   --config ubrn.config.yaml`.
+name: maps-sdk-rn
+version: 0.1.0
+rust:
+  # The binding crate on disk, carrying the frozen UDL contract.
+  src: ../../crates/rustic-maps-native-core
+  manifestPath: ../../crates/rustic-maps-native-core/Cargo.toml
+ios:
+  # Kept aligned with scripts/build-ios.sh; `ubrn build ios` builds these
+  # itself when the TurboModule is later wired into an app shell.
+  targets: [aarch64-apple-ios, aarch64-apple-ios-sim]
+android:
+  # Kept aligned with scripts/build-android.sh (aarch64-linux-android,
+  # armv7-linux-androideabi, x86_64-linux-android).
+  targets: [armeabi-v7a, arm64-v8a, x86_64]
+turboModule:
+  specName: NativeMapsSdkRn
+  name: MapsSdkRn
+  cpp: cpp
+  ts: src
+  entrypoint: src/index.ts

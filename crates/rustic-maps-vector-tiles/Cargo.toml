@@ -1,0 +1,13 @@
+[package]
+name = "rustic-maps-vector-tiles"
+description = "Mapbox Vector Tile (MVT) v2.1 decoder: protobuf wire reader, layers, features, geometry command stream"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

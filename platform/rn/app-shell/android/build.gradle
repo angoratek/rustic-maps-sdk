@@ -1,0 +1,53 @@
+buildscript {
+    ext {
+        buildToolsVersion = "37.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 37
+        targetSdkVersion = 36
+        // The installed NDK revision (scripts/build-android.sh's validated
+        // matrix); the `:maps-sdk-rn` module reads it through its
+        // `getExtOrDefault("ndkVersion")`.
+        ndkVersion = "28.2.13676358"
+        kotlinVersion = "2.2.0"
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // The AGP classpath stays the React Native template's unversioned
+        // default: the revision is whatever the repository resolves and the
+        // build is pinned at one place (the settings pluginManagement's
+        // eachPlugin remap below), not split between classpath and requests.
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    }
+}
+
+apply plugin: "com.facebook.react.rootproject"
+
+// The RN package's native map module (com.mapssdkrn.MapsSdkMapHost) compiles
+// inside the generated `:maps-sdk-rn` library and draws from the same AAR the
+// app consumes. The generated library's build file is a ubrn artifact, so the
+// two dependencies the package's Kotlin sources need are declared here, on the
+// consumer side, instead of being reapplied after every regeneration.
+subprojects { subproject ->
+    if (subproject.name == "maps-sdk-rn") {
+        subproject.repositories {
+            flatDir {
+                // The one shipped SDK AAR: bindings, native libraries and the
+                // map widget the package host wraps.
+                dirs(rootProject.file("../../../android/maps-sdk/build/outputs/aar"))
+            }
+        }
+        subproject.afterEvaluate {
+            subproject.dependencies {
+                implementation(name: "maps-sdk-release", ext: "aar")
+                implementation("net.java.dev.jna:jna:5.18.1@aar")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+            }
+        }
+    }
+}

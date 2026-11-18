@@ -1,0 +1,73 @@
+name: docs-publication
+
+# Verifies the public documentation-site pipeline the same way CI verifies the
+# Rust core: builds the mdBook book, stages rustdoc + the frozen UDL contract,
+# runs the fail-closed pre-publish scrub, and uploads the staged site as a
+# job artifact. Publication (--publish, which force-replaces the gh-pages
+# branch of the public rustic-maps-sdk-docs repository) stays a deliberate
+# local step run with --gates-green=<commit> from a clean tree; wiring it to CI needs
+# a deploy-key secret in the private repository (owner action).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/THIRD_PARTY_NOTICES.md"
+      - "crates/rustic-maps-native-core/src/rustic_maps.udl"
+      - "scripts/build-docs-site.sh"
+      - ".github/workflows/docs-publication.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Install mdbook
+        run: cargo install mdbook --locked
+
+      # The staged site carries the live demo at /demo, which serves the wasm
+      # package built from this checkout; the package is a gitignored build
+      # artifact, so the job builds it rather than assuming a local one.
+      - name: Install the wasm toolchain
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo install wasm-bindgen-cli --version "$(sed -n 's/^wasm-bindgen = "\(.*\)"/\1/p' Cargo.toml | head -n 1)" --locked 2>/dev/null \
+            || cargo install wasm-bindgen-cli --locked
+
+      - name: Build the WebAssembly package
+        run: ./scripts/build-wasm.sh
+
+      # The notices generator resolves with `cargo metadata --offline`, which
+      # consults the local registry index cache even with a complete lockfile
+      # (verified: with a bare CARGO_HOME it fails "no matching package …
+      # found" regardless of Cargo.lock). Prime the index once on the runner
+      # before any offline consumer; the SDK code itself never calls the
+      # network.
+      - name: Prime the registry index for offline resolution
+        run: cargo metadata --format-version 1 > /dev/null
+
+      - name: Verify the third-party notices are current
+        run: ./scripts/generate-third-party-notices && git diff --exit-code -- docs/THIRD_PARTY_NOTICES.md
+
+      - name: Stage the site (build + rustdoc + UDL + scrub, no publish)
+        run: ./scripts/build-docs-site.sh
+
+      - name: Upload the staged site
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: docs-site-stage
+          path: target/docs-site-stage/site

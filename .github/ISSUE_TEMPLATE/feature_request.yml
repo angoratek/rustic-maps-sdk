@@ -1,0 +1,57 @@
+name: Feature request
+description: Propose a capability, a provider integration, or a developer-experience improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a large change, describe the problem and the alternatives before
+        writing an implementation. See CONTRIBUTING.md.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platform does the request target?
+      options:
+        - Rust core
+        - Android
+        - iOS
+        - React Native
+        - WebAssembly
+        - Documentation
+        - Build and tooling
+        - All platforms
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what blocks it today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or API you want.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered and why you did not choose them.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Which crates, platforms, providers, or documents the change would touch.
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched the open issues and discussions for a similar request.
+          required: true

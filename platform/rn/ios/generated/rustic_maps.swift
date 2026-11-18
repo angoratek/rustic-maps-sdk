@@ -1,0 +1,1 @@
+../../../ios/Sources/RusticMapsSDK/rustic_maps.swift

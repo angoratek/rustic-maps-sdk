@@ -1,0 +1,47 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "dXJuOm1ieHBsYzpBY1E2",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.395131,
+          52.517389
+        ]
+      },
+      "properties": {
+        "mapbox_id": "dXJuOm1ieHBsYzpBY1E2",
+        "feature_type": "place",
+        "full_address": "Berlin, Germany",
+        "name": "Berlin",
+        "name_preferred": "Berlin",
+        "coordinates": {
+          "longitude": 13.395131,
+          "latitude": 52.517389
+        },
+        "place_formatted": "Germany",
+        "bbox": [
+          13.08836,
+          52.338261,
+          13.760906,
+          52.675502
+        ],
+        "context": {
+          "region": {
+            "name": "Berlin",
+            "region_code": "BE"
+          },
+          "country": {
+            "name": "Germany",
+            "country_code": "DE"
+          },
+          "place": {
+            "name": "Berlin"
+          }
+        }
+      }
+    }
+  ]
+}

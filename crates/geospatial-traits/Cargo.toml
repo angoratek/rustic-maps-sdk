@@ -1,0 +1,15 @@
+[package]
+name = "geospatial-traits"
+description = "Vendor-neutral provider contracts for the Maps SDK"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+geospatial-types.workspace = true
+async-trait.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+tokio.workspace = true

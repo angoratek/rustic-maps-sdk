@@ -1,0 +1,11 @@
+# The concrete toolchain this workspace builds with. The workspace manifest
+# declares `rust-version = "1.89"` (the minimum, set by rusqlite 0.41); this pin is the stable
+# release the gates are verified against, so a local `cargo` uses the same
+# compiler as the documented build instead of whatever `stable` happens to be.
+#
+# Edition 2024 is required by the workspace and available here far above its
+# 1.85 floor. Update this file deliberately, together with a full gate run.
+[toolchain]
+channel = "1.99.0"
+profile = "minimal"
+components = ["clippy", "rustfmt"]

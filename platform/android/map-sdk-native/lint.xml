@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- This module holds only the UniFFI-generated bindings, which select
+         java.lang.ref.Cleaner at run time and instantiate it only when the
+         platform provides it. The analyzer cannot model that guard; real
+         errors from the generated code still fail the lint gate. -->
+    <issue id="NewApi">
+        <ignore path="**/uniffi/**" />
+    </issue>
+</lint>

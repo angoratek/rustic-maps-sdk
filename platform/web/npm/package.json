@@ -1,0 +1,37 @@
+{
+  "name": "@angoratek/rustic-maps-sdk-web",
+  "version": "0.1.0",
+  "description": "WebAssembly bindings for the Rustic Maps SDK (wasm-bindgen web target).",
+  "author": "angoratek",
+  "license": "MIT OR Apache-2.0",
+  "homepage": "https://github.com/angoratek/rustic-maps-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/angoratek/rustic-maps-sdk.git"
+  },
+  "type": "module",
+  "main": "./rustic_maps_web_bindings.js",
+  "types": "./rustic_maps_web_bindings.d.ts",
+  "exports": {
+    ".": {
+      "types": "./rustic_maps_web_bindings.d.ts",
+      "default": "./rustic_maps_web_bindings.js"
+    },
+    "./rustic_maps_web_bindings_bg.wasm": "./rustic_maps_web_bindings_bg.wasm",
+    "./package.json": "./package.json",
+    "./rustic_maps": {
+      "types": "./rustic_maps.d.ts"
+    }
+  },
+  "files": [
+    "rustic_maps_web_bindings.js",
+    "rustic_maps_web_bindings.d.ts",
+    "rustic_maps_web_bindings_bg.wasm",
+    "rustic_maps_web_bindings_bg.wasm.d.ts",
+    "rustic_maps.d.ts",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "THIRD_PARTY_NOTICES.md"
+  ]
+}
