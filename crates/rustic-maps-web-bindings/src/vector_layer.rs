@@ -1,6 +1,6 @@
 //! Browser vector-tile seam: one fetched vector tile becomes the plain
 //! overlay descriptors the WebGPU canvas'
-//! [`crate::canvas::MapView::set_overlays`] draws.
+//! [`crate::canvas::BrowserMapView::set_overlays`] draws.
 //!
 //! The decoder ([`rustic_maps_vector_tiles`]), the data-only style
 //! ([`rustic_maps_rendering::vector_style`]) and the tile-local-to-geographic

@@ -1,14 +1,16 @@
-//! WebAssembly bindings for the Rustic Maps SDK core.
+//! Hand-written browser canvas surface for the Rustic Maps SDK.
 //!
-//! Exposes the Rust core (projection, camera, tile scheduling) as a
-//! JavaScript/TypeScript surface for browser applications. This crate
-//! intentionally carries no UniFFI: the UDL contract stays the single source
-//! of truth for native platforms, and this surface mirrors it, with parity
-//! asserted by tests.
+//! The frozen UniFFI contract is generated for the browser by
+//! `uniffi-bindgen-react-native`'s `wasm2` target; this crate supplies only the
+//! pieces that contract cannot express: the GPU canvas (`BrowserMapView`,
+//! `MapCamera`
+//! and its pose algebra), the recorded-tile and vector-layer helpers, and the
+//! small provider slots and fixture-endpoint bridge the canvas reads. It is
+//! compiled into the generated module as `browser_canvas`.
 //!
-//! The exported JavaScript surface lives in [`exports`], which only compiles
-//! under `wasm32`; the shared validation and version plumbing stays here so
-//! tests exercise it without a browser.
+//! The exported JavaScript surface lives in `exports` and `canvas`, which
+//! only compile under `wasm32`; the shared validation and tile plumbing stays
+//! here so host tests exercise it without a browser.
 
 // The shared plumbing is consumed by the wasm exports and the host tests, so
 // it only compiles on those configurations and a plain host library build
@@ -22,25 +24,13 @@ pub(crate) mod shared;
 pub(crate) mod refapp_math;
 
 #[cfg(target_arch = "wasm32")]
-pub mod camera_interaction;
-#[cfg(target_arch = "wasm32")]
 pub mod canvas;
-#[cfg(target_arch = "wasm32")]
-pub mod diagnostics;
-// The ring's SDK-crate filter: a pure predicate shared by the browser ring and
-// its host-runnable tests.
-#[cfg(any(target_arch = "wasm32", test))]
-pub(crate) mod diagnostics_filter;
 #[cfg(target_arch = "wasm32")]
 pub mod exports;
 #[cfg(any(target_arch = "wasm32", test))]
 pub(crate) mod generated_contract_field_names;
 #[cfg(target_arch = "wasm32")]
 pub mod live_providers;
-#[cfg(any(target_arch = "wasm32", test))]
-pub mod navigation;
-#[cfg(target_arch = "wasm32")]
-pub mod positioning;
 #[cfg(target_arch = "wasm32")]
 pub mod refapp;
 #[cfg(target_arch = "wasm32")]
@@ -52,7 +42,7 @@ pub mod vector_layer;
 pub(crate) mod vector_source_fields;
 // The browser camera state store and contract-member math: host-tested so
 // `cargo test` exercises the same fit, interpolation and bounds rules the
-// wasm `MapCamera` and `MapView` wrappers carry.
+// wasm `MapCamera` and `BrowserMapView` wrappers carry.
 #[cfg(any(target_arch = "wasm32", test))]
 pub(crate) mod web_camera;
 

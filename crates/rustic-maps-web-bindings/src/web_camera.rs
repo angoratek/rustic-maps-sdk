@@ -1,5 +1,5 @@
 //! The shared camera state and contract-member math behind the browser
-//! `MapCamera` and `MapView` bindings.
+//! `MapCamera` and `BrowserMapView` bindings.
 //!
 //! The state store, the neutral pose, the fit, the interpolation and the
 //! geographic-bounds readback are host-testable so `cargo test` exercises the
