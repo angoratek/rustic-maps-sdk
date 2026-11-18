@@ -47,6 +47,36 @@ impl BoundingBox {
         })
     }
 
+    /// Builds the smallest box containing every coordinate.
+    ///
+    /// # Parameters
+    /// - `coordinates` — any iterator of coordinates. They are taken as
+    ///   given, so a caller that has not validated them should use
+    ///   [`BoundingBox::from_corners`] instead.
+    ///
+    /// # Returns
+    /// `None` when the iterator is empty; otherwise the box whose corners are
+    /// the minimum and maximum latitude and longitude.
+    pub fn from_coordinates<I>(coordinates: I) -> Option<Self>
+    where
+        I: IntoIterator<Item = GeographicCoordinate>,
+    {
+        let mut coordinates = coordinates.into_iter();
+        let first = coordinates.next()?;
+        let mut south_west = first;
+        let mut north_east = first;
+        for coordinate in coordinates {
+            south_west.latitude = south_west.latitude.min(coordinate.latitude);
+            south_west.longitude = south_west.longitude.min(coordinate.longitude);
+            north_east.latitude = north_east.latitude.max(coordinate.latitude);
+            north_east.longitude = north_east.longitude.max(coordinate.longitude);
+        }
+        Some(Self {
+            south_west,
+            north_east,
+        })
+    }
+
     /// Reports whether the coordinate lies within the closed box.
     pub fn contains_coordinate(&self, coordinate: &GeographicCoordinate) -> bool {
         coordinate.latitude >= self.south_west.latitude
@@ -79,5 +109,30 @@ mod tests {
     #[test]
     fn rejects_inverted_corners() {
         assert!(BoundingBox::from_corners(coordinate(49.0, 11.0), coordinate(45.0, 5.0)).is_err());
+    }
+
+    #[test]
+    fn from_coordinates_covers_every_point() {
+        let bounding_box = BoundingBox::from_coordinates([
+            coordinate(48.0, -122.0),
+            coordinate(45.0, 8.0),
+            coordinate(47.0, -118.0),
+        ])
+        .unwrap();
+        assert_eq!(bounding_box.south_west, coordinate(45.0, -122.0));
+        assert_eq!(bounding_box.north_east, coordinate(48.0, 8.0));
+    }
+
+    #[test]
+    fn from_coordinates_returns_none_for_an_empty_iterator() {
+        assert_eq!(BoundingBox::from_coordinates(std::iter::empty()), None);
+    }
+
+    #[test]
+    fn from_coordinates_handles_a_single_point() {
+        let point = coordinate(38.5766, -121.4944);
+        let bounding_box = BoundingBox::from_coordinates([point]).unwrap();
+        assert_eq!(bounding_box.south_west, point);
+        assert_eq!(bounding_box.north_east, point);
     }
 }

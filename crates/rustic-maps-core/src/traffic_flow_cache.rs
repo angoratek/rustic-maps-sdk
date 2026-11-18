@@ -468,26 +468,11 @@ fn evict_least_recently_used(state: &mut TrafficFlowCacheState) {
 
 /// The union of several grid cells' geographic bounds.
 fn bounding_box_of_cells(cells: &[TrafficFlowGridCell], zoom_level: u8) -> Option<BoundingBox> {
-    let mut minimum_latitude = f64::INFINITY;
-    let mut maximum_latitude = f64::NEG_INFINITY;
-    let mut minimum_longitude = f64::INFINITY;
-    let mut maximum_longitude = f64::NEG_INFINITY;
-    for cell in cells {
-        for coordinate in cell_corner_coordinates(*cell, zoom_level) {
-            minimum_latitude = minimum_latitude.min(coordinate.latitude);
-            maximum_latitude = maximum_latitude.max(coordinate.latitude);
-            minimum_longitude = minimum_longitude.min(coordinate.longitude);
-            maximum_longitude = maximum_longitude.max(coordinate.longitude);
-        }
-    }
-    if !minimum_latitude.is_finite() {
-        return None;
-    }
-    BoundingBox::from_corners(
-        GeographicCoordinate::from_degrees(minimum_latitude, minimum_longitude).ok()?,
-        GeographicCoordinate::from_degrees(maximum_latitude, maximum_longitude).ok()?,
+    BoundingBox::from_coordinates(
+        cells
+            .iter()
+            .flat_map(|cell| cell_corner_coordinates(*cell, zoom_level)),
     )
-    .ok()
 }
 
 /// A grid cell's south-west and north-east corners in degrees.

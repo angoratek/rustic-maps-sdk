@@ -1168,25 +1168,8 @@ fn materialize_route_data(
 /// The geographic bounds of the route's node chain. Coordinates are exact
 /// (quantized) degrees, so the corner construction cannot fail.
 fn bounding_box_over(node_chain: &[GeographicCoordinate]) -> BoundingBox {
-    let (minimum_latitude, maximum_latitude) = node_chain
-        .iter()
-        .map(|coordinate| coordinate.latitude)
-        .fold(
-            (f64::INFINITY, f64::NEG_INFINITY),
-            |(minimum, maximum), latitude| (minimum.min(latitude), maximum.max(latitude)),
-        );
-    let (minimum_longitude, maximum_longitude) = node_chain
-        .iter()
-        .map(|coordinate| coordinate.longitude)
-        .fold(
-            (f64::INFINITY, f64::NEG_INFINITY),
-            |(minimum, maximum), longitude| (minimum.min(longitude), maximum.max(longitude)),
-        );
-    BoundingBox::from_corners(
-        archive_node_coordinate(minimum_latitude, minimum_longitude),
-        archive_node_coordinate(maximum_latitude, maximum_longitude),
-    )
-    .expect("route node coordinates are within the canonical ranges")
+    BoundingBox::from_coordinates(node_chain.iter().copied())
+        .expect("a route has at least one node")
 }
 
 #[cfg(test)]

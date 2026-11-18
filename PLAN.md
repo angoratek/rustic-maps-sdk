@@ -599,7 +599,7 @@ Owner rulings: the public history is a rewritten mirror pushed to a **new public
 - [ ] One tile GPU pipeline for `headless.rs`, `surface.rs` and the canvas shaders; keep only the thin upload methods. Gate: the golden suites and wasm check.
 - [ ] Move `offline_routing_benchmark.rs` (503 production lines) and `dijkstra_reference_search` behind a non-default `benchmark-support` feature or into bench support. Gate: release build excludes it; bench builds with the feature.
 - [ ] One `camera_geographic_bounds` in `rustic-maps-rendering::camera` for the browser and native copies. Gate: top-down and 70° pitch tests plus the existing bounds tests.
-- [ ] `BoundingBox::from_coordinates` in `geospatial-types` replaces five hand-rolled aggregations. Gate: empty, one-point, negative-longitude tests and existing routing/traffic tests.
+- [x] `BoundingBox::from_coordinates` in `geospatial-types` replaces the min/max loops in the everymap bridge, offline routing and the traffic-flow cache (2026-11-18). The two camera-bounds copies are folded into the shared helper tracked as the camera-bounds finding below. Gate: `geospatial-types` and `rustic-maps-core` tests plus clippy.
 - [ ] Shared `tests/common/golden.rs` for the eight golden-image harnesses. Gate: the eight suites in committed and `UPDATE_GOLDENS=1` modes.
 - [ ] Shared fixture server for the five native vendor tests under `tests/common/`. Gate: the five test targets.
 - [x] Delete the twelve dead `generated_contract_field_names` constants and correct the comment (2026-11-18). Gate: the host and wasm checks pass with `-D warnings`.

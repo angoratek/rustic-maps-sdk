@@ -417,57 +417,18 @@ fn sdk_route_data(route: everymap_routing::RouteResult) -> RouteData {
 
 /// Derives the route's bounds from its full geometry.
 fn bounding_box_of_points(points: &[GeographicCoordinate]) -> Option<BoundingBox> {
-    let first = points.first()?;
-    let mut south = first.latitude;
-    let mut north = first.latitude;
-    let mut west = first.longitude;
-    let mut east = first.longitude;
-    for coordinate in &points[1..] {
-        south = south.min(coordinate.latitude);
-        north = north.max(coordinate.latitude);
-        west = west.min(coordinate.longitude);
-        east = east.max(coordinate.longitude);
-    }
-    Some(BoundingBox {
-        south_west: GeographicCoordinate {
-            latitude: south,
-            longitude: west,
-        },
-        north_east: GeographicCoordinate {
-            latitude: north,
-            longitude: east,
-        },
-    })
+    BoundingBox::from_coordinates(points.iter().copied())
 }
 
 /// Derives the route's bounds from its step geometry when the provider does
 /// not report them.
 fn bounding_box_of(legs: &[RouteLeg]) -> Option<BoundingBox> {
-    let mut coordinates = legs
-        .iter()
-        .flat_map(|leg| leg.steps.iter())
-        .flat_map(|step| step.shape.iter());
-    let first = coordinates.next()?;
-    let mut south = first.latitude;
-    let mut north = first.latitude;
-    let mut west = first.longitude;
-    let mut east = first.longitude;
-    for coordinate in coordinates {
-        south = south.min(coordinate.latitude);
-        north = north.max(coordinate.latitude);
-        west = west.min(coordinate.longitude);
-        east = east.max(coordinate.longitude);
-    }
-    Some(BoundingBox {
-        south_west: GeographicCoordinate {
-            latitude: south,
-            longitude: west,
-        },
-        north_east: GeographicCoordinate {
-            latitude: north,
-            longitude: east,
-        },
-    })
+    BoundingBox::from_coordinates(
+        legs.iter()
+            .flat_map(|leg| leg.steps.iter())
+            .flat_map(|step| step.shape.iter())
+            .copied(),
+    )
 }
 
 fn sdk_route_step(step: everymap_routing::RouteStep) -> RouteStep {

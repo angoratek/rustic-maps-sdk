@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — one bounding-box aggregation)
+
+- `BoundingBox::from_coordinates` builds the smallest box around an iterator of coordinates and returns `None` for an empty one. The everymap bridge, offline routing and traffic-flow cache now call it instead of four hand-rolled min/max loops. The two camera bounds copies are folded into the shared camera helper tracked separately.
+
 ### Changed (2026-11-18 — cache lifetimes are named)
 
 - The default cache lifetimes in `response_category.rs` were inline arithmetic (`24 * 60 * 60`, `10 * 60`, `30 * 24 * 60 * 60`). They are now named constants: one per category plus `SECONDS_PER_MINUTE`, `SECONDS_PER_HOUR` and `SECONDS_PER_DAY`. The values are unchanged and the existing expiry test still pins them.
