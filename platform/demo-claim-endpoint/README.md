@@ -26,6 +26,15 @@ A grant reserves the **whole** session before answering, so an abandoned
 session costs the budget what a completed one costs. The page never embeds a
 stream before hearing `{"state":"ok"}`.
 
+That reservation is deliberately pessimistic: a visitor who claims and leaves
+without pressing Appetize's own Start button never streams, yet costs three
+minutes. The endpoint therefore reconciles the month's counter with Appetize's
+own usage report (`GET /v1/usageSummary`, the account key in `APPETIZE_API_KEY`)
+before each decision. The report brings the counter down to what actually
+streamed plus one session of headroom for claims in flight, and never below the
+report or above the reservation. Without the key, or when the report is
+unreachable, the reservation stands alone.
+
 ## Answers
 
 ```json
@@ -47,7 +56,7 @@ origin: `https://angoratek.github.io` (what the Pages deployment publishes).
 An `address` refusal is the shared-address backstop, not the normal answer.
 While developing against the live endpoint, remember that a claim spends a
 session's minutes even when no stream starts; the counters live at
-`demo:budget:<year>-<month>`, `demo:grants:<year>-<month>-<day>`,
+`demo:budget:<year>-<month>` (reconciled against the report), `demo:grants:<year>-<month>-<day>`,
 `demo:visitor:<token>:<year>-<month>-<day>` and
 `demo:address:<address>:<year>-<month>-<day>` in the linked store and can be
 read, and cleared for a test day, through the Upstash REST API.
@@ -58,7 +67,8 @@ read, and cleared for a test day, through the Upstash REST API.
 decision reads — `remainingSeconds`, `grantsToday`, `visitorGrantsToday`,
 `addressGrantsToday` — **without** reserving a session, so a maintainer can
 check why the page is resting without spending three of the month's thirty
-minutes. Add `&visitor=<token>` to see that visitor's own count.
+minutes; `streamedSeconds` is the reconciled figure when the usage report was
+available. Add `&visitor=<token>` to see that visitor's own count.
 
 ## Operator access
 
@@ -72,10 +82,11 @@ open.
 
 ## Tests
 
-`node --test platform/demo-claim-endpoint/api/claim_limits.test.mjs` covers the
-pure decision (`api/claim_limits.js`): the budget first, the shared day, the
-visitor, the address backstop, and the operator bypass that still respects the
-month.
+`npm test` in this directory (or `node --test api`) runs both suites:
+`claim_limits.test.mjs` covers the pure decision (the budget first, the shared
+day, the visitor, the address backstop, the operator bypass that still respects
+the month, and the reconciliation arithmetic), and `appetize_usage.test.mjs`
+covers the usage report's month key, per-app summing, rounding and failure.
 
 ## Environment
 
@@ -84,10 +95,12 @@ month.
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | injected by the linked Vercel KV store | the counters |
 | `DEMO_KILL_SWITCH` | set to `true` in the project settings | stops every grant immediately |
 | `DEMO_OPERATOR_TOKEN` | a random secret of at least 16 characters | lets the owner watch while minutes remain |
+| `APPETIZE_API_KEY` | the account API key | reads the month's usage report; optional — without it the reservation stands alone |
 
-The Appetize API token is deliberately **not** here. Uploads are a maintainer
-and CI action (`scripts/upload-demo-builds.mjs`); the page only ever holds a
-public build id.
+The upload token is deliberately **not** here: uploads are a maintainer and CI
+action (`scripts/upload-demo-builds.mjs`), and the page only ever holds a public
+build id. `APPETIZE_API_KEY` is read-only usage reporting and never reaches the
+page.
 
 ## The store, and what it costs
 
@@ -125,8 +138,8 @@ as the two `KV_REST_API_*` variables.
   plan, and `eviction` is off, so a full database refuses writes rather than
   silently dropping counters (a failed reservation is a refusal, never an
   unmetered grant).
-- The endpoint's own budget is the real ceiling: 30 minutes a month, 2 grants a
-  day, and the kill switch stops it immediately.
+- The endpoint's own budget is the real ceiling: 30 minutes a month, four
+  grants a day across visitors, and the kill switch stops it immediately.
 
 ## Deploying
 

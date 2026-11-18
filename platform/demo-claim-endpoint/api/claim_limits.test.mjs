@@ -9,6 +9,7 @@ import {
   PER_VISITOR_DAILY_LIMIT,
   SESSION_SECONDS,
   decideClaim,
+  reconciledUsedSeconds,
 } from './claim_limits.js';
 
 /** Every count at zero, so a case names only the fact it tests. */
@@ -89,4 +90,24 @@ test('resting answers always carry the minutes left', () => {
   const decision = freshClaim({ usedSeconds: 4 * SESSION_SECONDS, grantsToday: DAILY_GRANT_LIMIT });
   assert.equal(decision.state, 'resting');
   assert.equal(decision.remainingSeconds, MONTHLY_BUDGET_SECONDS - 4 * SESSION_SECONDS);
+});
+
+test('the provider report brings abandoned reservations back to one session of headroom', () => {
+  const used = reconciledUsedSeconds({ reservedSeconds: 1800, streamedSeconds: 360 });
+  assert.equal(used, 360 + SESSION_SECONDS);
+});
+
+test('the report never raises the month above what was reserved', () => {
+  const used = reconciledUsedSeconds({ reservedSeconds: 500, streamedSeconds: 360 });
+  assert.equal(used, 500);
+});
+
+test('a report that outruns the reservation becomes the month\'s floor', () => {
+  const used = reconciledUsedSeconds({ reservedSeconds: 0, streamedSeconds: 900 });
+  assert.equal(used, 900);
+});
+
+test('a missing report keeps the reservation unchanged', () => {
+  assert.equal(reconciledUsedSeconds({ reservedSeconds: 720, streamedSeconds: null }), 720);
+  assert.equal(reconciledUsedSeconds({ reservedSeconds: 720, streamedSeconds: Number.NaN }), 720);
 });

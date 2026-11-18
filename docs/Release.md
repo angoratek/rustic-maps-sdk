@@ -677,6 +677,19 @@ operator opens. When the daily count is reached, the page rests with "You have
 used today's demo sessions. Try again tomorrow." and the month's remaining
 minutes.
 
+A grant reserves the whole 3-minute session before the stream starts, so an
+abandoned claim can never overrun the free plan. That reservation is
+pessimistic: a claim where the visitor never presses Appetize's own Start
+button costs the budget but streams nothing. Before every decision the
+endpoint therefore reconciles its monthly counter with Appetize's usage report
+(`GET /v1/usageSummary`, the account key in the endpoint's `APPETIZE_API_KEY`
+environment variable): the counter drops to what actually streamed plus one
+session of headroom for claims in flight, and never below the report or above
+the reservation. Without the key, or when the report is unreachable, the
+reservation stands alone, which can only refuse a session early. The page's
+`status=true` readout reports the reconciled `streamedSeconds` beside the
+counter.
+
 **Reviewing the demo.** Append the operator token:
 
 ```
@@ -798,9 +811,16 @@ how the release pipeline is trusted, but not the product surface.
 
 ### Decisions
 
-1. **The public history is a rewritten copy in a new public repository.** A
-   filter-repo mirror is pushed there, so no pre-rewrite objects are reachable
-   by SHA, private issues, pull requests or Actions logs.
+1. **The public history is a curated sequence in a new repository.** Four
+   commits built from real trees tell the opening story: the initial public
+   snapshot, the browser API generated from the frozen contract, the
+   documentation consolidated to eight guides, and the hosted-demo and
+   reference fixes. Each commit is authored under the project's noreply
+   identity, every object is rewritten to mask the credential, the session
+   identifier, local paths and the maintainer's name, and the tip is
+   byte-identical to the private tip. The full development history stays in
+   the private repository, and the repository was created fresh, so no
+   pre-rewrite object is reachable by SHA.
 2. **Contributions carry a Developer Certificate of Origin sign-off.** No CLA.
    CI checks it with `scripts/check-dco-signoff.mjs`; commits stay one line
    with no trailers.

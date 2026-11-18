@@ -107,3 +107,34 @@ export function decideClaim({
   }
   return granted(remainingSeconds - SESSION_SECONDS);
 }
+
+/**
+ * Reconciles this month's reserved seconds with the provider's usage report.
+ *
+ * The endpoint reserves a whole session per claim, so a claim that never
+ * streamed keeps costing the budget after the fact. The provider's report is
+ * what actually streamed, but it can lag a claim that is in flight, so the
+ * reconciled figure never drops below one session of headroom above the
+ * report, and never rises above what the endpoint already reserved.
+ *
+ * @param {object} facts
+ * @param {number} facts.reservedSeconds the month's reservations so far
+ * @param {number | null} facts.streamedSeconds the provider's report, or null
+ * @param {number} [facts.sessionSeconds] one session's cost
+ * @returns {number} the month's reconciled used seconds
+ */
+export function reconciledUsedSeconds({
+  reservedSeconds,
+  streamedSeconds,
+  sessionSeconds = SESSION_SECONDS,
+}) {
+  const reserved = Number(reservedSeconds) || 0;
+  if (streamedSeconds === null || streamedSeconds === undefined) {
+    return reserved;
+  }
+  const streamed = Number(streamedSeconds);
+  if (!Number.isFinite(streamed) || streamed < 0) {
+    return reserved;
+  }
+  return Math.max(streamed, Math.min(reserved, streamed + sessionSeconds));
+}

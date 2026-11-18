@@ -25,7 +25,9 @@ import {
   SESSION_SECONDS,
   VISITOR_TOKEN_PATTERN,
   decideClaim,
+  reconciledUsedSeconds,
 } from './claim_limits.js';
+import { fetchMonthlyStreamedSeconds } from './appetize_usage.js';
 
 // The public origin the page is served from. The hosted-demo page ships with
 // the documentation site, so the allowlist names the Pages origin the site
@@ -177,6 +179,38 @@ export default async function handler(request, response) {
     return;
   }
 
+  // Reconcile the month's reservations with what the provider actually
+  // streamed. The reservation stays the ceiling, so an in-flight claim is
+  // never dropped; the report brings the counter down when claims never
+  // streamed, which is the difference between "reserved" and "used" that the
+  // visitor sees in the Appetize dashboard.
+  let streamedSeconds = null;
+  try {
+    streamedSeconds = await fetchMonthlyStreamedSeconds({
+      apiKey: process.env.APPETIZE_API_KEY,
+      now,
+    });
+  } catch {
+    // The report is optional: without it the endpoint keeps its own
+    // pessimistic reservation, which can only refuse a session early.
+    streamedSeconds = null;
+  }
+  const reservedSeconds = Number(usedSeconds) || 0;
+  const reconciledSeconds = reconciledUsedSeconds({
+    reservedSeconds,
+    streamedSeconds,
+  });
+  if (reconciledSeconds !== reservedSeconds) {
+    usedSeconds = reconciledSeconds;
+    try {
+      await kv.set(budgetCounterKey, reconciledSeconds, {
+        ex: MONTH_KEY_TIME_TO_LIVE_SECONDS,
+      });
+    } catch {
+      // The in-memory value still governs this request; the next read retries.
+    }
+  }
+
   // A read-only status answer for the maintainer (and anyone curious): the
   // same counters the decision reads, without reserving a session. It exists
   // so "the demo says I used today's session" can be checked without spending
@@ -191,6 +225,7 @@ export default async function handler(request, response) {
       grantsToday: Number(grantsToday) || 0,
       visitorGrantsToday: Number(visitorGrantsToday) || 0,
       addressGrantsToday: Number(addressGrantsToday) || 0,
+      streamedSeconds,
     });
     return;
   }

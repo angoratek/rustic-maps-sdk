@@ -108,6 +108,14 @@ const WASM_CLASS_ORDER = [
   'RouteSimulator',
 ];
 
+/** The generated contract classes, in the order the wasm page presents them. */
+const WASM_CONTRACT_CLASS_ORDER = [
+  'MapSdk',
+  'Navigator',
+  'RouteSimulator',
+  'PositionController',
+];
+
 /** Human section names for the wasm export source files. */
 const WASM_FUNCTION_SECTION_NAMES = new Map([
   ['live_providers.rs', 'Provider registration and live calls'],
@@ -1656,6 +1664,7 @@ function parseTypeScriptDeclarations(sourceText) {
   const lines = sourceText.replace(/\r\n?/gu, '\n').split('\n');
   const interfaces = [];
   const typeAliases = [];
+  const classes = [];
   let docLines = [];
   let index = 0;
   while (index < lines.length) {
@@ -1726,10 +1735,189 @@ function parseTypeScriptDeclarations(sourceText) {
       index += 1;
       continue;
     }
+    const classMatch = trimmed.match(/^export\s+declare\s+class\s+(\w+)(?:\s+[^{]+)?\s*\{/u);
+    if (classMatch !== null) {
+      const bodyLines = [];
+      let depth = 0;
+      let started = false;
+      for (; index < lines.length; index += 1) {
+        const line = lines[index];
+        const braces = countRustBraces(line);
+        if (started) {
+          bodyLines.push(line);
+        }
+        if (line.includes('{')) {
+          started = true;
+        }
+        depth += braces.opens - braces.closes;
+        if (started && depth <= 0) {
+          break;
+        }
+      }
+      classes.push({
+        name: classMatch[1],
+        docLines,
+        members: parseTypeScriptClassMembers(bodyLines, classMatch[1]),
+      });
+      docLines = [];
+      index += 1;
+      continue;
+    }
     docLines = [];
     index += 1;
   }
-  return { interfaces, typeAliases };
+  return { interfaces, typeAliases, classes };
+}
+
+/** Bracket depth of one TypeScript declaration line. */
+function typeScriptBracketDepth(text) {
+  const opens = (text.match(/[(\[{]/gu) ?? []).length;
+  const closes = (text.match(/[)\]}]/gu) ?? []).length;
+  return opens - closes;
+}
+
+/** The summary sentence a member or class doc starts with. */
+function firstDocParagraph(docLines) {
+  const paragraph = [];
+  for (const line of docLines) {
+    const trimmed = line.trim();
+    if (trimmed === '') {
+      if (paragraph.length === 0) {
+        continue;
+      }
+      break;
+    }
+    if (trimmed.startsWith('#')) {
+      break;
+    }
+    paragraph.push(trimmed);
+  }
+  return paragraph.join(' ').trim();
+}
+
+/** One class member as the reference table presents it. */
+function parseTypeScriptClassMemberWithClass(declaration, docLines, className) {
+  const constructorMatch = declaration
+    .replace(/;\s*$/u, '')
+    .trim()
+    .match(/^(static\s+)?constructor\(([\s\S]*)\)\s*(?::\s*([^;]+))?$/u);
+  if (constructorMatch !== null) {
+    return {
+      label: `constructor(${typeScriptParameterNames(constructorMatch[2]).join(', ')})`,
+      signature: constructorMatch[1] === undefined ? `new ${className}()` : `new ${className}()`,
+      description: firstDocParagraph(docLines),
+    };
+  }
+  return parseTypeScriptClassMember(declaration, docLines);
+}
+
+/**
+ * Parses one class member's declaration and doc comment.
+ *
+ * Symbol-keyed internals are skipped by the caller. Getters, setters,
+ * constructors, static members and plain properties all keep their own shape
+ * in the rendered row.
+ */
+function parseTypeScriptClassMember(declaration, docLines) {
+  const text = declaration.replace(/;\s*$/u, '').trim();
+  const description = firstDocParagraph(docLines);
+  const propertyMatch = text.match(/^(static\s+)?readonly\s+(\w+)\s*:\s*(.+)$/u);
+  if (propertyMatch !== null) {
+    return {
+      label: `${propertyMatch[1] === undefined ? '' : 'static '}${propertyMatch[2]}`,
+      signature: propertyMatch[3].trim(),
+      description,
+    };
+  }
+  const getterMatch = text.match(/^get\s+(\w+)\(\)\s*:\s*(.+)$/u);
+  if (getterMatch !== null) {
+    return {
+      label: `${getterMatch[1]} (getter)`,
+      signature: getterMatch[2].trim(),
+      description,
+    };
+  }
+  const setterMatch = text.match(/^set\s+(\w+)\(([^)]*)\)\s*:\s*(.+)$/u);
+  if (setterMatch !== null) {
+    const parameters = typeScriptParameterNames(setterMatch[2]);
+    return {
+      label: `${setterMatch[1]}(${parameters.join(', ')}) (setter)`,
+      signature: setterMatch[3].trim(),
+      description,
+    };
+  }
+  const methodMatch = text.match(/^(static\s+)?(\w+)(?:<[^>]*>)?\??\(([\s\S]*)\)\s*:\s*([^;]+)$/u);
+  if (methodMatch !== null) {
+    const isConstructor = methodMatch[2] === 'constructor';
+    const parameters = typeScriptParameterNames(methodMatch[3]);
+    return {
+      label: `${methodMatch[1] === undefined || isConstructor ? '' : 'static '}${methodMatch[2]}(${parameters.join(', ')})`,
+      signature: methodMatch[4].trim(),
+      description,
+    };
+  }
+  return null;
+}
+
+/** Parameter names of one TypeScript signature, types dropped. */
+function typeScriptParameterNames(parametersText) {
+  const parts = splitTopLevel(parametersText, ',');
+  const names = [];
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (trimmed === '') {
+      continue;
+    }
+    const match = trimmed.match(/^(?:readonly\s+)?(\.\.\.)?(\w+)\??\s*:/u);
+    if (match !== null) {
+      names.push(`${match[1] ?? ''}${match[2]}`);
+    }
+  }
+  return names;
+}
+
+/** Parses the members of one TypeScript class body. */
+function parseTypeScriptClassMembers(bodyLines, className = '') {
+  const members = [];
+  let docLines = [];
+  let index = 0;
+  while (index < bodyLines.length) {
+    const trimmed = bodyLines[index].trim();
+    if (trimmed.startsWith('/**')) {
+      const commentLines = [];
+      while (index < bodyLines.length && !bodyLines[index].includes('*/')) {
+        commentLines.push(bodyLines[index].replace(/^\s*\*\s?/u, '').replace(/^\s*\/\*\*?/u, ''));
+        index += 1;
+      }
+      if (index < bodyLines.length) {
+        commentLines.push(bodyLines[index].replace(/^\s*\*\//u, '').replace(/^\s*\*\s?/u, ''));
+        index += 1;
+      }
+      docLines = commentLines;
+      continue;
+    }
+    if (trimmed === '') {
+      index += 1;
+      continue;
+    }
+    if (trimmed.startsWith('readonly [') || trimmed.startsWith('[')) {
+      docLines = [];
+      index += 1;
+      continue;
+    }
+    let declaration = trimmed;
+    while (typeScriptBracketDepth(declaration) > 0 && index + 1 < bodyLines.length) {
+      index += 1;
+      declaration += ` ${bodyLines[index].trim()}`;
+    }
+    const member = parseTypeScriptClassMemberWithClass(declaration, docLines, className);
+    if (member !== null) {
+      members.push(member);
+    }
+    docLines = [];
+    index += 1;
+  }
+  return members;
 }
 
 /** Parses top-level interface fields from a .d.ts interface body. */
@@ -2001,6 +2189,46 @@ function renderWasmErrors(model) {
   return lines;
 }
 
+/**
+ * Renders the generated contract classes and their members.
+ *
+ * The page used to name the classes without their members; the generated
+ * declaration carries every member, its parameter names and its return type,
+ * so the reference states them rather than pointing at the file.
+ */
+function renderWasmContractClasses(classes) {
+  const lines = [
+    '## Contract classes',
+    '',
+    'These classes are generated from the frozen contract; the shipped `rustic_maps.d.ts` declares them. Each table names every member with its parameter names, its return type and what it does.',
+    '',
+  ];
+  const byName = new Map(classes.map((entry) => [entry.name, entry]));
+  for (const name of WASM_CONTRACT_CLASS_ORDER) {
+    const entry = byName.get(name);
+    if (entry === undefined) {
+      continue;
+    }
+    const summary = firstDocParagraph(entry.docLines);
+    lines.push(`### ${name}`, '');
+    if (summary !== '') {
+      lines.push(summary, '');
+    }
+    lines.push(
+      renderTable(
+        ['Member', 'Signature', 'Description'],
+        entry.members.map((member) => [
+          `\`${member.label}\``,
+          `\`${member.signature}\``,
+          member.description === '' ? '—' : member.description,
+        ]),
+      ),
+      '',
+    );
+  }
+  return lines;
+}
+
 /** Renders the WebAssembly API reference page. */
 function renderWasmPage(model, wasmSurface, declarations) {
   const lines = [
@@ -2040,15 +2268,7 @@ function renderWasmPage(model, wasmSurface, declarations) {
   }
   lines.push(...renderWasmFreeFunctions(wasmSurface.freeFunctions));
   lines.push(...renderWasmEnums(wasmSurface.enums));
-  lines.push(
-    '## Contract classes',
-    '',
-    'The generated contract classes carry their own members; the shipped `rustic_maps.d.ts` declares them.',
-    '',
-  );
-  for (const className of ['MapSdk', 'Navigator', 'RouteSimulator', 'PositionController']) {
-    lines.push(`### ${className}`, '', `The generated \`${className}\` class from the frozen contract.`, '');
-  }
+  lines.push(...renderWasmContractClasses(declarations.classes));
   lines.push(...renderWasmRecordShapes(declarations));
   lines.push(...renderWasmTypeAliases(declarations));
   lines.push(...renderWasmErrors(model));
