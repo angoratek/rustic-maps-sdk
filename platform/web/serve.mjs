@@ -109,7 +109,7 @@ const REFERENCE_SCENES_FILE = path.resolve(
   ROOT_DIRECTORY,
   '../reference-scenes.json',
 );
-// The shared reference-flow artifact (docs/design/ReferenceApplicationBehavior.md
+// The shared reference-flow artifact (docs/ReferenceAppUX.md
 // §The flow schema): the page's `runReferenceFlow` runner fetches it, and the
 // Playwright suite iterates it. It is served when present; before the artifact
 // lands the page falls back to its built-in four-flow script and the address
@@ -161,7 +161,7 @@ const GENERATED_RUNTIME_PACKAGE_DIRECTORY = path.resolve(
   '@ubjs',
 );
 
-// The shared provider registry (M15, docs/ProviderGenericity.md): the single
+// The shared provider registry (M15): the single
 // data source for provider descriptors, attribution, credential labels and
 // fixture routes. The dev server never names a provider; it resolves every
 // `/providers/{provider_key}/{provider-relative path}` request through this

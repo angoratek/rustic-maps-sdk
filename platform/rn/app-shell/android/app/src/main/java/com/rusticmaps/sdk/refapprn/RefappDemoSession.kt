@@ -332,7 +332,7 @@ class RefappDemoSession private constructor() : MapsSdkMapViewObserver {
     /**
      * Builds the SDK objects keyless — no provider is registered, so the
      * no-key state is first-class and honest
-     * (docs/ProviderCredentialsAndBrowserProviders.md §3) — loads the shared
+     * (docs/Providers.md (Credentials) — loads the shared
      * demo artifact's native half, and publishes the honest unregistered
      * cache line. A credential entered at runtime registers later through
      * [setProviderCredential]. Every failure of the artifact reports verbatim
@@ -387,7 +387,7 @@ class RefappDemoSession private constructor() : MapsSdkMapViewObserver {
 
     /**
      * Applies one runtime provider credential (§3's explicit Apply,
-     * docs/ProviderCredentialsAndBrowserProviders.md): the `mapquest` arm
+     * docs/Providers.md): the `mapquest` arm
      * registers the provider set with the tile cache wrapped around the
      * raster-tile contract (the offline-maps demo) using the caches path the
      * keyless start remembered, then re-emits the readiness and cache state.
@@ -931,7 +931,7 @@ class RefappDemoSession private constructor() : MapsSdkMapViewObserver {
     /**
      * The explicit Plan route action (§4.1): plans between the two assigned
      * coordinates with the plan sheet's Directions choice
-     * (docs/design/DirectionsModesAndStrategy.md). A missing field rejects with a
+     * (PRD.md §6 item 36). A missing field rejects with a
      * reason naming it; nothing is invented.
      */
     fun planRoute(transportationModeOrdinal: Int, routeStrategyOrdinal: Int, promise: Promise) {

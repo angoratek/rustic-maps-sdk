@@ -1,5 +1,5 @@
 /**
- * The layer panel's render contract (docs/design/MapControlsAndTrafficLayer.md):
+ * The layer panel's render contract (docs/ReferenceAppUX.md §4.2):
  * the collapsed control's accessible name and dot, the panel's section order,
  * the serving row mark, the traffic reason copy, the scene and device-location
  * switches, and the close path (button, close button, Escape/back through the

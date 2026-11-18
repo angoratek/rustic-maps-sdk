@@ -3,7 +3,7 @@ package com.rusticmaps.sdk.referenceapplication
 import uniffi.rustic_maps.Place
 
 /**
- * The plan fields' typed-text resolution (docs/design/ReferenceApplicationBehavior.md,
+ * The plan fields' typed-text resolution (docs/ReferenceAppUX.md,
  * "Search, route card and navigation UX"): one field's text resolves in the
  * same order on every target.
  *

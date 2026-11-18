@@ -1,6 +1,6 @@
 # Documentation style guide
 
-**Status:** owner-directed 2026-10-31 (M32). This is the standard every
+**Status:** adopted 2026-10-31. This is the standard every
 published page, API reference, screenshot caption and public documentation
 comment is checked against. The reference sites for tone and structure are
 Stripe's documentation and HERE's SDK guides: direct, concrete, outcome-first,
@@ -99,7 +99,7 @@ readable.
   scale bar, attribution, place labels) with the shared vocabulary.
 - A capture must be verifiably from the platform it claims: record the
   revision and the scenario in the page and the capture log
-  (`docs/ScreenshotCapture.md`), and keep the evidence file names in the
+  (`docs/Release.md`), and keep the evidence file names in the
   round record.
 - Recapture the whole set whenever a UI change reaches any platform; never
   update one platform or one frame alone.

@@ -1,4 +1,4 @@
-//! The provider console's SwiftUI surface (docs/design/ProviderConsole.md):
+//! The provider console's SwiftUI surface (docs/Browser.md):
 //! the floating control on the map with its unread Warning/Error dot, the
 //! full-height sheet over the scrubbed stream, the level filter, the detail
 //! view over the typed `ProviderRequestTrace` and the live cache readbacks,
@@ -23,7 +23,7 @@ enum ProviderConsoleMetrics {
     static let consoleGlyphPixels: CGFloat = 18
 }
 
-/// The floating console control (docs/design/DeveloperConsole.md): a small
+/// The floating console control (docs/Browser.md): a small
 /// terminal-glyph button above the layers control, carrying a Warning/Error
 /// dot while a new one arrived since the console last opened.
 struct ProviderConsoleControl: View {

@@ -1,5 +1,5 @@
 /**
- * The on-map layer panel's pure decisions (docs/design/MapControlsAndTrafficLayer.md):
+ * The on-map layer panel's pure decisions (docs/ReferenceAppUX.md §4.2):
  * the base-map rows, the traffic switch's availability, the demo-scene rows,
  * the device-location row and the camera-bounds answer the traffic layer asks
  * the capability for. The screen owns the effectful half (the SDK calls, the

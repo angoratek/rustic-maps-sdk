@@ -26,7 +26,7 @@ tasks.register<Copy>("copyReferenceScenesArtifact") {
 
 tasks.register<Copy>("copyReferenceFlowsArtifact") {
     // The shared reference-application flow schema
-    // (`docs/design/ReferenceApplicationBehavior.md`): one language-neutral
+    // (`docs/ReferenceAppUX.md`): one language-neutral
     // source of the ordered flows, their copy IDs and their per-platform
     // automation hooks, copied at build time so the bundled asset cannot drift
     // from the file `scripts/check-reference-flows.mjs` reads.
@@ -36,7 +36,7 @@ tasks.register<Copy>("copyReferenceFlowsArtifact") {
 }
 
 tasks.register<Copy>("copyProviderRegistry") {
-    // The shared provider registry (docs/ProviderGenericity.md): one
+    // The shared provider registry (platform/providers.json): one
     // language-neutral source of provider descriptors, credential labels,
     // availability, attribution and hints, copied at build time so the
     // bundled asset cannot drift from the file the dev server and the other

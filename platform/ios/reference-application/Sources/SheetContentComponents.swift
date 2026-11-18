@@ -173,7 +173,7 @@ struct OfflineMapsCardView: View {
     }
 }
 
-/// The offline card's region flow (docs/design/TilePackManager.md): the demo
+/// The offline card's region flow (crates/rustic-maps-cache/src/tile_packs.rs): the demo
 /// region's name and enumerated tile count, the download with its live
 /// progress line and Cancel control, the terminal line after completion,
 /// cancellation or failure, and the stored-region list with explicit
@@ -507,7 +507,7 @@ struct HomeSheetSearchContentView: View {
                 .font(ReferenceAppUXFont.bodyStrong())
                 .foregroundStyle(ReferenceAppUXColor.accent(theme))
             }
-            // This field's own type-ahead (`docs/design/Autocomplete.md`):
+            // This field's own type-ahead (`docs/ReferenceAppUX.md §5.5`):
             // at most the shared row cap, one no-match row, or one inline
             // failure sentence; a shorter query shows nothing.
             SearchFieldSuggestionListView(
@@ -612,7 +612,7 @@ struct HomeSheetSearchContentView: View {
     }
 }
 
-/// One field's type-ahead list (`docs/design/Autocomplete.md`): the capped
+/// One field's type-ahead list (`docs/ReferenceAppUX.md §5.5`): the capped
 /// suggestion rows while typing, one "No matches" row when the provider
 /// found nothing, one inline sentence after a failure, and nothing while the
 /// query is below the threshold. Choosing a row fills the field through the

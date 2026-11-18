@@ -56,7 +56,7 @@ targets:
         buildPhase: resources
     dependencies:
       # The demo wrapper product keeps its name; the core product/module is
-      # RusticMapsSDK (docs/PackagingAndRelease.md §1 ruling 2).
+      # RusticMapsSDK (docs/Release.md (Versioning and identities)).
       - package: RusticMapsSDK
         product: MapNativeCoreUI
       # The refapp-only static library (one device and one simulator slice)

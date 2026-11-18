@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Package the generated React Native TurboModule as `@angoratek/rustic-maps-sdk`
 # and emit the release tarball `rustic-maps-sdk-rn-v<version>.tgz`
-# (docs/PackagingAndRelease.md §2.3).
+# (docs/Release.md (The artifacts)).
 #
 # The generated sources are gitignored ubrn output, so this script regenerates
 # them from the frozen UDL before packing: the JSI bindings
@@ -22,7 +22,7 @@
 #     the release workflow stage the payload from the Android and iOS release
 #     builds, so packaging needs neither the Android NDK nor Xcode.
 #
-# Native-payload architecture decision (docs/PackagingAndRelease.md §2.3): the
+# Native-payload architecture decision (docs/Release.md (The artifacts)): the
 # payload mirrors the AAR's three Android ABIs (`arm64-v8a`, `armeabi-v7a`,
 # `x86_64`) and carries the arm64 device/simulator iOS framework ubrn builds.
 # That is the owner ruling of 2026-10-29 ("the RN package ships the AAR's three

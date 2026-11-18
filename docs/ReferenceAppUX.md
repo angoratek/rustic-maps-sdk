@@ -20,7 +20,7 @@ consumer flows.
 
 ## 1. Layout archetype
 
-One archetype everywhere. The v2 revision (round 9, 2026-10-28) reorganizes
+One archetype everywhere. The v2 revision (2026-10-28) reorganizes
 it around a single principle: **the map is the product; the interface is one
 bottom sheet that folds away.** The v1 form this replaces — floating panel
 stacks pinned to both edges, the readout and status always on screen — is
@@ -137,7 +137,7 @@ Rules the table encodes:
 Interactive 2D-canvas paints (the degraded scene background and the debug tile
 grid) and the location indicator passed to the GPU surface cannot read CSS
 `var()` strings — the browser-loop
-constraint documented in `docs/reference/BrowserLoop.md`. Those paints therefore use
+constraint documented in `docs/Browser.md`. Those paints therefore use
 **literal JS constants that mirror this table by name**, grouped in one
 block (`SCENE_BACKGROUND_BY_THEME`, `TILE_FILL_BY_THEME`,
 `TILE_STROKE_BY_THEME`, …) in `platform/web/playground.mjs`, each with a comment
@@ -147,7 +147,7 @@ the GPU map surface* colors (route line, markers, traffic congestion
 colors) are SDK/renderer constants, not UX tokens — only paints a platform
 layer itself performs (the 2D fallback above) mirror the tokens.
 
-**The vector base's clear color is style data, not a UX token (M21 note,
+**The vector base's clear color is style data, not a UX token (note,
 2026-10-30).** Each named vector style carries its own `background` in the
 committed style artifact (`rustic-maps-rendering`'s `fixtures/render/vector-style-*.json`),
 and the page clears the canvas to the active style's background so the style
@@ -237,7 +237,7 @@ placeholder syntax, and reports every omission and divergence. A
 in the artifact; there is no implicit per-platform wording.
 
 The table below is checked against the artifact by the same gate, so it cannot
-drift. Deliberately outside this table, per the copy audit (§3.3): contract text
+drift. Deliberately outside this table, per the copy review (§3.3): contract text
 (maneuver instructions, speech, provider display names, verbatim error
 details), value formatting (`m`/`km`/`ft`/`mi`, pluralization, locale), SF
 Symbol and system-back glyphs, diagnostics jargon, registry rows
@@ -330,7 +330,7 @@ Symbol and system-back glyphs, diagnostics jargon, registry rows
 
 ## 3. Theme model
 
-Owner ruling, 2026-10-30 (PRD §6 item 9): the theme is a three-way choice —
+Decision (2026-10-30, `PRD.md` §6 item 9): the theme is a three-way choice —
 **Light, Dark and Auto** — and **Auto is the default**. This overturns the
 earlier "never read the OS preference" rule.
 
@@ -354,12 +354,12 @@ earlier "never read the OS preference" rule.
 - The **vector base** takes its own background from the style the resolved
   theme selects (Bright's paper, Fiord's slate, Positron's grey), so the
   canvas clear color is the style's, never an unrelated constant.
-- **All four surfaces implement this** (round 46): iOS (`ThemeChoice` +
+- **All four surfaces implement this**: iOS (`ThemeChoice` +
   `resolvedTheme(systemColorScheme:)`), web (`data-theme-choice` plus
   `prefers-color-scheme`), Android (`ThemeChoice`/`ThemeChoiceStore` with
   `isSystemInDarkTheme`) and React Native (`theme.ts` + `useColorScheme`,
   persisted through the native bridge). Android and React Native previously
-  kept a two-way dark-default toggle; the parity audit is what caught it.
+  kept a two-way dark-default toggle; the parity review is what caught it.
 
 ## 4. Component inventory
 
@@ -547,16 +547,16 @@ The dividing line the doc commits to: **the SDK owns camera math and
 renderer plumbing; the platform owns gesture plumbing and widget
 construction.**
 
-| Concern | Owner | Mechanism |
+| Concern | Responsibility | Mechanism |
 | --- | --- | --- |
 | Pan: pixel delta → ground delta | SDK (`MapCamera.screen_to_ground_coordinate` deltas) | the panned under-pointer ground point becomes the new center |
 | Wheel/trackpad zoom | SDK zoom semantics clamped to `MINIMUM_ZOOM_LEVEL=0`,`MAXIMUM_ZOOM_LEVEL=20` | platform forwards deltas |
 | Camera fitting / presets | SDK (`MapCamera` + `fit_bounds` with `EdgeInsets`) | presets are plain camera values applied via the camera object |
 | Animated framing (`flyTo`) | SDK (`fly_to_animation`) | **not on the wasm seam yet** — presets apply instantly there; native refapps animate (deferral noted in §12) |
-| Gesture plumbing (pointer capture, momentum, pinch → these deltas) | **platform glue** | `CameraInteraction` (crates/rustic-maps-rendering/src/camera_interaction.rs, the M3 open item landed) carries the delta seam — pan by screen pixels, focal zoom, focal rotation — and the web playground's pointer/wheel loop forwards its deltas to it; recognizers, wheel-to-zoom shaping, the fixture zoom range and inertia stay JS-side, and M5's camera plumbing wires the native recognizers onto the same methods |
+| Gesture plumbing (pointer capture, momentum, pinch → these deltas) | **platform glue** | `CameraInteraction` (crates/rustic-maps-rendering/src/camera_interaction.rs) carries the delta seam — pan by screen pixels, focal zoom, focal rotation — and the web playground's pointer/wheel loop forwards its deltas to it; recognizers, wheel-to-zoom shaping, the fixture zoom range and inertia stay JS-side, and the native camera plumbing wires the native recognizers onto the same methods |
 
-The direction contract the split locks in (2026-10-29, the owner's
-reversed-pan finding): **map content follows the pointer — a pointer's
+The direction contract the split locks in (2026-10-29, the reversed-pan
+finding): **map content follows the pointer — a pointer's
 ground point at gesture start must land under the pointer after the drag
 (a rightward drag moves the content right, a downward drag moves it down);**
 the same convention's other faces are a wheel-up zooming in, spread fingers
@@ -572,11 +572,11 @@ Per-platform gesture note (PRD §4.9 "idiomatic per platform"): the Compose
 and SwiftUI refapps consume the SDK `MapCamera` the same way the playground
 does (build camera → screen math → camera object), but wire their own
 Compose/SwiftUI gesture modifiers until `CameraInteraction` lands; the
-gesture surface is the M3→M5 open item, not a per-platform divergence in
+gesture surface is a remaining open item, not a per-platform divergence in
 where the math lives. This must not be relitigated per platform — when the
 `CameraInteraction` seam exists, all three implementations shrink to it.
 
-### 5.3 The navigation follow camera (round 10)
+### 5.3 The navigation follow camera
 
 During a guided trip the camera follows a **fixed deep zoom
 (`§2.4`'s `navigation-follow-zoom`, clamped by
@@ -599,7 +599,7 @@ GPS the same smoothing carries it.
   alive outside the canvas.
 - **wheel zoom**: zoom clamped by the range the fixture/camera supports;
   sliders and readout follow.
-- **double click / double tap** (round 36, every platform): zooms exactly one
+- **double click / double tap** (every platform): zooms exactly one
   level around the pointer under the gesture through the contract's focal
   zoom member (`zoom_by_levels_around_screen_point`), so the ground point the
   visitor pointed at stays under it. The web recognizes a two-click pair and
@@ -616,7 +616,7 @@ GPS the same smoothing carries it.
 
 ### 5.4 Keyboard and assistive-technology contract (web)
 
-The browser demo is usable without a pointer (owner direction, 2026-10-31).
+The browser demo is usable without a pointer (decision 2026-10-31).
 The map surface (`#map-overlay`) is one focus stop: `tabindex="0"`,
 `role="application"` with `aria-roledescription="interactive map"`, an
 accessible name, `aria-keyshortcuts`, and `aria-describedby` pointing at a
@@ -658,7 +658,7 @@ semantics and wording are not.
 ### 5.5 Type-ahead in the plan fields
 
 Both endpoint fields suggest places while the visitor types, on every target,
-under one rule (`docs/design/Autocomplete.md`): three characters
+under one rule: three characters
 (`autocomplete-minimum-query-characters`), a 250 ms quiet window
 (`autocomplete-debounce-milliseconds`), at most five rows
 (`autocomplete-maximum-results`), one request in flight per field, a dropped
@@ -710,7 +710,7 @@ browser's `requestAnimationFrame`, the Android Compose frame clock, the iOS
 `TimelineView` and the React Native module's frame callback. The follow camera
 consumes fixes, not interpolated poses (§5.3), so the puck's motion never drags
 the camera. The motion model and its measured cadences are recorded in
-`docs/design/LocationInterpolation.md`.
+`PRD.md §6 item 66`.
 
 ### 5.7 North-up during navigation
 
@@ -733,8 +733,7 @@ React Native uses the documented TypeScript mirror of the same model
 (`platform/rn/src/followBearingMode.ts`), including these mode transitions; the
 shared Rust `FollowCamera` in `map-refapp-core` is the reference. The compass
 visibility threshold and the re-north animation are §2.4 tokens, and the
-control's placement and states are in §4.2 and
-`docs/design/MapControlsAndTrafficLayer.md`.
+control's placement and states are in §4.2.
 
 ## 6. Status, readiness, and provider-echoing errors
 
@@ -784,9 +783,8 @@ the provider's/SDK's own words**:
   the UI never paraphrases, truncates or swallows them.
 - On the wasm seam today failures cross as plain detail strings (the
   `failure` helper in `rustic-maps-web-bindings`); the structured
-  `variant`-carrying shape of the generated
-  `platform/web/generated/rustic_maps.d.ts` is the contract
-  the UI targets, and the error block's *label line* shows the variant name
+  `variant`-carrying shape of the generated TypeScript declaration is the
+  contract the UI targets, and the error block's *label line* shows the variant name
   when one is available (native refapps) or severity + origin when only the
   detail is (wasm today).
 - Silent failure is a bug: no catch block in any refapp is allowed to end
@@ -801,7 +799,7 @@ the provider's/SDK's own words**:
   statistic is surfaced in the readout — the empty map is an *announced*
   state with counts, not a blank screen of lies.
 
-### 6.5 Provider credentials and the settings surface (round 18)
+### 6.5 Provider credentials and the settings surface
 
 Provider credentials are **never embedded in a refapp build**. Every refapp
 starts keyless and offers a settings surface, opened by a gear control beside
@@ -836,8 +834,8 @@ the readiness chip:
   uncached. When the registry also declares a `keyless_base_map` (a provider key
   plus a committed style id), that styled vector base is installed over the
   raster source once the map view exists, so a keyless start opens on styled
-  OpenFreeMap Bright rather than the plain OSM raster (owner ruling 2026-10-31,
-  PRD §6 item 18). The raster source stays registered but hidden while the
+  OpenFreeMap Bright rather than the plain OSM raster (decision 2026-10-31,
+  `PRD.md` §6 item 18). The raster source stays registered but hidden while the
   vector base serves; an explicit base-map choice always wins. The chip then
   reads the ready line, because a live base map really is serving. A registry
   with no credential-less source falls back to cached/recorded imagery and the
@@ -853,7 +851,7 @@ the readiness chip:
 - **Browser caveat.** A key entered in the browser page is visible to that
   page and its network panel by construction; the rule there is only that no
   key ships by default.
-- **Base map (M9's native switch, round 35).** The map layers panel's
+- **Base map.** The map layers panel's
   **Base map** section carries every descriptor that either serves through an
   applied credential or publishes a `raster_url_template`, one row each,
   showing the descriptor's display name and a `Serving` / `Select` status.
@@ -867,7 +865,7 @@ the readiness chip:
   tile services refuse anonymous clients. The settings surface carries no
   base-map row; it keeps credentials, per-capability providers and the
   remembered-choices reset.
-- **Styled vector base (M22, 2026-10-30).** The same panel section lists the
+- **Styled vector base (2026-10-30).** The same panel section lists the
   registry's committed vector styles. Selecting one calls the
   shipped map view's additive vector base member (`MapView.set_vector_tile_source`
   on the contract), which installs the descriptor's vector tileset with that
@@ -888,8 +886,8 @@ the readiness chip:
 ## 7. Simulated turn-by-turn live UI (`rustic-maps-navigation` payloads)
 
 The TBT UI is specified directly against the frozen contract's payload
-shapes (`crates/rustic-maps-native-core/src/rustic_maps.udl`, the round-7
-navigation extension). Field names below are the payload's field names —
+shapes (`crates/rustic-maps-native-core/src/rustic_maps.udl`, the navigation
+extension). Field names below are the payload's field names —
 the UI never has to ask what a value means.
 
 ### 7.1 The card set
@@ -949,7 +947,7 @@ only their docks move:
 
 The web playground renders the same card content in its v1 sidebar layout,
 from the live trip snapshot (§7.4); its Playwright assertions (§10.1) lock
-that v1 form, and the M5 native suites assert these v2 docks.
+that v1 form, and the native suites assert these v2 docks.
 
 ### 7.3 Live-data wiring (per platform)
 
@@ -963,12 +961,12 @@ data source) and use the read-only queries only to seed an
 initial state. Re-entrancy is the SDK's concern (the broadcaster's
 single-in-flight guard); listeners never re-enter the controller.
 
-### 7.4 Wasm status (live since round 43)
+### 7.4 Wasm status (live)
 
 The `Navigator` is exposed on the wasm seam as a **driving and readback**
 subset: `startNavigation`, `updateLocation`, `applyReroute`,
 `stopNavigation`, `currentTripState`, plus a wasm-only `hasActiveTrip`.
-Since round 61 the seam also models the contract's foreign
+The seam also models the contract's foreign
 `NavigationListener` topics over wasm-bindgen:
 `addNavigationListener(callback)` receives `instruction` events for every
 dispatched fix, `phase` events naming the native transition, `deviation`
@@ -1040,13 +1038,13 @@ first).
 `platform/reference-scenes.json` is the language-neutral demo content every
 refapp loads, so the three apps present identical demo data. Provider
 descriptors live in the separate shared registry `platform/providers.json`
-(`docs/ProviderGenericity.md`), not this artifact. Sections:
+(`platform/providers.json`), not this artifact. Sections:
 
 | Section | Contents |
 | --- | --- |
 | `camera_presets` | the Sacramento demo locations: id, label, and the full camera (latitude/longitude/zoom/bearing/pitch in degrees) |
 | `overlay_scenes` | the route/polygon/markers/traffic demo scenes keyed by their scene key, each with `label`, `description`, the wasm `set_overlays` kind string, and coordinates (`latitude_degrees`/`longitude_degrees`) |
-| `navigation_demo` | the demo trace reference (which recorded synthetic trace drives the simulated trip, with its fixture path and provenance) and the wasm seam status (available since round 43); `layout_preview` is retained as historical sample data and no longer rendered |
+| `navigation_demo` | the demo trace reference (which recorded synthetic trace drives the simulated trip, with its fixture path and provenance) and the wasm seam status (available); `layout_preview` is retained as historical sample data and no longer rendered |
 | `demo_plans` | the recorded-walk picker rows in display order: `scenario`, `fixture_path` (the bundled trace derives its asset name from it), the consumer-facing `label`, and the info-affordance `description` |
 | `demo_routes` | every ordered pair of the five demo places (20 records): `origin_name`, `destination_name`, the two coordinates, and the provider's contract-shaped `Route` between them, recorded with the shared route options (pedestrian, fastest). The keyless planner answers any of these pairs from the recording and refuses any other pair honestly; no key appears anywhere in the file |
 
@@ -1138,7 +1136,7 @@ three-way Auto-default theme on all four surfaces, the keyboard/ARIA markup
 above, the iOS registry mirror and every registry fixture path. It is a
 fail-closed source check, not a behaviour proof.
 
-The native refapp UI-test suites (Espresso/XCUITest/Detox, M5) assert the
+The native refapp UI-test suites (Espresso/XCUITest/Detox) assert the
 same behaviors against *their* platform equivalents of these hooks; the
 table above is the shared assertion list those suites should mirror (the
 v2 mappings: the readiness chip ↔ status line, the diagnostics sheet ↔
@@ -1151,12 +1149,12 @@ Refapp features that PRD §4.9 lists but that the wasm seam does not expose
 yet: reverse geocoding and offline pack download. Forward
 geocoding, autocomplete and settled search, two-waypoint routing with the full
 route options object, distance matrix, traffic incidents/flow and offline
-routing from archive bytes are live on the seam (M13/M19/M31;
-`platform/web/tests/live_provider.spec.mjs` and the offline-routing suite
+routing from archive bytes are live on the seam
+(`platform/web/tests/live_provider.spec.mjs` and the offline-routing suite
 exercise them). The missing panels' *presentation*
 is fixed by this language (§4's button/card/reason/error components + §6.3),
 but their data awaits the `MapSdk` exposure on the wasm seam (Kotlin and
-Swift bind it already; see §12 and the four-platform parity audit).
+Swift bind it already; see §12 and the four-platform parity review).
 
 Two `MapSdk` members are **native-only by design**, not gaps to close: the
 raster-tile cache terms/TTL, because the browser target has no persistent tile
@@ -1167,7 +1165,7 @@ events the seam already records. The browser also cannot show the native offline
 cache/tile accounting, because it has no disk cache: its card states the
 recorded-graph route and its provenance, which is its whole offline story.
 Structured `SdkError` variants on the wasm throw path remain an open parity
-slice (the seam throws verbatim strings today).
+gap (the seam throws verbatim strings today).
 
 **The navigation demo standard.** Every refapp demos the navigation simulation
 end to end within this language: a search flow for origin and destination
@@ -1180,14 +1178,14 @@ disabled-with-reason and the readiness ladder: an offline state is a *state*,
 never a hidden fallback. Everything visual stays inside the §2 token table; no
 per-platform invention.
 
-## 12. Open asks to the contract / seam owners (deferrals)
+## 12. Open asks on the contract / seam (deferrals)
 
-1. **`Navigator` on the wasm seam** (`rustic-maps-web-bindings`) — **resolved round 43**
+1. **`Navigator` on the wasm seam** (`rustic-maps-web-bindings`) — **resolved**
    for the driving/readback core: the card set (§7) renders live snapshots.
    Still open: the `NavigationListener` subscription topics and the speech
    and reroute-recalculation members, which need a wasm foreign-listener
    contract. The `TripNavigationState`/`NavigationInstruction` projections
-   are mirrored in `platform/web/generated/rustic_maps.d.ts`.
+   come from the generated TypeScript declaration.
 2. **`MapSdk` on the wasm seam**: geocode search, route planning and
    offline pack download have no wasm surface; their refapp panels are
    specified but unimplemented on web. Ask: expose `MapSdk` with its async
@@ -1198,5 +1196,5 @@ per-platform invention.
 4. **The idle render-state signal + `snapshot()`** (`rustic-maps-rendering`
    backlog): the readiness ladder's "Ready" currently keys off the
    reported renderer mode and the first settled frame statistics; a real
-   idle signal would replace the frame-count heuristic. (Slice 0/heads
-   own this.)
+   idle signal would replace the frame-count heuristic. (This item is
+   still open.)

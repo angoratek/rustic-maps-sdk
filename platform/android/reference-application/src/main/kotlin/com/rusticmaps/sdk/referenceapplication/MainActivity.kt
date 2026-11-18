@@ -216,7 +216,7 @@ private fun ReferenceApplicationRoot() {
                     }
                 }
             }
-            // Type-ahead's provider slot (docs/design/Autocomplete.md): a
+            // Type-ahead's provider slot (docs/ReferenceAppUX.md §5.5): a
             // credentialed session already holds the provider its credential
             // installed, so only a keyless one registers the registry's
             // credential-less search provider. The call reads the SDK's own

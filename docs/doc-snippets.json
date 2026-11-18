@@ -1,5 +1,5 @@
 {
-  "$comment": "Tutorial snippet sources (see docs/reference/DocumentationSnippets.md). Each platform names the reference-application roots the generator scans for marked regions; chapters are the markdown files it rewrites. No chapter hard-codes a file path.",
+  "$comment": "Tutorial snippet sources (see docs/Release.md). Each platform names the reference-application roots the generator scans for marked regions; chapters are the markdown files it rewrites. No chapter hard-codes a file path.",
   "platforms": [
     {
       "platform": "android",

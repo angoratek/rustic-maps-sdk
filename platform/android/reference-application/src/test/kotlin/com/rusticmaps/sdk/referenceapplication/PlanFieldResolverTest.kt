@@ -13,7 +13,7 @@ import uniffi.rustic_maps.Place
  * wins while the text still names it, an exact demo-place name resolves
  * without a provider, and the provider's first result is the last resort.
  * The order is the documented one every target follows
- * (docs/design/ReferenceApplicationBehavior.md).
+ * (docs/ReferenceAppUX.md).
  */
 class PlanFieldResolverTest {
     @Test

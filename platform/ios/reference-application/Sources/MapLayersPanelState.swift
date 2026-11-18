@@ -1,4 +1,4 @@
-//! The on-map layer panel's state (docs/design/MapControlsAndTrafficLayer.md): the
+//! The on-map layer panel's state (docs/ReferenceAppUX.md §4.2): the
 //! base-map rows, the traffic layer's debounced capability calls, the
 //! device-location status row and the route fields' "My location" chips.
 //!

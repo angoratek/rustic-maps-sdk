@@ -1,4 +1,4 @@
-// The WebAssembly façade's camera contract (docs/PublicApiV2.md, "WebAssembly
+// The WebAssembly façade's camera contract (docs/Architecture.md, "WebAssembly
 // camera members"): the canvas view holds one camera, `setCamera` adopts a
 // pose that `camera()` reads back, `MapCamera.interpolate` answers exact
 // endpoints and an eased midpoint, a preset click eases rather than jumping,

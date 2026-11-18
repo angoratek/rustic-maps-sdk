@@ -29,7 +29,7 @@ data class DiagnosticEventLine(
 
 /**
  * The bounded display window of the diagnostics pane
- * (docs/design/ReferenceApplicationBehavior.md, "The bounded stream").
+ * (docs/ReferenceAppUX.md §4.2).
  *
  * The foreign [SdkDiagnosticEventListener] callbacks run on the SDK's
  * producing threads fire-and-forget: they only append into a pending buffer

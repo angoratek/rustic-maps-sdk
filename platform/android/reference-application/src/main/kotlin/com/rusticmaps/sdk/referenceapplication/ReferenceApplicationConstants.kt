@@ -87,7 +87,7 @@ object ReferenceApplicationConstants {
     // the slots are the mode and strategy in consumer words.
     const val ROUTE_OPTIONS_SUMMARY_TEMPLATE: String = "%s · %s"
 
-    // --- Directions control (docs/design/DirectionsModesAndStrategy.md) ---
+    // --- Directions control (PRD.md §6 item 36) ---
     // The control beside the plan action: Car and Walk on day one, Fastest and
     // Shortest, with the shared identifiers every target uses.
     const val DIRECTIONS_GROUP_LABEL_TEXT: String = "Directions"
@@ -106,8 +106,7 @@ object ReferenceApplicationConstants {
     const val DIRECTIONS_STRATEGY_UNAVAILABLE_TEMPLATE: String =
         "%s route strategy is not available from this provider."
     // The plan action's disabled-with-reason lines while either field holds no
-    // text (docs/design/ReferenceApplicationBehavior.md, "Search, route card
-    // and navigation UX"): each names the half the reader still has to enter.
+    // text (docs/ReferenceAppUX.md §4.1): each names the half the reader still has to enter.
     // These are the artifact's `plan.missing_*` consumer strings verbatim.
     const val PLAN_ROUTE_NEEDS_BOTH_FIELDS_TEXT: String =
         "Enter an origin and a destination to plan the route."
@@ -118,7 +117,7 @@ object ReferenceApplicationConstants {
 
     // --- The reference-application behavior model's consumer copy ---
     // The artifact's `plan.*`, `settings.*` and `diagnostics.*` behavior rows
-    // (docs/design/ReferenceApplicationBehavior.md): the field actions, the
+    // (docs/ReferenceAppUX.md): the field actions, the
     // trip-source line, the composed provider row and the diagnostics opt-in.
     const val PLAN_MY_LOCATION_ACTION_TEXT: String = "My location"
     // The chip's accessible name names its field, so two chips are never
@@ -150,7 +149,7 @@ object ReferenceApplicationConstants {
     const val SETTINGS_PROVIDER_NO_DEMO_ENDPOINT_TEMPLATE: String =
         "%s declares no demo deployment address; enter your own deployment address."
 
-    // --- Diagnostics opt-in (docs/design/ReferenceApplicationBehavior.md) ---
+    // --- Diagnostics opt-in (docs/ReferenceAppUX.md) ---
     // One bounded stream at Info when the pane opens; one explicit switch
     // lowers it to Debug for the session; the display window and the backlog
     // flush share the artifact's bounded values.
@@ -209,7 +208,7 @@ object ReferenceApplicationConstants {
     const val PLAN_ORIGIN_FIELD_TEST_TAG: String = "search-view-origin-field"
     const val PLAN_DESTINATION_FIELD_TEST_TAG: String = "search-view-destination-field"
     // The type-ahead lists, the one no-match row and the inline provider
-    // sentence each field renders (docs/design/Autocomplete.md).
+    // sentence each field renders (docs/ReferenceAppUX.md §5.5).
     const val PLAN_ORIGIN_AUTOCOMPLETE_LIST_TEST_TAG: String = "search-view-origin-autocomplete"
     const val PLAN_DESTINATION_AUTOCOMPLETE_LIST_TEST_TAG: String =
         "search-view-destination-autocomplete"
@@ -672,7 +671,7 @@ object ReferenceApplicationConstants {
     const val MAP_CONTROL_COMPASS_NORTH_LETTER: String = "N"
     const val MAP_CONTROL_COMPASS_ACCESSIBILITY_TEXT: String = "Ease the camera north up"
 
-    // --- On-map layer panel (docs/design/MapControlsAndTrafficLayer.md) ---
+    // --- On-map layer panel (docs/ReferenceAppUX.md §4.2) ---
     const val MAP_LAYERS_CONTROL_ACCESSIBILITY_TEXT: String = "Map layers"
     /** The collapsed control's value while a non-default layer is active. */
     const val MAP_LAYERS_ACTIVE_LAYER_VALUE_TEXT: String = "Non-default layer active"
@@ -724,7 +723,7 @@ object ReferenceApplicationConstants {
     // --- Search and route consumer rows (§4.1) ---
     const val SEARCH_RESULTS_LABEL_TEXT: String = "Search results"
     // The type-ahead list's one row when the provider answered with no match
-    // (docs/design/Autocomplete.md, "Empty and error states"): never an empty
+    // (docs/ReferenceAppUX.md §5.5): never an empty
     // list. The inline provider failure sentence itself is the contract's own
     // detail text, so no new error wording is invented here; the shared
     // `plan.autocomplete_unavailable` sentence is therefore omitted on this

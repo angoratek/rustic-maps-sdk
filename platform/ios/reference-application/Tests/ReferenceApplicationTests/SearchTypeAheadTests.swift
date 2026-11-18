@@ -1,4 +1,4 @@
-//! The type-ahead contract (`docs/design/Autocomplete.md`): the
+//! The type-ahead contract (`docs/ReferenceAppUX.md §5.5`): the
 //! three-character threshold, the quiet window before a request, the
 //! five-row cap, the supersede rule, selection filling the field, the
 //! no-match and failure states, and the credential-state provider choice.

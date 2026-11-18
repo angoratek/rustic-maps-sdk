@@ -571,7 +571,7 @@ final class ReferenceApplicationModel: ObservableObject {
     // MARK: Plan flow (§4.1: search → route → confirm)
 
     /// The origin field's type-ahead (its own debounce, list and states;
-    /// `docs/design/Autocomplete.md`).
+    /// `docs/ReferenceAppUX.md §5.5`).
     lazy var originTypeAheadController = makeTypeAheadController(
         assignmentTarget: .origin
     )
@@ -1207,7 +1207,7 @@ final class ReferenceApplicationModel: ObservableObject {
         readinessText = text
     }
 
-    // MARK: Remembered choices (docs/design/ReferenceAppSettingsAndPersistence.md)
+    // MARK: Remembered choices (PRD.md §6 item 67)
 
     /// Adopts the record read at construction, once the demo content exists
     /// and before the first frame or plan. The theme is already in force; the
@@ -3195,7 +3195,7 @@ extension ReferenceApplicationModel {
     }
 }
 
-// MARK: - Type-ahead (docs/design/Autocomplete.md)
+// MARK: - Type-ahead (docs/ReferenceAppUX.md §5.5)
 
 extension ReferenceApplicationModel {
     /// Builds one field's controller over the running SDK's suggest call.

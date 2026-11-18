@@ -20,7 +20,7 @@ import uniffi.rustic_maps.defaultStepAdvancePolicy
 import uniffi.rustic_maps.offlineRouteFromArchiveBytes
 
 /**
- * The worked example the tutorials publish (`docs/reference/DocumentationSnippets.md`).
+ * The worked example the tutorials publish (`docs/Release.md`).
  *
  * The same steps run, in the same order, with the same identifiers, on
  * Android, iOS, React Native and WebAssembly: open the map, search the two

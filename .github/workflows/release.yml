@@ -1,6 +1,6 @@
 name: release
 
-# Tag-driven release pipeline (M10, docs/PackagingAndRelease.md §3).
+# Tag-driven release pipeline (M10, docs/Release.md (The release workflow)).
 #
 # A `vX.Y.Z` tag push runs the standard gate set on the tagged tree, builds
 # the platform packages in a matrix, and assembles a *draft* GitHub Release:
@@ -13,7 +13,7 @@ name: release
 #
 # A re-run reuses a platform package whose inputs are unchanged: the `plan`
 # job compares each platform's input hash with the record beside the prior
-# run's artifact (docs/PackagingAndRelease.md §3.5), the `restore` job
+# run's artifact (docs/Release.md (The release workflow)), the `restore` job
 # republishes it after re-hashing the bytes, and the `assemble` job still
 # asserts the exact asset set.
 #
@@ -928,7 +928,7 @@ jobs:
 
       - name: Assert the package-level licenses and notices
         # Every shipped package carries the dual license and the third-party
-        # notices (docs/PackagingAndRelease.md §4.4). A packaging change that
+        # notices (docs/Release.md (The artifacts)). A packaging change that
         # silently drops them fails the release here.
         run: |
           set -euo pipefail

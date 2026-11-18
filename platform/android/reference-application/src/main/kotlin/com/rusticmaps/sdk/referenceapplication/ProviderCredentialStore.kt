@@ -33,7 +33,7 @@ sealed interface ProviderCredentialLoadOutcome {
 
 /**
  * Opt-in persistent storage of provider credentials
- * (docs/ReferenceAppUX.md §6.5; docs/ProviderCredentialsAndBrowserProviders.md
+ * (docs/ReferenceAppUX.md §6.5; docs/Providers.md
  * §6): an AES/GCM key generated inside the Android Keystore encrypts each
  * credential, and the ciphertext plus its initialization vector live in this
  * application's private `SharedPreferences`.

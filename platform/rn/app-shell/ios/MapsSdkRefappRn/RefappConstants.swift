@@ -176,7 +176,7 @@ enum RefappConstants {
     static let sheetHalfHeightFraction = 0.5
 
     // --- The shared behavior model's consumer copy
-    // (docs/design/ReferenceApplicationBehavior.md; the same values theme.ts
+    // (docs/ReferenceAppUX.md; the same values theme.ts
     // carries) ---
     static let planOriginLabelText = "Origin"
     static let planDestinationLabelText = "Destination"
@@ -208,7 +208,7 @@ enum RefappConstants {
     static let cacheNotRegisteredText = "Cache not registered"
 
     // --- Runtime provider credentials
-    // (docs/ProviderCredentialsAndBrowserProviders.md §3–§6) ---
+    // (docs/Providers.md (Credentials through the coverage matrix)) ---
     /// The provider key the registration dispatch serves today.
     static let mapquestProviderKey = "mapquest"
     /// The refusal before the SDK objects were built.

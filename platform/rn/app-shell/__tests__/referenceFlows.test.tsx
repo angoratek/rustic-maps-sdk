@@ -1,6 +1,6 @@
 /**
  * The shared reference-application flows on React Native
- * (docs/design/ReferenceApplicationBehavior.md): the labeled plan fields with
+ * (docs/ReferenceAppUX.md): the labeled plan fields with
  * their inline Search actions and per-field My location chips, the swap, the
  * typed-text resolution on Plan route, and the diagnostics pane's opt-in
  * subscription. The provider-row composition and the unreachable demo server

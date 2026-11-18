@@ -1,6 +1,6 @@
 /**
  * The per-capability provider section's decisions
- * (docs/design/ProviderSelectionPerCapability.md): the rows follow the SDK's stable
+ * (docs/Providers.md (Per-capability selection)): the rows follow the SDK's stable
  * order, a capability with no installed provider reads "Not configured", the
  * picker is limited to registry descriptors that serve the capability and
  * register on React Native, a selection passes the applied credential for a

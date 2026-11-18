@@ -86,7 +86,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Workspace version sync
-        # docs/PackagingAndRelease.md §5: one version line. Cheap (bash only),
+        # docs/Release.md (Versioning and identities): one version line. Cheap (bash only),
         # so it rides the ordinary lint gate as well as the release workflow.
         run: ./scripts/check-workspace-version.sh
       - name: UX token and error-text parity

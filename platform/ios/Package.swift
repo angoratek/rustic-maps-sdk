@@ -7,7 +7,7 @@
 // language mode: the generated bindings are written for that mode and do not
 // yet guarantee Swift 6 strict-concurrency conformance.
 //
-// Packaging identity (docs/PackagingAndRelease.md §1 ruling 2): the package,
+// Packaging identity (docs/Release.md (Versioning and identities)): the package,
 // its core product and its Swift module are `RusticMapsSDK`. The binary
 // target keeps the generated `rustic_mapsFFI` name, because the
 // uniffi-generated Swift sources import that module through `canImport`; the

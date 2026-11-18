@@ -1,5 +1,5 @@
 /**
- * The plan sheet's Directions choice (docs/design/DirectionsModesAndStrategy.md):
+ * The plan sheet's Directions choice (PRD.md §6 item 36):
  * Car or Walk, with Car as the default, and Fastest or Shortest, with Fastest
  * as the default and shown only for car plans. The serving routing provider
  * reports what it can honour through `routeCapabilities()`; a choice the

@@ -1,6 +1,6 @@
 /**
  * The reference application's opt-in diagnostics stream
- * (docs/design/ReferenceApplicationBehavior.md, §Diagnostics policy).
+ * (docs/ReferenceAppUX.md §4.2).
  *
  * The SDK's sink is process-wide and always recording into its bounded ring;
  * the reference application adds one rule above it: no subscription and no

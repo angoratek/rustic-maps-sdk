@@ -1,5 +1,5 @@
 // The on-map layer control and the device-location affordances
-// (docs/design/MapControlsAndTrafficLayer.md): the panel's base-map rows, the
+// (docs/ReferenceAppUX.md §4.2): the panel's base-map rows, the
 // traffic layer fetched from the committed flow fixture, the demo-scene
 // switches, the keyboard contract, the remembered choices and the route
 // fields' "My location" chips. Every provider fact comes from the shared

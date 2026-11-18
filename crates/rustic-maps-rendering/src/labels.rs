@@ -902,7 +902,7 @@ fn empty_label_font() -> LabelFont {
 // One label per distinct text is placed in a frame, and that rule also
 // covers route-reference badges: two candidates carrying the same reference
 // deduplicate, whether they are repeated candidates of one feature or two
-// features far apart. `docs/design/RouteShields.md` states the rule for
+// features far apart. `PRD.md §6 item 57` states the rule for
 // shields.
 
 /// A label layer ready to draw: the placed labels and the font that measures

@@ -114,7 +114,7 @@ class ReferenceApplicationState(
     val sdkFacade: MapsSdkFacade,
     /** The shared demo artifact (docs/ReferenceAppUX.md §9). */
     val artifact: ReferenceScenesArtifact,
-    /** The shared provider registry's descriptors (docs/ProviderGenericity.md). */
+    /** The shared provider registry's descriptors (platform/providers.json). */
     val providerRegistry: ProviderRegistry,
     /** The demo plans the demo-plan picker offers, each a loaded recorded trace. */
     val demoPlans: List<DemoPlan>,
@@ -291,7 +291,7 @@ class ReferenceApplicationState(
 
     /**
      * Whether the launch automation asked for the tutorial's worked example
-     * (M25, `docs/reference/DocumentationSnippets.md`). Setting it arms the walkthrough;
+     * (M25, `docs/Release.md`). Setting it arms the walkthrough;
      * it starts as soon as the map view exists, so an intent extra that
      * arrives before the composition finishes still runs exactly once.
      */
@@ -435,7 +435,7 @@ class ReferenceApplicationState(
     )
 
     /**
-     * The Directions control's state (docs/design/DirectionsModesAndStrategy.md):
+     * The Directions control's state (PRD.md §6 item 36):
      * the selected mode and strategy, the serving routing provider's
      * capability answer, and the remembered choices. It is read whenever the
      * plan sheet opens and after a provider change, so a provider the user
@@ -453,7 +453,7 @@ class ReferenceApplicationState(
     )
 
     /**
-     * The on-map layer panel's state machine (docs/design/MapControlsAndTrafficLayer.md):
+     * The on-map layer panel's state machine (docs/ReferenceAppUX.md §4.2):
      * the base-map rows, the traffic layer's debounced capability calls and
      * the device-location row. It reaches the SDK, the shipped map view's
      * camera bounds, the base-map selection path and the remembered record
@@ -569,7 +569,7 @@ class ReferenceApplicationState(
         themeChoice.resolvesToDarkTheme(systemInDarkTheme)
 
     // -------------------------------------------------------------------
-    // Remembered choices (docs/design/ReferenceAppSettingsAndPersistence.md)
+    // Remembered choices (PRD.md §6 item 67)
     // -------------------------------------------------------------------
 
     /**
@@ -758,7 +758,7 @@ class ReferenceApplicationState(
     }
 
     // -------------------------------------------------------------------
-    // Settings surface sizing (docs/design/ReferenceAppSettingsAndPersistence.md)
+    // Settings surface sizing (PRD.md §6 item 67)
     // -------------------------------------------------------------------
     /** The viewport height the settings panel is capped against, in pixels. */
     var settingsViewportHeightPixels: Int by mutableStateOf(0)
@@ -1341,7 +1341,7 @@ class ReferenceApplicationState(
             val baseAttributionText = activeVectorBase?.attributionText
                 ?: activeBaseMap?.attributionText.orEmpty()
             // The traffic layer's serving descriptor appends its own line for
-            // as long as the layer draws (docs/design/MapControlsAndTrafficLayer.md).
+            // as long as the layer draws (docs/ReferenceAppUX.md §4.2).
             val trafficAttributionText = mapLayersState.trafficAttributionText
             return if (
                 trafficAttributionText.isNullOrBlank() ||
@@ -3066,7 +3066,7 @@ class ReferenceApplicationState(
             resetAutocomplete(PlanSearchField.ORIGIN)
             // Editing away from an assigned place clears the resolution, so
             // Plan route re-asks for a search result instead of planning the
-            // stale place (docs/design/PositioningAndRouteUx.md §3).
+            // stale place (docs/ReferenceAppUX.md §4.1).
             if (value != originPlace?.structuredAddressText) {
                 originPlace = null
             }
@@ -3127,7 +3127,7 @@ class ReferenceApplicationState(
      * The provider the SDK reports serving type-ahead, or null when none is
      * registered. The value comes from the contract's own readback: the
      * credential state decides which provider holds the slot, and this
-     * application never names one (docs/design/Autocomplete.md).
+     * application never names one (docs/ReferenceAppUX.md §5.5).
      */
     val autocompleteProviderKey: String?
         get() = nativeMapSdk.providerRegistrations()
@@ -3138,7 +3138,7 @@ class ReferenceApplicationState(
 
     /**
      * Registers the shared registry's credential-less place-search provider
-     * when no other provider serves the capability yet (docs/design/Autocomplete.md,
+     * when no other provider serves the capability yet (docs/ReferenceAppUX.md §5.5,
      * "Which provider answers"): a keyless session offers suggestions before
      * any key is entered, while a credentialed session keeps the provider its
      * credential installed. The choice is registry-driven — the first
@@ -3174,7 +3174,7 @@ class ReferenceApplicationState(
     /**
      * The field's edit path: the value the user typed reaches the field, and a
      * trimmed query that meets the shared threshold schedules one type-ahead
-     * request after the shared quiet period (docs/design/Autocomplete.md).
+     * request after the shared quiet period (docs/ReferenceAppUX.md §5.5).
      * A shorter query clears the list and asks nobody.
      */
     fun onPlanSearchQueryChanged(
@@ -3239,7 +3239,7 @@ class ReferenceApplicationState(
     /**
      * Retires the field's current request and every value it produced. The
      * generation bump makes a late answer from the cancelled request drop on
-     * arrival instead of replacing the newer list (docs/design/Autocomplete.md
+     * arrival instead of replacing the newer list (docs/ReferenceAppUX.md §5.5
      * rule 4).
      */
     private fun resetAutocomplete(planSearchField: PlanSearchField) {
@@ -3434,7 +3434,7 @@ class ReferenceApplicationState(
      * Whether Plan route is available: both fields hold text. The typed text
      * is resolved on press (assigned place → exact demo place → the provider's
      * first result), so the action never stays disabled merely because a
-     * result row was not tapped (docs/design/ReferenceApplicationBehavior.md).
+     * result row was not tapped (docs/ReferenceAppUX.md).
      */
     val canPlanRoute: Boolean
         get() = originSearchText.isNotBlank() && destinationSearchText.isNotBlank()

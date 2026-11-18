@@ -292,7 +292,7 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
 
     /// Builds the SDK objects keyless — no provider is registered, so the
     /// no-key state is first-class and honest
-    /// (docs/ProviderCredentialsAndBrowserProviders.md §3) — and loads the
+    /// (docs/Providers.md (Credentials) — and loads the
     /// shared demo artifact's native half. A credential entered at runtime
     /// registers later through `setProviderCredential`. Every failure of the
     /// artifact reports verbatim without failing the SDK start itself (the
@@ -328,7 +328,7 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
     }
 
     /// Applies one runtime provider credential (§3's explicit Apply,
-    /// docs/ProviderCredentialsAndBrowserProviders.md): the `mapquest` arm
+    /// docs/Providers.md): the `mapquest` arm
     /// registers the provider set with the tile cache wrapped around the
     /// raster-tile contract (the offline-maps demo) using the app's caches
     /// directory under the named byte budget, then re-emits the readiness and
@@ -841,7 +841,7 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
 
     /// The explicit Plan route action (§4.1): plans between the two assigned
     /// coordinates with the plan sheet's Directions choice
-    /// (docs/design/DirectionsModesAndStrategy.md). A missing field rejects with a
+    /// (PRD.md §6 item 36). A missing field rejects with a
     /// reason naming it; nothing is invented.
     @objc(planRouteWithTransportationModeOrdinal:routeStrategyOrdinal:resolve:reject:)
     func planRoute(

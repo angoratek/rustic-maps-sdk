@@ -1,5 +1,5 @@
 //! The provider console's read-only feed over the SDK's diagnostics stream
-//! (docs/design/ProviderConsole.md): a second subscriber beside the
+//! (docs/Browser.md): a second subscriber beside the
 //! diagnostics pane's, never a new request path. The console keeps its rows
 //! newest-first, bounded to a named maximum, and only the Warning and Error
 //! events that arrive while the console is closed reach the floating
@@ -15,7 +15,7 @@ import Combine
 import Foundation
 import RusticMapsSDK
 
-/// The console's level filter (docs/design/ProviderConsole.md "Filters"):
+/// The console's level filter (docs/Browser.md "Provider request console"):
 /// Error shows failures, Warning shows warnings and errors, Info shows every
 /// event the console's subscription receives.
 enum ProviderConsoleLevelFilter: String, CaseIterable, Identifiable, Sendable {

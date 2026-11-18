@@ -12,7 +12,7 @@ import uniffi.rustic_maps.TransportationMode
 import uniffi.rustic_maps.UnitSystem
 
 /**
- * The two transport modes the Directions control offers (docs/design/DirectionsModesAndStrategy.md).
+ * The two transport modes the Directions control offers (PRD.md §6 item 36).
  *
  * The contract expresses three modes; Car and Walk are the two every shipped
  * routing provider can honour, with Car the default because the defect this
@@ -63,7 +63,7 @@ enum class DirectionsTransportationMode(
 
 /**
  * The two route strategies the Directions control offers
- * (docs/design/DirectionsModesAndStrategy.md): Fastest is the default, Shortest is
+ * (PRD.md §6 item 36): Fastest is the default, Shortest is
  * disabled with its reason when the serving provider reports no
  * shortest-path support (a provider without a route-service equivalent).
  */
@@ -163,7 +163,7 @@ class SdkDirectionsCapabilitiesGateway(
 }
 
 /**
- * The Directions control's state (docs/design/DirectionsModesAndStrategy.md): the
+ * The Directions control's state (PRD.md §6 item 36): the
  * selected transport mode and route strategy, the serving provider's
  * capability answer, and the disabled-with-reason lines a choice the provider
  * cannot honour carries.
@@ -315,7 +315,7 @@ class DirectionsState(
      * The route strategy the plan call carries: Shortest only for an
      * automobile plan whose provider supports it, Fastest otherwise. The
      * strategy control is an automobile-only choice
-     * (docs/design/DirectionsModesAndStrategy.md), so a walk plan always carries
+     * (PRD.md §6 item 36), so a walk plan always carries
      * Fastest even while a remembered Shortest choice waits for a car plan.
      */
     val effectiveRouteStrategy: DirectionsRouteStrategy

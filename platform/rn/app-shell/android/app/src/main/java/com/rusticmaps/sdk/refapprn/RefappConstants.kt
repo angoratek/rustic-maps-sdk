@@ -192,7 +192,7 @@ object RefappConstants {
     const val SHEET_HALF_HEIGHT_FRACTION: Double = 0.5
 
     // --- The shared behavior model's consumer copy
-    // (docs/design/ReferenceApplicationBehavior.md; the same values theme.ts
+    // (docs/ReferenceAppUX.md; the same values theme.ts
     // carries) ---
     const val PLAN_ORIGIN_LABEL_TEXT: String = "Origin"
     const val PLAN_DESTINATION_LABEL_TEXT: String = "Destination"
@@ -226,7 +226,7 @@ object RefappConstants {
     const val CACHE_NOT_REGISTERED_TEXT: String = "Cache not registered"
 
     // --- Runtime provider credentials
-    // (docs/ProviderCredentialsAndBrowserProviders.md §3–§6) ---
+    // (docs/Providers.md (Credentials through the coverage matrix)) ---
     /** The provider key the registration dispatch serves today. */
     const val MAPQUEST_PROVIDER_KEY: String = "mapquest"
 

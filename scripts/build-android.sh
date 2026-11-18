@@ -36,7 +36,7 @@ readonly JNILIBS_DIR="${GRADLE_MODULE_PATH}/src/main/jniLibs"
 # The published artifact is selected by its exact release name: a debug AAR
 # left beside it must never be inspected or reported instead.
 readonly RELEASE_AAR_PATH="${GRADLE_ROOT}/maps-sdk/build/outputs/aar/maps-sdk-release.aar"
-# Package-level notices (docs/PackagingAndRelease.md §4.4). The module's
+# Package-level notices (docs/Release.md (The artifacts)). The module's
 # build.gradle.kts adds this directory as an assets source, so the AAR carries
 # `assets/licenses/{LICENSE-MIT,LICENSE-APACHE,THIRD_PARTY_NOTICES.md}`.
 readonly LICENSE_NOTICES_ASSETS_DIR="${GRADLE_MODULE_PATH}/build/generated/sdk-licenses/licenses"

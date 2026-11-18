@@ -1,5 +1,5 @@
 /**
- * The plan fields' type-ahead (docs/design/Autocomplete.md): the quiet timer,
+ * The plan fields' type-ahead (docs/ReferenceAppUX.md §5.5): the quiet timer,
  * the row cap, the one-in-flight-request rule and the provider the session's
  * credential state selects.
  *

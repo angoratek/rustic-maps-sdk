@@ -1,4 +1,4 @@
-//! The Directions choice's unit tests (docs/design/DirectionsModesAndStrategy.md):
+//! The Directions choice's unit tests (PRD.md §6 item 36):
 //! the Car/Fastest defaults, the capability-driven disabling with a
 //! hand-written reporter, the keyless `ProviderNotConfigured` reason, the
 //! remembered round trip through `RememberedChoicesStore`, and the ferry-route

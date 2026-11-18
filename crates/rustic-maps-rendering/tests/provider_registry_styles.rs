@@ -2,7 +2,7 @@
 //! every descriptor honest against the renderer that has to paint it.
 //!
 //! The registry (`platform/providers.json`) is the single source of a
-//! provider's identity, templates and styles (`docs/ProviderGenericity.md`).
+//! provider's identity, templates and styles (`platform/providers.json`).
 //! The reference applications build their base-map menus directly from it, so
 //! a typo here is a menu row that installs nothing:
 //!

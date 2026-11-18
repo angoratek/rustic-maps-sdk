@@ -1,4 +1,4 @@
-//! The Directions choice (docs/design/DirectionsModesAndStrategy.md): the transport
+//! The Directions choice (PRD.md §6 item 36): the transport
 //! mode and route strategy every plan carries. Car and Fastest are the
 //! defaults; a serving provider's `routeCapabilities()` report disables a
 //! choice it cannot honour, and both choices ride the versioned remembered

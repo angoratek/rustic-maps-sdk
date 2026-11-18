@@ -1,5 +1,5 @@
 // The reference-application behavior model on the browser target
-// (docs/design/ReferenceApplicationBehavior.md): the four named flows run
+// (docs/ReferenceAppUX.md): the four named flows run
 // through `window.runReferenceFlow`, the plan fields carry visible labels, a
 // swap action and their My location chips, the route card reports distance,
 // duration, mode, strategy and ETA, the provider-capability section composes

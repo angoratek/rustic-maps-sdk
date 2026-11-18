@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 /**
  * The explicit choices the reference application remembers across launches
- * (docs/design/ReferenceAppSettingsAndPersistence.md): the theme, the base map, the
+ * (PRD.md §6 item 67): the theme, the base map, the
  * demo plan and overlay scenes, the camera preset, the simulated-trip speed
  * multiplier and the last search texts. Transient state — the open sheet, the
  * current camera pose, a route result — is never part of this record, and the

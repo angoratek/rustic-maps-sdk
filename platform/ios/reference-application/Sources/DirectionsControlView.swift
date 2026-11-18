@@ -1,4 +1,4 @@
-//! The Directions control (docs/design/DirectionsModesAndStrategy.md): the mode and
+//! The Directions control (PRD.md §6 item 36): the mode and
 //! strategy every plan carries, beside the plan action. Car and Fastest are
 //! the defaults; the strategy row shows only for automobile plans, and a
 //! choice the serving routing provider reports it cannot honour is disabled

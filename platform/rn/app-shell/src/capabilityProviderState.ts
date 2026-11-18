@@ -1,6 +1,6 @@
 /**
  * The settings surface's per-capability provider section
- * (docs/design/ProviderSelectionPerCapability.md): one row per capability the SDK
+ * (docs/Providers.md (Per-capability selection)): one row per capability the SDK
  * reports through `providerRegistrations()`, in the SDK's own order, with the
  * shared registry's descriptors as the only source of the providers a
  * capability may choose from. The section never hardcodes a capability list

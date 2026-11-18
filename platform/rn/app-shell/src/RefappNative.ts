@@ -66,7 +66,7 @@ export interface RefappMapModule {
    * plan fields and resolves `true` once the plan settled; a missing field
    * rejects with a reason naming it. The two generated enum ordinals are the
    * Directions choice every live plan carries
-   * (docs/design/DirectionsModesAndStrategy.md). */
+   * (PRD.md §6 item 36). */
   planRoute(
     transportationMode: number,
     routeStrategy: number,
@@ -152,7 +152,7 @@ export interface RefappMapModule {
   getSpeechEngineState(): Promise<SpeechEngineStateEvent>;
   /**
    * Registers one runtime provider credential through the SDK's existing
-   * registration call (docs/ProviderCredentialsAndBrowserProviders.md §3):
+   * registration call (docs/Providers.md (Credentials):
    * a refusal's detail text is verbatim, and the controller re-emits its
    * readiness and cache state. The credential never travels back to JS.
    */

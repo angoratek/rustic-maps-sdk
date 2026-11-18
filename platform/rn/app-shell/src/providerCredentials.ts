@@ -1,6 +1,6 @@
 /**
  * The pure decisions of the reference application's provider-credential
- * settings surface (docs/ProviderCredentialsAndBrowserProviders.md §3–§6):
+ * settings surface (docs/Providers.md (Credentials through the coverage matrix)):
  * descriptor validation, the per-provider apply/remember state machine, and
  * the clear semantics. The React screen owns the effectful half (the bridge
  * call, the secure store and the event channel); this module stays free of

@@ -30,7 +30,7 @@ product-owner ruling, recorded in `PRD.md` §6):
   façade. The contract is **addition-only by default**; a breaking change is
   allowed before 1.0 only under an explicit owner ruling, and then it ships
   with regenerated bindings, reference apps and docs in the same commit
-  (`docs/PublicApiV2.md`; the M17 renames and the `rustic_maps` namespace are
+  (`docs/Architecture.md`; the M17 renames and the `rustic_maps` namespace are
   the standing example).
 - Own minimal `wgpu` renderer, raster first, vector styled onto the same
   overlay pipeline — not a Navara or maplibre fork.
@@ -46,7 +46,7 @@ product-owner ruling, recorded in `PRD.md` §6):
   through the same registration path as the settings surface. The key is
   never the fixture-recording key and never appears in a GitHub Release, an
   npm/Maven/SwiftPM package, a docs download, the repository, a fixture or a
-  screenshot (`docs/ProviderCredentialsAndBrowserProviders.md` §6.1). Every
+  screenshot (`docs/Providers.md` (the hosted-demo exception)). Every
   other build stays keyless.
 - Tests never touch the network: imagery and provider payloads are committed
   fixtures, served same-origin by `platform/web/serve.mjs`.
@@ -66,7 +66,7 @@ product-owner ruling, recorded in `PRD.md` §6):
 2. **A credential reaches a build, a fixture, a log, a doc or a screenshot.**
    There must be no build field, plist key, `local.properties` line or
    `.xcconfig` entry carrying one; redaction is grep-gated where practical
-   (`docs/ProviderCredentialsAndBrowserProviders.md` §6).
+   (`docs/Providers.md` (Credentials)).
 3. **A test reaches the network.** A new route, image or payload a test needs
    becomes a committed fixture served under `/providers/{provider_key}/…`. The
    one harness that measures GPU frames (`platform/web/perf/`) runs outside
@@ -95,7 +95,7 @@ Published documentation and public API comments are product surfaces, held to
   trip's first instruction with 1× playback speed, and the styled vector base
   with its place labels — at phone width, and update none of them alone. Each
   run injects one provider credential for the session only; the published set
-  and the capture log never carry it. `docs/ScreenshotCapture.md` holds the
+  and the capture log never carry it. `docs/Release.md` holds the
   per-platform procedures and the revision record, and
   `docs/DocsStyleGuide.md` §5 is the checklist.
 - **Comments describe the item.** Public documentation comments cover the
@@ -127,7 +127,8 @@ The SDK must be provider-agnostic at **every** layer, not only in the Rust core:
   by one vendor's path; attribution and labels come from the descriptors.
 - **The question to ask on every change**: *would this work unchanged for a second
   provider?* If not, move the vendor-specific piece into the provider crate or the
-  descriptor. The audit and migration plan is `docs/ProviderGenericity.md` (M15).
+  descriptor. The registry is `platform/providers.json` and
+  `platform/web/tests/provider_name_guard.mjs` is the standing gate (M15).
 
 **Where to look.**
 
@@ -137,14 +138,13 @@ The SDK must be provider-agnostic at **every** layer, not only in the Rust core:
 | Why the product is shaped this way; what is locked | `PRD.md` (§6 decisions) |
 | What a consumer of the SDK sees | `README.md` |
 | The exact FFI surface | `crates/rustic-maps-native-core/src/rustic_maps.udl` |
-| The v2 API naming and `MapView` shape | `docs/PublicApiV2.md` |
+| The v2 API naming and `MapView` shape | `docs/Architecture.md` |
 | How the reference apps must look and behave | `docs/ReferenceAppUX.md` |
 | Which providers exist and what they declare | `platform/providers.json` |
 | Design tokens and the unified error sentences | `platform/reference-tokens.json` |
 | Demo scenes, places, plans and recorded routes | `platform/reference-scenes.json` |
-| How credentials work and why | `docs/ProviderCredentialsAndBrowserProviders.md` |
-| How a release is produced | `docs/PackagingAndRelease.md` |
-| The provider-genericity audit and migration | `docs/ProviderGenericity.md` |
+| How credentials work and why | `docs/Providers.md` |
+| How a release is produced | `docs/Release.md` |
 
 Prior research lives in `tmp/map-sdk-rs-research/` (superseded drafts; the
 handwritten JNI bridge there is deliberately discarded — UniFFI generates it).
@@ -175,7 +175,7 @@ handwritten JNI bridge there is deliberately discarded — UniFFI generates it).
 ### Reference applications & demo data
 - `docs/ReferenceAppUX.md` is the design-language source of truth (§2 token tables, §4 components, §6 error/readiness, §7 TBT cards, §8 per-platform token consumption). The theme is a three-way Light / Dark / **Auto** choice with **Auto the default**, following the OS preference live and remembering an explicit choice on the device (PRD §6 item 9, which overturns the earlier explicit-owned dark default).
 - The shared artifacts are consumed by name, never copied as constants: `platform/reference-scenes.json` (scenes, demo places, demo plans, recorded routes), `platform/providers.json` (the provider registry), `platform/reference-tokens.json` (design tokens and the unified error sentences). Each is mirrored where a build needs it (web modules, SwiftPM `.copy`, Android Gradle `Copy`, Metro) and `scripts/check_ux_parity.mjs` fails on token or error-text drift.
-- API keys never enter git or a refapp build: `.env` only for the live-smoke example, the fixture-recording tools and the demo-upload script; refapps take provider credentials at runtime through the settings surface (M13, `docs/ProviderCredentialsAndBrowserProviders.md`), with no `local.properties`/Info.plist/xcconfig key seam. UI automation may inject one at runtime (Android/RN launch-intent extra `providerApiKey`, iOS/RN `PROVIDER_API_KEY` launch environment, optionally paired with `providerKey`/`PROVIDER_KEY`), never persisted by the injection; CI stays keyless unless the UI-test job is given the variable. The Appetize-hosted builds are the one recorded exception (owner ruling 2026-10-30, option b): `scripts/inject-hosted-demo-credential.sh` writes a dedicated `HOSTED_DEMO_PROVIDER_API_KEY` into the build on the build machine, the Android asset and the iOS Info.plist entry are gitignored, and the credential is read at startup through the same registration path as a runtime entry — `docs/ProviderCredentialsAndBrowserProviders.md` §6.1 bounds it.
+- API keys never enter git or a refapp build: `.env` only for the live-smoke example, the fixture-recording tools and the demo-upload script; refapps take provider credentials at runtime through the settings surface (M13, `docs/Providers.md`), with no `local.properties`/Info.plist/xcconfig key seam. UI automation may inject one at runtime (Android/RN launch-intent extra `providerApiKey`, iOS/RN `PROVIDER_API_KEY` launch environment, optionally paired with `providerKey`/`PROVIDER_KEY`), never persisted by the injection; CI stays keyless unless the UI-test job is given the variable. The Appetize-hosted builds are the one recorded exception (owner ruling 2026-10-30, option b): `scripts/inject-hosted-demo-credential.sh` writes a dedicated `HOSTED_DEMO_PROVIDER_API_KEY` into the build on the build machine, the Android asset and the iOS Info.plist entry are gitignored, and the credential is read at startup through the same registration path as a runtime entry — `docs/Providers.md` (the hosted-demo exception) bounds it.
 - Standing test devices: Android Pixel_9 emulator, iOS iPhone 17 Pro simulator; evidence screenshots under `tmp/refapp-*` (gitignored; keep the failure series honestly).
 - `simctl` has no touch injection, so launch-argument demo automation drives the same user-path methods — it is also the UI-test seam.
 

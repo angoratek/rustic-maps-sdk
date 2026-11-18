@@ -33,11 +33,11 @@ const developerConsoleSheetHeightFraction = '88%';
 
 /**
  * The settings surface's named layout values
- * (docs/ProviderCredentialsAndBrowserProviders.md §3): the gear's hit target
+ * (docs/Providers.md (Credentials): the gear's hit target
  * beside the readiness chip and the credential field's single-line height.
  */
 /**
- * The layer control's own visual metrics (docs/design/MapControlsAndTrafficLayer.md):
+ * The layer control's own visual metrics (docs/ReferenceAppUX.md §4.2):
  * the glyph size, the non-default-layer dot, and the panel's height cap.
  */
 export const mapLayersControlLayout = {
@@ -286,7 +286,7 @@ export function buildScreenStyles(colors: ThemeColorTokens) {
       alignItems: 'flex-end',
       gap: themeSpacing.stackTight,
     },
-    // --- The on-map layer control and panel (docs/design/MapControlsAndTrafficLayer.md) ---
+    // --- The on-map layer control and panel (docs/ReferenceAppUX.md §4.2) ---
     /** The collapsed round control above the attribution notice. */
     mapLayersControl: {
       width: mapControlLayout.buttonSize,

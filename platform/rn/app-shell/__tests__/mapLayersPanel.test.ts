@@ -1,6 +1,6 @@
 /**
  * The on-map layer panel's pure state machine
- * (docs/design/MapControlsAndTrafficLayer.md): the section order, the base rows'
+ * (docs/ReferenceAppUX.md §4.2): the section order, the base rows'
  * serving/refusal marks, the traffic switch's availability and remembered
  * restore, the scene switches, the device-location row and the camera-bounds
  * answer the traffic layer queries. No provider name is hardcoded: every

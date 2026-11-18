@@ -1,4 +1,4 @@
-// Packaging assertion (`docs/PackagingAndRelease.md` §2.4): the published
+// Packaging assertion (`docs/Release.md` (The artifacts)): the published
 // `@angoratek/rustic-maps-sdk-web` tarball must carry the generated `wasm2`
 // ESM set with its `.d.ts` declarations, the hand-written canvas declarations
 // published beside the glue, and the licenses and notices. The manifest's

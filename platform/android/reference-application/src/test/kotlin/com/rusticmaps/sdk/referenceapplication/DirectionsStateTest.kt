@@ -14,7 +14,7 @@ import uniffi.rustic_maps.UnitSystem
 
 /**
  * Unit tests of the Directions control's state holder
- * (docs/design/DirectionsModesAndStrategy.md): the Car/Fastest defaults, the plan
+ * (PRD.md §6 item 36): the Car/Fastest defaults, the plan
  * options the selected choices produce (the ferry-route regression), the
  * capability-driven disabling with its reason, and the remembered pair's
  * round trip through the record codec. Pure Kotlin with a hand-written
