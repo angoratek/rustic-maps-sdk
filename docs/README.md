@@ -43,6 +43,7 @@ history.
 |---|---|
 | `design/Autocomplete.md` | What rule do the search fields follow for suggestions while typing, and which provider answers? |
 | `design/WebFacadeGeneration.md` | Can the browser API be generated from the frozen contract, and what must the one-module shape fix before the page adopts it? |
+| `design/WebFacadeRetirement.md` | What of the hand-written browser façade can retire now that the page runs on the generated surface, and what must stay canvas-only? |
 | `design/BindingSurfaceConsolidation.md` | Where do the Android, iOS, React Native and WebAssembly surfaces hand-maintain what the UDL generation or the Rust core could own, and which consolidations pay first? |
 | `design/DirectionsModesAndStrategy.md` | How do applications choose transport mode and route strategy, and what may a provider honour? |
 | `design/DeveloperConsole.md` | What does the in-app developer and provider console show, and which half is still open? |
