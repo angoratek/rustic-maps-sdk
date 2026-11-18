@@ -64,6 +64,18 @@ group `com.angoratek`, artifact `rustic-maps-sdk`, namespace
 denies `com.angoratek` by default and allows the published package-name forms in
 the installation and demo chapters; the scrub itself stays fail-closed.
 
+### The hosted demo build is not a production artifact
+
+The React Native reference application's release APK is signed with the
+repository's debug keystore (`platform/rn/app-shell/android/app/debug.keystore`,
+the standard AOSP debug key). That build exists only for the Appetize-hosted
+demo and for local UI automation; it is never published as a store artifact or
+offered as something an application ships. An application that distributes the
+SDK signs its own build with its own keystore, as the release instructions
+above describe. The keystore holds no production secret, and no credential is
+present in the build beyond the dedicated hosted-demo key described in
+`ProviderCredentialsAndBrowserProviders.md` §6.1.
+
 ### Ruling 3 — the docs site hosts the live wasm demo at `/demo`
 
 The demo reuses the established publish pipeline (`--publish --gates-green=<commit>`, where the flag names the commit whose gates passed;

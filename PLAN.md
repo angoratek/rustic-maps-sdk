@@ -524,7 +524,7 @@ Owner rulings 2026-11-17: the public history is a rewritten mirror pushed to a *
 - [ ] Bound network and image inputs: image dimension and allocation limits are in at every decode path (2026-11-17); HTTP response bodies remain unbounded in the provider layer transport and need an upstream cap.
 - [x] Browser credential handling (2026-11-17): the show/hide affordance is removed so every platform masks the field, the opt-in remembered key carries a visible warning, and `ProviderCredentialsAndBrowserProviders.md` §6 records the browser `localStorage` exception.
 - [x] Scrub the browser console export (2026-11-17): copy and JSON export replace applied credentials, authorization values and `key|apiKey|access_token|token|session|signature` query/member values before writing, with a Playwright case asserting the synthetic credential never appears.
-- [ ] Demo signing: stop signing release APKs with the tracked debug keystore (demo keystore from a secret, or a documented Appetize-only policy).
+- [x] Demo signing (2026-11-17): documented as an Appetize-only policy — the hosted demo APK is signed with the standard AOSP debug keystore and is never a store or production artifact; applications sign their own builds (`docs/PackagingAndRelease.md`).
 - [ ] Repository metadata: description, homepage, topics and documentation URL; the public repository name must be decided because a new public repository cannot reuse the private name.
 
 **Documentation and process sanitization**
