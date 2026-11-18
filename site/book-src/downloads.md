@@ -28,9 +28,8 @@ file.
 
 ## Verifying a published artifact
 
-A published artifact is verified by checksum first, then signature. The
-signature bundles bind the file to the release workflow and the `vX.Y.Z` tag,
-so the verification command pins both:
+Verify by checksum first, then signature. The signature bundles bind the file to
+the release workflow and the `vX.Y.Z` tag:
 
 ```bash
 sha256sum --check SHA256SUMS.txt --ignore-missing
@@ -41,17 +40,14 @@ cosign verify-blob <artifact-file> \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-The version page prints the exact identity string for its own tag. The
-`--ignore-missing` flag keeps the `sha256sum` run to the files you actually
-downloaded.
+The version page prints the exact identity string for its own tag.
 
 ### Rust
 
-The Rust package is the workspace source itself. It contains no compiled
-libraries, generated bindings or credentials; Cargo builds the crates you use
-from source. The [Rust guide](rust.md#install-from-the-source-tree) lists what
-the source tree contains and what it leaves out. Point a path dependency at the
-crates you use:
+The Rust package is the workspace source itself: no compiled libraries,
+generated bindings or credentials. Cargo builds the crates you use. The [Rust
+guide](rust.md#install-from-the-source-tree) lists what the source tree contains
+and what it leaves out. Point a path dependency at the crates you use:
 
 ```toml
 [dependencies]
@@ -59,28 +55,24 @@ rustic-maps-rendering = { path = "crates/rustic-maps-rendering" }
 rustic-maps-navigation = { path = "crates/rustic-maps-navigation" }
 ```
 
-The [Rust guide](rust.md) walks the same map, routing and navigation steps the
-other platforms use. A crates.io registry entry is not published yet; the
-source tree is the source of truth.
+A crates.io registry entry is not published yet; the source tree is the source
+of truth.
 
 ## Install a built package
 
 The [tutorials](first-map.md) carry the per-platform install steps against
 these exact artifact names: the AAR for Android, the checksummed zip for the
-Swift Package Manager binary target, and the npm tarball for WebAssembly,
-which also serves a static host that extracts its `package/` directory. The
-npm packages ship the same generated trees with a manifest, licenses and
-notices.
+Swift Package Manager binary target, and the npm tarball for WebAssembly, which
+also serves a static host that extracts its `package/` directory.
 
 To build the packages from a checkout, each one has a script that produces the
-artifact the tutorials install —
+artifact the tutorials install:
 
 | Package | Script | Output |
 |---|---|---|
 | Android | `scripts/build-android.sh` | the one AAR: bindings, three ABIs and `MapView` |
 | iOS | `scripts/build-ios.sh` | the XCFramework and the verified Swift package |
 | React Native | `scripts/build-rn.sh` | the generated TurboModule sources and native payload |
-| WebAssembly | `scripts/package-web-npm.sh` | the npm tarball (build the wasm package first) |
+| WebAssembly | `scripts/package-web-npm.sh` | the npm tarball, after the wasm build |
 
-The scripts print their prerequisites when one is missing; they are the same
-steps the release pipeline runs.
+The scripts print their prerequisites when one is missing.

@@ -13,8 +13,8 @@ read the same stream.
 ## The shared scenario
 
 - Start the source after the permission is granted.
-- Draw the renderer's tracking dot with `showAccuracyRing` and the controller's
-  smoothed course.
+- Draw the tracking dot with `showAccuracyRing` and the controller's smoothed
+  course.
 - Centre the camera on each fix at follow zoom 15.
 - Stop the source when the control is turned off and clear the layer.
 - State a denied permission, a disabled service, an unavailable source and a
@@ -59,7 +59,7 @@ deviceLocationSource.stop()
 
 ## iOS
 
-<!-- docs-snippet: skip — the snippet uses the MapNativeCoreUI view's location layer and its DeviceLocationSource, which the contract-only Swift snippet harness does not mirror. -->
+<!-- docs-snippet: skip — the snippet uses the MapNativeCoreUI view's location layer and its DeviceLocationSource, which the contract-only Swift snippet check does not mirror. -->
 ```swift
 import MapNativeCoreUI
 import RusticMapsSDK

@@ -47,61 +47,35 @@ a second tile cache.
 
 ## Naming across surfaces
 
-| Concept | Kotlin | Swift | TypeScript | Rust |
-| --- | --- | --- | --- | --- |
-| Type | `PascalCase` | `PascalCase` | `PascalCase` | `PascalCase` |
-| Member | `camelCase` | `camelCase` | `camelCase` | `snake_case` |
-| Enum variant | `UPPER_SNAKE_CASE` | `lowerCamelCase` | `PascalCase` | `PascalCase` |
-| Record field | `camelCase` | `camelCase` | `camelCase` | `snake_case` |
-| Error type | `SdkException` sealed class | `SdkError` enum | `SdkError` class with `tag` | `SDKError` enum |
-
 The contract spells record fields in `snake_case`. Every binding converts them
-to the language's own case; the WebAssembly seam does the same for its plain
-JavaScript objects, so `south_west` arrives as `southWest` and `maximum_zoom_level` as
-`maximumZoomLevel`.
+to the language's own case: Kotlin and Swift use `camelCase` members and
+`UPPER_SNAKE_CASE` or lowerCamel enum cases, TypeScript uses `camelCase` and
+`PascalCase`, and Rust uses `snake_case` and `PascalCase`. Types are
+`PascalCase` everywhere; the error type is `SdkException` on Kotlin and
+`SdkError` on Swift, React Native, WebAssembly and Rust.
 
 ## Async and threading
 
-- The provider calls, `offlineRouteFromArchiveBytes` and `MapView.draw` are
-  asynchronous. Kotlin uses `suspend` functions, Swift uses `async throws`,
-  React Native returns a `Promise`, WebAssembly returns a `Promise`. Rust
-  provider traits are `async` functions through `async_trait`.
+- Provider calls, `offlineRouteFromArchiveBytes` and `MapView.draw` are
+  asynchronous: Kotlin uses `suspend`, Swift `async throws`, React Native and
+  WebAssembly return a `Promise`, and Rust provider traits are `async`
+  functions through `async_trait`.
 - Rendering is frame-driven. There is no SDK render thread and no continuous
-  redraw loop. The platform view calls `draw` once per wanted frame from its
-  own display-link or frame callback, and calls it again only when
-  `isFrameSettled` answers false.
+  redraw loop. The platform view calls `draw` once per wanted frame and calls
+  it again only when `isFrameSettled` answers false.
 - `draw` holds the view's render state for its duration. A concurrent `draw`
   or `resize` reports `RenderingSurfaceUnavailable`; retry the next frame.
-  The shipped Android and iOS views do this automatically.
-- Navigation listener callbacks run synchronously on the thread that drives
-  the controller call. A listener must not block. Calling back into the
-  controller during an in-flight dispatch has its broadcast skipped; the
-  state change behind it is already applied.
-- A listener registered through the diagnostics subscription is called
-  fire-and-forget on the thread that produced the event. A slow listener
-  never slows the event stream.
+- Navigation listener callbacks run synchronously on the thread that drives the
+  controller call and must not block. A diagnostics listener is called
+  fire-and-forget on the thread that produced the event.
 
 ## Failures
 
-Every failing call reports one of these contract variants. Kotlin throws a
-`SdkException` subclass, Swift throws the `SdkError` case, React Native
-rejects with an `SdkError` instance and WebAssembly throws the verbatim
-reason string. The detail string is the verbatim reason and is safe to show
-to a developer.
-
-| Variant | Meaning |
-| --- | --- |
-| `InvalidCoordinateInput` | A coordinate, viewport extent, box corner or insets value failed validation. |
-| `NetworkRequestFailed` | The transport failed: connection, timeout or DNS. |
-| `ResponseParsingFailure` | The provider answered with a payload the parser cannot use. |
-| `ProviderRequestRejected` | The provider returned a documented application-level failure. |
-| `RateLimitExhausted` | The token-bucket limiter is exhausted; retry after the next refill. |
-| `ProviderNotConfigured` | No provider is registered for the requested contract; the contract name is carried. |
-| `InvalidNavigationInput` | A route record or navigation policy failed validation. |
-| `InvalidRenderInput` | An overlay, location layer, surface handle or viewport extent is unusable. |
-| `RenderingSurfaceUnavailable` | The GPU surface is unusable, or the view is busy drawing or resizing. |
-| `CacheOperationFailure` | A cache read, write or eviction failed. |
-| `OfflineRoutingFailure` | An offline archive is truncated, foreign, unsupported or malformed. |
+Every failing call reports one of the contract's `SdkError` variants. Kotlin
+throws a `SdkException` subclass, Swift throws the `SdkError` case, React Native
+rejects with an `SdkError` instance, and WebAssembly throws the verbatim reason
+string. The detail string is the verbatim reason and is safe to show to a
+developer. The [FFI contract](udl-contract.md) lists every variant.
 
 An SDK call never swallows a failure. The shipped Android and iOS map views
 deliver every failure to their listener or delegate with the wrapper phase it

@@ -28,30 +28,18 @@ the first Rust release.
 
 The Rust package is the workspace source: the workspace manifest and lock file,
 every workspace crate, the platform package sources and build scripts, the
-documentation sources, and both license files (MIT and Apache-2.0). The
-provider implementations come from the published `everymap-*` crates the lock
-file pins, not from workspace members.
+documentation sources, and both license files. The provider implementations
+come from the published `everymap-*` crates the lock file pins.
 
 1. Get the repository source tree.
 2. Point a path dependency at the crate you use, as the
    [Downloads](downloads.md#rust) page shows.
 
-The source contains no compiled libraries; Cargo builds the crates your
-application uses from that source, including their tests. The workspace lock
-file pins dependency versions; Cargo downloads those dependencies from their
-own sources unless your environment already provides them. Rust 1.89 or newer
-is required, and the workspace uses the 2024 edition.
-
-The source tree does not contain:
-
-- compiled libraries, an AAR, an XCFramework, a wasm module, or npm tarballs;
-  the platform artifacts are built separately with the platform scripts;
-- generated Kotlin, Swift or TypeScript bindings; the build scripts generate
-  them from the contract;
-- a provider credential, a local configuration file, or an environment file;
-- Sigstore signature bundles; they attach to a published artifact on its
-  release record;
-- the Git history; take the source tree from a checkout when you need history.
+Cargo builds the crates your application uses from source, including their
+tests, and downloads pinned dependencies from their own sources. Rust 1.89 or
+newer is required, and the workspace uses the 2024 edition. The source tree
+contains no compiled libraries, generated bindings, provider credential,
+Sigstore bundles or Git history.
 
 ## Camera and projection without a GPU
 
@@ -75,23 +63,19 @@ let screen_point = camera.project_to_screen(
 
 ## Rendering a frame
 
-`rustic-maps-rendering`'s headless renderer draws into an offscreen `wgpu` target:
-create a `HeadlessTileRenderer` over a `GraphicsContext`, resolve the camera's
-visible tiles through a `TileScheduler`, and read the frame back as RGBA
-bytes. The renderer is the same one the native surfaces use, so what you see
-offscreen matches what a platform view presents.
-
-The browser uses the same camera, overlay, label and vector-style modules; it
-binds them through a WebAssembly canvas adapter rather than a Rust surface.
+`rustic-maps-rendering`'s headless renderer draws into an offscreen `wgpu`
+target: create a `HeadlessTileRenderer` over a `GraphicsContext`, resolve the
+camera's visible tiles through a `TileScheduler`, and read the frame back as
+RGBA bytes. It is the same renderer the native surfaces use, and the browser
+binds the same modules through a WebAssembly canvas adapter.
 
 ## Providers
 
 Vendor providers implement the contracts in `everymap-core` — geocoding,
 search, type-ahead, routing, a distance matrix, traffic, raster and vector
-tiles. The SDK adapts them to its own traits at
-`rustic_maps_core::everymap_bridge` and registers them in the
-`rustic-maps-core` registry. A host that implements a provider inside its own
-application implements the `geospatial-traits` traits directly. See
+tiles. The SDK adapts them at `rustic_maps_core::everymap_bridge` and registers
+them in the `rustic-maps-core` registry. A host implementing a provider inside
+its own application implements the `geospatial-traits` traits directly. See
 [Add a provider](adding-a-provider.md) for the descriptor fields and the
 registration path.
 

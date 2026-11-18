@@ -54,38 +54,29 @@ the guide that shows it in full.
 
 A position is a `GeographicCoordinate`: latitude and longitude in decimal
 degrees on the WGS 84 ellipsoid. A region is a `BoundingBox` between a
-south-west and a north-east corner. A box never spans the antimeridian; encode
-a region that crosses it as two adjacent boxes.
-
-The renderer does not draw latitude and longitude directly. Every coordinate is
-projected into the Web Mercator world square, where each position becomes two
-numbers in `[0, 1]`. The projection stops at about 85.05° north and south, so a
-coordinate near a pole sits on the square's edge.
+south-west and a north-east corner and never spans the antimeridian. Every
+coordinate is projected into the Web Mercator world square, where each position
+becomes two numbers in `[0, 1]`; the projection stops at about 85.05° north and
+south.
 
 ## Tiles and zoom
 
-A tile is one payload at one zoom level. Its address is a `TileKey`: a column, a
+A tile is one payload at one zoom level, addressed by a `TileKey`: a column, a
 row counted from the north, and the zoom level. At zoom 0 the world is one tile;
-each level doubles the columns and rows, so level `z` has `2^z` of each.
-
-A camera's zoom is continuous from 0 through 24, and each unit doubles the
-on-screen scale. The tile grid changes only at whole levels, so the camera
-answers two questions: `tileZoomLevel` gives the nearest whole level for a tile
-fetch, and `visibleTileKeys` lists every tile at a chosen level that intersects
-the visible ground, sorted row-major from the north.
+each level doubles the columns and rows. A camera's zoom is continuous from 0
+through 24 and each unit doubles the on-screen scale. `tileZoomLevel` gives the
+nearest whole level for a tile fetch, and `visibleTileKeys` lists every tile at
+a chosen level that intersects the visible ground.
 
 ## Cameras
 
-A `MapCamera` is an immutable pose made of four values: center, zoom, bearing,
-and pitch. A new pose is a new camera; the getters read the pose back as it was
-built. Pitch measures tilt from straight down, from 0° to a maximum of 75°, so
-the view keeps ground in it. Bearing wraps into `[0, 360)`.
-
-The camera is also the projection and the tile selector. `projectToScreen` maps
-a coordinate to viewport pixels, `screenToGroundCoordinate` maps a pixel back to
-the ground, and `groundMetersPerScreenPixel` sizes a scale bar. The `fitBounds`
-constructor frames a bounding box inside an inset region you pass, so your own
-route cards and attribution never cover the destination.
+A `MapCamera` is an immutable pose of center, zoom, bearing, and pitch. A new
+pose is a new camera. Pitch measures tilt from straight down, from 0° to a
+maximum of 75°, and bearing wraps into `[0, 360)`. The camera is also the
+projection and tile selector: `projectToScreen` maps a coordinate to viewport
+pixels, `screenToGroundCoordinate` maps a pixel back to the ground, and
+`groundMetersPerScreenPixel` sizes a scale bar. The `fitBounds` constructor
+frames a bounding box inside an inset region you pass.
 
 ## Styles and overlays
 
@@ -95,30 +86,27 @@ Bright, Fiord, and Positron for OpenMapTiles-schema sources, and Carto Light and
 Carto Dark for the Sourdough source. Place names and road names are drawn from a
 glyph atlas. A style that declares a shield block on its route-reference layer
 draws each route reference as a shaped badge; Bright, Fiord, and Positron carry
-no route-reference layer, so those bases draw no shields.
+no such layer, so those bases draw no shields.
 
 An overlay is geography plus a style, not a picture or a set of screen pixels.
 `RoutePolyline`, `FilledPolygon`, `PointMarkers`, `PointPins`, and `TrafficFlow`
 all carry coordinates, and the SDK projects them through the same camera as the
-tiles in every frame. Panning, zooming, rotating, and tilting keep the layers
-aligned because every frame re-projects the same geographic inputs.
+tiles in every frame.
 
 ## Providers and credentials
 
 Provider-backed capabilities reach you through a registry on `MapSdk`. Register
 an implementation, then call the contract methods: geocoding, routing, the
 distance matrix, place search, traffic incidents and flow, and raster tiles. The
-SDK's provider layer carries MapQuest for those capabilities, HERE, Google Maps,
-TomTom, Mapbox and Radar for keyed geocoding and routing, Photon for keyless
-search, OSRM and Valhalla for keyless routing, and URL-template providers for
-any raster or vector base map.
+provider layer carries MapQuest, HERE, Google Maps, TomTom, Mapbox and Radar for
+keyed geocoding and routing, Photon for keyless search, OSRM and Valhalla for
+keyless routing, and URL-template providers for any raster or vector base map.
 
 Provider keys are runtime inputs, not build inputs. Enter a key through your own
 settings surface, secure storage, or a launch value injected for one test
 session. There is no `local.properties`, `Info.plist`, or `.xcconfig` field for a
 key, and no release artifact carries one. A key you apply is held for the
-session and optionally remembered in the platform's secure store, never in your
-project.
+session and optionally remembered in the platform's secure store.
 
 ## Where to go next
 
