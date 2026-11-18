@@ -811,9 +811,13 @@ how the release pipeline is trusted, but not the product surface.
 
 ### Decisions
 
-1. **The public history is a rewritten copy in a new public repository.** A
-   filter-repo mirror is pushed there, so no pre-rewrite objects are reachable
-   by SHA, private issues, pull requests or Actions logs.
+1. **The public history is a recent window in a new repository.** The last
+   31 commits of the main line are exported with full trees and rewritten to
+   mask the credential, the session identifier, local paths and the
+   maintainer's name; each commit is authored under the project's noreply
+   identity, the tip is byte-identical to the private tip, and the earlier
+   development history stays in the private repository. The repository was
+   created fresh, so no pre-window object is reachable by SHA.
 2. **Contributions carry a Developer Certificate of Origin sign-off.** No CLA.
    CI checks it with `scripts/check-dco-signoff.mjs`; commits stay one line
    with no trailers.
