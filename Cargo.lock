@@ -927,9 +927,9 @@ checksum = "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48"
 
 [[package]]
 name = "flate2"
-version = "1.1.10"
+version = "1.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e634e2e0ebac1ee034020da1ca582e17ffe4e0f5e985823721e168928136dcb"
+checksum = "626d4928326b646e70f65ed36fc7cf9f206bdb68a0019ee7c6b4709da4e084c4"
 dependencies = [
  "crc32fast",
  "miniz_oxide 0.9.1",
@@ -3638,9 +3638,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi-runtime-wasm"
-version = "0.31.0-6"
+version = "0.31.0-7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29b8946ac91124a03593b945812f1c30acd25bf6a05a24f2bbcf8740f85ce210"
+checksum = "bad07d5cdae4c594ea8e30a00380b7c4b2f8eb3b0bf7939e629e2d711e6438d5"
 
 [[package]]
 name = "uniffi_bindgen"
@@ -3954,9 +3954,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu"
-version = "30.0.1"
+version = "30.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e"
+checksum = "146fc3d654250e6207921a66c87534c621bc886c70df83dcf466c1d66813810e"
 dependencies = [
  "arrayvec",
  "bitflags",
