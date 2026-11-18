@@ -2678,7 +2678,7 @@ dependencies = [
  "tracing-core",
  "uniffi",
  "uniffi-runtime-wasm",
- "uniffi_core",
+ "uniffi_core 0.32.2",
  "url",
  "web-time",
  "wgpu",
@@ -3631,7 +3631,7 @@ dependencies = [
  "clap",
  "uniffi_bindgen",
  "uniffi_build",
- "uniffi_core",
+ "uniffi_core 0.31.2",
  "uniffi_macros",
  "uniffi_pipeline",
 ]
@@ -3684,6 +3684,18 @@ name = "uniffi_core"
 version = "0.31.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eec017b112701681f6fbbe5d92014b5c468eb0b177a94389de03ceec40665095"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "once_cell",
+ "static_assertions",
+]
+
+[[package]]
+name = "uniffi_core"
+version = "0.32.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7530ae8efeaaa488622865966763fe0294832779fff80508c36d69c6a874a6a"
 dependencies = [
  "anyhow",
  "bytes",
