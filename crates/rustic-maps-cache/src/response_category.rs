@@ -9,6 +9,24 @@
 use geospatial_types::SDKError;
 use serde::{Deserialize, Serialize};
 
+const SECONDS_PER_MINUTE: u64 = 60;
+const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
+const SECONDS_PER_DAY: u64 = 24 * SECONDS_PER_HOUR;
+
+/// Geocoding results change slowly enough to keep for a day.
+const GEOCODING_TIME_TO_LIVE_SECONDS: u64 = 24 * SECONDS_PER_HOUR;
+/// Routes and matrices follow live traffic and road closures.
+const ROUTING_TIME_TO_LIVE_SECONDS: u64 = 10 * SECONDS_PER_MINUTE;
+const DISTANCE_MATRIX_TIME_TO_LIVE_SECONDS: u64 = 10 * SECONDS_PER_MINUTE;
+/// Predictions follow the places a provider currently knows.
+const SEARCH_PREDICTION_TIME_TO_LIVE_SECONDS: u64 = 5 * SECONDS_PER_MINUTE;
+/// Incident reports are the most volatile provider response.
+const TRAFFIC_INCIDENTS_TIME_TO_LIVE_SECONDS: u64 = SECONDS_PER_MINUTE;
+/// Congestion polylines move with every probe update.
+const TRAFFIC_FLOW_TIME_TO_LIVE_SECONDS: u64 = 30;
+/// The common ceiling under imagery-provider terms.
+const TILE_IMAGERY_TIME_TO_LIVE_SECONDS: u64 = 30 * SECONDS_PER_DAY;
+
 /// Kind of provider response a cache entry holds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -52,15 +70,15 @@ impl ResponseCategory {
     /// source declares. The cache layer carries no provider value itself.
     pub fn default_time_to_live_seconds(self) -> u64 {
         match self {
-            ResponseCategory::Geocoding => 24 * 60 * 60,
-            ResponseCategory::Routing => 10 * 60,
-            ResponseCategory::DistanceMatrix => 10 * 60,
-            ResponseCategory::SearchPrediction => 5 * 60,
-            ResponseCategory::TrafficIncidents => 60,
-            ResponseCategory::TrafficFlow => 30,
-            ResponseCategory::RasterTiles => 30 * 24 * 60 * 60,
-            ResponseCategory::VectorTiles => 30 * 24 * 60 * 60,
-            ResponseCategory::StyleResources => 30 * 24 * 60 * 60,
+            ResponseCategory::Geocoding => GEOCODING_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::Routing => ROUTING_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::DistanceMatrix => DISTANCE_MATRIX_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::SearchPrediction => SEARCH_PREDICTION_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::TrafficIncidents => TRAFFIC_INCIDENTS_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::TrafficFlow => TRAFFIC_FLOW_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::RasterTiles => TILE_IMAGERY_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::VectorTiles => TILE_IMAGERY_TIME_TO_LIVE_SECONDS,
+            ResponseCategory::StyleResources => TILE_IMAGERY_TIME_TO_LIVE_SECONDS,
         }
     }
 

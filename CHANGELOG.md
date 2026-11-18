@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — cache lifetimes are named)
+
+- The default cache lifetimes in `response_category.rs` were inline arithmetic (`24 * 60 * 60`, `10 * 60`, `30 * 24 * 60 * 60`). They are now named constants: one per category plus `SECONDS_PER_MINUTE`, `SECONDS_PER_HOUR` and `SECONDS_PER_DAY`. The values are unchanged and the existing expiry test still pins them.
+
 ### Removed (2026-11-18 — dead contract field names)
 
 - Twelve `generated_contract_field_names` constants had no reader outside their own module: the two bounding-box fields and the ten route fields. They are deleted, and the module's `#[allow(dead_code)]` is gone, so the next unused name fails the build instead of drifting. The remaining constants are imported by the canvas, vector-layer and vector-source readers.
