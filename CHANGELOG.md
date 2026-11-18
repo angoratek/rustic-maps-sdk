@@ -4,6 +4,39 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-17 — documentation consolidated to eight guides)
+
+- The 25-file `docs/` set became eight guides plus the generated notices:
+  `Architecture.md` (contract, crate graph, `MapView`, provider layer, offline
+  routing), `Browser.md` (generated surface, loop, fallbacks, tile throughput,
+  console, measured performance), `Providers.md` (registry, credentials,
+  coverage matrix, provider-backed sources, caching), `StyleSupport.md`,
+  `ReferenceAppUX.md`, `Release.md` (artifacts, workflow, signing, site,
+  screenshots, hosted demo, public-repository runbook), `DocsStyleGuide.md` and
+  `THIRD_PARTY_NOTICES.md`. `docs/README.md` indexes them.
+- Merging reconciled the sources against the tree: the aggregate required check
+  is `format-and-lint`, the console's current element identifiers and filters,
+  the six forbidden-header names the browser transport actually drops, the
+  region-download members that are on the contract, and `style_schema` as
+  planned rather than shipped. Duplicated process narrative and migration
+  history are removed; every table, constant, path and test name survives.
+- Dated entries in `PLAN.md` and `CHANGELOG.md` keep the document names in use
+  at the time; `docs/README.md` and this section name the current set.
+
+### Changed (2026-11-17 — the public record is revision-independent)
+
+- Commit ids recorded in `PLAN.md` and `docs/` became dated or descriptive
+  references (52 in `PLAN.md`, four in `docs/`), because the published history
+  is a rewritten mirror whose commit ids differ; no backticked commit id
+  remains in any Markdown file, and the tree carries no absolute local path
+  outside the docs-site scrubber and its test.
+- Process vocabulary (owner, round, milestone, plan numbers) is replaced by the
+  decision it records, with dates and `PRD.md` §6 item numbers where they
+  exist, across fourteen repository documents. The published site pages were
+  already clean; `docs/DocsStyleGuide.md` keeps the banned-word list because it
+  defines the rule, and vendor billing sentences stay as terms text.
+- The history rewrite and publication runbook is `docs/Release.md`.
+
 ### Changed (2026-11-17 — internal documentation trimmed to the live guides)
 
 - The implemented design notes are retired: `Autocomplete.md`,
@@ -21,8 +54,8 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 - Every reference from source comments, tests, scripts and the root documents
   now points at a surviving home: `PRD.md` §6 items, `docs/ReferenceAppUX.md`
   §2.5/§4.1/§4.2/§5.5, `platform/providers.json`, `platform/reference-flows.json`,
-  `docs/reference/BrowserRenderPerformance.md`, `docs/design/DeveloperConsole.md`,
-  `docs/design/ProviderCoverage.md`, `docs/design/EverymapAdoption.md` and the
+  `docs/Browser.md`, `docs/Browser.md`,
+  `docs/Providers.md`, `docs/Architecture.md` and the
   code that implements the design. No behaviour, assertion, workflow or site
   page changed.
 
@@ -612,7 +645,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 - The Android, iOS and React Native reference apps now open keylessly on **OpenFreeMap Bright**, the registry's declared styled vector base, instead of the plain OpenStreetMap raster (owner ruling 2026-10-31, PRD §6 item 18). `platform/providers.json` gained a top-level `keyless_base_map` (`provider_key` plus committed `style_id`); each shell resolves it against the descriptors and installs the style over the credential-less raster source, which stays registered so the shipped surface can attach (the surface contract still requires a raster provider). A registry that omits the field keeps the raster default, an explicit base-map choice or the demo launch argument always wins, and an applied credential is never hidden under the default. The React Native shell gained its missing keyless start registration as part of the same change.
 
-- A hosted-demo build can carry its own provider credential. `scripts/inject-hosted-demo-credential.sh` writes it into the Android app's assets (and the React Native shell's) on the build machine from a repository secret; the iOS app reads it from `Info.plist` expanded from the build setting. It is applied through the same runtime registration path as the settings surface — never persisted, never logged — and every build made without it stays keyless. `docs/ProviderCredentialsAndBrowserProviders.md` §6.1 records the bounded exception to the "no key in a build" rule.
+- A hosted-demo build can carry its own provider credential. `scripts/inject-hosted-demo-credential.sh` writes it into the Android app's assets (and the React Native shell's) on the build machine from a repository secret; the iOS app reads it from `Info.plist` expanded from the build setting. It is applied through the same runtime registration path as the settings surface — never persisted, never logged — and every build made without it stays keyless. `docs/Providers.md` (the hosted-demo exception) records the bounded exception to the "no key in a build" rule.
 
 - The Android SDK, both Android applications, the JVM smoke module and the RN
   Android module moved from `com.angoratek.mapsdk` to
@@ -627,7 +660,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   `MAPQUEST_API_KEY` line in `platform/android/local.properties` from the old
   build-time path were deleted. **The removed key should be rotated.**
 
-- **Runtime provider credentials design** (`docs/ProviderCredentialsAndBrowserProviders.md`,
+- **Runtime provider credentials design** (`docs/Providers.md`,
   M13): the owner-directed model for removing build-time provider keys from
   every refapp — a descriptor-driven settings surface, masked entry, explicit
   apply/clear, opt-in secure persistence (Keychain /
@@ -647,7 +680,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   build ids stable, with the session limits and the docs-site referrer
   restriction applied at upload time, and a public manifest holding no secret.
 
-- **Packaging & release design** (`docs/PackagingAndRelease.md`, M10
+- **Packaging & release design** (`docs/Release.md`, M10
   opening): the four owner rulings (GitHub Releases only; angoratek
   namespace; docs-site `/demo` hosting; tag-driven release workflow) turned
   into a concrete artifact matrix from measured tree sizes, a release.yml

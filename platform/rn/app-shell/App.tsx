@@ -621,7 +621,7 @@ function ReferenceAppScreen(): React.JSX.Element {
     },
     [providerCredentialsState.rows],
   );
-  // --- The per-capability provider rows (docs/design/ProviderCoverage.md §Per-capability selection) ---
+  // --- The per-capability provider rows (docs/Providers.md (Per-capability selection)) ---
   const [capabilityProviderRows, setCapabilityProviderRows] = useState<
     CapabilityProviderRow[]
   >([]);
@@ -4502,7 +4502,7 @@ function ProviderCredentialRow(props: {
 }
 
 /**
- * One per-capability provider row (docs/design/ProviderCoverage.md §Per-capability selection):
+ * One per-capability provider row (docs/Providers.md (Per-capability selection)):
  * the capability, the serving provider's name or the honest "Not configured"
  * line, and the registry's eligible providers as the picker. The two tile
  * rows are read-only because the map's layer control owns them.

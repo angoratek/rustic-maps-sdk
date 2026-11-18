@@ -13,7 +13,7 @@
 # link fails.
 #
 # A hosted-demo build may carry the demo's dedicated credential (M24, owner
-# ruling 2026-10-30, `docs/ProviderCredentialsAndBrowserProviders.md` §6.1).
+# ruling 2026-10-30, `docs/Providers.md` (the hosted-demo exception)).
 # Pass it in the environment; without it the build is keyless, which is what
 # every distributed build must be.
 #

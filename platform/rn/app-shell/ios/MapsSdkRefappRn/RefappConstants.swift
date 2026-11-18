@@ -208,7 +208,7 @@ enum RefappConstants {
     static let cacheNotRegisteredText = "Cache not registered"
 
     // --- Runtime provider credentials
-    // (docs/ProviderCredentialsAndBrowserProviders.md §3–§6) ---
+    // (docs/Providers.md (Credentials through the coverage matrix)) ---
     /// The provider key the registration dispatch serves today.
     static let mapquestProviderKey = "mapquest"
     /// The refusal before the SDK objects were built.

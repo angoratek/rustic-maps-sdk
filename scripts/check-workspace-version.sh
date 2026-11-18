@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assert the single-version policy of docs/PackagingAndRelease.md §5: the
+# Assert the single-version policy of docs/Release.md (Versioning and identities): the
 # workspace version (`Cargo.toml` `[workspace.package].version`) is the one
 # version line, and every release package manifest that declares a version
 # must agree with it. The release workflow runs this on the tagged tree and

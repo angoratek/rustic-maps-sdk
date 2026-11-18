@@ -3,7 +3,7 @@
 //
 // Every fenced code block in the tutorial chapters is regenerated from a
 // marked region of a reference application, so a guide cannot drift from the
-// code that ships. `docs/reference/DocumentationSnippets.md` is the contract; this file
+// code that ships. `docs/Release.md` is the contract; this file
 // implements it.
 //
 // A source region is delimited by two comments carrying the snippet

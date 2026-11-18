@@ -84,7 +84,7 @@ const SHARED_RUST_CLOSURE_PATHS = Object.freeze([
   'crates',
 ]);
 
-/** Files bundled verbatim into every package (docs/PackagingAndRelease.md §4.4). */
+/** Files bundled verbatim into every package (docs/Release.md (The artifacts)). */
 const SHARED_PACKAGE_PATHS = Object.freeze([
   'LICENSE-MIT',
   'LICENSE-APACHE',

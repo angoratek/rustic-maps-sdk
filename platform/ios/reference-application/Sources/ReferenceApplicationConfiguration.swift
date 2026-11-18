@@ -916,7 +916,7 @@ enum ReferenceApplicationConfiguration {
     /// The launch-argument key that runs the tutorial's worked example at
     /// startup (`-DemoWalkthrough YES`): the same steps the guides publish,
     /// so the generated chapters describe code this application really
-    /// executes (`docs/reference/DocumentationSnippets.md`).
+    /// executes (`docs/Release.md`).
     static let launchArgumentWalkthroughDemo = "DemoWalkthrough"
 
     /// The launch-argument key that selects a base map at startup by provider

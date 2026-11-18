@@ -32,7 +32,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
 
-    // Package-level notices (docs/PackagingAndRelease.md §4.4): the dual
+    // Package-level notices (docs/Release.md (The artifacts)): the dual
     // license files and the third-party notices ride in the AAR's assets
     // tree, staged there by scripts/build-android.sh before assembleRelease.
     sourceSets.getByName("main").assets.srcDir("build/generated/sdk-licenses")

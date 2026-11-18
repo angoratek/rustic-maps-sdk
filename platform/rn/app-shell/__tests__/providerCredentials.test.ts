@@ -1,6 +1,6 @@
 /**
  * Jest-level unit tests of the reference application's provider-credential
- * decisions (docs/ProviderCredentialsAndBrowserProviders.md §3–§6):
+ * decisions (docs/Providers.md (Credentials through the coverage matrix)):
  * descriptor validation, the apply/remember state machine, the explicit
  * apply plan, and the clear semantics — pure decisions, no native side.
  */

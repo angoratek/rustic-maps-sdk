@@ -450,7 +450,7 @@ export const appStrings = {
   attributionPanelTitleText: 'Map attribution and terms',
   // --- The arrival presentation (§7.1). ---
   arrivedText: 'Arrived',
-  // --- The settings surface (docs/ProviderCredentialsAndBrowserProviders.md
+  // --- The settings surface (docs/Providers.md
   // §3): the gear beside the readiness chip and the descriptor-driven
   // provider credential rows. The strings name product concepts, never seam
   // names, and never echo a credential. ---
@@ -496,7 +496,7 @@ export const appStrings = {
     'Vector base tiles failed this frame: ',
   /** The credential row's hint when a not-yet-servable base map points at it. */
   providerCredentialEnterHintText: 'Enter a key, then Apply.',
-  // --- The per-capability provider rows (docs/design/ProviderCoverage.md) ---
+  // --- The per-capability provider rows (docs/Providers.md) ---
   /** The settings section that chooses the provider serving each capability. */
   capabilityProviderSectionHeaderText: 'Providers by capability',
   /** A capability with no installed provider reads honestly, never blank. */

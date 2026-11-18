@@ -152,7 +152,7 @@ export interface RefappMapModule {
   getSpeechEngineState(): Promise<SpeechEngineStateEvent>;
   /**
    * Registers one runtime provider credential through the SDK's existing
-   * registration call (docs/ProviderCredentialsAndBrowserProviders.md §3):
+   * registration call (docs/Providers.md (Credentials):
    * a refusal's detail text is verbatim, and the controller re-emits its
    * readiness and cache state. The credential never travels back to JS.
    */

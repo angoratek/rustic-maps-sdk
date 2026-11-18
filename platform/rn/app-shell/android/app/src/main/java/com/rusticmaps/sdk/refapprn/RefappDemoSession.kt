@@ -332,7 +332,7 @@ class RefappDemoSession private constructor() : MapsSdkMapViewObserver {
     /**
      * Builds the SDK objects keyless — no provider is registered, so the
      * no-key state is first-class and honest
-     * (docs/ProviderCredentialsAndBrowserProviders.md §3) — loads the shared
+     * (docs/Providers.md (Credentials) — loads the shared
      * demo artifact's native half, and publishes the honest unregistered
      * cache line. A credential entered at runtime registers later through
      * [setProviderCredential]. Every failure of the artifact reports verbatim
@@ -387,7 +387,7 @@ class RefappDemoSession private constructor() : MapsSdkMapViewObserver {
 
     /**
      * Applies one runtime provider credential (§3's explicit Apply,
-     * docs/ProviderCredentialsAndBrowserProviders.md): the `mapquest` arm
+     * docs/Providers.md): the `mapquest` arm
      * registers the provider set with the tile cache wrapped around the
      * raster-tile contract (the offline-maps demo) using the caches path the
      * keyless start remembered, then re-emits the readiness and cache state.

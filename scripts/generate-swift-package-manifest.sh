@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Emit the generated `Package.swift` published on the `swift-package` branch
-# (docs/PackagingAndRelease.md §2.2 and §3).
+# (docs/Release.md (The artifacts and the release workflow)).
 #
 # The manifest is the Swift Package Manager consumption path of the
 # Releases-only distribution ruling: its `binaryTarget` points at the

@@ -3,7 +3,7 @@
 //! platform glue over the `RefappDemoSession` singleton — the keyless
 //! SDK start, the runtime provider credential and its opt-in Keychain store
 //! (the credential is entered at runtime, never baked into the app;
-//! docs/ProviderCredentialsAndBrowserProviders.md §2), the camera presets,
+//! docs/Providers.md (Credentials)), the camera presets,
 //! the simulated trace replay, the attach retry control, and the diagnostics
 //! lines. All SDK-driving methods run on the main thread
 //! (`MapView`'s contract) and report nothing silently: a refused call

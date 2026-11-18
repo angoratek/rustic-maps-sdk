@@ -291,7 +291,7 @@ class ReferenceApplicationState(
 
     /**
      * Whether the launch automation asked for the tutorial's worked example
-     * (M25, `docs/reference/DocumentationSnippets.md`). Setting it arms the walkthrough;
+     * (M25, `docs/Release.md`). Setting it arms the walkthrough;
      * it starts as soon as the map view exists, so an intent extra that
      * arrives before the composition finishes still runs exactly once.
      */

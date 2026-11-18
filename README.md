@@ -148,7 +148,7 @@ node serve.mjs                    # http://127.0.0.1:8642/
 The GPU frame-budget measurement runs outside the test suite because the suite
 renders under SwiftShader, whose numbers do not describe a real GPU:
 `node platform/web/perf/run-frame-budget.mjs` (add `--layer raster` for the tile
-path). The recipe is `docs/reference/BrowserRenderPerformance.md`.
+path). The recipe is `docs/Browser.md`.
 
 ### Live provider check (optional, needs an API key)
 

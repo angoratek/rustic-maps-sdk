@@ -1,5 +1,5 @@
 //! The provider console's text: row lines, detail sections and the export
-//! payload (docs/design/DeveloperConsole.md "Provider request console").
+//! payload (docs/Browser.md "Provider request console").
 //! Everything here is pure so the formatting, the filter, the honest cache
 //! rows and the credential-free export are unit-testable without a view.
 //!

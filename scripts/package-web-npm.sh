@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Package the generated WebAssembly bindings as the npm package
 # `@angoratek/rustic-maps-sdk-web` and emit the release tarball
-# `rustic-maps-sdk-web-v<version>.tgz` (docs/PackagingAndRelease.md §2.4).
+# `rustic-maps-sdk-web-v<version>.tgz` (docs/Release.md (The artifacts)).
 #
 # Inputs:
 #   - platform/web/generated/  the generated `wasm2` ESM set with declarations

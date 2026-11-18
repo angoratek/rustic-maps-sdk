@@ -14,7 +14,7 @@ import uniffi.rustic_maps.SdkLogSeverity
  * JavaScript): thin platform glue over the [RefappDemoSession] singleton —
  * the keyless SDK start, the runtime provider credential (the credential is
  * entered at runtime and never baked into the app,
- * docs/ProviderCredentialsAndBrowserProviders.md §2), its opt-in secure
+ * docs/Providers.md (Credentials), its opt-in secure
  * store, the camera presets, the simulated trace replay, the attach retry
  * control, and the diagnostics lines. All SDK-driving methods hop to the main
  * looper (`MapView`'s contract) and report nothing silently: a refused

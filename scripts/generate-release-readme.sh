@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Generate the install-snippet README that ships as a release asset
-# (docs/PackagingAndRelease.md §3.4):
+# (docs/Release.md (The release workflow)):
 # `rustic-maps-sdk-v<version>-README.md`.
 #
 # The README names the tagged version and every release asset, and carries the

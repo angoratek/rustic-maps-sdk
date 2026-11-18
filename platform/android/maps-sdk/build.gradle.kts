@@ -14,7 +14,7 @@ plugins {
     `maven-publish`
 }
 
-// Packaging identity of the released AAR (docs/PackagingAndRelease.md §1
+// Packaging identity of the released AAR (docs/Release.md (Versioning and identities)
 // ruling 2): Maven group `com.angoratek`, artifact `rustic-maps-sdk`, one
 // artifact for bindings, native libraries and wrapper.
 group = "com.angoratek"
@@ -37,7 +37,7 @@ android {
         // this module, not a dependency on a second artifact.
         kotlin.srcDir("../map-sdk-native/src/main/kotlin")
         jniLibs.srcDir("../map-sdk-native/src/main/jniLibs")
-        // Package-level notices (docs/PackagingAndRelease.md §4.4), staged by
+        // Package-level notices (docs/Release.md (The artifacts)), staged by
         // scripts/build-android.sh before the release assembly runs.
         assets.srcDir("../map-sdk-native/build/generated/sdk-licenses")
     }

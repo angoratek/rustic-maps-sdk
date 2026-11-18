@@ -226,7 +226,7 @@ object RefappConstants {
     const val CACHE_NOT_REGISTERED_TEXT: String = "Cache not registered"
 
     // --- Runtime provider credentials
-    // (docs/ProviderCredentialsAndBrowserProviders.md §3–§6) ---
+    // (docs/Providers.md (Credentials through the coverage matrix)) ---
     /** The provider key the registration dispatch serves today. */
     const val MAPQUEST_PROVIDER_KEY: String = "mapquest"
 

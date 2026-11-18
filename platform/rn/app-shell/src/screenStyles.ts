@@ -33,7 +33,7 @@ const developerConsoleSheetHeightFraction = '88%';
 
 /**
  * The settings surface's named layout values
- * (docs/ProviderCredentialsAndBrowserProviders.md §3): the gear's hit target
+ * (docs/Providers.md (Credentials): the gear's hit target
  * beside the readiness chip and the credential field's single-line height.
  */
 /**

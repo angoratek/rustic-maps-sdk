@@ -1,24 +1,21 @@
-# Full MapLibre style-specification adoption
+# Style support
 
-Date: 2026-11-01. Status: phases 1–6 landed, including the icon and sprite
-pipeline. The named icon residuals (`icon-halo-*`, `icon-text-fit`,
-`icon-optional`, `icon-keep-upright`, SDF tinting and line-placed icons) stay
-in `PLAN.md` §2.
-Owner ruling: adopt the **full source/layer model** of the MapLibre style
+The SDK adopts the **full source/layer model** of the MapLibre style
 specification, not a curated subset. The renderer keeps its own wgpu pipeline;
-the style document, its expressions and its evaluation semantics become the
-SDK's style surface on all four targets.
+the style document, its expressions and its evaluation semantics are the SDK's
+style surface on all four targets.
 
-This document is the reference for the implementation rounds. It records what
-ships today, what the specification requires, the target Rust model, the
-evaluation rules, the migration path for the committed styles, the licensing
-position, and a six-phase plan small enough to land one phase per round.
+This document records what ships today, what the specification requires, the
+Rust model, the evaluation rules, the committed styles, the licensing position
+and the remaining gaps. The named icon residuals (`icon-halo-*`,
+`icon-text-fit`, `icon-optional`, `icon-keep-upright`, SDF tinting and
+line-placed icons) are open work recorded in `PLAN.md`.
 
 ## 1. What this document decides
 
 - A style is a **MapLibre style document** (version 8): `sources`, `layers`,
   `glyphs`, `sprite`, and the root properties. The current data-only artifact
-  format becomes a compatibility shim for one migration round and is then
+  format becomes a compatibility shim for one migration step and is then
   retired.
 - Styling is compiled into **render plans** per layer: a geometry kind, a
   filter expression, paint properties resolved per feature at a zoom, and
@@ -31,7 +28,7 @@ position, and a six-phase plan small enough to land one phase per round.
   line joins and caps, dashes, line offsets and gap widths, fill outlines,
   circle strokes, per-feature data-driven paint, and true text/icon layout.
   Per-feature width means the world-space overlay tessellation can no longer
-  bake every screen-space size at style-build time; the phase plan says where
+  bake every screen-space size at style-build time; the implementation plan says where
   that seam changes.
 - Layer order is **global across tiles**, not per tile. Page overlays stay
   above every style layer, matching the SDK's existing draw contract and
@@ -208,20 +205,20 @@ The Native repository confirms the semantic vocabulary this design mirrors:
 style layers compile into tile buckets; paint and layout properties are
 resolved through property evaluators; symbol placement and collision live in
 `src/mln/text`; tile scheduling lives in `renderer/tile_pyramid`. The exact
-per-file C++ logic was not read line by line, so the phases that depend on
+per-file C++ logic was not read line by line, so the parts that depend on
 fine-grained behavior must confirm against the source or its render tests.
 
 ## 4. Gap analysis
 
 Status values: **SUPPORTED** (a style property works today), **PARTIAL**
-(some cases work, with a different or narrower model), **ABSENT**. Owner is
-the file that would have to change. Effort: S under a day, M a few days, L a
-round, XL more than a round. Risk is the chance of changing existing golden
-output or destabilizing the pipeline.
+(some cases work, with a different or narrower model), **ABSENT**. The
+responsible file is the one that would have to change. Effort: S under a day,
+M a few days, L a week or so, XL more than a week. Risk is the chance of
+changing existing golden output or destabilizing the pipeline.
 
 ### 4.1 Document, root and sources
 
-| Feature | Status | Owner | Effort | Risk |
+| Feature | Status | Responsibility | Effort | Risk |
 |---|---|---|---|---|
 | `version: 8` document root | ABSENT | new `rustic-maps-style/src/document.rs` | M | low |
 | `name`, `metadata` | ABSENT | same | S | low |
@@ -242,7 +239,7 @@ output or destabilizing the pipeline.
 
 ### 4.2 Layer common model
 
-| Feature | Status | Owner | Effort | Risk |
+| Feature | Status | Responsibility | Effort | Risk |
 |---|---|---|---|---|
 | `id` and layer identity | ABSENT (index order only) | style crate | S | low |
 | `source` binding plus `source-layer` | PARTIAL (`source_layer` only) | style crate + scheduler | M | medium |
@@ -268,7 +265,7 @@ output or destabilizing the pipeline.
 
 ### 4.3 Fill
 
-| Feature | Status | Owner | Effort | Risk |
+| Feature | Status | Responsibility | Effort | Risk |
 |---|---|---|---|---|
 | `fill-color` | SUPPORTED (constant and expression) | `vector_style.rs` | none | none |
 | `fill-opacity` | SUPPORTED | render plan | none | none |
@@ -282,7 +279,7 @@ output or destabilizing the pipeline.
 
 ### 4.4 Line
 
-| Feature | Status | Owner | Effort | Risk |
+| Feature | Status | Responsibility | Effort | Risk |
 |---|---|---|---|---|
 | `line-color` | SUPPORTED (constant) | `vector_style.rs` | none | none |
 | `line-width` | PARTIAL (constant + linear stops) | render plan + tessellation | M | medium |
@@ -299,7 +296,7 @@ output or destabilizing the pipeline.
 
 ### 4.5 Circle and background
 
-| Feature | Status | Owner | Effort | Risk |
+| Feature | Status | Responsibility | Effort | Risk |
 |---|---|---|---|---|
 | `circle-radius`, `circle-color` | SUPPORTED (constant and expression) | `vector_style.rs` | none | none |
 | `circle-opacity` | SUPPORTED | render plan | none | none |
@@ -314,7 +311,7 @@ output or destabilizing the pipeline.
 
 ### 4.6 Symbol and text
 
-| Feature | Status | Owner | Effort | Risk |
+| Feature | Status | Responsibility | Effort | Risk |
 |---|---|---|---|---|
 | `symbol-placement` `point` / `line` | PARTIAL | `labels.rs` | none | none |
 | `symbol-placement` `line-center` | SUPPORTED (one placement at the run midpoint) | `labels.rs` | none | none |
@@ -381,7 +378,7 @@ tolerant image compare absorbs it.
 
 ### 4.7 Layer types outside the current model
 
-| Feature | Status | Owner | Effort | Risk |
+| Feature | Status | Responsibility | Effort | Risk |
 |---|---|---|---|---|
 | `heatmap` | ABSENT | deferred | XL | high |
 | `fill-extrusion` | ABSENT | deferred | XL | high |
@@ -427,17 +424,17 @@ Why a new crate rather than extending `rustic-maps-vector-tiles` or
   it, which preserves provider genericity.
 
 The renderer keeps `vector_style.rs` as the **compiler** for one migration
-round. It gains:
+step. It gains:
 
 - `compile_style_document(document, source_bindings) -> Result<CompiledStyle, StyleError>`
 - `CompiledStyle` holds ordered `CompiledLayer` values: kind, source id,
   source layer, `FilterExpression`, resolved paint descriptors, layout
   descriptors and sort key.
-- Renderer-side modules: `style_paint.rs` (resolve paint per feature at a
-  zoom), `style_layout.rs` (resolve layout at integer zoom for symbols),
-  `line_tessellation.rs` and `symbol_placement.rs` as the old code is
-  replaced. Existing `overlay.rs` and `labels.rs` stay the GPU-free assembly
-  seams; they gain the new semantics rather than being bypassed.
+- Renderer-side responsibilities: paint resolves per feature at a zoom and
+  symbol layout resolves at integer zoom. The implementation keeps them in
+  `vector_style.rs` for paint, `labels.rs` for symbol layout and placement and
+  `overlay.rs` for assembly; the GPU-free assembly seams gained the new
+  semantics rather than being bypassed.
 
 ### 5.2 The style document model
 
@@ -447,7 +444,7 @@ MapStyleDocument {
     name: Option<String>,
     metadata: Option<serde_json::Value>,
     center/zoom/bearing/pitch: Option<...>, // parsed, the SDK camera wins
-    projection: Projection,            // mercator only in the first phases
+    projection: Projection,            // mercator only
     sources: BTreeMap<String, SourceSpec>,
     sprite: Option<SpriteSpec>,
     glyphs: Option<String>,
@@ -519,7 +516,7 @@ Operator set, in landing order:
 3. **State**: `feature-state`, `global-state`, `heatmap-density`,
    `line-progress`, `accumulated`, `within`, `distance`,
    `is-supported-script`, `number-format` are parsed but return `null` or a
-   diagnostic until their owning phase.
+   diagnostic until the owning work lands.
 
 Every expression is analyzed at parse time into one of four kinds:
 `Constant`, `Camera`, `DataDriven`, `CameraAndData`. The analysis enforces the
@@ -539,7 +536,7 @@ The legacy array filter is normalized by rewriting bare strings used as
 input into `["get", name]`, and `$type` into `["geometry-type"]`. The
 normalized tree is the same `Expression` used by paint. The existing
 `VectorAttributeFilter` and `feature_matches_filter` are retired after the
-compatibility round.
+compatibility step.
 
 Coercion follows the specification, not Rust's `PartialEq`: `==` compares
 numbers numerically and strings lexically, and a mixed comparison is false
@@ -580,7 +577,7 @@ Rules:
 - Colors interpolate per channel in the default space; `interpolate-hcl`
   and `interpolate-lab` are separate operators. The exact default space and
   premultiplication rule must be confirmed against the upstream expression
-  test suite before Phase 1 exits; this document does not pretend to know it
+  test suite before the style-document work completes; this document does not pretend to know it
   beyond the specification's wording.
 - A property expression that fails at runtime (type error, missing property
   under a non-`coalesce` path, unsupported operator) falls back to the
@@ -593,7 +590,7 @@ includes a hash of the resolved style revision plus the resolved paint
 quantized to a named constant (initially 1/16 zoom). Geometry is
 re-tessellated when that key changes. This keeps the cache bounded while
 making width and size changes visually continuous. If measurement shows
-per-frame re-tessellation dominates, the phase plan permits a fixed bucket
+per-frame re-tessellation dominates, the plan permits a fixed bucket
 plus cross-fade, but the default is the finer key.
 
 ### 5.6 Compilation to render plans
@@ -667,11 +664,11 @@ minimum_zoom, maximum_zoom }`. This preserves three standing rules:
 - a test binds the same source id to a fixture provider and never touches the
   network.
 
-Phase 3 implements multiple vector sources and GeoJSON. GeoJSON is consumed
+The sources work implements multiple vector sources and GeoJSON. GeoJSON is consumed
 through a small tiling step at the source boundary: features are clipped to
 the same tile grid the vector source uses, so downstream buckets and symbol
 placement see one feature model. The exact GeoJSON tiler is a design item for
-that phase; it must stay deterministic for goldens.
+that work; it must stay deterministic for goldens.
 
 ### 5.9 Symbol placement
 
@@ -697,7 +694,7 @@ The placement module is modeled on MapLibre Native's stages:
 
 The persistent index must be invalidated on style revision, source change,
 zoom-level change and glyph/sprite atlas revision. That invalidation set is
-part of the phase's verification, not an implementation detail left to
+part of the verification, not an implementation detail left to
 chance.
 
 ### 5.10 Colors and units
@@ -757,12 +754,11 @@ that work is carried forward rather than relearned.
    `UPDATE_GOLDENS=1`. Single-tile scenes must be identical. The multi-tile
    road-name scene may change only at tile seams because global layer order
    is intentionally different; if it changes, the diff must be inspected and
-   recorded in the round's notes, never blind-regenerated.
+   recorded in the change notes, never blind-regenerated.
 4. **Retire the old path.** After parity and a green full gate, delete the
    legacy artifact parser and the in-code fallback table, or keep the
-   fallback as a version-8 document constant. The decision belongs to the
-   round that lands Phase 2, with the owner's approval; the design prefers
-   one parser.
+   fallback as a version-8 document constant. The decision is made when
+   The compilation work lands; the design prefers one parser.
 
 The committed product styles remain provider-neutral: their source id is
 resolved through the registry, and no vendor URL is copied into a style
@@ -813,14 +809,14 @@ Facts verified 2026-11-01:
   from the public specification and the design book. No new licence file is
   required for that, and the existing "Prior art & inspiration" credit in
   `docs/THIRD_PARTY_NOTICES.md` already names MapLibre. If any file is later
-  ported verbatim, the round must commit a `maplibre-native-LICENSE.md` beside
+  ported verbatim, the change must commit a `maplibre-native-LICENSE.md` beside
   the other licence texts under `docs/THIRD_PARTY_LICENSES/` with the
   BSD-2-Clause text, and change the notices entry to say logic was ported.
 - **MapLibre style specification** is BSD-3-Clause (`LICENSE.txt` in
   `maplibre-style-spec`). The design reads the published specification. It
   does not copy the specification text or its JSON schema. If a copy of the
   specification, its schema or its expression test vectors is committed, the
-  round must commit
+  change must commit
   `docs/THIRD_PARTY_LICENSES/maplibre-style-spec-LICENSE.txt` (BSD-3-Clause)
   and add a notices entry that names the copied material.
 - **MapLibre demotiles** is BSD-3-Clause, Copyright (c) 2021 MapLibre. The
@@ -855,14 +851,13 @@ Facts verified 2026-11-01:
   `docs/THIRD_PARTY_LICENSES/` are the correct homes for these entries; the
   Ferrostar entry is the precedent.
 
-## 9. Phased plan
+## 9. Implementation order
 
-Six phases in landing order. Each phase is one working round and compiles
-standalone. Verification is an observable behavior or image, not "it
-compiles". Phases 1–6 have landed, including the icon and sprite pipeline
-(`PLAN.md` M55); the named icon residuals stay in `PLAN.md` §2.
+Six parts in landing order. Each part compiles standalone, and verification
+is an observable behavior or image rather than "it compiles". All six have
+landed, including the icon and sprite pipeline.
 
-### Phase 1 — The style document, expressions and filters — **landed 2026-11-02**
+### The style document, expressions and filters
 
 Add `crates/rustic-maps-style` with the document model, CSS colors, typed
 expressions, interpolation, filter normalization and legacy-function
@@ -877,7 +872,7 @@ zero unsupported properties on the eight layers it renders; expression and
 filter conformance cases pass; wasm32 clippy passes for the new crate; no
 existing golden changes.
 
-### Phase 2 — Compilation, spec-backed committed styles, global layer order — **landed 2026-11-02**
+### Compilation and committed styles
 
 Rewrite `vector_style.rs` into a compiler from the document to
 `CompiledStyle`. Convert the seven committed styles with the committed
@@ -894,7 +889,7 @@ zoom levels and the committed fixture tiles; all five vector goldens pass
 without regeneration; a new cross-tile test proves a later tile's fill
 cannot overpaint an earlier tile's line.
 
-### Phase 3 — Sources — **landed 2026-11-02**
+### Sources
 
 Multiple vector sources per style, TileJSON fields (`url`, `bounds`,
 `scheme`, source `minzoom`/`maxzoom`, `attribution`, `promoteId`), a source
@@ -915,7 +910,7 @@ composites over the vector base in the browser golden; every source URL in
 the test resolves to a fixture, and a test fails if a request leaves the
 origin.
 
-### Phase 4 — Line paint and layout semantics
+### Line paint and layout
 
 Real `line-join` (`miter` with `line-miter-limit`, `bevel`, `round`),
 `line-cap` (`butt`, `round`, `square`), `line-dasharray` in width units,
@@ -947,15 +942,15 @@ Verify: a cap/join/dash fixture golden set matches; the demotiles coastline
 layer draws round caps and joins without a seam at any bend in a rendered
 scene; the existing road goldens remain within tolerance.
 
-### Phase 5 — Fill, circle, background and data-driven paint
+### Fill, circle, background and data-driven paint
 
 `fill-opacity`, `fill-outline-color`, `fill-antialias`, `fill-translate`,
 `fill-sort-key`; `circle-opacity`, `circle-blur`, `circle-stroke-*`,
 `circle-translate`, `circle-pitch-*`, `circle-sort-key`;
 `background-opacity`; per-feature fill/circle paint from expressions; layer
 sort keys for fill and circle. Transitions and cross-fade are implemented
-here only if the phase has room; otherwise they move to the residual backlog
-with the reason recorded.
+only where the work fits; anything left moves to the residual backlog with the
+reason recorded.
 
 **Landed.** Filled polygons carry an optional edge colour painted as a
 one-pixel boundary ring over the outer ring and every hole (disabled by
@@ -987,7 +982,7 @@ circle with a stroke and a data-driven country fill from a `match`
 expression renders to committed goldens; the existing fill and marker
 goldens stay within tolerance.
 
-### Phase 6 — Symbol layout, placement, icons and the demotiles target
+### Symbol layout, placement and icons
 
 **Landed so far.** Text resolution (transform, tokens, `format`), `text-offset`,
 `text-anchor`, `text-rotation-alignment`/`text-keep-upright`, wrapping with
@@ -1015,8 +1010,7 @@ then the icon pipeline with a sprite atlas
 (`icon-image`, `icon-size`, `icon-rotate`, `icon-anchor`, `icon-offset`,
 `icon-halo-*`, `icon-text-fit` deferred if necessary).
 
-Files: `labels.rs` (layout and placement), new
-`crates/rustic-maps-rendering/src/symbol_placement.rs`,
+Files: `crates/rustic-maps-rendering/src/labels.rs` (layout and placement),
 `crates/rustic-maps-rendering/src/sprite.rs`,
 `crates/rustic-maps-glyphs` (font stack cache),
 `crates/rustic-maps-web-bindings/src/canvas.rs` (sprite and text draws),
@@ -1029,15 +1023,14 @@ wrapped text, pinned as `world_zoom2_demotiles.png`; a road-name scene keeps
 its existing golden within tolerance; a collision test proves a lower
 `symbol-sort-key` wins and an `ignore-placement` symbol does not block.
 
-Phase 6 is the largest and may need two rounds. If so, split it at the icon
-boundary into text/placement first and icons second, and record the split in
-the round's PLAN.md entry. That split is the only permitted phase split; the
-other five phases are sized as single rounds.
+The symbol work is the largest and may need two passes, split at the icon
+boundary into text/placement first and icons second; the other five parts are
+each one pass.
 
-## 10. Residual backlog after these phases
+## 10. Residual backlog
 
 These are real parts of the specification that this plan deliberately leaves
-open. They belong in `PLAN.md` §2, not in a silent omission:
+open. They belong in the backlog, not in a silent omission:
 
 - heatmap, fill-extrusion, hillshade, color-relief and raster-dem layer
   rendering, terrain, sky, light and globe projection;
@@ -1057,8 +1050,8 @@ open. They belong in `PLAN.md` §2, not in a silent omission:
 
 - The exact default color interpolation space and whether alpha is
   premultiplied during interpolation. The specification text does not settle
-  it; the upstream expression test suite does. Phase 1 must settle it with
-  conformance cases before the first golden.
+  it; the upstream expression test suite does. The style-document work must settle it
+  with conformance cases before the first golden.
 - Legacy filter coercion rules for mixed string/number comparisons. The
   `deprecations` page describes the function model but not the coercion
   table; the conformance suite must define it.
@@ -1080,14 +1073,14 @@ open. They belong in `PLAN.md` §2, not in a silent omission:
   with the required notice. Provenance is recorded; the licence text is not
   in `docs/THIRD_PARTY_LICENSES/`.
 - The performance cost of per-feature paint resolution and re-tessellation at
-  the finer zoom key on mobile GPUs. Phase 2 and Phase 4 must measure it
+  the finer zoom key on mobile GPUs. The compilation and line work must measure it
   against the existing frame-latency test
   (`crates/rustic-maps-rendering/tests/frame_latency.rs`) before the key is
   final.
 - The exact UDL shape for a style document and source bindings. This design
   requires an addition-only contract change with regenerated Kotlin, Swift
   and React Native bindings and a synced wasm façade, but the naming belongs
-  to the round that lands Phase 3.
+  with the sources work.
 
 ## Appendix A — Road hierarchy, label placement and vector-pipeline behaviour
 
@@ -1202,4 +1195,4 @@ at Bright's sizes.
 The regression fixtures are the z9 Carto golden, the dense regional label
 golden (`sacramento_region_zoom13_labels.png`), the wide thinning golden
 (`sacramento_region_zoom8_labels.png`) and the browser frame-budget scene in
-`docs/reference/BrowserRenderPerformance.md`.
+`docs/Browser.md`.

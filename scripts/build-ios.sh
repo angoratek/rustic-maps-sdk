@@ -12,7 +12,7 @@
 # 'generic/platform=iOS Simulator' build`.
 #
 # The package, product and Swift module are named `RusticMapsSDK` (packaging
-# identity, docs/PackagingAndRelease.md §1 ruling 2). The XCFramework module
+# identity, docs/Release.md (Versioning and identities)). The XCFramework module
 # name `rustic_mapsFFI` is contract-bound: uniffi derives it from the UDL
 # namespace, and the generated bindings import it through `canImport`.
 #
@@ -49,7 +49,7 @@ readonly IOS_SIMULATOR_TARGET="aarch64-apple-ios-sim"
 readonly IOS_MINIMUM_DEPLOYMENT_TARGET="17.0"
 readonly SUPPORTED_IOS_TARGETS=("${IOS_DEVICE_TARGET}" "${IOS_SIMULATOR_TARGET}")
 readonly XCFRAMEWORK_PATH="${XCFRAMEWORK_ROOT}/${FFI_MODULE_NAME}.xcframework"
-# Package-level notices (docs/PackagingAndRelease.md §4.4); copied into the
+# Package-level notices (docs/Release.md (The artifacts)); copied into the
 # XCFramework directory itself so the SPM binaryTarget archive keeps exactly
 # one top-level item (the `.xcframework` directory).
 readonly MIT_LICENSE_PATH="${REPO_ROOT}/LICENSE-MIT"

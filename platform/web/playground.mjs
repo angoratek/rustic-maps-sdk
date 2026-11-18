@@ -189,7 +189,7 @@
       }
       const TILE_COUNT_AT_ZOOM_ZERO = 1;
       const DEGREES_AT_ZOOM_ZERO = 360;
-      // Canvas 2D ignores CSS var() style strings (docs/reference/BrowserLoop.md), so
+      // Canvas 2D ignores CSS var() style strings (docs/Browser.md), so
       // the interactive 2D paints are literal constants mirroring the UX
       // doc's color tokens by name (docs/ReferenceAppUX.md §2.2): one entry
       // per theme, re-painted by the render loop after a theme switch.

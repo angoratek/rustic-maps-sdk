@@ -450,7 +450,7 @@ stage_navigation_traces() {
     rm -f "$trace_listing"
 }
 
-# The live wasm demo (`docs/PackagingAndRelease.md` §4.1): the browser
+# The live wasm demo (`docs/Release.md` (The documentation site)): the browser
 # harness served statically at `/demo/`, its fixture routes answered by the
 # copy plan rather than a Node server. The harness files are copied 1:1
 # (asserted below); `overlay_scenes.mjs` imports `../reference-scenes.json`,
