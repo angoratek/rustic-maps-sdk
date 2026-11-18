@@ -677,6 +677,19 @@ operator opens. When the daily count is reached, the page rests with "You have
 used today's demo sessions. Try again tomorrow." and the month's remaining
 minutes.
 
+A grant reserves the whole 3-minute session before the stream starts, so an
+abandoned claim can never overrun the free plan. That reservation is
+pessimistic: a claim where the visitor never presses Appetize's own Start
+button costs the budget but streams nothing. Before every decision the
+endpoint therefore reconciles its monthly counter with Appetize's usage report
+(`GET /v1/usageSummary`, the account key in the endpoint's `APPETIZE_API_KEY`
+environment variable): the counter drops to what actually streamed plus one
+session of headroom for claims in flight, and never below the report or above
+the reservation. Without the key, or when the report is unreachable, the
+reservation stands alone, which can only refuse a session early. The page's
+`status=true` readout reports the reconciled `streamedSeconds` beside the
+counter.
+
 **Reviewing the demo.** Append the operator token:
 
 ```

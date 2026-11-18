@@ -4,6 +4,29 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Added (2026-11-18 — the WebAssembly API reference covers the contract classes)
+
+- The generated reference page now parses the class declarations in the
+  generated `platform/web/generated/rustic_maps.d.ts` and renders `MapSdk`,
+  `Navigator`, `RouteSimulator` and `PositionController` with every member,
+  parameter names, return type and summary. The page previously named the four
+  classes without their members, so a reader had to open the declaration file
+  to find a signature.
+
+### Fixed (2026-11-18 — the hosted demo's budget matches what streamed)
+
+- The claim endpoint reserved a full three-minute session per claim, so claims
+  that never pressed Appetize's own Start button still consumed the month while
+  the Appetize dashboard counted only streamed time. Before each decision the
+  endpoint now reconciles its monthly counter with Appetize's usage report
+  (`GET /v1/usageSummary`, read-only key in `APPETIZE_API_KEY`): the counter
+  drops to what actually streamed plus one session of headroom for in-flight
+  claims, never below the report and never above the reservation. Without the
+  key, or when the report is unreachable, the reservation stands alone. The
+  status readout reports the reconciled `streamedSeconds`, and the endpoint's
+  suites (`npm test`, 18 cases) cover the reconciliation arithmetic and the
+  report parsing.
+
 ### Changed (2026-11-17 — documentation consolidated to eight guides)
 
 - The 25-file `docs/` set became eight guides plus the generated notices:
