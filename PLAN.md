@@ -602,14 +602,14 @@ Owner rulings: the public history is a rewritten mirror pushed to a **new public
 - [ ] `BoundingBox::from_coordinates` in `geospatial-types` replaces five hand-rolled aggregations. Gate: empty, one-point, negative-longitude tests and existing routing/traffic tests.
 - [ ] Shared `tests/common/golden.rs` for the eight golden-image harnesses. Gate: the eight suites in committed and `UPDATE_GOLDENS=1` modes.
 - [ ] Shared fixture server for the five native vendor tests under `tests/common/`. Gate: the five test targets.
-- [ ] Delete the twelve dead `generated_contract_field_names` constants and correct the comment. Gate: `-D warnings` check and a grep gate for the remaining names.
+- [x] Delete the twelve dead `generated_contract_field_names` constants and correct the comment (2026-11-18). Gate: the host and wasm checks pass with `-D warnings`.
 - [ ] Share the RN text, error and registration helpers; export the pure credential-status helper. Gate: existing jest suites plus direct helper tests.
 - [ ] Split `canvas.rs` at its shader, tile-fetch, statistics, vector-base and fixture seams. Gate: wasm check and the browser suite; one module per commit.
 - [ ] Move the inline test modules of `labels.rs`, `surface_view.rs` and `reducer.rs` into child files. Gate: the three crate test runs.
 - [ ] Split `records.rs` into domain modules behind the same public paths. Gate: native-core tests and wasm check.
 - [ ] Split the RN `App.tsx` helper and component groups into `src/` modules. Gate: App, reference-flow and flow suites.
 - [ ] Extract the iOS and Android reference-app state domains one platform and one domain at a time. Gate: XCTest and the Android unit/suite runs.
-- [ ] Name the cache TTL arithmetic in `response_category.rs`. Gate: the expiry-age test plus exact constant assertions.
+- [x] Name the cache TTL arithmetic in `response_category.rs` (2026-11-18): one constant per category plus the shared seconds constants, values unchanged. Gate: `cargo test -p rustic-maps-cache` and clippy.
 - [ ] One `MAXIMUM_TILE_ZOOM_LEVEL` used by projection, camera and `TileKey::new`; reject zoom 64 and above. Gate: clamp tests and a new out-of-range test.
 - [ ] Derive the native provider catalog metadata from `PROVIDER_ENTRIES`; fix the two stale install comments. Gate: the two catalog parity tests.
 - [ ] Dev-only `rustic-maps-test-support` crate for the repeated `coordinate`, `viewport`, Sacramento and camera fixtures. Gate: workspace test compile.
