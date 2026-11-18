@@ -50,6 +50,13 @@ Local.xcconfig
 *.hprof
 # Playwright + generated wasm bindings output
 platform/web/pkg/
+# The browser-loadable wasm2 package (scripts/build-wasm2-package.sh).
+platform/web/generated/
+# ubrn's bare default TypeScript output. The documented path generates the
+# WebAssembly bindings with scripts/generate-wasm-bindings.sh into
+# target/wasm-bindings; this directory only appears when ubrn runs without the
+# project's output configuration.
+platform/rn/src/generated/
 test-results/
 playwright-report/
 
