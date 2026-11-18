@@ -1,18 +1,27 @@
-// Playwright global setup: runs the pure file-parsing gates once before the
-// browser suite starts — the contract-sync test (the frozen UniFFI contract's
-// TypeScript/wasm mirror, `tests/contract_sync.mjs`), the provider-name guard
-// (`tests/provider_name_guard.mjs`, the M15 allowlist), the platform-parity
-// floor (`tests/platform_parity_gate.mjs`, M31), the iOS pod/SwiftPM source
-// mirror (`scripts/sync-ios-pod-view.mjs`), the WebAssembly package freshness
-// gate (a package emitted from different sources can never be tested), the
-// npm packaging assertion (`tests/npm_package_manifest.mjs`: the packed
-// tarball carries every declaration the manifest publishes) and the style
-// layer coverage audit (`scripts/check-style-layer-coverage.mjs`: every
-// name/ref-bearing source layer is painted or documented). It then asserts a
-// WebGPU adapter in CI, so a GPU-dependent test cannot pass by skipping on
-// a runner that renders nothing.
+// Playwright global setup: builds the generated WebAssembly package when the
+// tree does not carry a current one, then runs the pure file-parsing gates
+// once before the browser suite starts — the contract-sync test (the frozen
+// UniFFI contract's TypeScript/wasm mirror, `tests/contract_sync.mjs`), the
+// provider-name guard (`tests/provider_name_guard.mjs`, the M15 allowlist),
+// the platform-parity floor (`tests/platform_parity_gate.mjs`, M31), the iOS
+// pod/SwiftPM source mirror (`scripts/sync-ios-pod-view.mjs`), the generated
+// package freshness gate (a package emitted from different sources can never
+// be tested) and the style layer coverage audit
+// (`scripts/check-style-layer-coverage.mjs`: every name/ref-bearing source
+// layer is painted or documented). It then asserts a WebGPU adapter in CI, so
+// a GPU-dependent test cannot pass by skipping on a runner that renders
+// nothing.
+//
+// The hand-written package's freshness and npm packaging checks run only when
+// that package is present: nothing on the page imports it any more, and a
+// clean checkout's `npm test` must not require a second wasm build.
+import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { verifyPodViewMirror } from '../../scripts/sync-ios-pod-view.mjs';
 import { verifyWasmPackageFreshness } from '../../scripts/check-wasm-package-freshness.mjs';
+import { verifyWasm2PackageFreshness } from '../../scripts/check-wasm2-package-freshness.mjs';
 import { run_reference_flow_checks } from '../../scripts/check-reference-flows.mjs';
 import { run_style_layer_coverage_checks } from '../../scripts/check-style-layer-coverage.mjs';
 import { run_contract_sync_checks } from './tests/contract_sync.mjs';
@@ -21,14 +30,82 @@ import { run_npm_package_manifest_checks } from './tests/npm_package_manifest.mj
 import { run_platform_parity_checks } from './tests/platform_parity_gate.mjs';
 import { run_provider_name_guard_checks } from './tests/provider_name_guard.mjs';
 
+const REPOSITORY_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+);
+/** The packaging script that builds `platform/web/generated`. */
+const GENERATED_PACKAGE_BUILD_SCRIPT = path.join(
+  REPOSITORY_ROOT,
+  'scripts',
+  'build-wasm2-package.sh',
+);
+/** The generated bindings the packaging step compiles, reused when present. */
+const GENERATED_BINDINGS_DIRECTORY = path.join(
+  REPOSITORY_ROOT,
+  'target',
+  'wasm-bindings',
+);
+/** The retired hand-written package, kept only while a tree still builds it. */
+const LEGACY_PACKAGE_DIRECTORY = path.join(
+  REPOSITORY_ROOT,
+  'platform',
+  'web',
+  'pkg',
+);
+
+/** Whether the generated package is present and matches its current inputs. */
+function generated_package_is_fresh() {
+  try {
+    verifyWasm2PackageFreshness();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Runs the packaging script with the given arguments. */
+function build_generated_package(script_arguments) {
+  execFileSync('bash', [GENERATED_PACKAGE_BUILD_SCRIPT, ...script_arguments], {
+    stdio: 'inherit',
+  });
+}
+
+/**
+ * Ensures `platform/web/generated` exists and was packaged from the current
+ * sources. Reuses the generated bindings when they are present (the packaging
+ * step alone), and falls back to the full generation only when they are not
+ * or the repackage is still stale.
+ */
+function ensure_generated_package() {
+  if (generated_package_is_fresh()) {
+    return;
+  }
+  if (existsSync(path.join(GENERATED_BINDINGS_DIRECTORY, 'index.ts'))) {
+    build_generated_package(['--no-generate']);
+    if (generated_package_is_fresh()) {
+      return;
+    }
+  }
+  build_generated_package([]);
+  verifyWasm2PackageFreshness();
+}
+
 export default async function run_file_parsing_gates() {
+  ensure_generated_package();
   run_contract_sync_checks();
   run_provider_name_guard_checks();
   run_platform_parity_checks();
   run_style_layer_coverage_checks();
   run_reference_flow_checks();
   verifyPodViewMirror();
-  verifyWasmPackageFreshness();
-  run_npm_package_manifest_checks();
+  // The generated package's path is the one the page loads; its freshness is
+  // asserted above. The hand-written package is a leftover of the migrated
+  // page, so its own gates run only when that build output exists.
+  if (existsSync(LEGACY_PACKAGE_DIRECTORY)) {
+    verifyWasmPackageFreshness();
+    run_npm_package_manifest_checks();
+  }
   await assertGpuAdapterAvailable();
 }
