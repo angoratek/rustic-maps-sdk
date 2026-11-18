@@ -3,6 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <title>Golden Compare Fixture</title>
+    <!-- The generated package's only bare specifiers are the player runtime
+         (`@ubjs/wasm`) and its core (`@ubjs/core`); the import map and the
+         dev server's `/generated-runtime/@ubjs/...` route resolve them. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@ubjs/core": "/generated-runtime/@ubjs/core/dist/esm/index.js",
+          "@ubjs/wasm": "/generated-runtime/@ubjs/wasm/dist/browser/src/index.js",
+          "@ubjs/wasm/core": "/generated-runtime/@ubjs/wasm/dist/core/src/index.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <!-- No interactive UI: the Playwright golden-compare test drives every

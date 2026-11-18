@@ -29,9 +29,8 @@ raster or vector source connects through the URL-template providers.
 
 You call the same members on every target: Kotlin suspend functions, Swift async
 throwing methods, React Native promises, and the WebAssembly TypeScript surface.
-One UniFFI interface definition generates the native bindings, and the browser
-mirror is checked against it. The contract changes addition-only: existing
-members keep their signature and meaning.
+One UniFFI definition generates the native bindings, the browser mirror is
+checked against it, and the contract changes addition-only.
 
 </div>
 
@@ -39,14 +38,11 @@ members keep their signature and meaning.
 
 ### Search, routing, and traffic
 
-Ten provider contracts cover geocoding (forward and reverse), routing, the
-distance matrix, place search, traffic incidents, traffic flow, elevation,
-raster tiles, vector tiles, and offline routing. MapQuest implements geocoding,
-routing, the distance matrix, place search, traffic, and raster tiles with a
-shared rate limiter and bounded retries. Photon serves keyless geocoding and
-search, OSRM and Valhalla serve keyless routing, and the URL-template
-providers serve any raster or vector base map. The SDK adds a disk response
-cache with per-category time-to-live.
+Ten provider contracts cover geocoding, routing, the distance matrix, place
+search, traffic incidents, traffic flow, elevation, raster tiles, vector tiles,
+and offline routing. MapQuest implements the platform API set; Photon serves
+keyless geocoding and search, OSRM and Valhalla serve keyless routing, and the
+URL-template providers serve any raster or vector base map.
 
 </div>
 
@@ -57,8 +53,8 @@ cache with per-category time-to-live.
 The renderer spans web-mercator projection, an anchored camera with animations
 and fit-bounds framing, exact frustum tile listing, a frame-driven tile scheduler
 with per-frame budgets and parent fallback, and a byte-budget tile texture pool
-feeding a `wgpu` pipeline. Raster and vector scenes draw on Android, iOS, and
-React Native surfaces and in the browser through WebGPU.
+feeding a `wgpu` pipeline. Raster and vector scenes draw on Android, iOS, React
+Native and in the browser through WebGPU.
 
 </div>
 
@@ -90,8 +86,7 @@ when you choose to fall back.
 
 A bounded, per-subsystem diagnostics ring streams structured log events to a
 listener with coordinate scrubbing at the sink. Readbacks expose frame tile
-statistics, cache terms, and provider-failure records, so a screen in your
-product can show what the SDK is doing.
+statistics, cache terms, and provider-failure records.
 
 </div>
 
@@ -115,12 +110,9 @@ documentation lives in the generated [API reference](api-reference.md).
 ## Requirements at a glance
 
 - **Android**: API level 24 or higher. One AAR carries the bindings, the
-  `MapView` and three ABIs; it measures about 16 MiB (8.7 to 13 MiB a
-  library after strip).
-- **iOS**: iOS 17 or higher. The XCFramework ships two arm64 slices.
-- **React Native**: React Native 0.88 or newer and React 19 or newer. The
-  package ships as a source TurboModule and builds the native payload in your
-  project unless you pack a prebuilt payload into the tarball.
+  `MapView` and three ABIs; it measures about 16 MiB.
+- **iOS**: iOS 17 or higher. The XCFramework ships two arm64 architectures.
+- **React Native**: React Native 0.88 or newer and React 19 or newer.
 - **WebAssembly**: a browser with WebGPU. The wasm package measures 3.6 MiB.
 
 Artifacts are distributed from the [Downloads](downloads.md) page rather than a
@@ -141,12 +133,9 @@ are in [Requirements and distributions](requirements.md).
    layers and traffic](map-layers-and-traffic.md).
 6. Serve each capability from a different provider: [Mix providers per
    capability](mix-providers-per-capability.md).
-7. See the core running from a browser, no build step: [Live
-   demo](live-demo.md).
 
 ## License and attribution
 
 The SDK is dual-licensed under **MIT OR Apache-2.0**. Map imagery © MapQuest;
 map data © OpenStreetMap contributors (ODbL). See [third-party
-notices](third-party-notices.md) for the full attribution and license table, and
-keep the attribution visible in your application.
+notices](third-party-notices.md) for the full attribution and license table.

@@ -48,8 +48,21 @@ jobs:
           cargo install wasm-bindgen-cli --version "$(sed -n 's/^wasm-bindgen = "\(.*\)"/\1/p' Cargo.toml | head -n 1)" --locked 2>/dev/null \
             || cargo install wasm-bindgen-cli --locked
 
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            platform/web/package-lock.json
+            platform/rn/package-lock.json
+
+      - name: Install the generated-package toolchains
+        run: |
+          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/rn
+
       - name: Build the WebAssembly package
-        run: ./scripts/build-wasm.sh
+        run: ./scripts/build-wasm2-package.sh
 
       # The notices generator resolves with `cargo metadata --offline`, which
       # consults the local registry index cache even with a complete lockfile

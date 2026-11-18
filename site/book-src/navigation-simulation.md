@@ -6,6 +6,34 @@ phase. This guide turns the route you planned in [Search and
 routing](search-and-routing.md) into a simulated Capitol Park to Tower Bridge
 drive. Every code block compiles against the [FFI contract](udl-contract.md).
 
+## Rules that apply on every platform
+
+- Subscribe before you start the trip, so you receive the initial instruction
+  dispatch. `addNavigationListener` subscribes one listener to all four
+  topics and returns a subscription; cancel it with its handle when the screen
+  leaves. Dropping the reference does not unsubscribe. The four per-topic
+  subscribe calls exist for a screen that needs only some channels.
+- Start with the default policies unless you measured different ones. The
+  initial instruction payload dispatches before the call returns, so the
+  banner shows the first maneuver.
+- Deliver one fix at a time. A fix without a reported accuracy never advances
+  a step and is never judged for deviation, so a simulated source must carry
+  its accuracy like a real fix does.
+- Put the route polyline on the map once, then rebuild the follow camera from
+  each accepted fix. Follow the smoothed course, not the raw fix-to-fix
+  bearing: a fix-to-fix course jitters at low speed. When the user pans away,
+  stop drawing the follow camera until they tap the location control.
+- The SDK triggers speech; your application voices it. Hand
+  `utteranceSpeechText` verbatim to the platform's speech engine.
+  `utteranceId` is a stable identity for deduplication.
+- A deviating trip asks for a replacement route through
+  `beginRerouteCalculation`; `applyReroute` applies it and
+  `cancelRerouteCalculation` abandons it. The trip state's
+  `isCalculatingNewRoute` reports the in-flight fact.
+- `stopNavigation` clears the active trip and its state; later fixes and
+  reroutes are dropped until the next start, and subscriptions stay
+  registered.
+
 <div class="platform-tabs">
 <div class="platform-tab-titles" role="tablist">
 <button type="button" data-platform-tab="android">Android</button>
@@ -16,10 +44,9 @@ drive. Every code block compiles against the [FFI contract](udl-contract.md).
 
 <div class="platform-tab-panel" data-platform-panel="android">
 
-### Build the controller and subscribe first
+### Build the controller and subscribe
 
-Subscribe before you start the trip, so you receive the initial instruction
-dispatch. The listener implements the four callbacks the contract carries:
+The listener implements the four callbacks the contract carries:
 
 ```kotlin
 import uniffi.rustic_maps.Navigator
@@ -61,13 +88,7 @@ val subscription = navigationController.addNavigationListener(listener)
 //   navigationController.subscribeToPhaseChanges(listener)
 ```
 
-A subscription is cancelled with its handle when your screen leaves;
-dropping the reference does not unsubscribe.
-
 ### Start the trip
-
-Use the default policies unless you measured different ones for your
-product:
 
 ```kotlin
 import uniffi.rustic_maps.defaultDeviationPolicy
@@ -82,13 +103,7 @@ navigationController.startNavigation(
 )
 ```
 
-The initial instruction payload dispatches before the call returns; the
-banner shows the first maneuver.
-
 ### Deliver position fixes
-
-Deliver one fix at a time, as a live location source or a recorded trace
-does:
 
 ```kotlin
 import uniffi.rustic_maps.NavigationLocationUpdate
@@ -112,17 +127,10 @@ suspend fun replayFixes(
 }
 ```
 
-Fixes without a reported accuracy never advance a step and are never
-judged for deviation, so a simulated source must carry its accuracy
-like a real fix does.
-
 ### Drive the trip from the device
 
-A trip does not have to be simulated. Feed the `Navigator` the fixes your
-location source produces and the same banner, ETA line and deviation
-judgment follow the real journey. Start the trip on the planned route, then
-call `updateLocation` with each accepted fix's coordinate, its horizontal
-accuracy and the `PositionController`'s smoothed course:
+Feed the `Navigator` the fixes your location source produces and the same
+banner, ETA line and deviation judgment follow the real journey:
 
 ```kotlin
 navigationController.startNavigation(route, UnitSystem.METRIC,
@@ -138,18 +146,13 @@ navigationController.updateLocation(
 )
 ```
 
-The reference applications put this behind one control in the Location
-group, **Navigate from my location** and **Stop device navigation**, which
-starts the location source when needed, ends a simulated trip first, and
-stops only the source it started. It states *Plan a route first; device
-navigation follows the route you planned.* when no route exists. See
-[Show the device's location](positioning.md) for obtaining the fixes.
+The reference applications put this behind **Navigate from my location** and
+**Stop device navigation**, which starts the source when needed, ends a
+simulated trip first, and stops only the source it started. With no route it
+states *Plan a route first; device navigation follows the route you planned.*
+See [Show the device's location](positioning.md) for obtaining the fixes.
 
 ### Draw the trip on the map
-
-Navigation state is half the experience; the map also has to show the route
-and follow the vehicle. Two calls do it: the route polyline goes on as an
-overlay, and each fix rebuilds the camera.
 
 ```kotlin
 // Once, when the route arrives: the route geometry as one polyline.
@@ -178,16 +181,7 @@ mapView.setLocationIndicator(locationIndicatorState, locationIndicatorStyle)
 mapView.setCamera(followCamera)
 ```
 
-Keep the bearing smoothed rather than raw: a fix-to-fix course jitters at
-low speed, and a camera that follows it reads as shaky. When the user pans
-away, stop drawing the follow camera until they tap the location control to
-re-center.
-
 ### Voice the speech channel
-
-The platform owns playback; the SDK owns when a line is newsworthy.
-When `onSpeechInstruction` delivers a `SpeechInstruction`, hand its
-verbatim text to the platform's speech engine:
 
 ```kotlin
 val textToSpeechEngine = TextToSpeech(context, this)
@@ -200,13 +194,9 @@ textToSpeechEngine.speak(
 )
 ```
 
-The utterance id is the contract's monotonic id, so your dedup keeps
-its identity across repeats.
-
 ### Reroute when guidance freezes
 
-A deviating trip asks for a replacement route through the controller's
-checks. Keep the state machine in your own coordinator:
+Keep the state machine in your own coordinator:
 
 ```kotlin
 if (tripState.deviation?.gradeKind == DeviationGradeKind.FULLY_OFF_ROUTE &&
@@ -227,9 +217,6 @@ if (tripState.deviation?.gradeKind == DeviationGradeKind.FULLY_OFF_ROUTE &&
 ### End the trip
 
 ```kotlin
-// Clears the active trip and its state; later fixes and reroutes are
-// dropped until the next startNavigation. Subscriptions stay registered
-// and serve the next trip.
 navigationController.stopNavigation()
 ```
 
@@ -237,7 +224,7 @@ navigationController.stopNavigation()
 
 <div class="platform-tab-panel" data-platform-panel="ios">
 
-### Build the controller and subscribe first
+### Build the controller and subscribe
 
 The same four callbacks arrive on a Swift object that conforms to
 `NavigationListener`:
@@ -301,8 +288,6 @@ func deliver(_ fix: RecordedFix) {
 
 ### Draw the trip on the map
 
-Put the route on the map once and follow it with every fix:
-
 ```swift
 let routeOverlay = MapOverlay(
     kind: .routePolyline,
@@ -326,10 +311,6 @@ let followCamera = MapCameraPose(
 mapView.setLocationIndicator(state: locationIndicatorState, style: locationIndicatorStyle)
 mapView.setCamera(followCamera)
 ```
-
-The camera follows the smoothed course, not the raw fix-to-fix bearing, and a
-pan gesture hands control back to the user until the location control is
-tapped again.
 
 ### Voice the speech channel
 
@@ -360,14 +341,9 @@ if tripState.deviation?.gradeKind == .fullyOffRoute {
 }
 ```
 
-The trip state readback (`currentTripState()`) carries the phase, the
-progress, and `isCalculatingNewRoute` so your UI can show the
-recalculation honestly.
-
 ### End the trip
 
 ```swift
-// Clears the active trip and its state; subscriptions stay registered.
 navigationController.stopNavigation()
 ```
 
@@ -375,10 +351,7 @@ navigationController.stopNavigation()
 
 <div class="platform-tab-panel" data-platform-panel="react-native">
 
-### Build the controller and subscribe first
-
-Subscribe before you start the trip, so you receive the initial instruction
-dispatch. The package exposes the same navigation controller to JavaScript:
+### Build the controller and subscribe
 
 ```js
 import {
@@ -414,14 +387,10 @@ const listener = {
 const subscription = navigationController.addNavigationListener(listener);
 ```
 
-Each callback delivers the same payloads the native platforms receive, with
-lower camel case field names. Cancel the subscription with its handle when
-your screen leaves; dropping the reference does not unsubscribe.
+Each callback delivers the same payloads the native platforms receive, in
+lower camel case.
 
 ### Start the trip
-
-Use the default policies unless you measured different ones for your
-product:
 
 ```js
 navigationController.startNavigation(
@@ -431,9 +400,6 @@ navigationController.startNavigation(
   defaultDeviationPolicy(),
 );
 ```
-
-The initial instruction payload dispatches before the call returns; the
-banner shows the first maneuver.
 
 ### Deliver position fixes
 
@@ -450,16 +416,10 @@ navigationController.updateLocation({
 const tripState = navigationController.currentTripState();
 ```
 
-Fixes without a reported accuracy never advance a step and are never judged
-for deviation, so a simulated source must carry its accuracy like a real fix
-does.
-
 ### Draw the trip on the map
 
-The package's `MapView` handle exposes the overlay, camera and
-location-indicator members the contract carries. Put the route on once, then
-drive the next-maneuver card from the listener subscribed above and the follow
-camera from each accepted fix:
+Put the route on once, then drive the next-maneuver card from the listener
+and the follow camera from each accepted fix:
 
 ```js
 import {
@@ -479,8 +439,7 @@ const routeOverlay = {
 mapView.setOverlays([routeOverlay]);
 
 // On every accepted fix: the 3D course-up follow camera (z17, 45° pitch,
-// the shared demo values). The handle takes the same five-value pose the
-// other tabs use, and the guided arrow sits over the vehicle.
+// the shared demo values). The guided arrow sits over the vehicle.
 const FOLLOW_ZOOM_LEVEL = 17.0;
 const FOLLOW_PITCH_DEGREES = 45.0;
 const followCamera = {
@@ -500,15 +459,10 @@ mapView.setLocationIndicator(
 mapView.setCamera(followCamera);
 ```
 
-The camera follows the smoothed course, not the raw fix-to-fix bearing, and
-a pan gesture hands control back to the user until the location control is
-tapped again.
-
 ### Voice the speech channel
 
-The SDK triggers; your application voices. In the speech callback, hand
-the verbatim text to the platform's speech engine (Expo's Speech, or
-your own TTS wrapper), and use the delivery's `utteranceId` for dedup:
+Hand the verbatim text to the platform's speech engine, such as Expo's Speech,
+and use the delivery's `utteranceId` for deduplication:
 
 ```js
 function onSpeechInstruction(speechInstruction) {
@@ -520,9 +474,6 @@ function onSpeechInstruction(speechInstruction) {
 ```
 
 ### Reroute when guidance freezes
-
-A deviating trip asks for a replacement route through the controller's
-reroute checks. Keep the state machine in your own coordinator:
 
 ```js
 import { DeviationGradeKind } from '@angoratek/rustic-maps-sdk';
@@ -548,13 +499,9 @@ if (
 }
 ```
 
-The trip state readback carries the phase, the progress and
-`isCalculatingNewRoute`, so your UI can show the recalculation honestly.
-
 ### End the trip
 
 ```js
-// Clears the active trip and its state; subscriptions stay registered.
 navigationController.stopNavigation();
 ```
 
@@ -564,22 +511,23 @@ navigationController.stopNavigation();
 
 ### Start the navigator on the route
 
-The browser `Navigator` carries the driving and readback calls:
-`startNavigation`, `updateLocation`, `applyReroute`, `stopNavigation`, and
-`currentTripState`, plus `hasActiveTrip`. `addNavigationListener` registers a
-JavaScript callback that receives one event per topic: instruction, phase,
-deviation, speech, or stop. `removeNavigationListener` removes it by id.
-
-Create the navigator on the route you planned and drive it with the same
-walker the native tabs use. Each `updateLocation` returns the trip snapshot;
-the phase, the instruction payload, the progress numbers, and the deviation
-all come from that one call:
+The browser `Navigator` carries `startNavigation`, `updateLocation`,
+`applyReroute`, `stopNavigation`, `currentTripState` and its typed
+subscriptions. Create the navigator on the planned route, start it in metric
+units with the default policies, and drive it with the same walker the native
+tabs use. `updateLocation` feeds the fix; `currentTripState` reads the trip
+snapshot:
 
 ```js
-import { Navigator, RouteSimulator } from './web/rustic_maps_web_bindings.js';
+import { Navigator, RouteSimulator, UnitSystem } from './web/rustic_maps.js';
 
 const navigationController = new Navigator();
-navigationController.startNavigation(route, 'metric');
+navigationController.startNavigation(
+  route,
+  UnitSystem.Metric,
+  defaultStepAdvancePolicy(),
+  defaultDeviationPolicy(),
+);
 
 const navigationRouteSimulator = new RouteSimulator(route, {
   speedMetersPerSecond: 1.4,
@@ -587,12 +535,14 @@ const navigationRouteSimulator = new RouteSimulator(route, {
 });
 
 const navigationFix = navigationRouteSimulator.fixAtElapsedSeconds(0.0);
-const tripSnapshot = navigationController.updateLocation({
+navigationController.updateLocation({
   coordinate: navigationFix.coordinate,
   horizontalAccuracyMeters: 8.0,
   courseHeadingDegrees: navigationFix.courseHeadingDegrees,
-  timestampSeconds: null,
 });
+
+/** @type {any} */
+const tripSnapshot = navigationController.currentTripState();
 
 // One snapshot is all the card needs.
 const phase = tripSnapshot.phase;
@@ -607,23 +557,17 @@ const secondsRemaining = tripSnapshot.instruction.progress.durationRemainingSeco
 const deviationMeters = tripSnapshot.deviation?.distanceFromRouteMeters ?? null;
 ```
 
-A fix without an accuracy is never judged and never advances a step, so a
-simulated source carries its accuracy like a real fix. `stopNavigation` ends
-the trip, and `applyReroute` swaps the route without restarting the
-navigator. The banner keeps two lines: `distancePhraseText` names the
-distance and `providerDisplayText` is the provider's own sentence, so the
-distance is not printed twice.
+The banner keeps two lines: `distancePhraseText` names the distance and
+`providerDisplayText` is the provider's own sentence, so the distance is not
+printed twice. `applyReroute` swaps the route without restarting the navigator.
 
 ### Simulate the trip and follow it
 
-Create the simulator once from the planned route and a pace, then ask it for
-a fix at an elapsed time. The fix carries a `coordinate`, the
-`courseHeadingDegrees`, the travelled and remaining meters, and
-`isArrived`. Draw the route, place the location indicator on the fix, and
-present a course-up camera frame:
+Ask the simulator for a fix at an elapsed time. Draw the route, place the
+location indicator on the fix, and present a course-up camera frame:
 
 ```js
-import { RouteSimulator } from './web/rustic_maps_web_bindings.js';
+import { RouteSimulator } from './web/rustic_maps.js';
 
 /** @type {any} */
 const plannedRoute = route;
@@ -666,13 +610,10 @@ await mapView.renderFrame(
 );
 ```
 
-Advance `elapsedSeconds` on your own tick and call `fixAtElapsedSeconds`
-again for each frame; `fixAtTravelledMeters` is the distance-driven
-equivalent. `totalDistanceMeters()` and `totalDurationSeconds()` size the
-trip's progress bar, and `isArrived` turns true exactly at the final
-coordinate. The route and step records are the same
-`Route`/`RouteLeg`/`RouteStep` objects the native surfaces return, so the
-polyline extraction is identical.
+Advance `elapsedSeconds` on your own tick and call `fixAtElapsedSeconds` again
+for each frame; `fixAtTravelledMeters` is the distance-driven equivalent.
+`totalDistanceMeters()` and `totalDurationSeconds()` size the progress bar, and
+`isArrived` turns true exactly at the final coordinate.
 
 </div>
 

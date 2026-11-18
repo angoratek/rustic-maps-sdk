@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Rustic Maps SDK live demo</title>
     <link rel="stylesheet" href="./styles/playground.css" />
+    <!-- The generated package's only bare specifiers are the player runtime
+         (`@ubjs/wasm`) and its core (`@ubjs/core`). No bundler resolves them:
+         this import map names the browser builds, and `serve.mjs` serves the
+         installed files under `/generated-runtime/@ubjs/...`. Relative imports
+         inside those files resolve against their served paths, so no further
+         entries are needed. The mapping is relative so a copy of the harness
+         served under a subpath (the docs site's /demo) resolves its own
+         runtime beside it. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@ubjs/core": "./generated-runtime/@ubjs/core/dist/esm/index.js",
+          "@ubjs/wasm": "./generated-runtime/@ubjs/wasm/dist/browser/src/index.js",
+          "@ubjs/wasm/core": "./generated-runtime/@ubjs/wasm/dist/core/src/index.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <!-- The first focus stop: keyboard and screen-reader visitors reach the
@@ -350,6 +367,11 @@
               <input id="remember-provider-credential" type="checkbox" />
               Remember keys on this device
             </label>
+            <p class="settings-note settings-remember-warning">
+              The browser has no secure store: a remembered key is kept in this
+              browser's localStorage in readable form, so do not use this option
+              on a shared computer.
+            </p>
             <p id="settings-credentials-status" class="settings-note" role="status" hidden></p>
             <div class="settings-probe">
               <h4 class="settings-subsection-title">Live connection check</h4>

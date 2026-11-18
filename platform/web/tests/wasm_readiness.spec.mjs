@@ -8,7 +8,9 @@ import { expect, test, waitForMapTestReady } from './network_guard.mjs';
 /** How long the wasm response is held back, in milliseconds. */
 const WASM_RESPONSE_DELAY_MILLISECONDS = 3_000;
 
-const WASM_BINARY_ROUTE = /rustic_maps_web_bindings_bg\.wasm$/;
+// The generated package's module (the one `uniffiInitAsync` opens), served
+// beside the package's entrypoint.
+const WASM_BINARY_ROUTE = /\/generated\/rustic_maps\.wasm$/;
 
 async function load_with_delayed_wasm(page) {
   const page_errors = [];

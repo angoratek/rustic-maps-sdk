@@ -108,6 +108,41 @@ async function issue_geocoding_request(page) {
   await page.evaluate(() => window.mapTest.forwardGeocode('Sacramento,California'));
 }
 
+/** Applies a synthetic credential through the settings surface, which is the
+ * path that records the applied value the export scrub must remove. */
+async function apply_synthetic_credential(page, credential) {
+  const settings_dialog = page.locator('#settings-dialog');
+  if (!(await settings_dialog.evaluate((element) => element.open))) {
+    await page.locator('#settings-control').click();
+  }
+  await expect(settings_dialog).toBeVisible();
+  const descriptor_row = page.locator(
+    `#provider-credential-rows [data-provider-key="${GEOCODING_DESCRIPTOR.provider_key}"]`,
+  );
+  await descriptor_row.locator('[data-provider-credential-input]').fill(credential);
+  await descriptor_row.locator('[data-provider-credential-apply]').click();
+  await expect(page.locator('#settings-credentials-status'))
+    .toContainText('Applied');
+  await page.keyboard.press('Escape');
+  await expect(settings_dialog).toBeHidden();
+}
+
+/** Replaces the page's clipboard writer with a capture, so the copy action's
+ * text can be asserted without a browser permission. */
+async function capture_clipboard_text(page) {
+  await page.evaluate(() => {
+    window.__providerConsoleCopiedText = null;
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text) => {
+          window.__providerConsoleCopiedText = text;
+        },
+      },
+    });
+  });
+}
+
 test('the control beside the layers control opens and closes the console', async ({
   page,
 }) => {
@@ -480,6 +515,57 @@ test('the export carries the filtered stream without a credential or token', asy
     /(?:api[_-]?key|apikey|access_token|token|signature|session)=(?!<redacted>|\*{3})[^&\s"<>]+/i,
   );
   expect(serialized_stream).not.toMatch(/Bearer\s+[A-Za-z0-9._-]{8,}/);
+});
+
+test('the export and clipboard scrub the applied credential and query values', async ({
+  page,
+}) => {
+  await page.goto('/?useProviderFixtures');
+  await waitForMapTestReady(page);
+  // A synthetic value, applied through the settings surface, so the export
+  // scrub's own applied-value pass is what removes it.
+  const synthetic_credential = 'test-session-key';
+  await apply_synthetic_credential(page, synthetic_credential);
+
+  // A crafted event deliberately carries the value in its message, request
+  // path and excerpt, in the credential-shaped forms the native consoles
+  // scrub. The ring's own redaction is bypassed by this injection.
+  const crafted_event = recorded_event({
+    severity: 'Info',
+    message_line: `GET /route?key=${synthetic_credential}`
+      + `&apiKey=${synthetic_credential}`
+      + ` access_token=${synthetic_credential}`,
+    timestamp_milliseconds: Date.now() + 5000,
+    provider_request: {
+      providerKey: GEOCODING_DESCRIPTOR.provider_key,
+      providerContract: 'GeocodingProvider',
+      httpMethod: 'GET',
+      requestPath: `/geocoding/v1/address?key=${synthetic_credential}`,
+      statusClass: 'Success',
+      outcome: 'Success',
+      durationMilliseconds: 7,
+      responseExcerpt: `{"apiKey": "${synthetic_credential}"}`,
+    },
+  });
+  await inject_recorded_events(page, [crafted_event]);
+  await open_console(page);
+  await expect(page.locator(CONSOLE_ROWS_SELECTOR)).toHaveCount(1);
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#provider-console-export').click(),
+  ]);
+  const exported_text = readFileSync(await download.path(), 'utf8');
+  expect(exported_text).not.toContain(synthetic_credential);
+  expect(exported_text).toContain('<redacted>');
+
+  await capture_clipboard_text(page);
+  await page.locator('#provider-console-copy').click();
+  const copied_text = await page.evaluate(
+    () => window.__providerConsoleCopiedText);
+  expect(copied_text).not.toBeNull();
+  expect(copied_text).not.toContain(synthetic_credential);
+  expect(copied_text).toContain('<redacted>');
 });
 
 test('the empty console names the missing registration honestly', async ({

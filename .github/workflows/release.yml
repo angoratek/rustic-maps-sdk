@@ -134,19 +134,24 @@ jobs:
       - name: Install the wasm optimizer
         run: sudo apt-get update && sudo apt-get install --yes binaryen
 
-      - name: Generate the optimized browser package
-        # One build path for the harness and the release: wasm-opt is required
-        # so the published module is optimized and reproducible, and the build
-        # records the source fingerprint the packaging gate verifies.
-        run: ./scripts/build-wasm.sh --require-optimize
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: |
             platform/web/package-lock.json
-            platform/rn/app-shell/package-lock.json
+            platform/rn/package-lock.json
+
+      - name: Install the generated-package toolchains
+        run: |
+          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/rn
+
+      - name: Generate the optimized browser package
+        # One build path for the harness and the release: wasm-opt is required
+        # so the published module is optimized and reproducible, and the build
+        # records the source fingerprint the packaging gate verifies.
+        run: ./scripts/build-wasm2-package.sh --require-optimize
 
       - name: Release plan and workflow gates self-test
         # The input-hash decision logic and the release workflow's gate
@@ -514,8 +519,11 @@ jobs:
           # gates/rn jobs (packaging is deterministic per npm version).
           node-version: 22
 
-      - name: Compile the wasm bindings
-        run: cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
+      - name: Install the wasm optimizer and generated-package toolchains
+        run: |
+          sudo apt-get update && sudo apt-get install --yes binaryen
+          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/rn
 
       - name: Resolve the pinned wasm-bindgen version
         id: wasm_bindgen_version
@@ -530,14 +538,13 @@ jobs:
         run: cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
 
       - name: Generate the browser package
-        run: >-
-          wasm-bindgen --target web --out-dir platform/web/pkg
-          target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
+        run: ./scripts/build-wasm2-package.sh --require-optimize
 
       - name: Package the one WebAssembly tarball
-        # Stamps the committed platform/web/npm manifest, copies the generated
-        # pkg/ tree and the licenses/notices, runs npm pack and asserts the
-        # tarball's exact member set (no app shell, fixtures or keystores).
+        # Stages the committed platform/web/npm manifest, the generated ESM set
+        # with its declarations, and the licenses/notices, runs npm pack and
+        # asserts the tarball's exact member set (no app shell, fixtures or
+        # keystores).
         run: ./scripts/package-web-npm.sh --output-dir dist
 
       - name: Record the input hash and artifact bytes

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Generated WebAssembly package smoke</title>
+    <!--
+      The generated package's only bare specifiers are the player runtime
+      (`@ubjs/wasm`) and its core (`@ubjs/core`). No bundler resolves them:
+      this import map names the browser builds, and `serve.mjs` serves the
+      installed files under `/generated-runtime/@ubjs/...`. Relative imports
+      inside those files resolve against their served paths, so no further
+      entries are needed.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@ubjs/core": "/generated-runtime/@ubjs/core/dist/esm/index.js",
+          "@ubjs/wasm": "/generated-runtime/@ubjs/wasm/dist/browser/src/index.js",
+          "@ubjs/wasm/core": "/generated-runtime/@ubjs/wasm/dist/core/src/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <pre id="smoke-status">loading</pre>
+    <script type="module">
+      // The spec awaits this promise. Dynamic imports keep a module-resolution
+      // failure inside it, where the page can report it, instead of failing
+      // the script before the result is observable.
+      window.generatedPackageSmoke = (async () => {
+        const generated_package = await import('/generated/index.js');
+        const wasm_bindgen_glue = await import('/generated/rustic_maps_bg.js');
+
+        await generated_package.uniffiInitAsync('/generated/rustic_maps.wasm');
+
+        const compiled_version = generated_package.getSdkCompiledVersion();
+        const sdk = new generated_package.MapSdk();
+        const provider_registrations = sdk.providerRegistrations();
+
+        // A DOM-free wasm-bindgen class from the same module instance: the
+        // median of 10, 20 and 30 is 20.
+        const course_median_smoother = new wasm_bindgen_glue.CourseMedianSmoother(5);
+        course_median_smoother.add(10);
+        course_median_smoother.add(20);
+        course_median_smoother.add(30);
+        const median = course_median_smoother.median();
+        course_median_smoother.free();
+
+        return {
+          compiled_version,
+          provider_registration_count: provider_registrations.length,
+          median,
+        };
+      })();
+
+      window.generatedPackageSmoke.then(
+        (result) => {
+          document.querySelector('#smoke-status').textContent = JSON.stringify(result);
+        },
+        (error) => {
+          document.querySelector('#smoke-status').textContent = `failed: ${String(error)}`;
+        },
+      );
+    </script>
+  </body>
+</html>

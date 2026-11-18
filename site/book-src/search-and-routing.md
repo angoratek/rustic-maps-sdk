@@ -42,6 +42,20 @@ routing provider is installed, the surface disables both mode choices and
 Shortest with the contract's sentence,
 `no 'RoutingProvider' provider is configured`.
 
+## The calls
+
+`forwardGeocode` returns every candidate the provider resolved, most likely
+first; `suggest` returns completions while the user types, and `search` returns
+full results for a settled query, each with an optional `BoundingBox`.
+`calculateRoute` takes ordered waypoints and `RouteOptions`, defaulting to Car
+and Fastest with metric units and no avoids; the returned `Route` carries
+distance, duration, the bounding box, and one leg per waypoint pair with its
+steps. `fitBounds` frames that box with the insets your own panels keep clear,
+and a refused fit surfaces its reason. Draw one route-polyline overlay from the
+flattened step shapes; the overlay fields are in [Your first map](first-map.md).
+`SearchEngine` and `RoutingEngine` are thin facades over the same SDK with the
+same typed failures.
+
 <div class="platform-tabs">
 <div class="platform-tab-titles" role="tablist">
 <button type="button" data-platform-tab="android">Android</button>
@@ -54,8 +68,8 @@ Shortest with the contract's sentence,
 
 ### Resolve a query into places
 
-Provider calls on Android are Kotlin `suspend fun`s. Run them from a
-coroutine scope. Each plan field resolves the text the user typed:
+Provider calls on Android are Kotlin `suspend fun`s; run them from a coroutine
+scope:
 
 <!-- docs-snippet: begin search-and-routing/search-for-places android -->
 ```kotlin
@@ -66,19 +80,7 @@ val destinationPlace: Place = mapSdk.forwardGeocode(destinationSearchQuery).firs
 ```
 <!-- docs-snippet: end search-and-routing/search-for-places android -->
 
-`forwardGeocode` returns every candidate the provider resolved, most likely
-first. `suggest` returns fast completion candidates while the user types, and
-`search` returns full results for a settled query. Both search calls take an
-optional `BoundingBox` that restricts the search.
-
 ### Plan the route
-
-`calculateRoute` takes the ordered waypoints and the routing options. The
-request is the same on every platform: two waypoints and a `RouteOptions`
-carrying the transport mode and strategy the application offers — Car and
-Fastest by default — with metric units and no avoids. A provider that cannot
-honour a choice reports it through `routeCapabilities()`; see
-[Mixing providers per capability](mix-providers-per-capability.md).
 
 <!-- docs-snippet: begin search-and-routing/plan-the-route android -->
 ```kotlin
@@ -101,14 +103,9 @@ val plannedRoute = mapSdk.calculateRoute(
 ```
 <!-- docs-snippet: end search-and-routing/plan-the-route android -->
 
-The returned `Route` carries the total distance and duration, the bounding
-box, and one leg per waypoint pair with its maneuver steps.
-
 ### Frame the route preview
 
-Let the camera fit the route's bounding box through the `fitBounds`
-constructor instead of hand-tuning zoom:
-
+<!-- docs-snippet: begin search-and-routing/frame-the-route android -->
 ```kotlin
 import uniffi.rustic_maps.EdgeInsets
 import uniffi.rustic_maps.MapCamera
@@ -127,15 +124,9 @@ val fittedCamera = try {
     null
 }
 ```
-
-The insets you pass are the pixels your overlays keep clear, so the
-destination never hides under your own panels.
+<!-- docs-snippet: end search-and-routing/frame-the-route android -->
 
 ### Draw the route
-
-Build one route-polyline overlay from the planned geometry and hand it to
-the map view. The overlay step in [Your first map](first-map.md) covers the
-descriptor's other fields.
 
 <!-- docs-snippet: begin search-and-routing/draw-the-route android -->
 ```kotlin
@@ -158,10 +149,6 @@ mapView.setOverlays(listOf(routeOverlay))
 Then start a trip in [Turn-by-turn navigation](navigation-simulation.md).
 
 ### Group the calls with engines
-
-The contract also groups these capabilities into small engine objects built
-over the same SDK. Each one delegates to the SDK, with the same typed
-failures and detail text as the `MapSdk` member it wraps:
 
 ```kotlin
 import uniffi.rustic_maps.RoutingEngine
@@ -197,15 +184,7 @@ else {
 ```
 <!-- docs-snippet: end search-and-routing/search-for-places ios -->
 
-`suggest` returns fast completion candidates for a query under construction.
-`search` returns full results for a settled query. Both take an optional
-`BoundingBox`.
-
 ### Plan the route
-
-The `routeOptions` value is the option record the application built from its
-Directions control — automobile and fastest by default — with metric units
-and no avoids:
 
 <!-- docs-snippet: begin search-and-routing/plan-the-route ios -->
 ```swift
@@ -216,14 +195,9 @@ let plannedRoute = try await mapSdk.calculateRoute(
 ```
 <!-- docs-snippet: end search-and-routing/plan-the-route ios -->
 
-The returned `Route` carries distance, duration, the bounding box,
-and one leg per waypoint pair with its steps.
-
 ### Frame and draw the preview
 
-Fit the camera to the route's bounding box, as [Your first map](first-map.md)
-shows, then hand the route geometry to the map view's overlay list:
-
+<!-- docs-snippet: begin search-and-routing/frame-the-route ios -->
 ```swift
 let fittedCamera = try MapCamera.fitBounds(
     boundingBox: plannedRoute.boundingBox,
@@ -233,6 +207,7 @@ let fittedCamera = try MapCamera.fitBounds(
 )
 pinnedFitBoundsCamera = fittedCamera
 ```
+<!-- docs-snippet: end search-and-routing/frame-the-route ios -->
 
 <!-- docs-snippet: begin search-and-routing/draw-the-route ios -->
 ```swift
@@ -254,8 +229,6 @@ _ = mapView.setOverlays([routeOverlay])
 
 ### Group the calls with engines
 
-Each engine wraps the same SDK and keeps the typed failures and detail text:
-
 ```swift
 let searchEngine = SearchEngine(mapSdk: mapSdk)
 let settledPlaces = try await searchEngine.search(
@@ -276,9 +249,8 @@ let plannedRoute = try await routingEngine.calculateRoute(
 
 ### Resolve a query into places
 
-The package's `MapsSdk` handle returns the contract's search and routing
-calls as promises. Every record it resolves carries the same fields the other
-platforms see, in lower camel case:
+The package's `MapsSdk` handle returns the contract's search and routing calls
+as promises:
 
 <!-- docs-snippet: begin search-and-routing/search-for-places react-native -->
 ```ts
@@ -289,12 +261,8 @@ const destinationPlace =
 <!-- docs-snippet: end search-and-routing/search-for-places react-native -->
 
 A query that resolves to no place leaves the field `null`. The example stops
-before planning rather than inventing a coordinate.
-
-Pass `undefined` or omit the boundary to search worldwide. Pass a
-`BoundingBox` with `southWest` and `northEast` corners to restrict the search.
-`suggest` returns completion candidates while the user types; `search`
-returns full results for a settled query.
+before planning rather than inventing a coordinate. Pass `undefined` or omit
+the boundary to search worldwide.
 
 ### Plan the route
 
@@ -319,17 +287,10 @@ const plannedRoute = await mapSdk.calculateRoute(
 ```
 <!-- docs-snippet: end search-and-routing/plan-the-route react-native -->
 
-The route carries `distanceMeters`, `durationSeconds`, the bounding box and
-one leg per waypoint pair with its steps.
-
 A rejected promise carries the typed `SdkError`. Surface it in your error
 state rather than retrying blindly; the rate limiter refills on its own.
 
 ### Frame the route preview
-
-The map view's `fitBounds` takes the same inset story as the other tabs:
-224 px clear on the left for the route card, 48 px top and right, 96 px
-bottom, clamped at zoom 22:
 
 ```js
 mapView.fitBounds(
@@ -340,9 +301,6 @@ mapView.fitBounds(
 ```
 
 ### Draw the route
-
-Build one route-polyline overlay from the planned geometry and hand it to the
-map view:
 
 <!-- docs-snippet: begin search-and-routing/draw-the-route react-native -->
 ```ts
@@ -356,13 +314,10 @@ await mapView.setOverlays([routeOverlay]);
 ```
 <!-- docs-snippet: end search-and-routing/draw-the-route react-native -->
 
-### Keep one SDK handle
-
-The package handle exposes `search`, `suggest`, `forwardGeocode`, and
-`calculateRoute` directly, so a React Native screen needs no extra wrapper.
-The generated engine classes wrap a lower-level `MapSdk` instance, which would
-be a second SDK — with its own provider registry and tile cache — in the same
-process. Keep the single handle from the [first map](first-map.md) guide.
+Keep the single package handle from the [first map](first-map.md) guide. The
+generated engine classes wrap a lower-level `MapSdk` instance, which would be
+a second SDK with its own provider registry and tile cache in the same
+process.
 
 </div>
 
@@ -370,17 +325,17 @@ process. Keep the single handle from the [first map](first-map.md) guide.
 
 ### Register the provider at runtime
 
-A browser page has no settings sheet. Provider registration is one call per
-capability, naming the contract, the provider key from the shared registry and
-your credential. Take the credential from your own runtime source: a form, a
-server-issued token, or a test environment. Keyless, the demo searches
+A browser page has no settings sheet. Provider registration is one method per
+capability on the `MapSdk` root, naming the contract member, the provider key
+from the shared registry and your credential. Take the credential from a form,
+a server-issued token, or a test environment. Keyless, the demo searches
 recorded places and plans recorded routes.
 
 ```js
-import { configureProvider } from './web/rustic_maps_web_bindings.js';
+import { ProviderContract } from './web/rustic_maps.js';
 
-configureProvider('Geocoding', 'mapquest', providerCredential);
-configureProvider('Routing', 'mapquest', providerCredential);
+mapSdk.configureProvider(ProviderContract.Geocoding, 'mapquest', providerCredential);
+mapSdk.configureProvider(ProviderContract.Routing, 'mapquest', providerCredential);
 ```
 
 The calls below reject with the provider's own error text when no provider is
@@ -388,43 +343,40 @@ registered or the provider refuses.
 
 ### Resolve the queries into places, then plan the route
 
-`forwardGeocode` returns every candidate the provider resolved, most likely
-first. Its rows carry `structuredAddressText`, `latitudeDegrees`, and
-`longitudeDegrees`. `suggestPlaces` returns completion candidates, and
-`searchPlaces` returns full results for a settled query. The `calculateRoute`
-call takes two coordinates and uses the default request: automobile, fastest,
-metric.
-
 ```js
-import { forwardGeocode, calculateRoute } from './web/rustic_maps_web_bindings.js';
+import { RouteStrategy, TransportationMode, UnitSystem } from './web/rustic_maps.js';
 
 const originSearchQuery = 'Capitol Park';
 const destinationSearchQuery = 'Tower Bridge';
 
-const originPlace = (await forwardGeocode(originSearchQuery))[0] ?? null;
-const destinationPlace = (await forwardGeocode(destinationSearchQuery))[0] ?? null;
+const originPlace = (await mapSdk.forwardGeocode(originSearchQuery))[0] ?? null;
+const destinationPlace = (await mapSdk.forwardGeocode(destinationSearchQuery))[0] ?? null;
 if (originPlace === null || destinationPlace === null) {
   throw new Error('the provider resolved no place for one of the queries');
 }
 
-const plannedRoute = await calculateRoute(
-  originPlace.latitudeDegrees,
-  originPlace.longitudeDegrees,
-  destinationPlace.latitudeDegrees,
-  destinationPlace.longitudeDegrees,
+const plannedRoute = await mapSdk.calculateRoute(
+  [originPlace.coordinate, destinationPlace.coordinate],
+  {
+    transportationMode: TransportationMode.Automobile,
+    routeStrategy: RouteStrategy.Fastest,
+    unitSystem: UnitSystem.Metric,
+    avoidOptions: {
+      tollRoads: false,
+      limitedAccessHighways: false,
+      ferries: false,
+      unpavedRoads: false,
+    },
+  },
 );
 ```
 
-For a pedestrian route or explicit avoids, `calculateRouteWithOptions` takes
-the contract's `RouteOptions`. The returned record has the same
-`distanceMeters`, `durationSeconds`, `boundingBox`, and `legs`-of-`steps` shape
-the other tabs read.
+The records carry `structuredAddressText`, a nested `coordinate` and
+`geocodeQuality`; `suggest` and `search` are the completion and search calls.
+`calculateRoute` takes the contract's `RouteOptions` record: transport mode,
+strategy, unit system and the features to avoid.
 
 ### Frame the route preview
-
-Let the camera fit the route's bounding box through the same fitted constructor
-the native tabs use. The arguments are the box's corners, the viewport, the edge
-insets in top/right/bottom/left order, and the zoom ceiling:
 
 ```js
 /** @type {any} */
@@ -452,14 +404,12 @@ const fittedCamera = MapCamera.fittingBounds(
 );
 ```
 
-The insets are the pixels your own panels keep clear, so the destination never
-hides under them. A refused fit throws the reason; keep the previous camera.
+A refused fit throws the reason; keep the previous camera.
 
 ### Draw the route
 
-Build one route-polyline overlay from the planned geometry and hand it to the
-view. The browser descriptor spells the color field `color`, not the native
-tabs' `rgbaColor`:
+Build one route-polyline overlay from the planned geometry. The browser
+descriptor spells the color field `color`.
 
 ```js
 const plannedRoute = route;

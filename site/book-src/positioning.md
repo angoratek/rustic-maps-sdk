@@ -13,8 +13,8 @@ read the same stream.
 ## The shared scenario
 
 - Start the source after the permission is granted.
-- Draw the renderer's tracking dot with `showAccuracyRing` and the controller's
-  smoothed course.
+- Draw the tracking dot with `showAccuracyRing` and the controller's smoothed
+  course.
 - Centre the camera on each fix at follow zoom 15.
 - Stop the source when the control is turned off and clear the layer.
 - State a denied permission, a disabled service, an unavailable source and a
@@ -59,7 +59,7 @@ deviceLocationSource.stop()
 
 ## iOS
 
-<!-- docs-snippet: skip — the snippet uses the MapNativeCoreUI view's location layer and its DeviceLocationSource, which the contract-only Swift snippet harness does not mirror. -->
+<!-- docs-snippet: skip — the snippet uses the MapNativeCoreUI view's location layer and its DeviceLocationSource, which the contract-only Swift snippet check does not mirror. -->
 ```swift
 import MapNativeCoreUI
 import RusticMapsSDK
@@ -114,22 +114,26 @@ Ask for the Android runtime permission with `PermissionsAndroid` before
 ## WebAssembly
 
 ```ts
-import { PositionController } from './pkg/rustic_maps_web_bindings.js';
+import { PositionController, PositionSourceError } from './web/rustic_maps.js';
 
 const positionController = new PositionController();
 const watchIdentifier = navigator.geolocation.watchPosition(
   position => {
-    positionController.feedFix(
-      position.coords.latitude,
-      position.coords.longitude,
-      position.coords.accuracy,
-    );
+    positionController.feedFix({
+      coordinate: {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      },
+      horizontalAccuracyMeters: position.coords.accuracy,
+    });
     // Draw the tracking dot with the controller's smoothed course and centre
-    // the camera through MapView.setLocationIndicator and setCamera.
+    // the camera through BrowserMapView.setLocationIndicator and setCamera.
   },
   error => {
     positionController.sourceFailed(
-      error.code === 1 ? 'permissionDenied' : 'unavailable',
+      error.code === 1
+        ? PositionSourceError.PermissionDenied
+        : PositionSourceError.Unavailable,
     );
   },
 );

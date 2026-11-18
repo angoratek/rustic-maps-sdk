@@ -1,0 +1,3179 @@
+// Public API contract of the Maps SDK.
+//
+// The contract covers map projection helpers and the camera, provider calls
+// (geocoding, routing, distance matrix, place search, traffic and raster
+// tiles), offline routing, turn-by-turn navigation, the live map view with
+// overlays, simulated trips, structured diagnostics and the capability
+// facades.
+//
+// Records carry plain values. Calls validate their inputs at the boundary and
+// throw a typed `SdkError` instead of failing later; error detail messages are
+// passed through verbatim, which makes them suitable for logs and diagnostics
+// but not for display without your own wording.
+
+namespace rustic_maps {
+    /// Version of the SDK build, for example `0.12.0`.
+    string get_sdk_compiled_version();
+
+    /// Projects a geographic coordinate into the normalized world square.
+    ///
+    /// # Parameters
+    /// - `coordinate` — a WGS 84 coordinate in decimal degrees.
+    ///
+    /// # Returns
+    /// The position in `[0, 1]` on both axes: x eastward from the
+    /// antimeridian, y southward from the north pole. A latitude beyond the
+    /// Web Mercator cutoff is clamped to the cutoff.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` when the latitude is outside
+    /// `[-90, 90]`, the longitude is outside `[-180, 180]`, or a component is
+    /// not finite.
+    [Throws=SdkError]
+    NormalizedWorldCoordinate coordinate_to_normalized_world(GeographicCoordinate coordinate);
+
+    /// Returns the XYZ address of the tile that contains the coordinate at
+    /// the given zoom level.
+    ///
+    /// # Parameters
+    /// - `coordinate` — a WGS 84 coordinate.
+    /// - `zoom_level` — tile zoom level.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` when the coordinate is not valid.
+    [Throws=SdkError]
+    TileKey tile_key_for_coordinate(GeographicCoordinate coordinate, u8 zoom_level);
+
+    /// Lists every XYZ tile whose area intersects the bounding box, ordered
+    /// row-major from the north.
+    ///
+    /// # Parameters
+    /// - `bounding_box` — area to cover; its corners must be ordered.
+    /// - `zoom_level` — tile zoom level.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` for an invalid corner or an inverted
+    /// box.
+    [Throws=SdkError]
+    sequence<TileKey> tiles_covering(BoundingBox bounding_box, u8 zoom_level);
+
+    /// Calculates a route between two coordinates over an offline routing
+    /// graph supplied as archive bytes.
+    ///
+    /// The archive is a self-describing RMOG container compiled from an
+    /// OpenStreetMap extract. It is validated in memory before routing, and no
+    /// provider registration is required. The request uses the graph profile's
+    /// default options (automobile, fastest, metric).
+    ///
+    /// # Parameters
+    /// - `archive_bytes` — the compiled routing archive.
+    /// - `start` — route origin.
+    /// - `end` — route destination.
+    ///
+    /// # Returns
+    /// The calculated route.
+    ///
+    /// # Errors
+    /// Throws `OfflineRoutingFailure` when the archive fails validation or
+    /// cannot be read, `InvalidCoordinateInput` when a coordinate lies beyond
+    /// the graph's snap tolerance, and `ProviderRequestRejected` when the
+    /// graph cannot connect the pair.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    Route offline_route_from_archive_bytes(
+        bytes archive_bytes,
+        GeographicCoordinate start,
+        GeographicCoordinate end
+    );
+
+    /// The default step-advance policy: advance when a position fix comes
+    /// within 20 meters of the end of the current step.
+    StepAdvancePolicy default_step_advance_policy();
+
+    /// The default deviation policy: judge a fix off route when it lies more
+    /// than 25 meters from the remaining route line.
+    DeviationPolicy default_deviation_policy();
+
+    /// The default reroute-recalculation policy: a 5 second cooldown and a
+    /// 50 meter movement threshold.
+    ReroutePolicy default_reroute_policy();
+};
+
+/// A position on the WGS 84 ellipsoid in decimal degrees.
+dictionary GeographicCoordinate {
+    /// Latitude in decimal degrees, valid within `[-90, 90]`.
+    double latitude;
+    /// Longitude in decimal degrees, valid within `[-180, 180]`.
+    double longitude;
+};
+
+/// Rectangular area between a south-west and a north-east corner; boxes never
+/// span the antimeridian.
+dictionary BoundingBox {
+    /// South-west corner (minimum latitude and longitude).
+    GeographicCoordinate south_west;
+    /// North-east corner (maximum latitude and longitude).
+    GeographicCoordinate north_east;
+};
+
+/// Position on the viewport in physical pixels (origin top-left, y down).
+dictionary ScreenPoint {
+    /// Horizontal position in pixels.
+    double x;
+    /// Vertical position in pixels.
+    double y;
+};
+
+/// A world position in normalized world coordinates, both axes within
+/// `[0, 1]`.
+dictionary NormalizedWorldCoordinate {
+    /// Eastward position from the antimeridian.
+    double x;
+    /// Southward position from the north pole.
+    double y;
+};
+
+/// One web-mercator XYZ tile address.
+dictionary TileKey {
+    /// Tile column, in `0..2^zoom_level`.
+    u32 tile_x;
+    /// Tile row, counted from the north, in `0..2^zoom_level`.
+    u32 tile_y;
+    /// Zoom level this tile belongs to.
+    u8 zoom_level;
+};
+
+/// Viewport dimensions in physical pixels.
+dictionary ViewportSize {
+    /// Horizontal extent in pixels.
+    double width_pixels;
+    /// Vertical extent in pixels.
+    double height_pixels;
+};
+
+/// Screen-space insets kept clear of map content: distances from each
+/// viewport edge in pixels, so UI overlays such as route cards, attribution
+/// and sheet panels never cover the content the camera guarantees visible.
+dictionary EdgeInsets {
+    /// Pixels kept clear from the left viewport edge.
+    double left;
+    /// Pixels kept clear from the top viewport edge.
+    double top;
+    /// Pixels kept clear from the right viewport edge.
+    double right;
+    /// Pixels kept clear from the bottom viewport edge.
+    double bottom;
+};
+
+/// Failures returned by the SDK. The detail message of a variant is always
+/// passed through verbatim from the failing component.
+[Error] interface SdkError {
+    /// A coordinate, viewport extent or box corner failed validation.
+    InvalidCoordinateInput(string detail);
+    /// The network transport failed; carries the transport's verbatim detail.
+    NetworkRequestFailed(string detail);
+    /// The provider answered with a payload the parser could not use.
+    ResponseParsingFailure(string detail);
+    /// The provider returned a documented application-level failure status.
+    ProviderRequestRejected(string detail);
+    /// The token-bucket rate limiter is exhausted; retry after the next
+    /// refill.
+    RateLimitExhausted();
+    /// No provider implementation is registered for the requested contract.
+    ProviderNotConfigured(string contract_name);
+    /// A navigation input (a route record or a navigation policy) failed
+    /// validation.
+    InvalidNavigationInput(string detail);
+    /// An overlay descriptor did not describe a usable overlay (wrong kind
+    /// payload, an out-of-range color channel, or a non-positive or
+    /// non-finite width or radius), or a surface input was structurally
+    /// unusable (a null, zero or ambiguous platform surface pointer, or a
+    /// non-positive viewport extent).
+    InvalidRenderInput(string detail);
+    /// Live rendering could not proceed on the platform surface: the platform
+    /// handle or surface was unusable, the graphics context could not be
+    /// acquired, the surface format could not be negotiated or configured, the
+    /// frame texture could not be acquired, or the frame's render state was
+    /// busy in another draw.
+    RenderingSurfaceUnavailable(string detail);
+    /// A cache read, write or eviction failed (an unavailable store, a
+    /// corrupt entry, or a byte-budget refusal). The detail names the reason
+    /// verbatim.
+    CacheOperationFailure(string detail);
+    /// An offline routing graph failed validation or could not be read: a
+    /// truncated or foreign archive, an unsupported version, or a malformed
+    /// section. The detail names the reason verbatim.
+    OfflineRoutingFailure(string detail);
+};
+
+/// Anchored map camera: geographic center, zoom level, bearing and pitch. The
+/// ground point under the center always sits at the viewport center; zoom and
+/// pitch are clamped to their valid ranges and bearing wraps into
+/// `[0, 360)`.
+interface MapCamera {
+    /// Builds a camera at the given center, zoom level, bearing and pitch.
+    ///
+    /// # Parameters
+    /// - `center` — geographic point placed at the viewport center.
+    /// - `zoom_level` — zoom level, clamped to the valid range.
+    /// - `bearing_degrees` — clockwise rotation from north, wrapped into
+    ///   `[0, 360)`.
+    /// - `pitch_degrees` — tilt from straight down, clamped to the valid
+    ///   range.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` when the center is not a valid
+    /// coordinate or when a numeric argument is not finite.
+    [Throws=SdkError]
+    constructor(GeographicCoordinate center, double zoom_level, double bearing_degrees, double pitch_degrees);
+
+    /// Builds the camera that frames a bounding box inside the viewport's
+    /// inset region: top-down and north-up by construction (pitch and bearing
+    /// zero), zoomed to the largest level keeping the whole box inside the
+    /// inset area and clamped to `maximum_zoom_level`; the center is anchored
+    /// on the inset region's center.
+    ///
+    /// # Parameters
+    /// - `bounding_box` — the area to frame.
+    /// - `viewport` — viewport extent in pixels.
+    /// - `edge_insets` — pixels kept clear on each viewport edge.
+    /// - `maximum_zoom_level` — upper zoom bound for the fitted camera.
+    ///
+    /// # Errors
+    /// Throws when the insets or the maximum zoom are not finite usable
+    /// values, when the insets are negative or leave no inset area, or when
+    /// the box spans no positive world area.
+    [Throws=SdkError, Name=fit_bounds]
+    constructor(BoundingBox bounding_box, ViewportSize viewport, EdgeInsets edge_insets, double maximum_zoom_level);
+
+    /// Eases from `start_camera` toward `target_camera` over `fraction`.
+    ///
+    /// The SDK's one camera-interpolation curve: the fraction is clamped into
+    /// `[0, 1]` and eased with smoothstep, the center travels the shortest
+    /// longitude path in Mercator space, zoom and pitch interpolate linearly,
+    /// and the bearing takes the shortest arc. Fractions at or below zero
+    /// answer `start_camera` verbatim and fractions at or above one answer
+    /// `target_camera` verbatim, so an animation's endpoints are exact.
+    ///
+    /// # Parameters
+    /// - `start_camera` — the pose the interpolation starts from.
+    /// - `target_camera` — the pose the interpolation heads toward.
+    /// - `fraction` — animation progress, clamped into `[0, 1]`.
+    ///
+    /// # Returns
+    /// The camera pose at the eased progress between the two poses.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` when `fraction` is not finite.
+    [Throws=SdkError, Name=interpolate]
+    constructor(MapCamera start_camera, MapCamera target_camera, double fraction);
+
+    /// Projects a coordinate to viewport pixels (origin top-left, y down).
+    ///
+    /// # Parameters
+    /// - `coordinate` — the point to project.
+    /// - `viewport` — viewport extent in pixels.
+    /// - `field_of_view_degrees` — vertical field of view of the projection.
+    ///
+    /// # Returns
+    /// The screen position, or null when the point lies behind the camera.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` for an invalid coordinate or viewport.
+    [Throws=SdkError]
+    ScreenPoint? project_to_screen(GeographicCoordinate coordinate, ViewportSize viewport, double field_of_view_degrees);
+
+    /// Unprojects a viewport pixel back onto the ground plane.
+    ///
+    /// # Parameters
+    /// - `screen_point` — the pixel to unproject.
+    /// - `viewport` — viewport extent in pixels.
+    /// - `field_of_view_degrees` — vertical field of view of the projection.
+    ///
+    /// # Returns
+    /// The ground coordinate, or null when the ray misses the ground
+    /// (typically below the horizon at steep pitch).
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` for an invalid viewport.
+    [Throws=SdkError]
+    GeographicCoordinate? screen_to_ground_coordinate(ScreenPoint screen_point, ViewportSize viewport, double field_of_view_degrees);
+
+    /// Lists every tile at `tile_zoom_level` whose area intersects the visible
+    /// ground, sorted row-major from the north.
+    ///
+    /// # Parameters
+    /// - `viewport` — viewport extent in pixels.
+    /// - `field_of_view_degrees` — vertical field of view of the projection.
+    /// - `tile_zoom_level` — zoom level of the listed tiles.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` for an invalid viewport.
+    [Throws=SdkError]
+    sequence<TileKey> visible_tile_keys(ViewportSize viewport, double field_of_view_degrees, u8 tile_zoom_level);
+
+    /// Nearest whole zoom level a tile fetch should use for this camera.
+    u8 tile_zoom_level();
+
+    /// Pans by a pointer travel of `delta_x_pixels` x `delta_y_pixels`
+    /// (screen pixels, x right / y down): the ground point the pointer just
+    /// moved over becomes the new camera center, so map content tracks the
+    /// pointer exactly. Answers the camera unchanged when the delta's ground
+    /// ray misses the plane (above the horizon at steep pitch). Gesture
+    /// recognition stays in your UI layer; this call performs the camera math.
+    ///
+    /// # Parameters
+    /// - `delta_x_pixels` — horizontal pointer travel in pixels.
+    /// - `delta_y_pixels` — vertical pointer travel in pixels.
+    /// - `viewport` — viewport extent in pixels.
+    /// - `field_of_view_degrees` — vertical field of view of the projection.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` when the viewport extent is not
+    /// positive.
+    [Throws=SdkError]
+    MapCamera pan_by_screen_pixels(double delta_x_pixels, double delta_y_pixels, ViewportSize viewport, double field_of_view_degrees);
+
+    /// Zooms by `delta_zoom_levels` (levels; positive zooms in) keeping the
+    /// world point under `focal_point` fixed under it. Answers the zoom
+    /// without the focal correction when the focal ray misses the ground
+    /// plane (above the horizon at steep pitch). Zoom clamps to the camera's
+    /// own level range before the focal correction applies, so a clamped
+    /// zoom still holds the focal point.
+    ///
+    /// # Parameters
+    /// - `delta_zoom_levels` — zoom change in levels.
+    /// - `focal_point` — screen pixel that stays fixed during the zoom.
+    /// - `viewport` — viewport extent in pixels.
+    /// - `field_of_view_degrees` — vertical field of view of the projection.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` when the viewport extent is not
+    /// positive.
+    [Throws=SdkError]
+    MapCamera zoom_by_levels_around_screen_point(double delta_zoom_levels, ScreenPoint focal_point, ViewportSize viewport, double field_of_view_degrees);
+
+    /// Rotates the bearing by `delta_bearing_degrees` (degrees clockwise,
+    /// wrapping into `[0, 360)`) keeping the world point under `focal_point`
+    /// fixed under it. Answers the rotation without the focal correction when
+    /// the focal ray misses the ground plane, which produces the touch-point
+    /// turn a two-finger gesture implies.
+    ///
+    /// # Parameters
+    /// - `delta_bearing_degrees` — bearing change in degrees.
+    /// - `focal_point` — screen pixel that stays fixed during the rotation.
+    /// - `viewport` — viewport extent in pixels.
+    /// - `field_of_view_degrees` — vertical field of view of the projection.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` when the viewport extent is not
+    /// positive.
+    [Throws=SdkError]
+    MapCamera rotate_by_degrees_around_screen_point(double delta_bearing_degrees, ScreenPoint focal_point, ViewportSize viewport, double field_of_view_degrees);
+
+    /// Reads the camera's state back as it was constructed. The getters make
+    /// the framing chosen by `fit_bounds` readable: the fitted zoom level, its
+    /// anchored center, and the constructed bearing and pitch. Read-only: the
+    /// camera has no setters, so a new pose is a new camera.
+    GeographicCoordinate center();
+    /// The camera's zoom level.
+    double zoom_level();
+    /// The camera's bearing in degrees clockwise from north, within
+    /// `[0, 360)`.
+    double bearing_degrees();
+    /// The camera's pitch in degrees.
+    double pitch_degrees();
+
+    /// Ground meters represented by one screen pixel at the camera's center:
+    /// the equatorial ground meters per pixel at the camera's zoom level times
+    /// the cosine of the center latitude, so the answer shrinks toward the
+    /// poles exactly like the projected ground.
+    ///
+    /// At any nonzero pitch this is an approximation valid at the viewport's
+    /// center column: the value is computed for a flat center and does not fold
+    /// pitch into the answer.
+    ///
+    /// # Parameters
+    /// - `viewport` — viewport extent in pixels.
+    /// - `field_of_view_degrees` — vertical field of view of the projection.
+    ///
+    /// # Errors
+    /// Throws `InvalidCoordinateInput` for an invalid viewport.
+    [Throws=SdkError]
+    double ground_meters_per_screen_pixel(ViewportSize viewport, double field_of_view_degrees);
+};
+
+// ---------------------------------------------------------------------------
+// Provider contracts. Implement one of the following interfaces in your
+// application code and register the implementation on `MapSdk` to serve the
+// matching calls. Each member is asynchronous: implementations may perform
+// network I/O and report failures by throwing `SdkError`.
+// ---------------------------------------------------------------------------
+
+/// Geocoding provider contract. Implement this interface and register the
+/// implementation with `MapSdk::register_geocoding_provider_from_foreign` to
+/// serve the SDK's forward and reverse geocoding calls.
+[Trait, WithForeign]
+interface GeocodingProvider {
+    /// Resolves a free-form address text into candidate places, best match
+    /// first.
+    ///
+    /// # Parameters
+    /// - `address_text` — the address to resolve.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    sequence<Place> forward_geocode(string address_text);
+
+    /// Resolves a coordinate into candidate places describing that position.
+    ///
+    /// # Parameters
+    /// - `coordinate` — the position to describe.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    sequence<Place> reverse_geocode(GeographicCoordinate coordinate);
+};
+
+/// Raster-tile provider contract. Implement this interface and register the
+/// implementation with `MapSdk::register_raster_tile_provider_from_foreign` to
+/// serve the SDK's raster-tile calls.
+[Trait, WithForeign]
+interface RasterTileProvider {
+    /// Fetches one web-mercator XYZ raster tile at the requested resolution.
+    ///
+    /// # Parameters
+    /// - `tile_x` — tile column.
+    /// - `tile_y` — tile row, counted from the north.
+    /// - `zoom_level` — zoom level of the tile.
+    /// - `image_format` — requested image encoding.
+    /// - `tile_resolution` — requested pixel resolution.
+    ///
+    /// # Returns
+    /// The fetched tile, reporting the format and resolution it actually
+    /// contains.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    RasterTileData fetch_raster_tile(
+        u32 tile_x,
+        u32 tile_y,
+        u8 zoom_level,
+        RasterImageFormat image_format,
+        RasterTileResolution tile_resolution
+    );
+};
+
+/// Vector-tile provider contract. Implement this interface and register the
+/// implementation with `MapSdk::register_vector_tile_provider_from_foreign` to
+/// serve the SDK's vector-tile calls.
+///
+/// The provider serves one web-mercator XYZ tileset and reports its tileset
+/// name, attribution, zoom span, wire encoding and style hints through
+/// `source_descriptor`. A provider-backed vector base installed with
+/// `MapView::set_provider_vector_tile_source` then paints that tileset. The
+/// encoding and hints are advisory: each fetched tile reports the encoding
+/// its payload actually arrived in, and the installed style decides the
+/// document.
+[Trait, WithForeign]
+interface VectorTileProvider {
+    /// Describes the served tileset: tileset name, attribution, zoom span,
+    /// wire encoding and style hints.
+    VectorTileSourceDescriptor source_descriptor();
+
+    /// Fetches one web-mercator XYZ vector tile in its wire encoding.
+    ///
+    /// # Parameters
+    /// - `tile_x` — tile column.
+    /// - `tile_y` — tile row, counted from the north.
+    /// - `zoom_level` — zoom level of the tile.
+    ///
+    /// # Returns
+    /// The tile bytes together with the encoding they arrived in.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure, or to refuse a tile outside the served zoom span.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    VectorTileData fetch_vector_tile(u32 tile_x, u32 tile_y, u8 zoom_level);
+};
+
+/// Routing contract implemented by foreign code and registered on `MapSdk`
+/// through `register_routing_provider_from_foreign`.
+[Trait, WithForeign]
+interface RoutingProvider {
+    /// Calculates a route through the ordered waypoints with the given
+    /// options.
+    ///
+    /// # Parameters
+    /// - `waypoints` — the ordered stops, starting at the origin.
+    /// - `route_options` — transport mode, strategy, units and features to
+    ///   avoid.
+    ///
+    /// # Returns
+    /// A route with one leg per consecutive waypoint pair.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    Route calculate_route(
+        sequence<GeographicCoordinate> waypoints,
+        RouteOptions route_options
+    );
+};
+
+/// Distance-matrix contract implemented by foreign code and registered on
+/// `MapSdk` through `register_distance_matrix_provider_from_foreign`.
+[Trait, WithForeign]
+interface DistanceMatrixProvider {
+    /// Calculates durations and distances for every origin-destination pair.
+    ///
+    /// # Parameters
+    /// - `origins` — the origin coordinates.
+    /// - `destinations` — the destination coordinates.
+    /// - `transportation_mode` — the mode to route for.
+    ///
+    /// # Returns
+    /// One entry per pair, in row-major origin-major order.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    DistanceMatrix calculate_distance_matrix(
+        sequence<GeographicCoordinate> origins,
+        sequence<GeographicCoordinate> destinations,
+        TransportationMode transportation_mode
+    );
+};
+
+/// Place-search contract implemented by foreign code and registered on
+/// `MapSdk` through `register_search_place_provider_from_foreign`.
+[Trait, WithForeign]
+interface SearchPlaceProvider {
+    /// Returns fast completion candidates while the user types.
+    ///
+    /// # Parameters
+    /// - `query_text` — the partial query entered so far.
+    /// - `search_boundary` — an optional area to prefer or restrict results
+    ///   to.
+    ///
+    /// # Returns
+    /// Completion candidates in the implementation's relevance order.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    sequence<Place> search_autocomplete(
+        string query_text,
+        BoundingBox? search_boundary
+    );
+
+    /// Returns full search results for a settled query.
+    ///
+    /// # Parameters
+    /// - `query_text` — the complete query.
+    /// - `search_boundary` — an optional area to prefer or restrict results
+    ///   to.
+    ///
+    /// # Returns
+    /// Matching places in the implementation's relevance order.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    sequence<Place> search_places(
+        string query_text,
+        BoundingBox? search_boundary
+    );
+};
+
+/// Traffic-incident contract implemented by foreign code and registered on
+/// `MapSdk` through `register_traffic_incident_provider_from_foreign`.
+[Trait, WithForeign]
+interface TrafficIncidentProvider {
+    /// Fetches incidents intersecting a bounding box.
+    ///
+    /// # Parameters
+    /// - `bounding_box` — the area to report incidents for.
+    ///
+    /// # Returns
+    /// Every incident inside the area.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    sequence<TrafficIncident> fetch_traffic_incidents(BoundingBox bounding_box);
+};
+
+/// Traffic-flow contract implemented by foreign code and registered on
+/// `MapSdk` through `register_traffic_flow_provider_from_foreign`.
+[Trait, WithForeign]
+interface TrafficFlowProvider {
+    /// Fetches per-segment flow observations inside a bounding box.
+    ///
+    /// # Parameters
+    /// - `bounding_box` — the area to report flow for.
+    ///
+    /// # Returns
+    /// One observation per segment inside the area.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    sequence<TrafficFlowData> fetch_traffic_flow(BoundingBox bounding_box);
+};
+
+/// Elevation contract implemented by foreign code and registered on `MapSdk`
+/// through `register_elevation_provider_from_foreign`.
+[Trait, WithForeign]
+interface ElevationProvider {
+    /// Fetches elevation samples for ordered points.
+    ///
+    /// # Parameters
+    /// - `points` — the coordinates to sample, in order.
+    ///
+    /// # Returns
+    /// One sample per requested point, in the same order.
+    ///
+    /// # Errors
+    /// Throw `SdkError` to report a transport, parsing, rejection or rate
+    /// limit failure.
+    ///
+    /// # Async
+    /// Runs asynchronously on behalf of the calling SDK call.
+    [Async, Throws=SdkError]
+    sequence<ElevationPoint> fetch_elevation_points(
+        sequence<GeographicCoordinate> points
+    );
+};
+
+// ---------------------------------------------------------------------------
+// Provider records and enums: values passed to and returned by provider calls.
+// ---------------------------------------------------------------------------
+
+/// One capability whose provider can be chosen independently of every other.
+///
+/// Every capability owns one registry slot, so an application may serve
+/// geocoding from one provider, routing from another and tiles from a third.
+/// A capability with no installed provider answers calls with
+/// `ProviderNotConfigured`.
+enum ProviderContract {
+    /// Forward and reverse address lookup.
+    "Geocoding",
+    /// Route calculation through ordered waypoints.
+    "Routing",
+    /// Travel-time and distance matrix calculation.
+    "DistanceMatrix",
+    /// Place prediction and lookup by free text.
+    "PlaceSearch",
+    /// Traffic incident reports.
+    "TrafficIncidents",
+    /// Traffic flow (speed and congestion) along road segments.
+    "TrafficFlow",
+    /// Terrain elevation lookup.
+    "Elevation",
+    /// Raster map imagery.
+    "RasterTiles",
+    /// Vector map tiles.
+    "VectorTiles",
+    /// Route calculation on a compiled offline graph.
+    "OfflineRouting",
+};
+
+/// Which provider serves one capability, as reported by
+/// `MapSdk::provider_registrations`.
+dictionary ProviderRegistration {
+    /// The capability this entry describes.
+    ProviderContract contract;
+    /// The provider's stable registry key, or an empty string when no
+    /// provider is installed for the capability.
+    string provider_key;
+    /// The provider's display name from the shared registry, or an empty
+    /// string when no provider is installed.
+    string display_name;
+    /// Whether a provider is installed for the capability.
+    boolean registered;
+};
+
+/// Structural precision a geocoder reached for one resolved location.
+enum GeocodeQuality {
+    /// Rooftop or feature point.
+    "Point",
+    /// Street address matched to the building level.
+    "StreetAddress",
+    /// Street intersection.
+    "Intersection",
+    /// Street level without house number.
+    "Street",
+    /// Postal code area.
+    "PostalCode",
+    /// Settlement level (village, town, city).
+    "City",
+    /// County or administrative district.
+    "County",
+    /// First-level administrative division.
+    "State",
+    /// Sovereign country level.
+    "Country",
+};
+
+/// Mode of transport used to calculate a route.
+enum TransportationMode {
+    /// Private car routing.
+    "Automobile",
+    /// Bicycle routing.
+    "Bicycle",
+    /// Walking routing.
+    "Pedestrian",
+};
+
+/// Length and speed conventions used when displaying a route.
+enum UnitSystem {
+    /// Kilometers and kilometers per hour.
+    "Metric",
+    /// Miles and miles per hour.
+    "Imperial",
+};
+
+/// What a routing request optimizes for. The strategy applies to automobile
+/// routing only.
+enum RouteStrategy {
+    /// Minimize expected travel time.
+    "Fastest",
+    /// Minimize traveled distance.
+    "Shortest",
+};
+
+/// Class of disruption reported in a traffic incident.
+enum TrafficIncidentType {
+    /// Road construction.
+    "Construction",
+    /// Traffic-impacting event.
+    "Event",
+    /// Collision.
+    "Accident",
+    /// Weather-related disruption.
+    "Weather",
+    /// Lane or road closure.
+    "Closure",
+};
+
+/// Severity ranking of a traffic incident.
+enum TrafficIncidentSeverity {
+    /// Minimal delay expected.
+    "Low",
+    /// Noticeable delay expected.
+    "Medium",
+    /// Significant delay expected.
+    "High",
+};
+
+/// Congestion classification of a road segment.
+enum TrafficFlowCongestionLevel {
+    /// At or above free-flow speed.
+    "FreeFlow",
+    /// Moderately below free-flow speed.
+    "Slow",
+    /// Stop-and-go traffic.
+    "Congested",
+    /// Roadway effectively closed.
+    "Blocked",
+};
+
+/// Encoded image formats a raster tile provider may deliver.
+enum RasterImageFormat {
+    /// PNG imagery.
+    "Png",
+    /// JPEG imagery.
+    "Jpeg",
+};
+
+/// Pixel resolution a raster tile is rendered at; `Standard` is the plain
+/// tile form, `Retina` the `@2x` form with twice the texels per edge for the
+/// same logical tile span.
+enum RasterTileResolution {
+    /// One texel per logical tile pixel.
+    "Standard",
+    /// Twice the texels per logical tile pixel (the `@2x` request form).
+    "Retina",
+};
+
+/// One resolved location returned by forward or reverse geocoding.
+dictionary Place {
+    /// Display string the provider produced for this place.
+    string structured_address_text;
+    /// Resolved position.
+    GeographicCoordinate coordinate;
+    /// Structural precision reached for this resolution.
+    GeocodeQuality geocode_quality;
+};
+
+/// Road features a routing request can ask the provider to avoid; all
+/// disabled by default.
+dictionary AvoidOptions {
+    /// Avoid toll roads.
+    boolean toll_roads;
+    /// Avoid limited-access highways and motorways.
+    boolean limited_access_highways;
+    /// Avoid ferry crossings.
+    boolean ferries;
+    /// Avoid unpaved roads.
+    boolean unpaved_roads;
+};
+
+/// Which transport modes and which route strategy the serving routing
+/// provider can honour, as reported by `MapSdk::route_capabilities`.
+///
+/// The SDK can express three transport modes and two strategies, but a
+/// provider may not serve all of them. A surface reads this answer so it can
+/// disable a choice it cannot serve with a reason, instead of sending the
+/// request and receiving a route from a path the reader did not ask for.
+dictionary RouteCapabilities {
+    /// The transport modes the provider can route for.
+    sequence<TransportationMode> supported_transportation_modes;
+    /// Whether the provider can minimize traveled distance instead of travel
+    /// time for automobile routing.
+    boolean supports_shortest_route_strategy;
+};
+
+/// Options controlling how a route is calculated.
+dictionary RouteOptions {
+    /// Mode of transport.
+    TransportationMode transportation_mode;
+    /// Whether routing optimizes travel time or distance.
+    RouteStrategy route_strategy;
+    /// Display unit convention the provider should annotate.
+    UnitSystem unit_system;
+    /// Features to avoid.
+    AvoidOptions avoid_options;
+    /// Departure instant as seconds since the Unix epoch; null for
+    /// "depart now".
+    u64? departure_timestamp_seconds;
+};
+
+/// One maneuver within a route leg.
+dictionary RouteStep {
+    /// Distance of this step in meters.
+    double distance_meters;
+    /// Travel time of this step in seconds.
+    double duration_seconds;
+    /// Maneuver classification as a stable snake-case label. The roundabout
+    /// exit index (one-based) and the turn direction are part of the label,
+    /// for example `roundabout-2` or `turn-left`.
+    string maneuver_type;
+    /// Human-readable instruction in the display language.
+    string instruction_display_text;
+    /// Instruction tuned for text-to-speech engines.
+    string instruction_speech_text;
+    /// Step geometry from the previous step end to this maneuver point.
+    sequence<GeographicCoordinate> shape;
+};
+
+/// Leg between two consecutive waypoints.
+dictionary RouteLeg {
+    /// Leg distance in meters.
+    double distance_meters;
+    /// Leg travel time in seconds.
+    double duration_seconds;
+    /// Maneuver steps in traversal order.
+    sequence<RouteStep> steps;
+};
+
+/// A complete calculated route.
+dictionary Route {
+    /// Total distance across all legs, in meters.
+    double distance_meters;
+    /// Total travel time across all legs, in seconds.
+    double duration_seconds;
+    /// Geographic bounds of the full route geometry.
+    BoundingBox bounding_box;
+    /// The full route geometry in traversal order, one point per shape vertex
+    /// the provider returned. A provider that reports only per-step shapes
+    /// leaves this empty and the steps carry the geometry instead.
+    sequence<GeographicCoordinate> geometry;
+    /// Legs, one per consecutive waypoint pair.
+    sequence<RouteLeg> legs;
+};
+
+/// Pace chosen by the application for a simulated trip. No default pace exists;
+/// every application picks its own values. Both values must be finite and
+/// strictly positive, and their product must stay finite.
+dictionary SimulatedTripPace {
+    /// Baseline travel speed in meters per second.
+    double speed_meters_per_second;
+    /// Multiplier applied to the baseline speed (for example 1, 2, 4 or 8).
+    double speed_multiplier;
+};
+
+/// One position of a simulated trip along the planned route's own polyline.
+dictionary SimulatedTripFix {
+    /// Position on the planned route's geometry.
+    GeographicCoordinate coordinate;
+    /// Direction of travel along the active segment, in degrees clockwise
+    /// from true north, or null when the route has no segment.
+    double? course_heading_degrees;
+    /// Distance travelled from the route start, in meters.
+    double travelled_meters;
+    /// Distance left to the route end, in meters.
+    double remaining_meters;
+    /// Simulated elapsed time from the trip start, in seconds.
+    double elapsed_seconds;
+    /// True exactly when the fix sits at the route's final coordinate.
+    boolean is_arrived;
+};
+
+/// One origin-destination cell of a distance matrix.
+dictionary DistanceMatrixEntry {
+    /// Origin index into the request's origins.
+    u32 origin_index;
+    /// Destination index into the request's destinations.
+    u32 destination_index;
+    /// Distance for this cell in meters.
+    double distance_meters;
+    /// Travel time for this cell in seconds.
+    double duration_seconds;
+};
+
+/// Travel-time matrix for origins x destinations.
+dictionary DistanceMatrix {
+    /// Entries in row-major origin-major order.
+    sequence<DistanceMatrixEntry> entries;
+};
+
+/// One reported disruption inside a queried bounding box.
+dictionary TrafficIncident {
+    /// Provider-stable incident identifier.
+    string identifier;
+    /// Class of disruption.
+    TrafficIncidentType incident_type;
+    /// Severity ranking.
+    TrafficIncidentSeverity severity;
+    /// Provider display text for this incident.
+    string short_description_text;
+    /// Position where the incident starts.
+    GeographicCoordinate start_coordinate;
+    /// Position where the incident ends, if reported.
+    GeographicCoordinate? end_coordinate;
+};
+
+/// Flow condition for one road segment (or polyline of road segments) inside
+/// the queried box, in kilometers per hour when the provider reports speeds
+/// and as a congestion classification otherwise.
+dictionary TrafficFlowData {
+    /// Segment geometry, ordered along the road.
+    sequence<GeographicCoordinate> shape_coordinates;
+    /// Currently observed speed in kilometers per hour, when reported.
+    double? current_speed_kilometers_per_hour;
+    /// Unconstrained (free-flow) speed in kilometers per hour, when reported.
+    double? free_flow_speed_kilometers_per_hour;
+    /// Congestion classification from the speed ratio or provider buckets.
+    TrafficFlowCongestionLevel congestion_level;
+};
+
+/// One terrain elevation sample at a coordinate.
+dictionary ElevationPoint {
+    /// Position the sample belongs to.
+    GeographicCoordinate coordinate;
+    /// Elevation above mean sea level in meters.
+    double elevation_meters;
+};
+
+/// One fetched web-mercator XYZ raster tile.
+dictionary RasterTileData {
+    /// Tile column coordinate at the given zoom level.
+    u32 tile_x;
+    /// Tile row coordinate at the given zoom level.
+    u32 tile_y;
+    /// Zoom level this tile belongs to.
+    u8 zoom_level;
+    /// Encoding of the byte payload.
+    RasterImageFormat image_format;
+    /// Pixel resolution the payload was rendered at.
+    RasterTileResolution tile_resolution;
+    /// Encoded image bytes.
+    sequence<u8> image_bytes;
+};
+
+/// One provider-neutral base-map tile source: a web-mercator XYZ raster
+/// tileset addressed by a `{z}/{x}/{y}` URL template.
+///
+/// The SDK supplies no tile source of its own; you provide the URL template
+/// and the tileset's terms. Every field is validated when the source is
+/// registered, so a malformed template or an inverted zoom range throws
+/// instead of failing on the first tile.
+dictionary UrlTemplateRasterTileSource {
+    /// The `{z}/{x}/{y}` URL template the tileset publishes: an absolute
+    /// `http`/`https` URL carrying those three placeholders and no other.
+    string url_template;
+    /// The tileset's name, used verbatim in every diagnostic it raises.
+    string source_name;
+    /// Lowest zoom level the tileset serves.
+    u8 minimum_zoom_level;
+    /// Highest zoom level the tileset serves.
+    u8 maximum_zoom_level;
+    /// The image format the tileset serves. Fetched tiles report this format
+    /// whatever the caller requests: the tile bytes are the truth, and the
+    /// renderer decodes by the record it receives.
+    RasterImageFormat image_format;
+    /// The pixel resolution the tileset serves (the same rule as the format:
+    /// the fetched tile reports what it contains).
+    RasterTileResolution tile_resolution;
+    /// The `User-Agent` header every tile request carries; empty sends none.
+    /// A public tile service identifies its clients by it, and several usage
+    /// policies refuse clients that send nothing.
+    string user_agent;
+    /// Immediate tile requests this source admits before pacing starts;
+    /// null keeps the default of eight, matched to the renderer's fetch
+    /// window. A source with a stricter published budget lowers the value
+    /// here. It must be finite and at least one, or registration throws
+    /// naming the source.
+    double? token_bucket_capacity_tokens = null;
+    /// Sustained tile request rate in tokens per second; null keeps the
+    /// default of eight per second. A source with a stricter published
+    /// budget lowers the value here. It must be finite and strictly
+    /// positive, or registration throws naming the source.
+    double? refill_tokens_per_second = null;
+};
+
+/// Wire encoding of a vector tile's byte payload.
+///
+/// Tile services commonly serve Mapbox Vector Tile protobuf with
+/// `Content-Encoding: gzip`. A fetched tile reports the encoding it actually
+/// arrived in; a decoder decompresses only `GzippedMapboxVectorTile`.
+enum VectorTileEncoding {
+    "MapboxVectorTile",
+    "GzippedMapboxVectorTile",
+};
+
+/// One HTTP header a vector-tile source's requests carry.
+dictionary SourceHeader {
+    /// Header name.
+    string name;
+    /// Header value.
+    string value;
+};
+
+/// Description of one vector-tileset source a foreign vector-tile provider
+/// serves.
+///
+/// The source name namespaces every cached payload for the tileset, so two
+/// providers, or one provider serving two tilesets, never share cache entries
+/// even for identical zoom/x/y arguments.
+dictionary VectorTileSourceDescriptor {
+    /// Stable unique name of the tileset, used to namespace its cached vector
+    /// payloads so two tilesets serving one address never collide.
+    string source_name;
+    /// Human-readable attribution line the provider's usage terms require
+    /// wherever the imagery is shown.
+    string attribution_text;
+    /// Lowest zoom level the provider serves.
+    u8 minimum_zoom_level;
+    /// Highest zoom level the provider serves.
+    u8 maximum_zoom_level;
+    /// Wire encoding the provider expects this source's tiles to arrive in.
+    /// Advisory: every fetched `VectorTileData` reports the encoding its own
+    /// payload arrived in, and the decoder unwraps by that per-tile value.
+    VectorTileEncoding tile_encoding;
+    /// Style names or families the tileset is designed to be rendered with,
+    /// in the provider's preference order; empty when it declares none. The
+    /// installed style id alone decides which style document paints the
+    /// tiles, and a provider-backed base also treats each hint as an
+    /// additional name that a style document's declared source may use to
+    /// identify this tileset.
+    sequence<string> style_hints;
+};
+
+/// One fetched web-mercator XYZ vector tile.
+dictionary VectorTileData {
+    /// Tile column coordinate at the given zoom level.
+    u32 tile_x;
+    /// Tile row coordinate at the given zoom level.
+    u32 tile_y;
+    /// Zoom level this tile belongs to.
+    u8 zoom_level;
+    /// Wire encoding of the byte payload.
+    VectorTileEncoding tile_encoding;
+    /// Encoded tile bytes: MVT protobuf, optionally gzip-wrapped.
+    sequence<u8> tile_bytes;
+};
+
+/// One provider-neutral vector base-map source: a web-mercator XYZ vector
+/// tileset addressed by a `{z}/{x}/{y}` URL template, painted with one of the
+/// SDK's built-in styles.
+///
+/// The SDK supplies no tile source or style list of its own; you provide the
+/// URL template, the attribution its terms require and the style id. The
+/// style is named by an id such as `bright-light`, `fiord-dark` or
+/// `positron-light`, and an unknown id throws here rather than on the first
+/// frame. Every field is validated when the source is installed, so a
+/// malformed template or an inverted zoom range throws instead of failing on
+/// the first tile.
+///
+/// Draw order: while installed, the styled base replaces the raster tiles, and
+/// it paints beneath every overlay the view is asked to draw, so your markers,
+/// routes and location indicator stay above the base map.
+///
+/// The built-in styles paint fills, lines, circles and place labels, plus
+/// route-reference badges where the style declares a shield block for its
+/// `routes` layer.
+///
+/// An absent optional field declares nothing. The WebAssembly surface never
+/// inherits a provider declaration: every extra is the caller's own, and a
+/// browser request cannot set `User-Agent` or `Referer`, so a header naming
+/// either has no effect there. The native surface additionally inherits the
+/// published declaration of a keyless named tileset when the template matches
+/// one, so that tileset's recorded terms, subdomains, request headers and
+/// style hints survive. The WebAssembly TypeScript projection spells the
+/// optional members as required `T | null` fields, so pass null to declare
+/// none there.
+dictionary UrlTemplateVectorTileSource {
+    /// The `{z}/{x}/{y}` URL template the tileset publishes: an absolute
+    /// `http`/`https` URL carrying those three placeholders and no other.
+    string url_template;
+    /// The tileset's name, used verbatim in every diagnostic it raises.
+    string source_name;
+    /// The attribution line the tileset's terms require wherever it is shown;
+    /// the status readback reports it back for your UI to display.
+    string attribution_text;
+    /// The built-in style id the base paints with.
+    string style_id;
+    /// Lowest zoom level the tileset serves.
+    u8 minimum_zoom_level;
+    /// Highest zoom level the tileset serves.
+    u8 maximum_zoom_level;
+    /// Immediate tile requests this source admits before pacing starts;
+    /// null keeps the default of eight, matched to the renderer's fetch
+    /// window. A tileset with a stricter published budget lowers the value
+    /// here. It must be finite and at least one, or installation throws
+    /// naming the source.
+    double? token_bucket_capacity_tokens = null;
+    /// Sustained tile request rate in tokens per second; null keeps the
+    /// default of eight per second. A tileset with a stricter published
+    /// budget lowers the value here. It must be finite and strictly
+    /// positive, or installation throws naming the source.
+    double? refill_tokens_per_second = null;
+    /// Terms the tileset's usage policy requires alongside attribution; null
+    /// or empty declares none.
+    string? terms_text = null;
+    /// Values substituted for the template's optional `{s}` placeholder, in
+    /// the source's preference order; null or empty when the template has no
+    /// `{s}`.
+    sequence<string>? subdomains = null;
+    /// Headers every tile request carries, in the order given; null or empty
+    /// sends none. A credential a public template needs belongs here or in
+    /// the template itself.
+    sequence<SourceHeader>? headers = null;
+    /// Style names or families the tileset is designed to be rendered with,
+    /// in the provider's preference order; null or empty when it declares
+    /// none.
+    sequence<string>? style_hints = null;
+};
+
+/// A vector base map served by a provider configured through
+/// `MapSdk.configure_provider_set`. Native bindings also accept a provider
+/// registered from foreign code through
+/// `MapSdk.register_vector_tile_provider_from_foreign`; the WebAssembly
+/// surface has no foreign-registration seam. The provider supplies its own
+/// tileset name, attribution line and zoom span; you choose only the provider
+/// and the built-in style the base paints with.
+///
+/// Installing a provider-backed base requires the vector-tile provider to be
+/// registered first and the style id to name a committed style whose schema
+/// matches the provider's tiles; otherwise installation throws naming the
+/// mismatch and leaves any base already installed in force.
+dictionary ProviderVectorTileSource {
+    /// The provider key that registered the vector-tile provider, as
+    /// `configure_provider_set` records it. Native bindings also accept
+    /// `application` for a provider registered from foreign code; the
+    /// WebAssembly surface has no foreign-registration seam, so a page always
+    /// names a key it configured. A different installed provider is refused.
+    string provider_key;
+    /// The built-in style id the base paints with.
+    string style_id;
+};
+
+/// One vector source's layer accounting for the last resolved frame.
+///
+/// `matched_layer_count` counts the source's style layers whose
+/// `source-layer` the painted tileset carries; a layer that names no source
+/// layer always matches. `drawn_layer_count` counts the source's layers that
+/// painted geometry or placed a label. The two differ when a layer reads a
+/// source layer the tileset does not carry, when its zoom span or visibility
+/// excludes the frame, or when its filter admits no feature.
+dictionary VectorTileSourceLayerCount {
+    /// The style source id the counts belong to.
+    string source_id;
+    /// The source's layers whose source layer the painted tileset carries.
+    u32 matched_layer_count;
+    /// The source's layers that painted in the frame.
+    u32 drawn_layer_count;
+};
+
+/// The vector base source's status: what the view is drawing a styled base
+/// with, and what its last resolved frame achieved. The counts are per frame,
+/// matching the raster tile statistics, so your UI can show an accurate
+/// "base map loading" or "base map unavailable" state.
+dictionary VectorTileSourceStatus {
+    /// Whether the view carries a vector base source at all.
+    boolean is_configured;
+    /// The active style id; empty when no source is configured.
+    string style_id;
+    /// The tileset's name; empty when no source is configured.
+    string source_name;
+    /// The attribution line the tileset's terms require; empty when no source
+    /// is configured.
+    string attribution_text;
+    /// Highest zoom level the tileset serves; zero when no source is
+    /// configured.
+    u8 maximum_zoom_level;
+    /// Tile addresses the last resolved frame drew.
+    u32 drawn_tile_count;
+    /// Tile addresses the last resolved frame skipped because their fetch or
+    /// decode failed.
+    u32 failed_tile_count;
+    /// The last resolved frame's last tile failure detail; null when the frame
+    /// had none (or no frame resolved yet).
+    string? last_failure_detail;
+    /// Every unsupported-property diagnostic the installed style produced,
+    /// including a known layer kind this renderer cannot paint; zero when no
+    /// source is configured.
+    u32 unsupported_property_count;
+    /// The distinct unsupported properties, scope-qualified (`layer "id":
+    /// property`, `source "id": property` or `document: property`) and sorted.
+    /// The list is capped at 32 names so a large vendor document cannot grow
+    /// the readback without bound; the count still reports every diagnostic.
+    sequence<string> unsupported_property_names;
+    /// The assets that fell back to a degraded draw: a declared sprite the
+    /// install could not fetch, a declared glyph endpoint whose ranges did not
+    /// pack, or a declared source of a kind the vector base cannot draw. Names
+    /// are sorted and capped at 16; empty when no source is configured.
+    sequence<string> degraded_asset_names;
+    /// Each referenced source's layer accounting for the last resolved frame,
+    /// sorted by source id. Empty before the first frame resolves or when no
+    /// source is configured.
+    sequence<VectorTileSourceLayerCount> source_layer_counts;
+};
+
+/// Provider entry point of the SDK: resolves every call through the providers
+/// registered on the object. Construct the object with no providers, then
+/// register them: native integrations through the SDK's own registration calls
+/// and foreign integrations through the `register_*_from_foreign` methods (see
+/// the provider contract interfaces above). A call into a contract with no
+/// registered provider throws `ProviderNotConfigured` naming the contract.
+///
+/// The calls cover geocoding (forward and reverse), routing, distance matrix,
+/// place search, traffic incidents, traffic flow, raster tiles and vector
+/// tiles. Elevation and offline routing have no provider contract here:
+/// offline routing is the standalone `offline_route_from_archive_bytes`
+/// function.
+interface MapSdk {
+    /// Creates the SDK with no providers registered. Register providers before
+    /// the first call that needs one.
+    constructor();
+
+    /// Registers a geocoding implementation. The provider starts serving
+    /// `forward_geocode` and `reverse_geocode` once this call returns.
+    void register_geocoding_provider_from_foreign(GeocodingProvider geocoding_provider);
+
+    /// Registers a raster-tile implementation. The provider starts serving
+    /// `fetch_raster_tile` once this call returns.
+    void register_raster_tile_provider_from_foreign(RasterTileProvider raster_tile_provider);
+
+    /// Registers a vector-tile implementation written in application code.
+    /// The provider starts serving `fetch_vector_tile` once this call returns,
+    /// and `MapView::set_provider_vector_tile_source` installs a base from it
+    /// when the source names the application key `application`.
+    void register_vector_tile_provider_from_foreign(VectorTileProvider vector_tile_provider);
+
+    /// Reports whether a vector-tile provider is registered: `true` once
+    /// `register_vector_tile_provider_from_foreign` has returned, `false`
+    /// while the slot is empty.
+    boolean vector_tile_provider_is_registered();
+
+    /// Registers a routing implementation. The provider starts serving
+    /// `calculate_route` once this call returns.
+    void register_routing_provider_from_foreign(RoutingProvider routing_provider);
+
+    /// Registers a distance-matrix implementation. The provider starts
+    /// serving `calculate_distance_matrix` once this call returns.
+    void register_distance_matrix_provider_from_foreign(
+        DistanceMatrixProvider distance_matrix_provider
+    );
+
+    /// Registers a place-search implementation. The provider starts serving
+    /// `search` and `suggest` once this call returns.
+    void register_search_place_provider_from_foreign(
+        SearchPlaceProvider search_place_provider
+    );
+
+    /// Registers a traffic-incident implementation. The provider starts
+    /// serving `fetch_traffic_incidents` once this call returns.
+    void register_traffic_incident_provider_from_foreign(
+        TrafficIncidentProvider traffic_incident_provider
+    );
+
+    /// Registers a traffic-flow implementation. The provider starts serving
+    /// `fetch_traffic_flow` once this call returns.
+    void register_traffic_flow_provider_from_foreign(
+        TrafficFlowProvider traffic_flow_provider
+    );
+
+    /// Registers an elevation implementation. The provider starts serving
+    /// `fetch_elevation_points` once this call returns.
+    void register_elevation_provider_from_foreign(
+        ElevationProvider elevation_provider
+    );
+
+    /// Resolves a free-form address text into candidate places, best match
+    /// first.
+    ///
+    /// # Parameters
+    /// - `address_text` — the address to resolve.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a geocoding provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<Place> forward_geocode(string address_text);
+
+    /// Resolves a coordinate into candidate places describing that position.
+    ///
+    /// # Parameters
+    /// - `coordinate` — the position to describe.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a geocoding provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<Place> reverse_geocode(GeographicCoordinate coordinate);
+
+    /// Calculates a route through the ordered waypoints with the given
+    /// options.
+    ///
+    /// # Parameters
+    /// - `waypoints` — ordered route points; every one must be a valid
+    ///   coordinate.
+    /// - `route_options` — transport mode, strategy, units and avoid options.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a routing provider,
+    /// `InvalidCoordinateInput` for an invalid waypoint, or the provider's own
+    /// typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    Route calculate_route(sequence<GeographicCoordinate> waypoints, RouteOptions route_options);
+
+    /// Reports which transport modes and which strategy the serving routing
+    /// provider can honour.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a routing provider.
+    [Throws=SdkError]
+    RouteCapabilities route_capabilities();
+
+    /// Calculates durations and distances for every origin-destination pair.
+    ///
+    /// # Parameters
+    /// - `origins` — origin points.
+    /// - `destinations` — destination points.
+    /// - `transportation_mode` — mode of transport for the matrix.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a routing provider,
+    /// `InvalidCoordinateInput` for an invalid point, or the provider's own
+    /// typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    DistanceMatrix calculate_distance_matrix(
+        sequence<GeographicCoordinate> origins,
+        sequence<GeographicCoordinate> destinations,
+        TransportationMode transportation_mode
+    );
+
+    /// Returns fast completion candidates while the user types.
+    ///
+    /// # Parameters
+    /// - `query_text` — the text being typed.
+    /// - `search_boundary` — optional area that restricts the search.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a place-search provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<Place> suggest(string query_text, BoundingBox? search_boundary);
+
+    /// Returns full search results for a settled query.
+    ///
+    /// # Parameters
+    /// - `query_text` — the settled query.
+    /// - `search_boundary` — optional area that restricts the search.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a place-search provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<Place> search(string query_text, BoundingBox? search_boundary);
+
+    /// Returns incidents that intersect the bounding box.
+    ///
+    /// # Parameters
+    /// - `bounding_box` — area to query.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a traffic-incidents provider, or
+    /// the provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<TrafficIncident> fetch_traffic_incidents(BoundingBox bounding_box);
+
+    /// Returns per-segment flow observations inside the bounding box.
+    ///
+    /// # Parameters
+    /// - `bounding_box` — area to query.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a traffic-flow provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<TrafficFlowData> fetch_traffic_flow(BoundingBox bounding_box);
+
+    /// Fetches elevation samples for ordered points.
+    ///
+    /// # Parameters
+    /// - `points` — the coordinates to sample, in order.
+    ///
+    /// # Returns
+    /// One sample per requested point, in the same order.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without an elevation provider,
+    /// `InvalidCoordinateInput` for an invalid point, or the provider's own
+    /// typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<ElevationPoint> fetch_elevation_points(
+        sequence<GeographicCoordinate> points
+    );
+
+    /// Fetches one web-mercator XYZ raster tile at the requested resolution.
+    ///
+    /// # Parameters
+    /// - `tile_x` — tile column.
+    /// - `tile_y` — tile row, counted from the north.
+    /// - `zoom_level` — zoom level of the tile.
+    /// - `image_format` — requested image encoding.
+    /// - `tile_resolution` — requested pixel resolution.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a raster-tile provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    RasterTileData fetch_raster_tile(
+        u32 tile_x,
+        u32 tile_y,
+        u8 zoom_level,
+        RasterImageFormat image_format,
+        RasterTileResolution tile_resolution
+    );
+
+    /// Registers every capability the provider named by `provider_key` serves
+    /// from one credential, with the SDK defaults for base URL, rate limiting
+    /// and retries.
+    ///
+    /// One call and one credential enable that provider's whole set — for the
+    /// full-service provider, geocoding, routing, distance matrix, place
+    /// search, traffic incidents, traffic flow and raster tiles. Re-registration
+    /// replaces every capability of the named provider. A capability the
+    /// provider does not serve stays on whichever provider served it before;
+    /// elevation has no provider and keeps throwing `ProviderNotConfigured`.
+    /// The raster-tile contract is installed uncached, so a previously
+    /// installed tile cache and its terms are dropped.
+    ///
+    /// # Parameters
+    /// - `provider_key` — the stable key of a provider built into this SDK.
+    /// - `credential` — the provider credential; a provider that requires one
+    ///   refuses a blank value.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when the key is unknown to this build and
+    /// `ProviderRequestRejected` when a required credential is blank; a
+    /// provider's own construction failure passes through verbatim.
+    [Throws=SdkError]
+    void configure_provider_set(string provider_key, string credential);
+
+    /// Registers the provider named by `provider_key` from one credential,
+    /// exactly like `configure_provider_set`, and wraps its raster-tile
+    /// provider in a disk response cache.
+    ///
+    /// The key names a credentialed provider that serves raster tiles and
+    /// declares raster-tile caching terms. The registration installs every
+    /// capability that provider serves, so one call and one credential enable
+    /// the whole set. The cache is a SQLite database opened (or created) at
+    /// `tile_cache_database_path` and bounded by
+    /// `tile_cache_absolute_maximum_bytes`. Cached tile responses follow the
+    /// tiles category's time-to-live (thirty days by default, clamped to the
+    /// provider's declared terms ceiling); a cache miss goes to the network
+    /// and back-fills the cache, so pre-warmed tiles keep rendering when the
+    /// network is unavailable. Re-registration replaces the providers,
+    /// including the cached raster-tile provider.
+    ///
+    /// # Parameters
+    /// - `provider_key` — the stable key of a credentialed provider built into
+    ///   this SDK that serves raster tiles and declares caching terms.
+    /// - `credential` — the provider credential.
+    /// - `tile_cache_database_path` — non-empty absolute path of the cache
+    ///   database.
+    /// - `tile_cache_absolute_maximum_bytes` — positive byte budget of the
+    ///   cache.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when the key is unknown to this build,
+    /// and `ProviderRequestRejected` when the provider serves no raster tiles,
+    /// declares no raster-tile caching terms, or requires a credential and the
+    /// supplied one is blank. Throws `InvalidCoordinateInput` when the path is
+    /// empty or the byte budget is not positive, and `CacheOperationFailure`
+    /// when the cache cannot be opened or refuses the quota; the detail names
+    /// the reason verbatim.
+    [Throws=SdkError]
+    void set_provider_credential_with_tile_cache(string provider_key, string credential, string tile_cache_database_path, u64 tile_cache_absolute_maximum_bytes);
+
+    /// Registers a provider-neutral raster base map: any web-mercator XYZ
+    /// tileset that publishes a `{z}/{x}/{y}` URL template.
+    ///
+    /// The registration replaces the raster-tile contract only; every other
+    /// provider keeps serving. It also drops any installed tile cache, because
+    /// the cache's terms belong to the provider that installed it; a later
+    /// `raster_tile_cache_terms` then throws the not-configured error rather
+    /// than reporting another provider's ceiling. Re-registering replaces the
+    /// source.
+    ///
+    /// # Parameters
+    /// - `source` — the tile source and its terms.
+    ///
+    /// # Errors
+    /// A malformed template, a blank source name or an inverted zoom range
+    /// throws `InvalidCoordinateInput` with a precise detail, and the previous
+    /// source keeps serving.
+    [Throws=SdkError]
+    void register_url_template_raster_tile_source(UrlTemplateRasterTileSource source);
+
+    /// Chooses the provider that serves one capability, leaving every other
+    /// capability untouched.
+    ///
+    /// The SDK builds provider implementations into the binary under stable
+    /// keys; this call is how an application selects one. A key may serve
+    /// several capabilities, so an application that wants one vendor
+    /// everywhere configures each capability in turn, or calls
+    /// `configure_provider_set` for the all-in-one convenience.
+    ///
+    /// # Parameters
+    /// - `contract` — the capability whose provider is being chosen.
+    /// - `provider_key` — the stable key of a provider built into this SDK
+    ///   build.
+    /// - `credential` — the provider's credential; an empty string is
+    ///   accepted only for a provider that needs none.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when the key is unknown to this build
+    /// or serves no implementation of `contract`, `ProviderRequestRejected`
+    /// when the provider declares a credential and the supplied one is blank,
+    /// and the provider's own failure when its construction fails. A refused
+    /// call leaves the previously serving provider in place.
+    [Throws=SdkError]
+    void configure_provider(
+        ProviderContract contract,
+        string provider_key,
+        string credential
+    );
+
+    /// Reports which provider serves each capability, in a stable order, for
+    /// a settings surface or a startup check.
+    ///
+    /// Every capability the SDK defines appears in the answer, including the
+    /// ones with no provider installed; those carry an empty key and name and
+    /// `registered` false. The readback never mutates the registry.
+    sequence<ProviderRegistration> provider_registrations();
+
+    // -----------------------------------------------------------------------
+    // Tile-cache settings. The cache's byte budget is fixed when the cache is
+    // installed; its time-to-live can be tuned while it is installed.
+    // -----------------------------------------------------------------------
+
+    /// Overrides the installed raster-tile cache's time-to-live in seconds.
+    ///
+    /// A zero value is refused, because it would expire every entry on capture
+    /// and store nothing. A value above the installed provider's declared
+    /// terms ceiling is accepted, and the ceiling clamps what the cache stores;
+    /// `raster_tile_cache_terms` reports the effective value.
+    ///
+    /// # Parameters
+    /// - `time_to_live_seconds` — requested time-to-live.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when no tile cache is installed, naming
+    /// `TileCache` as the unconfigured backing store, and
+    /// `InvalidCoordinateInput` for a zero time-to-live.
+    [Throws=SdkError]
+    void set_raster_tile_cache_time_to_live(u64 time_to_live_seconds);
+
+    /// Reads the effective raster-tile caching terms of the installed cache,
+    /// for display on a settings page. Reports the time-to-live currently in
+    /// force (the category default, or the last accepted override clamped to
+    /// the provider's ceiling), the provider's declared ceiling, and the
+    /// category default. Read-only: the readback never mutates the cache.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when no tile cache is installed, naming
+    /// `TileCache` as the unconfigured backing store.
+    [Throws=SdkError]
+    TileCacheTerms raster_tile_cache_terms();
+
+    /// Subscribes `listener` to the SDK's structured log events. Only events at
+    /// `minimum_severity` or above are delivered. Coordinates inside event
+    /// messages are rounded before delivery, and API keys are never included.
+    ///
+    /// Listener callbacks run on the threads that produce the events and must
+    /// not block. Subscribing an already subscribed listener replaces its
+    /// severity threshold.
+    ///
+    /// # Parameters
+    /// - `listener` — the diagnostics listener.
+    /// - `minimum_severity` — lowest severity delivered.
+    void subscribe_to_diagnostic_events(SdkDiagnosticEventListener listener, SdkLogSeverity minimum_severity);
+
+    /// Delivers up to `maximum_count` of the most recent buffered events at
+    /// `minimum_severity` or above to the listener, oldest first, and returns
+    /// how many were delivered.
+    ///
+    /// The flush does not remove events, so a later flush can deliver them
+    /// again. The flush is bounded and synchronous; the listener must not
+    /// block.
+    ///
+    /// # Parameters
+    /// - `listener` — the diagnostics listener.
+    /// - `minimum_severity` — lowest severity delivered.
+    /// - `maximum_count` — upper bound on delivered events.
+    ///
+    /// # Returns
+    /// The number of events delivered.
+    u32 flush_recent_diagnostic_events(SdkDiagnosticEventListener listener, SdkLogSeverity minimum_severity, u32 maximum_count);
+
+    /// Enables or disables the bounded, redacted response prefix carried by
+    /// provider request observations.
+    ///
+    /// The switch is off by default. While it is on, each provider request
+    /// observation carries the first 512 bytes of the response body in
+    /// `ProviderRequestTrace.response_excerpt`, truncated on a character
+    /// boundary, with credential-bearing JSON members and `name=value`
+    /// assignments replaced by `***`. Turning it off empties the field on the
+    /// observations that follow. The switch is process-wide.
+    ///
+    /// # Parameters
+    /// - `enabled` — whether observations capture the response prefix.
+    void set_response_excerpt_capture(boolean enabled);
+
+    /// Returns the retained diagnostics of failed provider calls made by
+    /// foreign provider implementations, oldest first.
+    ///
+    /// A failure is recorded whether the implementation threw one of the
+    /// contract's `SdkError` variants or failed without a mapped error. The
+    /// buffer keeps a bounded number of the most recent failures and drops
+    /// older ones. Reading is non-destructive: the call neither records nor
+    /// clears entries. The typed error still surfaces at the failing call; this
+    /// readback lets a failure be classified after the fact. See
+    /// `ProviderFailureDiagnostic` for the fields of an entry.
+    ///
+    /// # Returns
+    /// The retained entries, oldest first.
+    sequence<ProviderFailureDiagnostic> latest_provider_failure_diagnostics();
+
+    /// Reads the serving traffic-flow cache's counters and budget, for a
+    /// diagnostics panel or a developer console.
+    ///
+    /// The hits and misses prove a repeated pane was answered without asking
+    /// the provider; the entry count and budget show how many cells the cache
+    /// holds and how many it may hold before the least recently used is
+    /// evicted. Read-only: the readback never mutates the cache.
+    ///
+    /// # Returns
+    /// The counters and configuration, or null when no traffic-flow provider
+    /// is registered or the registered provider owns its own freshness policy
+    /// and answers uncached.
+    TrafficFlowCacheStatistics? traffic_flow_cache_statistics();
+
+    /// Reads the installed tile payload cache's exact counters and occupancy,
+    /// for a diagnostics panel or a developer console.
+    ///
+    /// Both the raster base and the vector base fetch through the same
+    /// installed store, so one counter pair covers every payload lookup: a
+    /// hit was answered without a provider request and a miss went to the
+    /// provider (including a store read failure that degraded to a fetch).
+    /// The readback is read-only and never mutates the cache.
+    ///
+    /// # Returns
+    /// The counters and occupancy, or null when no tile cache is installed,
+    /// which is every browser session and a keyless native session.
+    TileCacheStatistics? tile_cache_statistics();
+};
+
+/// The effective raster-tile caching terms of the installed cache, shaped for
+/// display: the default, the provider's ceiling and the value currently in
+/// force.
+dictionary TileCacheTerms {
+    /// Time-to-live currently in force on the installed cache, in seconds: the
+    /// category default, or the last accepted override (clamped to the ceiling
+    /// when the override exceeded it).
+    u64 effective_time_to_live_seconds;
+    /// The installed provider's declared caching-terms ceiling in seconds, or
+    /// null when the provider declares no ceiling; the requested time-to-live
+    /// then applies verbatim.
+    u64? provider_terms_ceiling_seconds;
+    /// The cache category's default time-to-live for raster tiles, in seconds
+    /// (thirty days); the value a freshly registered cache starts at.
+    u64 default_time_to_live_seconds;
+};
+
+/// The serving traffic-flow cache's counters beside the budget they obey,
+/// shaped for a diagnostics readback: the hits and misses prove a repeated
+/// pane was answered without asking the provider, and the entry budget bounds
+/// how many cells the cache may hold at once.
+dictionary TrafficFlowCacheStatistics {
+    /// Requests answered entirely from fresh cells.
+    u64 hit_count;
+    /// Requests that had to ask the provider for at least one cell.
+    u64 miss_count;
+    /// Cells currently held.
+    u64 entry_count;
+    /// Cells dropped to stay inside the entry budget.
+    u64 eviction_count;
+    /// Flow segments currently held across every cell.
+    u64 segment_count;
+    /// Zoom level the cells are keyed at.
+    u32 grid_zoom_level;
+    /// Cells the cache may hold before the least recently used is evicted.
+    u64 maximum_entry_count;
+    /// Seconds a stored cell stays fresh.
+    u64 time_to_live_seconds;
+};
+
+/// The installed tile payload cache's exact counters and occupancy, shaped
+/// for a diagnostics readback: the hits and misses prove a payload was
+/// answered without asking the provider, and the stored bytes show how much
+/// the cache holds now.
+dictionary TileCacheStatistics {
+    /// Payload lookups the store answered without a provider request.
+    u64 hit_count;
+    /// Payload lookups the store could not answer, including a failed store
+    /// read that degraded to a provider request.
+    u64 miss_count;
+    /// Bytes currently stored, or null when the store's occupancy could not
+    /// be read.
+    u64? stored_byte_count;
+};
+
+// ---------------------------------------------------------------------------
+// Offline tile packs: region definitions, stored regions, download progress
+// and explicit deletion.
+// ---------------------------------------------------------------------------
+
+/// One offline region selection: the identity the region is stored and managed
+/// under, the area it covers, the zoom range and tile form the stored tiles
+/// carry, and the retention the application requests.
+dictionary RegionDefinition {
+    /// Stable identifier the region is stored and managed under; downloading
+    /// the same identifier again is idempotent, and a redefined shape replaces
+    /// the stored region.
+    string region_id;
+    /// Human-readable name for region-listing surfaces.
+    string display_name;
+    /// The region's bounding box; boxes never span the antimeridian.
+    BoundingBox bounding_box;
+    /// Lowest zoom level downloaded; ranges download coarse-first.
+    u8 minimum_zoom_level;
+    /// Highest zoom level downloaded.
+    u8 maximum_zoom_level;
+    /// Encoded format the stored tile payloads carry.
+    RasterImageFormat image_format;
+    /// Pixel resolution the stored tile payloads carry.
+    RasterTileResolution tile_resolution;
+    /// Requested retention in seconds; null takes the raster-tiles category
+    /// default, clamped to the provider's declared ceiling. Zero is refused.
+    u64? time_to_live_seconds;
+};
+
+/// One offline region as it stands on disk: the stored shape, the effective
+/// retention and the live tiles among its members.
+dictionary RegionRecord {
+    /// The region's identifier.
+    string region_id;
+    /// The region's display name.
+    string display_name;
+    /// The recorded area the region covers.
+    BoundingBox bounding_box;
+    /// The recorded lowest zoom level.
+    u8 minimum_zoom_level;
+    /// The recorded highest zoom level.
+    u8 maximum_zoom_level;
+    /// The recorded encoded format.
+    RasterImageFormat image_format;
+    /// The recorded pixel resolution.
+    RasterTileResolution tile_resolution;
+    /// The retention the region's entries carry, in seconds: the requested
+    /// value or the category default, clamped to the provider's ceiling.
+    u64 effective_time_to_live_seconds;
+    /// Tile fingerprints the region claims membership for.
+    u64 member_tile_count;
+    /// Members whose entries are live on disk right now.
+    u64 present_tile_count;
+    /// Payload bytes of the live members.
+    u64 present_payload_bytes;
+};
+
+/// The phase of one region download.
+enum RegionDownloadPhase {
+    /// The download is running; progress reports carry the counts so far.
+    "Downloading",
+    /// The download finished with every member tile present.
+    "Completed",
+    /// The application cancelled the download; the partial region is kept and
+    /// resumable.
+    "Cancelled",
+    /// The download stopped on a failure after keeping the partial region.
+    "Failed",
+};
+
+/// One progress report of a region download.
+dictionary RegionDownloadProgress {
+    /// The region this report belongs to.
+    string region_id;
+    /// Tiles the region enumerates.
+    u64 total_tile_count;
+    /// Tiles downloaded and refreshed so far.
+    u64 completed_tile_count;
+    /// Completed tiles the provider had to fetch.
+    u64 network_fetched_tile_count;
+    /// Completed tiles the store already held.
+    u64 disk_served_tile_count;
+    /// The phase this report describes.
+    RegionDownloadPhase phase;
+};
+
+/// What a region's explicit deletion removed.
+dictionary RegionRemovalReport {
+    /// Tile entries deleted; never a tile another live region still claims.
+    u64 removed_entry_count;
+    /// Payload bytes those entries carried.
+    u64 removed_payload_bytes;
+};
+
+/// Offline region download progress listener. Implement this interface and
+/// pass it to `OfflineManager::download_region`.
+///
+/// # Progress
+/// The listener receives one `Downloading` report with zero completions before
+/// the first tile, one `Downloading` report per completed tile, and exactly
+/// one terminal report: `Completed`, `Cancelled` or `Failed`. The counts are
+/// the download's own honest totals, distinguishing tiles fetched from the
+/// provider from tiles the store already held.
+///
+/// # Threading
+/// Callbacks run on an SDK worker thread, never on the caller's thread. They
+/// must not block and must not call back into the same `OfflineManager`; a
+/// platform surface marshals to its UI thread.
+[Trait, WithForeign]
+interface RegionDownloadProgressListener {
+    /// Receives one progress report.
+    void on_region_download_progress(RegionDownloadProgress progress);
+};
+
+// ---------------------------------------------------------------------------
+// Navigation: the listener contract, the controller, the simulated trip and
+// the navigation records and policies.
+// ---------------------------------------------------------------------------
+
+/// Navigation event listener. Implement this interface and subscribe it on
+/// `Navigator`; each subscription delivers only the topic it was registered
+/// for.
+///
+/// # Threading
+/// Callbacks run synchronously on the thread that drives the controller and
+/// must not block. A callback that calls back into the controller while a
+/// dispatch is in flight is suppressed: the state change behind it is already
+/// applied, and only its broadcast is skipped.
+[Trait, WithForeign]
+interface NavigationListener {
+    /// Receives the composed instruction payload of every dispatched state
+    /// change (the instructions topic).
+    void on_navigation_instruction(NavigationInstruction instruction);
+
+    /// Receives a deviation-status update (the deviation topic): off route on
+    /// entry and on every recorded measurement update while the deviation
+    /// persists, and on route when it clears.
+    void on_deviation_status_change(DeviationStatusChange deviation_status_change);
+
+    /// Receives one phase transition per dispatched trip-state transition (the
+    /// phase topic).
+    void on_navigation_phase_change(NavigationPhaseChange navigation_phase_change);
+
+    /// Receives one utterance trigger when the controller's distance-band
+    /// policy judges the current fix newsworthy, for example when a trigger
+    /// band is crossed. The text is the composed speech text, verbatim and
+    /// never rewritten; playback and speech synthesis remain the
+    /// application's responsibility.
+    void on_speech_instruction(SpeechInstruction speech_instruction);
+};
+
+/// Handle for exactly one `(topic, listener)` subscription. Cancelling is
+/// explicit and idempotent; dropping the handle does not unsubscribe.
+interface Subscription {
+    /// Cancels this subscription, so the listener stops receiving the
+    /// subscription's topic from the next dispatch on. Idempotent.
+    void cancel();
+};
+
+/// The navigation controller: starts and stops trips, accepts position fixes
+/// and reroutes, broadcasts every state change to the registered listeners,
+/// and answers read-only state and instruction queries. Obtain routes from
+/// `MapSdk::calculate_route` or `offline_route_from_archive_bytes` and start a
+/// trip on them with this controller.
+///
+/// The listener callbacks run synchronously on the thread that drives the
+/// controller call; a listener calling back into the controller while a
+/// dispatch is still in flight is suppressed, and only the broadcast is
+/// skipped. The controller never holds its state lock across a listener
+/// callback.
+interface Navigator {
+    /// Builds the controller with no active trip and no subscriptions.
+    constructor();
+
+    /// Subscribes the listener to the instructions topic: the composed
+    /// instruction payload of every dispatched state change, in registration
+    /// order.
+    Subscription subscribe_to_navigation_instructions(NavigationListener listener);
+
+    /// Subscribes the listener to the deviation-status topic, in registration
+    /// order.
+    Subscription subscribe_to_deviation_status(NavigationListener listener);
+
+    /// Subscribes the listener to the phase-transition topic, in registration
+    /// order.
+    Subscription subscribe_to_phase_changes(NavigationListener listener);
+
+    /// Begins navigating `route` with the given policies, replacing any active
+    /// trip. The initial instruction payload is dispatched; no deviation or
+    /// phase transitions exist yet. A route without traversable steps
+    /// represents an already-arrived trip.
+    ///
+    /// # Parameters
+    /// - `route` — the route to navigate.
+    /// - `unit_system` — units used in composed instruction text.
+    /// - `step_advance_policy` — step-advance strategy and thresholds.
+    /// - `deviation_policy` — off-route detection thresholds.
+    ///
+    /// # Errors
+    /// Throws `InvalidNavigationInput` for policies with non-finite or negative
+    /// thresholds, or for a route whose step maneuver label the SDK does not
+    /// recognize.
+    [Throws=SdkError]
+    void start_navigation(Route route, UnitSystem unit_system, StepAdvancePolicy step_advance_policy, DeviationPolicy deviation_policy);
+
+    /// Delivers one position fix to the active trip; without an active trip the
+    /// fix is dropped. Fixes without an accuracy report never trigger a step
+    /// advance and are never judged by the deviation detector.
+    void update_location(NavigationLocationUpdate location_update);
+
+    /// Replaces the route of the active trip (a reroute).
+    ///
+    /// The replacement route must be anchored at the trip's current snapped
+    /// coordinate. The step-advance strategy for the new route is configured by
+    /// `step_advance_policy`; the deviation policy persists. A reroute offered
+    /// to an arrived trip is ignored, and without an active trip the event is
+    /// dropped. An in-flight reroute calculation is settled by this call
+    /// whether the route is applied or ignored, so the calculation gate reopens
+    /// after the integrator acts.
+    ///
+    /// # Errors
+    /// Throws `InvalidNavigationInput` for an invalid policy or an unrecognized
+    /// maneuver label.
+    [Throws=SdkError]
+    void apply_reroute(Route route, StepAdvancePolicy step_advance_policy);
+
+    /// Applies the reroute-recalculation gates to one reroute request.
+    ///
+    /// Returns true when every gate passes (no calculation in flight, outside
+    /// the cooldown window and, when both fix references exist, beyond the
+    /// movement threshold) and a calculation is marked as in flight, readable as
+    /// the trip state's `is_calculating_new_route`; returns false when the
+    /// request is refused. A request without an open, still-navigable trip (no
+    /// trip, or an arrived trip) is refused before the gates are consulted.
+    ///
+    /// A caller that receives true owes a settle: either the eventual
+    /// `apply_reroute` (applied or ignored) or `cancel_reroute_calculation`. The
+    /// trip's first attempt always passes the cooldown and movement gates.
+    ///
+    /// # Returns
+    /// True when the request passed the gates and a calculation is in flight.
+    boolean begin_reroute_calculation();
+
+    /// Settles an in-flight reroute calculation without applying a route, for
+    /// example when the integrator abandons the request. The calculation gate
+    /// reopens; the cooldown keeps running from the calculation's beginning and
+    /// the movement reference stays where it was. Idempotent.
+    void cancel_reroute_calculation();
+
+    /// Replaces the reroute-recalculation hysteresis policy in force, keeping
+    /// the gate's recorded state.
+    ///
+    /// # Parameters
+    /// - `reroute_policy` — cooldown and movement thresholds.
+    ///
+    /// # Errors
+    /// Throws `InvalidNavigationInput` when a threshold is not finite or is
+    /// negative; the policy in force is then untouched.
+    [Throws=SdkError]
+    void configure_reroute_policy(ReroutePolicy reroute_policy);
+
+    /// The state of the active trip, or null without one.
+    TripNavigationState? current_trip_state();
+
+    /// The composed turn-by-turn instruction payload of the current trip state,
+    /// or null without an active trip. Repeated reads of an unchanged state
+    /// return the same payload.
+    NavigationInstruction? current_instructions();
+
+    /// Subscribes the listener to the speech-instruction trigger topic, in
+    /// registration order.
+    ///
+    /// The controller decides when a line is worth speaking. Trigger bands reuse
+    /// the display phrase's distance bands, so a spoken "in 100 meters" matches
+    /// the phrase shown in the payload; each band announces at most once per
+    /// step, and a minimum inter-utterance spacing and repeat distance suppress
+    /// chatter. Speech synthesis and playback remain the application's
+    /// responsibility.
+    Subscription subscribe_to_speech_instructions(NavigationListener listener);
+
+    /// Subscribes one listener to all four navigation topics (instructions,
+    /// deviation status, phase changes and speech instructions) in one call and
+    /// answers the composite subscription that cancels all four.
+    ///
+    /// Delivery semantics match the four individual `subscribe_to_*` calls: the
+    /// listener receives each topic on its own method, in registration order,
+    /// and `cancel()` removes every one of the four registrations (idempotent,
+    /// like a single-topic subscription).
+    Subscription add_navigation_listener(NavigationListener listener);
+
+    /// Ends the active trip and clears the trip state: after this call
+    /// `current_trip_state` and `current_instructions` answer null, and location
+    /// updates, reroutes and reroute requests are dropped until
+    /// `start_navigation` begins a new trip.
+    ///
+    /// The speech-trigger band memory and the reroute-recalculation gate are
+    /// reset with the trip; utterance identifiers stay monotonic across the stop
+    /// and the configured reroute policy persists. Listener subscriptions are
+    /// untouched and keep delivering the next trip's events. Stopping without an
+    /// active trip is a no-op.
+    void stop_navigation();
+};
+
+/// An immutable simulated trip over one planned route: distance-parameterized
+/// interpolation along the route's own polyline at a caller-chosen pace. The
+/// SDK carries no pacing policy and no default speed.
+interface RouteSimulator {
+    /// Builds the simulator over `route`.
+    ///
+    /// # Parameters
+    /// - `route` — the planned route to simulate.
+    /// - `pace` — travel speed and multiplier.
+    ///
+    /// # Errors
+    /// Throws when the pace's speed or multiplier is non-finite or not strictly
+    /// positive, or when the route's legs and steps carry no usable geometry.
+    [Throws=SdkError]
+    constructor(Route route, SimulatedTripPace pace);
+
+    /// Total length of the route's flattened polyline, in meters.
+    double total_distance_meters();
+
+    /// Total simulated travel time at the chosen pace, in seconds.
+    double total_duration_seconds();
+
+    /// The fix at `travelled_meters` from the route start, clamped into
+    /// `[0, total_distance_meters()]`.
+    SimulatedTripFix fix_at_travelled_meters(double travelled_meters);
+
+    /// The fix at `elapsed_seconds` of simulated travel, clamped into
+    /// `[0, total_duration_seconds()]`.
+    SimulatedTripFix fix_at_elapsed_seconds(double elapsed_seconds);
+};
+
+/// High-level phase of a trip that has already been started. Rerouting is not a
+/// phase of its own: the controller moves Navigating to OffRoute and back
+/// within a trip, and Navigating to Arrived at its end.
+enum NavigationPhase {
+    /// Following the route's step sequence.
+    "Navigating",
+    /// The deviation detector judged the last graded fix off route; progress is
+    /// held at the last on-route values until a graded fix recovers or a reroute
+    /// replaces the route.
+    "OffRoute",
+    /// The final step has been completed; location updates no longer change the
+    /// state.
+    "Arrived",
+};
+
+/// Which grade of deviation a recorded deviation carries: the distinction
+/// between off the current step yet still on the route line, and completely off
+/// the route. Only the fully-off grade holds navigation; the wrong-step grade
+/// never does on its own.
+enum DeviationGradeKind {
+    /// The fix projects onto neither the current step nor any future step of
+    /// the remaining route line: the holding grade. The trip's progress is held
+    /// until a graded fix recovers or a reroute replaces the route.
+    "FullyOffRoute",
+    /// The fix is off the current step but projects onto a future step of the
+    /// remaining route line: "on route, wrong step". The trip keeps navigating
+    /// and counting down, and is never held by this grade alone.
+    "OffStepOnRoute",
+};
+
+/// Description of an active deviation from the route. The grade kind
+/// distinguishes the holding fully-off grade from a wrong-step record: a
+/// wrong-step record is guidance feedback ("on the route, on a later step")
+/// carried while the trip phase stays `Navigating`.
+dictionary DeviationInfo {
+    /// Which grade of deviation this is (see `DeviationGradeKind`).
+    DeviationGradeKind grade_kind;
+    /// Distance, in meters, from the raw fix that triggered (or most recently
+    /// confirmed) the deviation to the remaining route line.
+    double deviation_from_route_meters;
+};
+
+/// Location of one route step in traversal order across a route's legs.
+dictionary RouteStepPosition {
+    /// Index of the leg that owns this step in the route's legs.
+    u64 leg_index;
+    /// Index of the step within its leg in the leg's steps.
+    u64 step_index;
+};
+
+/// Progress along the remaining trip.
+dictionary TripProgress {
+    /// Distance, in meters, from the snapped position to the end of the current
+    /// step, which is the point of the next maneuver.
+    double distance_to_next_maneuver_meters;
+    /// Total remaining distance, in meters, including the current step's
+    /// remainder.
+    double distance_remaining_meters;
+    /// Total remaining travel time, in seconds, measured the same way as
+    /// `distance_remaining_meters`.
+    double duration_remaining_seconds;
+};
+
+/// The full navigable state of an active trip, read-only for the application.
+/// The route's steps are carried as traversal-ordered indices, never
+/// duplicated. The step-advance condition and deviation detector are configured
+/// through the navigation policies on the controller, not through this state.
+dictionary TripNavigationState {
+    /// Current phase of the trip.
+    NavigationPhase phase;
+    /// The route being navigated.
+    Route route;
+    /// All steps across every leg, flattened in traversal order.
+    sequence<RouteStepPosition> step_positions;
+    /// Index into `step_positions` of the step currently traversed.
+    u64 current_step_position;
+    /// Progress along the remaining trip.
+    TripProgress progress;
+    /// Position snapped onto the current step's shape; null until the first
+    /// location update has been processed.
+    GeographicCoordinate? snapped_coordinate;
+    /// Active deviation, as judged by the deviation detector; a fully-off grade
+    /// is set exactly while the phase is `OffRoute`, and a wrong-step
+    /// (`OffStepOnRoute`) grade may be set while the phase stays `Navigating`.
+    DeviationInfo? deviation;
+    /// Whether a reroute calculation is currently in flight. The controller
+    /// tracks the wall-clock gate, so the value is read fresh on every readback.
+    boolean is_calculating_new_route;
+};
+
+/// Length unit a distance-phrase magnitude is expressed in.
+enum DistanceUnit {
+    /// Meters, used by the metric near and moderate bands.
+    "Meters",
+    /// Kilometers, used by the metric far band.
+    "Kilometers",
+    /// Feet, used by the imperial near and moderate bands.
+    "Feet",
+    /// Miles, used by the imperial far band.
+    "Miles",
+};
+
+/// Which form a distance phrase takes.
+enum DistancePhraseKind {
+    /// The position is closer than half a near-band increment to the maneuver
+    /// point; no distance is phrased and composed text drops the prefix. The
+    /// magnitude is null on this kind.
+    "Immediate",
+    /// A rounded distance magnitude in a specific unit; the magnitude and unit
+    /// are set on this kind.
+    "Quantity",
+    /// No distance is phrased because the holding (fully-off-route) deviation
+    /// grade applies: the projection is held, so any countdown composed from it
+    /// would be a phantom measurement. The magnitude is null on this kind, and
+    /// the composed text channels carry no distance prefix.
+    "Suppressed",
+};
+
+/// The unit-system-aware phrasing of the distance remaining to a maneuver,
+/// rounded into the named distance phrasing bands.
+dictionary DistancePhrase {
+    /// Which form the phrase takes.
+    DistancePhraseKind phrase_kind;
+    /// Rounded magnitude of the phrase; null for the immediate and suppressed
+    /// forms.
+    double? magnitude;
+    /// Unit the magnitude is expressed in; null for the immediate and
+    /// suppressed forms.
+    DistanceUnit? magnitude_unit;
+};
+
+/// Which form an instruction text takes.
+enum ManeuverInstructionTextKind {
+    /// The provider authored instruction text for this maneuver.
+    "Composed",
+    /// The provider authored no instruction text for this maneuver; nothing is
+    /// invented to fill it. All four text fields are null on this kind.
+    "Unavailable",
+};
+
+/// The text channels of one maneuver: provider-authored text is carried
+/// verbatim beside the composed strings.
+dictionary ManeuverInstructionText {
+    /// Which form the text takes.
+    ManeuverInstructionTextKind text_kind;
+    /// Provider-authored display text, verbatim and never rephrased.
+    string? provider_display_text;
+    /// Provider-authored speech text, verbatim and never rephrased.
+    string? provider_speech_text;
+    /// Banner variant: the live distance prefix plus the display variant.
+    string? composed_display_text;
+    /// Text-to-speech variant: the live distance prefix plus the speech variant.
+    string? composed_speech_text;
+};
+
+/// Instruction payload of the maneuver currently being traversed: the step the
+/// snapped position sits inside, with the distance measured to that step's end,
+/// the maneuver point.
+dictionary ActiveManeuverInstruction {
+    /// Composed display and speech text of the active step.
+    ManeuverInstructionText instruction;
+    /// Unit-system-aware distance phrasing of the distance to the next
+    /// maneuver.
+    DistancePhrase distance_phrase;
+    /// Structured exit index of a roundabout active step, starting at one.
+    u8? roundabout_exit_index;
+};
+
+/// Instruction payload of the maneuver after the active one (the "then"
+/// instruction), text-carrying only.
+dictionary UpcomingManeuverInstruction {
+    /// Composed display and speech text of the following step.
+    ManeuverInstructionText instruction;
+    /// Structured exit index when the following step is a roundabout.
+    u8? roundabout_exit_index;
+};
+
+/// The emitted turn-by-turn instruction payload for one trip state; the same
+/// state yields the same payload on every read.
+dictionary NavigationInstruction {
+    /// The banner maneuver currently being traversed.
+    ActiveManeuverInstruction active_maneuver;
+    /// The maneuver after the active one, where the route has a following step
+    /// (always null on the route's final step and after arrival).
+    UpcomingManeuverInstruction? upcoming_maneuver;
+    /// True exactly while the trip has arrived and the remaining progress is
+    /// zero.
+    boolean is_arrival;
+    /// True exactly while the trip is off route: the payload beneath the marker
+    /// is the held last-on-route projection, whose distance phrase is suppressed
+    /// rather than presented, and must not be presented as current guidance.
+    boolean is_rerouting_required;
+};
+
+/// Which form a deviation-status update takes.
+enum DeviationStatusChangeKind {
+    /// The trip is judged deviating; the deviation description is set on this
+    /// kind. The description's grade kind distinguishes the holding fully-off
+    /// grade from a wrong-step record, which is delivered while the trip phase
+    /// stays `Navigating`.
+    "OffRoute",
+    /// A previously recorded deviation cleared; the trip is judged on route.
+    "OnRoute",
+};
+
+/// A deviation-topic update: the detector's judgment changed between the
+/// previous and the current trip state, covering entry, measurement drift while
+/// the deviation persists, and clearing.
+dictionary DeviationStatusChange {
+    /// Which form the update takes.
+    DeviationStatusChangeKind status_change_kind;
+    /// The recorded measurement of the deviation, set exactly on the off-route
+    /// kind.
+    DeviationInfo? deviation_info;
+};
+
+/// A phase-transition event delivered on the phase topic.
+enum NavigationPhaseChange {
+    /// The trip entered the off-route phase from the navigating phase.
+    "OffRouteEntered",
+    /// A graded fix back on the route line lifted the deviation and returned the
+    /// trip to the navigating phase.
+    "OffRouteCleared",
+    /// A reroute event replaced the route (delivered only when the event
+    /// actually applied; an ignored reroute produces no transition).
+    "RerouteApplied",
+    /// The final step completed; the trip reached the arrived phase.
+    "Arrived",
+};
+
+/// One raw position fix delivered to the navigation controller.
+dictionary NavigationLocationUpdate {
+    /// Raw position on the WGS 84 ellipsoid, before route snapping.
+    GeographicCoordinate coordinate;
+    /// Radius, in meters, of the 68% horizontal-accuracy envelope of this fix
+    /// (null when the source does not report accuracy).
+    double? horizontal_accuracy_meters;
+    /// Direction of travel in degrees clockwise from true north (null when the
+    /// source does not report a course).
+    double? course_heading_degrees;
+    /// Fix instant in seconds since the Unix epoch (null for untimed sources).
+    double? timestamp_seconds;
+};
+
+/// Which step-advance strategy a navigation policy configures.
+enum StepAdvancePolicyKind {
+    /// Steps change only when driven programmatically; the trip still tracks
+    /// progress. The threshold fields are ignored on this kind.
+    "Manual",
+    /// Advances when the position fix comes within the threshold of the end of
+    /// the current step (eager advance).
+    "DistanceToEndOfStep",
+    /// Advances when the position fix moves farther from the current step's
+    /// polyline than the threshold (delayed advance).
+    "DistanceFromStep",
+};
+
+/// The step-advance policy of a trip.
+dictionary StepAdvancePolicy {
+    /// Which step-advance strategy the policy configures.
+    StepAdvancePolicyKind policy_kind;
+    /// Distance, in meters, of the advance threshold (the distance to the
+    /// step's end, or from the step's polyline, depending on the kind).
+    double advance_threshold_meters;
+    /// Fixes with a reported horizontal accuracy worse than this, in meters,
+    /// never advance.
+    double minimum_horizontal_accuracy_meters;
+};
+
+/// Which deviation-detection strategy a deviation policy configures.
+enum DeviationPolicyKind {
+    /// Flags a deviation when the raw fix is farther from the remaining route
+    /// line than the configured threshold, widened by the fix's reported
+    /// accuracy.
+    "DistanceThreshold",
+};
+
+/// The deviation-detection policy of a trip.
+dictionary DeviationPolicy {
+    /// Which deviation-detection strategy the policy configures.
+    DeviationPolicyKind policy_kind;
+    /// Distance, in meters, from the remaining route line beyond which a fix is
+    /// judged off route (before any accuracy widening, strictly greater).
+    double deviation_threshold_meters;
+};
+
+/// The reroute-recalculation hysteresis policy of a navigation controller.
+/// Both thresholds must be finite and non-negative; the controller refuses
+/// otherwise (`InvalidNavigationInput`), leaving the policy in force untouched.
+dictionary ReroutePolicy {
+    /// Minimum wall-clock seconds between the beginnings of two reroute
+    /// calculations (the SDK default: 5).
+    double recalculation_cooldown_seconds;
+    /// Minimum displacement, in meters, between the raw position fix current at
+    /// a calculation's beginning and the one current at the previous
+    /// calculation's beginning (the SDK default: 50).
+    double recalculation_movement_meters;
+};
+
+// ---------------------------------------------------------------------------
+// Live map view: overlays, the platform surface handle, and the view that draws
+// the map, overlays and location indicator onto a platform window.
+// ---------------------------------------------------------------------------
+
+/// Which overlay shape an overlay descriptor configures.
+enum MapOverlayKind {
+    /// A routed path drawn as a thick line.
+    "RoutePolyline",
+    /// A filled polygon: one outer ring, ear-clip triangulated.
+    "FilledPolygon",
+    /// Screen-facing point markers (octagon fans).
+    "PointMarkers",
+    /// Congestion-colored traffic-flow lines.
+    "TrafficFlow",
+    /// Screen-facing teardrop pins anchored at their tip with a hollow head
+    /// center (the A/B route-endpoint marker); uses `PointMarkers`' payload
+    /// fields.
+    "PointPins",
+};
+
+/// Solid RGBA overlay style, every channel in `[0, 1]`. A null style field
+/// keeps the default style of the matching overlay kind.
+dictionary OverlayColor {
+    /// Red channel in `[0, 1]`.
+    double red;
+    /// Green channel in `[0, 1]`.
+    double green;
+    /// Blue channel in `[0, 1]`.
+    double blue;
+    /// Alpha channel in `[0, 1]` (the overlay pipeline alpha-blends).
+    double alpha;
+};
+
+/// One overlay shape drawn over the map surface's tiles in every frame,
+/// selected by `kind`. Each kind reads exactly its own payload fields and
+/// ignores the others. A descriptor whose kind-required payload is absent, or
+/// whose style field is unusable, rejects the whole `set_overlays` call and
+/// keeps the previous list in force. Absent style fields keep the documented
+/// default style; present style fields must be usable (channels in `[0, 1]`,
+/// widths and radii positive and finite).
+dictionary MapOverlay {
+    /// Which overlay shape this descriptor configures and which payload fields
+    /// carry it.
+    MapOverlayKind kind;
+
+    /// `RoutePolyline`: the traversal-order polyline; consecutive equal
+    /// coordinates skip their degenerate segment. Required for the kind.
+    sequence<GeographicCoordinate>? coordinates;
+    /// Route polyline, filled polygon and point markers: solid color override,
+    /// or null for the kind's documented default.
+    OverlayColor? rgba_color;
+    /// Route polyline and traffic flow: line width in screen pixels (positive
+    /// and finite), or null for the kind's documented default.
+    double? width_pixels;
+
+    /// `FilledPolygon`: the outer ring in traversal order without a repeated
+    /// closing vertex (a repeated one is tolerated and dropped). Required for
+    /// the kind.
+    sequence<GeographicCoordinate>? ring_coordinates;
+
+    /// `PointMarkers` and `PointPins`: the geographic anchor of every marker (a
+    /// pin's anchor is its tip). Required for both kinds.
+    sequence<GeographicCoordinate>? point_marker_positions;
+    /// `PointMarkers` and `PointPins`: marker radius in screen pixels (positive
+    /// and finite), or null for the documented default. A pin's radius is its
+    /// head radius.
+    double? point_marker_radius_pixels;
+
+    /// `TrafficFlow`: the flow observations to paint, one per road segment (or
+    /// polyline of segments), colored by `congestion_level`; the same
+    /// `TrafficFlowData` records `fetch_traffic_flow` returns. Required for the
+    /// kind.
+    sequence<TrafficFlowData>? traffic_flow_segments;
+};
+
+/// The platform window surface handle handed to `MapView::attach`: set exactly
+/// one platform pointer and leave the rest null. A null-or-ambiguous handle is
+/// refused with `InvalidRenderInput`; a null pointer is `u64 0` or null, never
+/// a zeroed pointer passed through.
+///
+/// The object behind the pointer must outlive the attached view: the raw
+/// handles are the caller's validity guarantee, and detach or drop releases the
+/// SDK side first, so dropping the platform view before `detach` is a caller
+/// bug.
+dictionary SurfaceHandle {
+    /// macOS: pointer to the `NSView` the surface renders into (Metal creates
+    /// the layer from the view); null on the other platforms.
+    u64? appkit_view_pointer;
+    /// iOS: pointer to the `UIView` the surface renders into; null on the other
+    /// platforms.
+    u64? ios_view_pointer;
+    /// Android: pointer to the `ANativeWindow` obtained from the platform
+    /// `Surface` (`ANativeWindow_fromSurface`); null on the other platforms.
+    u64? android_native_window_pointer;
+};
+
+
+/// One presented frame's tile and overlay accounting. Every requested tile
+/// lands in exactly one of the four readiness counts, so
+/// `present + fallback + deferred + unavailable` always equals `requested`.
+dictionary FrameStatistics {
+    /// Tile requests the frame resolved. A request listing carrying duplicates
+    /// costs one fetch but reports per request.
+    u32 requested_tile_count;
+    /// Tiles drawn at their own zoom level.
+    u32 present_tile_count;
+    /// Tiles drawn from their nearest pooled ancestor.
+    u32 fallback_tile_count;
+    /// Tiles whose fetch was deferred by the per-frame budget.
+    u32 deferred_tile_count;
+    /// Tiles the provider rejected this frame.
+    u32 unavailable_tile_count;
+    /// Clip-space triangles the overlay layer contributed to the frame.
+    u32 overlay_triangle_count;
+};
+
+// ---------------------------------------------------------------------------
+// Location indicator, speech triggers and diagnostics.
+// ---------------------------------------------------------------------------
+
+/// Which visual form the location layer draws.
+enum LocationIndicatorVisualKind {
+    /// The soft tracking dot (no course known or no route): accent core,
+    /// white ring and dark halo.
+    "TrackingDot",
+    /// The course-directed navigation dart inside the same ring and halo
+    /// (navigation follow mode); degrades to the tracking dot without a
+    /// course.
+    "GuidedCourseArrow",
+};
+
+/// Style of the location layer; null fields keep the documented defaults. The
+/// puck and its ring and halo are screen-sized pixel constants (a position
+/// marker scales with the screen, not the ground); the accuracy ring is
+/// ground-sized.
+dictionary LocationIndicatorStyle {
+    /// Which visual form this layer draws.
+    LocationIndicatorVisualKind visual_kind;
+    /// Accent-core radius in screen pixels; the ring and halo are added
+    /// outside it; null keeps the default.
+    double? radius_pixels;
+    /// Accent fill color of the core disc and navigation dart; null keeps the
+    /// default.
+    OverlayColor? rgba_color;
+    /// Ring color: the ring around the puck and the navigation dart's
+    /// outline; null keeps the default white.
+    OverlayColor? ring_rgba_color;
+    /// Halo color drawn under the puck; null keeps the default.
+    OverlayColor? halo_rgba_color;
+    /// Accuracy ring drawn around the puck (shown only when a fix carries a
+    /// reported accuracy); null keeps the default (shown whenever the fix
+    /// reports an accuracy that reaches the minimum draw size).
+    boolean? show_accuracy_ring;
+};
+
+/// One frame's location-layer state: position, optional course over ground and
+/// optional horizontal accuracy.
+dictionary LocationIndicatorState {
+    /// Fix position.
+    GeographicCoordinate coordinate;
+    /// Course over ground in degrees clockwise from true north; null when the
+    /// source does not report one. The wedge renders only when this is set and
+    /// the style carries `GuidedCourseArrow`.
+    double? course_heading_degrees;
+    /// Horizontal accuracy radius in meters; the accuracy ring renders when
+    /// this is set and the style shows rings.
+    double? horizontal_accuracy_meters;
+};
+
+/// When a spoken-trigger event fires and what carries it. The utterance text is
+/// the composed speech text verbatim; the SDK decides when a line is
+/// newsworthy, while playback and synthesis belong to the platform.
+dictionary SpeechInstruction {
+    /// The verbatim speech text, never rewritten by the trigger policy.
+    string utterance_speech_text;
+    /// The live distance to the maneuver in meters at emission time.
+    double trigger_distance_meters;
+    /// The utterance identity: a stable monotonic id composed at emission,
+    /// strictly increasing over every line the controller has emitted since
+    /// construction and never reused. Identical text re-emitted receives a new
+    /// id; deduplication and flushing decisions stay with your speaker.
+    u64 utterance_id;
+    /// What triggered this line (a crossed band, the immediate band, an
+    /// off-route recovery, or the trip's arrival).
+    SpeechInstructionKind instruction_kind;
+};
+
+/// What triggered a `SpeechInstruction`.
+enum SpeechInstructionKind {
+    /// A trigger band was crossed this fix (the moderate or far threshold).
+    "ManeuverApproach",
+    /// The immediate band: the maneuver is imminent.
+    "ImmediateManeuver",
+    /// Guidance just recovered from off route.
+    "OffRouteRecovery",
+    /// The trip arrived.
+    "Arrival",
+};
+
+/// Severity of a diagnostic event, ordered from most to least detailed.
+enum SdkLogSeverity {
+    /// Very fine-grained frame-path instrumentation (only delivered when a
+    /// listener subscribed at this severity).
+    "Trace",
+    /// Fine-grained internal state transitions.
+    "Debug",
+    /// Coarse-grained progress (the default minimum for a subscription).
+    "Info",
+    /// A problem this event explains.
+    "Warn",
+    /// A failure this event explains.
+    "Error",
+};
+
+/// One completed provider request, as a diagnostics event reports it.
+///
+/// The record is already redacted: the request path keeps its structure with
+/// query values removed, and no credential or response body is carried.
+dictionary ProviderRequestTrace {
+    /// The registry key of the provider that served the call.
+    string provider_key;
+    /// The contract the call served, for example `RoutingProvider`.
+    string provider_contract;
+    /// The HTTP method as an uppercase word (`GET`, `POST`).
+    string http_method;
+    /// The redacted request path, with query names and no values.
+    string request_path;
+    /// `2xx`, `3xx`, `4xx`, `5xx` or the transport-failure marker.
+    string status_class;
+    /// The derived outcome word (`success`, `client-error`, …).
+    string outcome;
+    /// Wall-clock duration of the attempt in milliseconds.
+    u64 duration_milliseconds;
+    /// Response payload size in bytes; zero when no response arrived.
+    u64 response_bytes;
+    /// The redacted response prefix captured behind the excerpt switch, capped
+    /// at 512 bytes; null while capture is off or no response body arrived.
+    string? response_excerpt = null;
+};
+
+/// One structured SDK log event, as delivered to a diagnostics listener or read
+/// back by a flush. Coordinates in event messages are rounded before delivery;
+/// raw coordinates at full precision and API keys are never included.
+dictionary LogEvent {
+    /// Wall-clock milliseconds since the Unix epoch, as the buffer recorded the
+    /// event.
+    u64 timestamp_milliseconds_since_epoch;
+    /// The event's severity.
+    SdkLogSeverity severity;
+    /// The named per-subsystem target that logged it, for example
+    /// `tile_fetch`.
+    string subsystem_target;
+    /// The one-line already-scrubbed message.
+    string message_line;
+    /// The typed request facts when this event reports a completed provider
+    /// call; `None` for every other event.
+    ProviderRequestTrace? provider_request_trace;
+};
+
+/// Diagnostics listener contract. The SDK delivers its structured log events
+/// fire-and-forget: it copies an event and moves on immediately without awaiting
+/// the listener, so a slow listener can never slow the events it observes and a
+/// frame-path event never blocks on a foreign callback.
+[Trait, WithForeign]
+interface SdkDiagnosticEventListener {
+    /// Receives one structured event, already gated by the subscription's
+    /// minimum severity.
+    void on_diagnostic_event(LogEvent event);
+};
+
+// ---------------------------------------------------------------------------
+// Provider failure diagnostics.
+// ---------------------------------------------------------------------------
+
+/// Which shape of foreign provider failure a diagnostic captured.
+enum ProviderFailureClassification {
+    /// The foreign implementation failed without a mapped error, for example by
+    /// throwing an exception the contract does not define. The failure text is
+    /// the binding runtime's verbatim reason for it.
+    "UnclassifiedCallbackFailure",
+    /// The foreign implementation threw one of the contract's `SdkError`
+    /// variants, which is carried as a typed error: the failure text is the thrown error's
+    /// verbatim display form.
+    "MappedContractError",
+};
+
+/// One failed provider call made by a foreign provider implementation, as
+/// retained by `MapSdk::latest_provider_failure_diagnostics`. Everything here is
+/// known at the boundary where the foreign implementation is called; no data is
+/// invented beyond that.
+dictionary ProviderFailureDiagnostic {
+    /// Wall-clock milliseconds since the Unix epoch, as the failure was
+    /// recorded.
+    u64 timestamp_milliseconds_since_epoch;
+    /// Which failure shape this entry captured.
+    ProviderFailureClassification failure_classification;
+    /// The provider contract the foreign code implements, for example
+    /// `GeocodingProvider`.
+    string provider_contract_name;
+    /// The contract method whose call failed, for example `forward_geocode`.
+    string provider_method_name;
+    /// The verbatim failure text: the binding runtime's reason for the
+    /// unclassified shape, or the thrown error's display form for the mapped
+    /// shape.
+    string failure_detail;
+};
+
+// ---------------------------------------------------------------------------
+// Capability facades. Each is a thin typed facade constructed over the same
+// `MapSdk` instance: it shares that object's provider registrations, tile cache
+// and diagnostics, and every member behaves exactly like the matching `MapSdk`
+// member.
+// ---------------------------------------------------------------------------
+
+/// Search and geocoding facade over a `MapSdk`'s registered providers. A call
+/// into an unregistered contract throws `ProviderNotConfigured` with the
+/// contract name, exactly like the matching `MapSdk` member.
+interface SearchEngine {
+    /// Builds the engine over the SDK whose providers serve its calls.
+    constructor(MapSdk map_sdk);
+
+    /// Returns full search results for a settled query.
+    ///
+    /// # Parameters
+    /// - `query_text` — the settled query.
+    /// - `search_boundary` — optional area that restricts the search.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a place-search provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<Place> search(string query_text, BoundingBox? search_boundary);
+
+    /// Returns fast completion candidates while the user types.
+    ///
+    /// # Parameters
+    /// - `query_text` — the text being typed.
+    /// - `search_boundary` — optional area that restricts the search.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a place-search provider, or the
+    /// provider's own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<Place> suggest(string query_text, BoundingBox? search_boundary);
+
+    /// Resolves a coordinate into candidate places describing that position.
+    ///
+    /// # Parameters
+    /// - `coordinate` — the position to describe, in canonical degrees.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a geocoding provider,
+    /// `InvalidCoordinateInput` for an invalid coordinate, or the provider's
+    /// own typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    sequence<Place> reverse_geocode(GeographicCoordinate coordinate);
+};
+
+/// Routing facade over a `MapSdk`'s registered providers. Construction and
+/// failure semantics match `SearchEngine`'s: the engine shares the SDK's
+/// providers and behaves like the matching `MapSdk` members.
+interface RoutingEngine {
+    /// Builds the engine over the SDK whose providers serve its calls.
+    constructor(MapSdk map_sdk);
+
+    /// Calculates a route through the ordered waypoints with the given options.
+    ///
+    /// # Parameters
+    /// - `waypoints` — ordered route points; every one must be a valid
+    ///   coordinate.
+    /// - `route_options` — transport mode, strategy, units and avoid options.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a routing provider,
+    /// `InvalidCoordinateInput` for an invalid waypoint, or the provider's own
+    /// typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    Route calculate_route(sequence<GeographicCoordinate> waypoints, RouteOptions route_options);
+
+    /// Reports which transport modes and which strategy the serving routing
+    /// provider can honour.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a routing provider.
+    [Throws=SdkError]
+    RouteCapabilities route_capabilities();
+
+    /// Calculates durations and distances for every origin-destination pair.
+    ///
+    /// # Parameters
+    /// - `origins` — origin points.
+    /// - `destinations` — destination points.
+    /// - `transportation_mode` — mode of transport for the matrix.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` without a routing provider,
+    /// `InvalidCoordinateInput` for an invalid point, or the provider's own
+    /// typed failure.
+    ///
+    /// # Async
+    /// Runs asynchronously; the call does not block the calling thread.
+    [Async, Throws=SdkError]
+    DistanceMatrix calculate_distance_matrix(
+        sequence<GeographicCoordinate> origins,
+        sequence<GeographicCoordinate> destinations,
+        TransportationMode transportation_mode
+    );
+};
+
+/// Offline tile-cache settings facade over a `MapSdk`. The members behave like
+/// `MapSdk::raster_tile_cache_terms` and
+/// `MapSdk::set_raster_tile_cache_time_to_live`: without a cache installed
+/// through `set_provider_credential_with_tile_cache`, both throw
+/// `ProviderNotConfigured` naming `TileCache`.
+interface OfflineManager {
+    /// Builds the manager over the SDK whose installed tile cache it reads and
+    /// tunes.
+    constructor(MapSdk map_sdk);
+
+    /// Reads the effective raster-tile caching terms of the installed cache.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when no tile cache is installed.
+    [Throws=SdkError]
+    TileCacheTerms tile_cache_terms();
+
+    /// Overrides the installed raster-tile cache's time-to-live in seconds; the
+    /// provider's declared terms ceiling still clamps what the cache stores, and
+    /// `tile_cache_terms` reports the effective value.
+    ///
+    /// # Parameters
+    /// - `time_to_live_seconds` — requested time-to-live.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when no tile cache is installed and
+    /// `InvalidCoordinateInput` for a zero time-to-live.
+    [Throws=SdkError]
+    void set_tile_time_to_live(u64 time_to_live_seconds);
+
+    /// Reserves a payload-byte budget for tile packs beside the general
+    /// LRU cache. Every later `download_region` enforces it: a download that
+    /// would take its pack past the budget stops, keeps the tiles already
+    /// stored and their membership, and reports `CacheOperationFailure`; a
+    /// later call under a raised budget resumes the remaining tiles.
+    ///
+    /// The budget is its own reserve, so ordinary cache eviction never frees
+    /// a present pack tile, and the structural 65,536-tile cap remains the
+    /// only tile-count limit. A region download that would exceed the
+    /// provider's own cache retention terms stores at those terms exactly as
+    /// before.
+    ///
+    /// # Parameters
+    /// - `byte_budget` — maximum payload bytes the packs may hold.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` naming `TileCache` when no tile cache is
+    /// installed and `InvalidCoordinateInput` for a zero budget, which would
+    /// refuse every pack download.
+    [Throws=SdkError]
+    void set_tile_pack_byte_budget(u64 byte_budget);
+
+    /// Reads the effective payload-byte budget reserved for tile packs. The
+    /// value is the last accepted reservation, or the SDK default when the
+    /// application has not reserved one; the readback never changes the
+    /// cache.
+    ///
+    /// # Returns
+    /// The effective pack byte budget in bytes.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` naming `TileCache` when no tile cache is
+    /// installed.
+    [Throws=SdkError]
+    u64 tile_pack_byte_budget();
+
+    /// Answers how many tiles the region enumerates, so a settings surface can
+    /// warn about a large download before starting it. The call only validates
+    /// the definition and enumerates tiles; nothing is written.
+    ///
+    /// # Parameters
+    /// - `region` — the region to size.
+    ///
+    /// # Returns
+    /// The number of tiles the region's zoom range and bounding box enumerate.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` naming `TileCache` when no tile cache is
+    /// installed, and `InvalidCoordinateInput` when the bounding box is not
+    /// canonical, the zoom range is inverted, the maximum zoom level exceeds
+    /// the installed provider's declared maximum, the requested retention is
+    /// zero, or the region enumerates more than the supported tile cap.
+    [Throws=SdkError]
+    u64 region_tile_count(RegionDefinition region);
+
+    /// Downloads the region's tiles into the installed cache and answers the
+    /// region's record as it stands on disk afterwards. The download reports
+    /// progress to `progress_listener` and is resumable: a failure or a
+    /// cancellation keeps the tiles that did arrive and the membership that
+    /// names the missing ones, so the next call fetches only those.
+    ///
+    /// A region already downloading is refused; a different region downloads
+    /// concurrently.
+    ///
+    /// # Parameters
+    /// - `region` — the region to download.
+    /// - `progress_listener` — receives the download's progress reports.
+    ///
+    /// # Returns
+    /// The region's record after the download. A cancelled download answers
+    /// the partial record with a terminal `Cancelled` report, not an error.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` naming `TileCache` when no tile cache is
+    /// installed; `InvalidCoordinateInput` for an invalid definition or a
+    /// region above the provider's declared maximum zoom level; the
+    /// provider's typed failure when a tile cannot be fetched; and
+    /// `CacheOperationFailure` when the region is already downloading or the
+    /// store refuses a write.
+    [Async, Throws=SdkError]
+    RegionRecord download_region(
+        RegionDefinition region,
+        RegionDownloadProgressListener progress_listener
+    );
+
+    /// Cancels the region's in-flight download if one exists. Cancellation is
+    /// idempotent and a successful partial result: the partial region is kept
+    /// and resumable. A no-op for an unknown, finished or already cancelled
+    /// region.
+    ///
+    /// # Parameters
+    /// - `region_id` — the region whose download is cancelled.
+    void cancel_region_download(string region_id);
+
+    /// Lists every region stored on disk, in the store's listing order.
+    ///
+    /// # Returns
+    /// The stored regions' records.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` naming `TileCache` when no tile cache is
+    /// installed, and `CacheOperationFailure` when a stored record is
+    /// corrupted.
+    [Async, Throws=SdkError]
+    sequence<RegionRecord> region_records();
+
+    /// Reads one stored region's record.
+    ///
+    /// # Parameters
+    /// - `region_id` — the region to read.
+    ///
+    /// # Returns
+    /// The region's record, or null when no region is stored under the
+    /// identifier.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` naming `TileCache` when no tile cache is
+    /// installed, and `CacheOperationFailure` when the stored record is
+    /// corrupted.
+    [Async, Throws=SdkError]
+    RegionRecord? region_record(string region_id);
+
+    /// Deletes the region's stored tiles and its membership, and answers what
+    /// was removed. A tile another live region still claims is kept.
+    ///
+    /// # Parameters
+    /// - `region_id` — the region to delete.
+    ///
+    /// # Returns
+    /// The removed entry count and payload bytes.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` naming `TileCache` when no tile cache is
+    /// installed and `InvalidCoordinateInput` naming the identifier when no
+    /// region is stored under it.
+    [Async, Throws=SdkError]
+    RegionRemovalReport delete_region(string region_id);
+};
+
+/// Diagnostics facade over a `MapSdk`'s structured log events and buffers. The
+/// members behave like `MapSdk::subscribe_to_diagnostic_events` and
+/// `MapSdk::flush_recent_diagnostic_events`.
+interface Diagnostics {
+    /// Builds the facade over the SDK whose diagnostics it observes.
+    constructor(MapSdk map_sdk);
+
+    /// Subscribes the listener to the SDK's structured log events at
+    /// `minimum_severity` or above. Subscribing an already subscribed listener
+    /// replaces its severity threshold.
+    ///
+    /// # Parameters
+    /// - `listener` — the diagnostics listener.
+    /// - `minimum_severity` — lowest severity delivered.
+    void add_listener(SdkDiagnosticEventListener listener, SdkLogSeverity minimum_severity);
+
+    /// Delivers up to `maximum_count` of the most recent buffered events at
+    /// `minimum_severity` or above to the listener, oldest first, and answers
+    /// how many were delivered.
+    ///
+    /// The flush is non-destructive and synchronous, and the listener must not
+    /// block.
+    ///
+    /// # Parameters
+    /// - `listener` — the diagnostics listener.
+    /// - `minimum_severity` — lowest severity delivered.
+    /// - `maximum_count` — upper bound on delivered events.
+    ///
+    /// # Returns
+    /// The number of events delivered.
+    u32 flush_recent(SdkDiagnosticEventListener listener, SdkLogSeverity minimum_severity, u32 maximum_count);
+};
+
+// ---------------------------------------------------------------------------
+// Device positioning
+// ---------------------------------------------------------------------------
+
+/// One device position report: a coordinate with the source's optional
+/// accuracy, course and timestamp.
+dictionary PositionFix {
+    /// The reported coordinate on the WGS 84 ellipsoid.
+    GeographicCoordinate coordinate;
+    /// Radius in meters of the 68% horizontal-accuracy envelope, when the
+    /// source reports one.
+    double? horizontal_accuracy_meters;
+    /// Direction of travel in degrees clockwise from true north, when the
+    /// source reports one.
+    double? course_heading_degrees;
+    /// The fix's instant in seconds since the Unix epoch, when the source
+    /// reports one.
+    double? timestamp_seconds;
+};
+
+/// Why a positioning source could not produce fixes.
+enum PositionSourceError {
+    /// The user denied the permission the source needs.
+    "PermissionDenied",
+    /// Location services are disabled on the device or by policy.
+    "ServiceDisabled",
+    /// No location provider can answer right now.
+    "Unavailable",
+    /// The source did not answer inside its timeout.
+    "Timeout",
+};
+
+/// Validates and smooths one host's position stream.
+///
+/// The host owns the operating system's location API and its permission
+/// prompt, and reports the resulting fixes and failures here. The controller
+/// validates each fix, ignores stationary repeats when smoothing course,
+/// tracks staleness and records source failures, so the renderer's location
+/// indicator, a follow camera and the navigation controller read one
+/// consistent stream.
+interface PositionController {
+    /// Builds an empty controller with the default course-smoothing window
+    /// and staleness threshold.
+    constructor();
+
+    /// Accepts one fix from the host's source.
+    ///
+    /// # Parameters
+    /// - `fix` — the coordinate and the source's optional accuracy, course
+    ///   and timestamp.
+    ///
+    /// # Errors
+    /// The coordinate must be inside its canonical ranges and every reported
+    /// scalar must be finite (accuracy and timestamp also non-negative). An
+    /// invalid fix throws with the validator's detail and leaves the previous
+    /// state in force.
+    [Throws=SdkError]
+    void feed_fix(PositionFix fix);
+
+    /// Records a source failure. The latest fix stays readable while the
+    /// source recovers; a later successful fix clears the status.
+    void source_failed(PositionSourceError error);
+
+    /// The latest accepted fix, or null before the first accepted one.
+    PositionFix? latest_fix();
+
+    /// The smoothed course across the most recent fixes that reported one, in
+    /// degrees clockwise from true north, or null when no fix carried a
+    /// course.
+    double? smoothed_course_degrees();
+
+    /// Whether the latest fix is older than the staleness threshold at
+    /// `now_seconds`. A fix without a timestamp is never stale.
+    boolean is_stale(double now_seconds);
+
+    /// The last source failure, or null when the last event was a fix.
+    PositionSourceError? source_status();
+};

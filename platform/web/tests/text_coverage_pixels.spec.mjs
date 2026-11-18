@@ -66,7 +66,7 @@ async function probe_frame_pixels(page, device_pixel_ratio) {
       canvas.style.left = '-10000px';
       document.body.appendChild(canvas);
 
-      const map_view = new window.mapTest.MapView(canvas, window.mapTest.maps);
+      const map_view = new window.mapTest.MapView(canvas);
       await map_view.initialize();
       // The installed vector source hides the raster base and paints the
       // style's own background; the page supplies no tiles, labels or glyphs.

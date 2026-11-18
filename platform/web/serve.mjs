@@ -149,6 +149,18 @@ const OFFLINE_GRAPH_FIXTURES_DIRECTORY = path.resolve(
   '../../crates/rustic-maps-offline-graph-compiler/fixtures/rmog',
 );
 
+// The generated WebAssembly package's runtime dependencies (`@ubjs/core` and
+// `@ubjs/wasm`) are ES modules with their own relative imports. The package's
+// import map points those bare specifiers here, and this route serves the
+// installed package files as-is: the browser loads exactly what `npm ci`
+// installed, with no copy to fall out of sync with the lockfile.
+const GENERATED_RUNTIME_REQUEST_PREFIX = '/generated-runtime/@ubjs/';
+const GENERATED_RUNTIME_PACKAGE_DIRECTORY = path.resolve(
+  ROOT_DIRECTORY,
+  'node_modules',
+  '@ubjs',
+);
+
 // The shared provider registry (M15, docs/ProviderGenericity.md): the single
 // data source for provider descriptors, attribution, credential labels and
 // fixture routes. The dev server never names a provider; it resolves every
@@ -328,6 +340,24 @@ function provider_relative_request(request_path) {
   return null;
 }
 
+// Resolves a generated-package runtime request onto the installed `@ubjs`
+// package file it names, refusing any path outside that directory.
+function generated_runtime_path(request_path) {
+  const relative_path = request_path.slice(
+    GENERATED_RUNTIME_REQUEST_PREFIX.length,
+  );
+  if (relative_path.length === 0 || relative_path.split('/').includes('..')) {
+    return MISSING_FIXTURE_PATH;
+  }
+  const resolved_path = path.resolve(
+    GENERATED_RUNTIME_PACKAGE_DIRECTORY,
+    relative_path,
+  );
+  return resolved_path.startsWith(`${GENERATED_RUNTIME_PACKAGE_DIRECTORY}${path.sep}`)
+    ? resolved_path
+    : MISSING_FIXTURE_PATH;
+}
+
 // Maps a request path to the file it serves: a registry provider request
 // resolves through the provider's descriptor routes, a `/tiles/{z}_{x}_{y}
 // [@2x].png` address into the recorded fixture directory (guarding against a
@@ -342,6 +372,9 @@ function filesystem_path_of_request(request_path, request_method) {
   }
   if (request_path === PROVIDERS_REGISTRY_REQUEST_URL) {
     return PROVIDERS_REGISTRY_FILE;
+  }
+  if (request_path.startsWith(GENERATED_RUNTIME_REQUEST_PREFIX)) {
+    return generated_runtime_path(request_path);
   }
   const provider_request = provider_relative_request(request_path);
   if (provider_request !== null) {

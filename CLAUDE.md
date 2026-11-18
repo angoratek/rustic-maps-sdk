@@ -185,6 +185,12 @@ handwritten JNI bridge there is deliberately discarded — UniFFI generates it).
 - Do not push to remote unless explicitly asked.
 - When allowed, create 1-liner commit messages, precise yet concise, e.g. "feat: move validate-cli.sh to scripts/ (374 assertions, timing, CI job), fix clippy redundant_field_names, optimize api_key clone."
 - Never use the Co-author tag in commit messages.
+- **DCO exception for contributors (owner ruling 2026-11-17):** a contribution
+  submitted through a pull request carries a `Signed-off-by:` trailer, because
+  the project requires the Developer Certificate of Origin. CI checks it with
+  `scripts/check-dco-signoff.mjs`. Commits made directly on `main` by the
+  maintainer keep the one-line style without trailers; never add any other
+  trailer.
 
 ### Commit Style
 

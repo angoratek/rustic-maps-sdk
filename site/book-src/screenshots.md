@@ -2,22 +2,21 @@
 
 Every capture below comes from the reference application for that platform, at
 phone width, on the same recorded Capitol Park ⇔ Tower Bridge trip. Each run
-injects one MapQuest credential into the session through the platform's
-runtime seam; the credential is never stored in the build, the page, the image
-or this page. The screenshot set is six captures per platform from one
-revision: the four flow moments on this page and the layers-control pair on
-the [Map layers and traffic](map-layers-and-traffic.md) page.
+injects one MapQuest credential into the session through the platform's runtime
+seam; the credential is never stored in the build, the page, the image or this
+page. The set is six captures per platform from one revision: the four flow
+moments here and the layers-control pair on the [Map layers and
+traffic](map-layers-and-traffic.md) page.
 
 **These images come from an earlier build.** They were recorded before the
 developer console, the map motion changes and the current provider rows. They
-still show the reference scenario's flow, drawn map and vocabulary, but they
-do not picture the build you can run today. The layers-control pair on the map
-layers page comes from the same build.
+still show the reference scenario's flow, drawn map and vocabulary, but not the
+build you can run today. The layers-control pair comes from the same build.
 
-Each platform shows the same four moments of the same flow: the plan sheet
-with both endpoints chosen, the provider section with every row's display name
-and credential state, the simulated trip at its first instruction with 1×
-playback speed, and the styled vector base with its place labels.
+Each platform shows the same four moments of the same flow: the plan sheet with
+both endpoints chosen, the provider section with every row's display name and
+credential state, the simulated trip at its first instruction with 1× playback
+speed, and the styled vector base with its place labels.
 
 ## The plan sheet
 
@@ -116,14 +115,12 @@ markup.
 
 ## Reading the screenshots
 
-The six captures per platform share one design language: the four moments on
-this page and the layers-control pair on the map layers page show the same
-flow. They also share one vocabulary: *plan sheet*,
-*Origin* and *Destination*, *Search*, *My location*, *swap*, *route card*,
-*provider section*, *maneuver banner*, *then line*, *route polyline*,
-*map control cluster*, *compass*, *scale bar*, *ETA-distance line*,
+The six captures per platform share one design language and one vocabulary:
+*plan sheet*, *Origin* and *Destination*, *Search*, *My location*, *swap*,
+*route card*, *provider section*, *maneuver banner*, *then line*, *route
+polyline*, *map control cluster*, *compass*, *scale bar*, *ETA-distance line*,
 *speed chips*, the browser's *trip drawer*, *vector base*, and *place labels*.
 Differences are the platform's own chrome: Compose's Material surface on
 Android, SwiftUI's safe-area handling on iOS, the React Native host view, and
-the browser's WebGPU canvas. The map content, the guidance, the control
-cluster, the scale ladder and the drawn labels are the same.
+the browser's WebGPU canvas. The map content, guidance, control cluster, scale
+ladder and drawn labels are the same.

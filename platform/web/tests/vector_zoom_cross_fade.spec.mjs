@@ -57,7 +57,6 @@ async function require_vector_test_canvas(page) {
       try {
         const canvas = new window.mapTest.MapView(
           canvas_element,
-          window.mapTest.maps,
           window.mapTest.TileResolution.Standard,
         );
         const adapter = await canvas.initialize();

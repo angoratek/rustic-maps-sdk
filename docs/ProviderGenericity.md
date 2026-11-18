@@ -93,11 +93,11 @@ contract-shaped calls exist on that surface, not a vendor-shaped copy:
 - `configureProviderSet(providerKey, credential)` fills every capability the
   named provider serves from one credential.
 
-The module the demo loads (`rustic-maps-web-bindings`, built by
-`scripts/build-wasm.sh`) serves the same registry: `configureProvider`,
-`providerRegistrations`, `configureProviderSet(providerKey, credential)` and
-`clearProviderRegistrations` are the browser calls, and the legacy
-`registerProvider` / `clearProvider` pair is gone. No snake_case export reaches
+The module the demo loads (the generated `wasm2` package, built by
+`scripts/build-wasm2-package.sh`) serves the same registry: `MapSdk.configureProvider`,
+`MapSdk.providerRegistrations`, `MapSdk.configureProviderSet(providerKey, credential)`
+and the canvas glue's `clearProviderRegistrations` are the browser calls, and the
+legacy `registerProvider` / `clearProvider` pair is gone. No snake_case export reaches
 JavaScript: every Rust export sets `js_name`, so the callable names are
 lower-camel. The playground reads the descriptor rows, renders
 labels/attribution from them, and calls the same per-capability registry.

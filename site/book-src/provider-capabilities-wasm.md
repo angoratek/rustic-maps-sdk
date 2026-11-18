@@ -2,10 +2,7 @@
 
 WebAssembly exposes the browser surface: live provider calls over `fetch`, a
 styled vector base painted by the canvas, the offline routing archive, and
-the navigation driving core. It has no native view and no disk cache. This
-page lists the registry's providers, the public JavaScript calls each
-capability uses, and the code that switches a base map or registers a
-provider.
+the navigation driving core. It has no native view and no disk cache.
 
 ## What you need
 
@@ -55,17 +52,8 @@ live raster fallback. OpenStreetMap US and OpenFreeMap are served by
 | OSRM | Map data © OpenStreetMap contributors (ODbL) — routing by OSRM | A self-hosted deployment follows its operator's terms; public demo servers are rate-limited and not for production use. |
 | Valhalla | Map data © OpenStreetMap contributors (ODbL) — routing by Valhalla | A self-hosted deployment follows its operator's terms; public demo servers are rate-limited and not for production use. |
 
-Each vector style also carries its own attribution line. The style ids are
-`carto-light` and `carto-dark` (OpenStreetMap US), `bright-light`, `fiord-dark`,
-and `positron-light` (OpenFreeMap), `omv-light` (HERE), and `streets-light`
-(Mapbox). The status readback returns the active style's line, so display it
-verbatim.
-
-HERE and Mapbox paint their vector tiles with the style document the provider
-publishes. The SDK fetches that document with the registered credential and
-keeps it in the installed tile cache for up to thirty days, or for the session
-when no tile cache is installed, so no style file ships with your application. The
-Mapbox document on Android, iOS and React Native requires a Mapbox Order.
+Each vector style also carries its own attribution line, and the status
+readback returns the active style's line, so display it verbatim.
 
 ## What you can call
 
@@ -132,7 +120,7 @@ provider answers for addresses those tiles do not cover, so panning anywhere
 still draws imagery. Register a `{z}/{x}/{y}` tileset by declaration:
 
 ```js
-import { registerUrlTemplateRasterTileSource } from './web/rustic_maps_web_bindings.js';
+import { registerUrlTemplateRasterTileSource } from './web/rustic_maps_bg.js';
 
 registerUrlTemplateRasterTileSource({
   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -152,38 +140,35 @@ declares. Registering a provider that carries a credential replaces it.
 
 ## Register a provider
 
-Registration is one call per capability: name the capability from the
-contract, the provider key from the shared registry, and the credential. The
-credential lives in module memory only; it is never persisted or logged.
+Registration is one method per capability on the `MapSdk` root: name the
+contract member, the provider key from the shared registry, and the
+credential. The credential lives in module memory only; it is never persisted
+or logged.
 
 ```js
-import init, {
-  MapsSdk,
-  configureProvider,
-  providerRegistrations,
-} from './web/rustic_maps_web_bindings.js';
+import { MapSdk, ProviderContract } from './web/rustic_maps.js';
 
-await init();
-const mapSdk = await MapsSdk.create();
+const mapSdk = new MapSdk();
 
-configureProvider('Geocoding', 'mapquest', providerCredential);
-configureProvider('Routing', 'mapquest', providerCredential);
+mapSdk.configureProvider(ProviderContract.Geocoding, 'mapquest', providerCredential);
+mapSdk.configureProvider(ProviderContract.Routing, 'mapquest', providerCredential);
 
-const registrations = providerRegistrations();
+const registrations = mapSdk.providerRegistrations();
 ```
 
 `providerRegistrations()` answers one row per capability, in the contract's
 order, with the provider key, its display name and whether a provider is
 installed. Each slot is independent, so a page may serve geocoding from one
-provider and raster tiles from another. `setProviderCredential(credential)`
-registers the full-service provider for every capability it serves, and
-`clearProviderRegistrations()` empties every slot. Photon accepts an empty
-credential; OSRM and Valhalla take the deployment's base URL.
+provider and raster tiles from another. `configureProviderSet(providerKey,
+credential)` registers the full-service provider for every capability it
+serves, and the canvas glue's `clearProviderRegistrations()` empties every
+slot. Photon accepts an empty credential; OSRM and Valhalla take the
+deployment's base URL.
 
 ```js
-import { configureProvider } from './web/rustic_maps_web_bindings.js';
+import { ProviderContract } from './web/rustic_maps.js';
 
-configureProvider('Routing', 'osrm', 'https://router.project-osrm.org');
+mapSdk.configureProvider(ProviderContract.Routing, 'osrm', 'https://router.project-osrm.org');
 ```
 
 A key with no compiled provider is refused with a message naming the key, and
@@ -202,13 +187,13 @@ recorded tiles in either case.
 
 ## Constraints
 
-- The module must be initialized and `MapsSdk.create()` resolved before a
-  `MapView` is constructed.
+- The module must be initialized with `uniffiInitAsync` and the `MapSdk` root
+  constructed before a `BrowserMapView` is created.
 - The browser surface has no disk tile cache and no host-implemented provider
   registration. A provider that needs those contracts is a compiled provider
   crate, covered in [Add a provider](adding-a-provider.md).
-- `MapView.setVectorTileSource` refuses while a frame is resolving; retry
-  after the frame settles.
+- `BrowserMapView.setVectorTileSource` refuses while a frame is resolving;
+  retry after the frame settles.
 - Tests never reach the network. Recorded tiles and provider responses are
   served from the page's own origin.
 

@@ -20,12 +20,12 @@
 // only ever draws recorded same-origin `/tiles` fixtures — no recorded
 // zoom-0 imagery exists at the antimeridian, so the wrapped world-copy
 // rendering stays verified by the native overlay goldens alone.
-import init, {
+import { uniffiInitAsync } from './generated/index.js';
+import {
   TileResolution,
-  MapView,
+  BrowserMapView,
   MapCamera,
-  MapsSdk,
-} from './pkg/rustic_maps_web_bindings.js';
+} from './generated/rustic_maps_bg.js';
 import { SACRAMENTO_OVERLAY_SCENES } from './overlay_scenes.mjs';
 
 // Frame edge in pixels of both golden scenes; the canvas is sized to it at
@@ -310,10 +310,9 @@ async function probe(pitch_degrees, golden_file_name, outlier_channel_error) {
 // canvas initialized (or the documented degradation applied). The test
 // awaits this before every assertion.
 window.mapGoldenReady = (async () => {
-  await init();
+  await uniffiInitAsync(new URL('./generated/rustic_maps.wasm', import.meta.url));
   // The golden harness pins its tile resolution instead of following the
   // device ratio: the captured golden frames were rendered at that scale.
-  const golden_maps = await MapsSdk.create();
   const golden_sizes = {};
   for (const golden_file_name of [TOP_DOWN_GOLDEN_FILE, PITCHED_GOLDEN_FILE]) {
     const golden = await golden_pixels(golden_file_name);
@@ -324,9 +323,8 @@ window.mapGoldenReady = (async () => {
   }
   try {
     gpu_map_canvas_promise = (async () => {
-      const canvas_renderer = new MapView(
+      const canvas_renderer = new BrowserMapView(
         gpu_canvas,
-        golden_maps,
         GOLDEN_TILE_RESOLUTION,
       );
       renderer_detail = `GPU adapter ${await canvas_renderer.initialize()}`;

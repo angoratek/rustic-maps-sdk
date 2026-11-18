@@ -3,10 +3,8 @@
 React Native exposes the SDK through one package-owned SDK handle and one
 typed `MapView` component. The handle carries the live provider APIs, the
 tile cache, and the URL-template base-map registrations; the package root
-exports the navigation and offline-routing classes. The component draws the
-surface and switches the vector base. This page lists the registry's
-providers, the public calls each capability uses, and the code that switches
-a base map or registers a provider.
+exports the navigation and offline-routing classes, and the component draws
+the surface and switches the vector base.
 
 ## What you need
 
@@ -55,17 +53,8 @@ URL-template raster call. OpenStreetMap US and OpenFreeMap are served by the
 | OSRM | Map data © OpenStreetMap contributors (ODbL) — routing by OSRM | A self-hosted deployment follows its operator's terms; public demo servers are rate-limited and not for production use. |
 | Valhalla | Map data © OpenStreetMap contributors (ODbL) — routing by Valhalla | A self-hosted deployment follows its operator's terms; public demo servers are rate-limited and not for production use. |
 
-Each vector style also carries its own attribution line. The style ids are
-`carto-light` and `carto-dark` (OpenStreetMap US), `bright-light`, `fiord-dark`,
-and `positron-light` (OpenFreeMap), `omv-light` (HERE), and `streets-light`
-(Mapbox). The status readback returns the active style's line, so display it
-verbatim.
-
-HERE and Mapbox paint their vector tiles with the style document the provider
-publishes. The SDK fetches that document with the registered credential and
-keeps it in the installed tile cache for up to thirty days, or for the session
-when no tile cache is installed, so no style file ships with your application. The
-Mapbox document on Android, iOS and React Native requires a Mapbox Order.
+Each vector style also carries its own attribution line, and the status
+readback returns the active style's line, so display it verbatim.
 
 ## What you can call
 

@@ -54,6 +54,25 @@ const NO_PROVIDER_TERMS_CEILING_SECONDS: u64 = u64::MAX;
 /// the settings surface addresses the cache backing store alone.
 pub(crate) const TILE_CACHE_NOT_CONFIGURED_CONTRACT_NAME: &str = "TileCache";
 
+/// The wall clock in whole seconds for a traffic-flow cache freshness check.
+///
+/// The standard library's clock panics on wasm32-unknown-unknown, so the
+/// browser build reads the browser clock instead; the native build keeps the
+/// core's own system clock.
+fn traffic_flow_current_time_seconds() -> u64 {
+    #[cfg(target_arch = "wasm32")]
+    {
+        web_time::SystemTime::now()
+            .duration_since(web_time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_secs())
+            .unwrap_or(0)
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        rustic_maps_core::system_clock_time_seconds()
+    }
+}
+
 /// The provider key a host-platform implementation registers under: the
 /// application itself supplies the implementation, so no registry descriptor
 /// names it and the settings surface reads the pair back as the serving
@@ -327,6 +346,15 @@ impl MapSdk {
             provider_key: provider_key.to_string(),
             display_name: display_name.to_string(),
         });
+        // The canvas' own provider-key checks read the page's registration
+        // through the browser transport's selection record, so the generated
+        // registry publishes its choice there on wasm.
+        #[cfg(target_arch = "wasm32")]
+        crate::browser_canvas::live_providers::record_shared_provider_selection(
+            contract.to_core_contract(),
+            provider_key,
+            display_name,
+        );
     }
 
     /// Drops the recorded selection for a capability, for a call that removes
@@ -594,7 +622,7 @@ impl MapSdk {
         traffic_flow_provider: Arc<dyn TrafficFlowProvider>,
     ) {
         let traffic_flow_current_time_seconds: rustic_maps_core::TrafficFlowCurrentTimeSeconds =
-            Arc::new(rustic_maps_core::system_clock_time_seconds);
+            Arc::new(traffic_flow_current_time_seconds);
         let provider_for_cache = Arc::clone(&traffic_flow_provider);
         let mut provider_registry = crate::panic_boundary::state_lock_guard(
             &self.provider_registry,
@@ -1884,15 +1912,32 @@ impl MapSdk {
     /// otherwise throws the contract's not-configured failure. The lock
     /// guard is dropped when this returns, before any await. The surface
     /// seam pulls the same provider through this accessor at attach time.
+    ///
+    /// When the slot is empty on wasm, the page-registered URL-template
+    /// fallback serves instead, exactly as it does for the canvas. The native
+    /// targets have no such fallback, so an empty slot keeps throwing the
+    /// contract's not-configured failure.
     pub(crate) fn required_raster_tile_provider(
         &self,
     ) -> Result<Arc<dyn RasterTileProvider>, SdkError> {
-        crate::panic_boundary::state_lock_guard(
+        let registered_provider = crate::panic_boundary::state_lock_guard(
             &self.provider_registry,
             "the provider registry's contract slots",
         )
         .require_raster_tile_provider()
-        .map_err(SdkError::from)
+        .map_err(SdkError::from);
+        match registered_provider {
+            Ok(raster_tile_provider) => Ok(raster_tile_provider),
+            Err(not_configured) => {
+                #[cfg(target_arch = "wasm32")]
+                if let Some(fallback_provider) =
+                    crate::browser_canvas::live_providers::browser_raster_tile_fallback()
+                {
+                    return Ok(fallback_provider);
+                }
+                Err(not_configured)
+            }
+        }
     }
 
     /// Clones the registered vector-tile provider out of the registry;

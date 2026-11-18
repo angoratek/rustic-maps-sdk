@@ -8,7 +8,7 @@ where the settings surface stops.
 
 ## The control on every platform
 
-The round **Map layers** control sits directly above the attribution control
+The circular **Map layers** control sits directly above the attribution control
 on the map's end edge. Each pair below shows the same map with the panel
 closed, then open on the same camera pose. MapQuest serves the raster base.
 The panel scrolls when it is taller than the phone, so the open frames show
@@ -17,31 +17,31 @@ its lower rows: the last base-map rows, **Traffic**, **Overlays** with its
 
 ### Android
 
-![The Android map with the layers control closed over MapQuest's raster base: the Ready chip, the applied-key line, the round layers control with its active dot, and the attribution control above the peek plan sheet](img/android-layers-closed.png)
+![The Android map with the layers control closed over MapQuest's raster base: the Ready chip, the applied-key line, the circular layers control with its active dot, and the attribution control above the peek plan sheet](img/android-layers-closed.png)
 
 ![The Android layers panel open over the same map: the last base-map rows, Traffic off, the four Overlay switches with Clear overlays, and Device location off](img/android-layers-open.png)
 
 ### iOS
 
-![The iOS map with the layers control closed over MapQuest's raster base: the Ready chip, the round layers control with its active dot, the scale bar, and the attribution control above the peek plan sheet](img/ios-layers-closed.png)
+![The iOS map with the layers control closed over MapQuest's raster base: the Ready chip, the circular layers control with its active dot, the scale bar, and the attribution control above the peek plan sheet](img/ios-layers-closed.png)
 
 ![The iOS layers panel open over the same map: the panel's title and Close action, the last base-map rows, Traffic off, the four Overlay switches with Clear overlays, and Device location off](img/ios-layers-open.png)
 
 ### React Native
 
-![The React Native map with the layers control closed over MapQuest's raster base: the Ready chip, the round layers control with its active dot, and the attribution control above the peek plan sheet](img/react-native-layers-closed.png)
+![The React Native map with the layers control closed over MapQuest's raster base: the Ready chip, the circular layers control with its active dot, and the attribution control above the peek plan sheet](img/react-native-layers-closed.png)
 
 ![The React Native layers panel open over the same map: the panel's title and Close action, the last base-map rows, Traffic off, the four Overlay switches with Clear overlays, and Device location off](img/react-native-layers-open.png)
 
 ### WebAssembly
 
-![The browser map with the layers control closed over MapQuest's raster base: the zoom and 2D controls at the top end, the readiness chip and scale bar at the bottom start, and the round layers control above the attribution control](img/wasm-layers-closed.png)
+![The browser map with the layers control closed over MapQuest's raster base: the zoom and 2D controls at the top end, the readiness chip and scale bar at the bottom start, and the circular layers control above the attribution control](img/wasm-layers-closed.png)
 
 ![The browser layers panel open over the same map: Base map with the MapQuest Raster row serving, Traffic off, the four Overlay switches with Clear overlays, and Device location off](img/wasm-layers-open.png)
 
 ## What you get
 
-- One round control on the map that switches the base map or vector style,
+- One circular control on the map that switches the base map or vector style,
   the traffic layer, the demo overlays and the device location source.
 - A panel that states an unavailable layer with the reason instead of showing
   a switch that pretends to work.
@@ -60,28 +60,27 @@ its lower rows: the last base-map rows, **Traffic**, **Overlays** with its
 
 ## Open the layers control
 
-1. Find the round control on the map's end edge, directly above the
+1. Find the circular control on the map's end edge, directly above the
    attribution control.
-2. Select it. Its accessible name is **Map layers**. It carries a dot while a
-   non-default layer is active: a vector style, traffic, or any demo overlay.
-3. Read the panel. Its sections are **Base map**, **Traffic**, **Overlays**
-   and **Device location**, in that order. The panel opens upward, scrolls
-   when it is taller than the screen, and keeps the attribution control
-   visible.
+2. Select it. Its accessible name is **Map layers**, and it carries a dot
+   while a non-default layer is active.
+3. Read the panel's four sections in order: **Base map**, **Traffic**,
+   **Overlays** and **Device location**. The panel opens upward and scrolls
+   when it is taller than the screen.
 4. Close it with **Close**, the Escape key, or the platform back action. Focus
-   returns to the round control.
+   returns to the circular control.
 
 In every reference application the collapsed control and the attribution
 control share one diameter, so the two sit in one column on the map's end
-edge. The table states where the panel appears.
+edge.
 
 | Platform | Where the panel appears |
 |---|---|
 | Rust | No reference application; your application draws its own control over the same SDK operations |
 | Android | A panel in the bottom dock, above the attribution control and clear of the home sheet |
-| iOS | A sheet at the panel height fraction, opened from the round control |
+| iOS | A sheet at the panel height fraction, opened from the circular control |
 | React Native | A modal panel over the map, with the same four sections |
-| WebAssembly | A panel in the bottom-end dock, opened above the round control |
+| WebAssembly | A panel in the bottom-end dock, opened above the circular control |
 
 ## Choose a base map or a vector style
 
@@ -94,15 +93,14 @@ edge. The table states where the panel appears.
    not applied says **Needs API key** and stays disabled.
 
 Selecting a vector style installs the styled base over the raster tiles and
-beneath your overlays. Selecting a raster source removes the vector base. The
-attribution line follows the active entry. The vector base carries the label
-note its styles earn: land, water, roads with their names, and Latin place
-names. A style that declares a shield block on its route-reference layer draws
-each route reference as a shaped badge; Bright, Fiord, and Positron carry no
-route-reference layer, so those bases draw no shields.
-
-The choice is remembered with the app's other choices and restored on the
-next launch. The settings surface does not repeat this selection.
+beneath your overlays. Selecting a raster source removes the vector base, and
+the attribution line follows the active entry. The vector base carries the
+label note its styles earn: land, water, roads with their names, and Latin
+place names. A style that declares a shield block on its route-reference layer
+draws each route reference as a shaped badge; Bright, Fiord, and Positron carry
+no such layer, so those bases draw no shields. The choice is remembered with
+the app's other choices and restored on the next launch; the settings surface
+does not repeat this selection.
 
 ## Turn traffic on
 
@@ -117,7 +115,7 @@ next launch. The settings surface does not repeat this selection.
 While the layer is on, congestion-colored flow lines draw over the base map
 and under the route and overlays. The attribution control appends the serving
 provider's attribution for as long as the layer draws. A failed refresh keeps
-the previous lines and shows the failure detail in the panel. A
+the previous lines and shows the failure detail in the panel; a
 `ProviderNotConfigured` failure turns the switch off with its reason.
 
 ## Toggle and clear the demo overlays
@@ -144,18 +142,16 @@ reads one of five states:
 | Unavailable | The platform has no usable location source |
 
 Select **Stop** while the source runs to turn it off. While the source is on,
-the app remembers the choice: the next launch starts the source again and
-centers on its first fix once the location permission is already granted.
-Stopping the source forgets the choice.
+the app remembers the choice and starts it again on the next launch, centering
+on its first fix once the location permission is already granted. Stopping the
+source forgets the choice.
 
-The round **My location** control on the map starts the same source. It asks
-for permission when needed, centers on the first fix, and re-centers after you
-pan or zoom away. Each route field also carries a **My location** chip. The
-chip starts the source when it is off and fills only its own field with the
-latest fix; a chip that cannot start is disabled with the same reason the row
-states.
-
-The home sheet's device location row is a pointer to this panel, not a second
+The circular **My location** control on the map starts the same source, asks for
+permission when needed, centers on the first fix, and re-centers after you pan
+or zoom away. Each route field also carries a **My location** chip that starts
+the source when it is off and fills only its own field with the latest fix; a
+chip that cannot start is disabled with the same reason the row states. The
+home sheet's device location row is a pointer to this panel, not a second
 control.
 
 ## Read attribution and terms
@@ -174,10 +170,9 @@ The settings surface and the map control divide the work:
 - **Settings** keeps one credential row per provider that declares a
   credential, with explicit Apply and Clear actions and an opt-in remember
   choice for the device.
-- **Settings** keeps one provider row per capability, in the order the
-  capability readback returns. Each row names the serving provider and offers
-  a picker limited to the providers that declare the capability on that
-  platform.
+- **Settings** keeps one provider row per capability, in the readback order.
+  Each row names the serving provider and offers a picker limited to the
+  providers that declare the capability on that platform.
 - **Settings** keeps the offline maps card, the diagnostics sheet and the
   theme choice.
 - **The map layers control** owns the base map, the vector style, traffic,
@@ -192,7 +187,7 @@ uses the credential the settings surface already applied.
 After a base or style switch, the map repaints with the new imagery and the
 attribution line changes. With traffic on, the panel switch reads **On** and
 the flow lines draw until you turn it off. With the device location source
-active, the panel reads **Active** and the round control re-centers on your
+active, the panel reads **Active** and the circular control re-centers on your
 position. After a relaunch, the same base map, traffic state, overlays, device
 location source and remembered provider choices return.
 

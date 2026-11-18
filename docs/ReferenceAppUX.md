@@ -784,7 +784,8 @@ the provider's/SDK's own words**:
   the UI never paraphrases, truncates or swallows them.
 - On the wasm seam today failures cross as plain detail strings (the
   `failure` helper in `rustic-maps-web-bindings`); the structured
-  `variant`-carrying shape of `types/rustic_maps.d.ts` is the contract
+  `variant`-carrying shape of the generated
+  `platform/web/generated/rustic_maps.d.ts` is the contract
   the UI targets, and the error block's *label line* shows the variant name
   when one is available (native refapps) or severity + origin when only the
   detail is (wasm today).
@@ -1186,7 +1187,7 @@ per-platform invention.
    Still open: the `NavigationListener` subscription topics and the speech
    and reroute-recalculation members, which need a wasm foreign-listener
    contract. The `TripNavigationState`/`NavigationInstruction` projections
-   are mirrored in `platform/web/types/rustic_maps.d.ts`.
+   are mirrored in `platform/web/generated/rustic_maps.d.ts`.
 2. **`MapSdk` on the wasm seam**: geocode search, route planning and
    offline pack download have no wasm surface; their refapp panels are
    specified but unimplemented on web. Ask: expose `MapSdk` with its async

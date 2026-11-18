@@ -106,7 +106,6 @@ async function require_test_canvas(page) {
         const settle_frame_delay_milliseconds = 30;
         const canvas = new window.mapTest.MapView(
           canvas_element,
-          window.mapTest.maps,
           window.mapTest.TileResolution.Standard,
         );
         const adapter = await canvas.initialize();

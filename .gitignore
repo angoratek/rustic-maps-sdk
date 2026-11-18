@@ -33,6 +33,16 @@ node_modules/
 .env.*
 !.env.example
 
+# Build-machine and signing material: SDK locations, keystores, provisioning
+# profiles and local Xcode overrides. A distributed demo keystore comes from a
+# repository secret on the build machine, never from the tree.
+local.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+Local.xcconfig
+
 # Test and profiling leftovers. A JVM heap dump is hundreds of megabytes and
 # can carry process memory, so it is never a source artifact.
 *.profraw
@@ -40,6 +50,13 @@ node_modules/
 *.hprof
 # Playwright + generated wasm bindings output
 platform/web/pkg/
+# The browser-loadable wasm2 package (scripts/build-wasm2-package.sh).
+platform/web/generated/
+# ubrn's bare default TypeScript output. The documented path generates the
+# WebAssembly bindings with scripts/generate-wasm-bindings.sh into
+# target/wasm-bindings; this directory only appears when ubrn runs without the
+# project's output configuration.
+platform/rn/src/generated/
 test-results/
 playwright-report/
 

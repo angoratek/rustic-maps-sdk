@@ -120,12 +120,11 @@ test('the WebAssembly page exposes every contract interface the wasm surface ser
       `the WebAssembly page documents ${interfaceName}`,
     );
   }
-  // The wasm-only surface: the SDK root, the canvas view and the two trip
-  // classes the seam serves.
+  // The canvas surface and the generated contract classes the package serves.
   for (const className of [
-    'MapsSdk',
-    'MapView',
+    'BrowserMapView',
     'MapCamera',
+    'MapSdk',
     'Navigator',
     'RouteSimulator',
   ]) {

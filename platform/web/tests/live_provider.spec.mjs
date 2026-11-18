@@ -532,7 +532,7 @@ test('the playground panel plans a live route and fetches one live tile', async 
   await expect(page.locator('#provider-tile-canvas')).toBeHidden();
 });
 
-test('a remembered key survives a reload and the inline show/hide control works', async ({
+test('a remembered key survives a reload and the field stays masked', async ({
   page,
 }) => {
   await page.goto('/?useProviderFixtures');
@@ -540,15 +540,19 @@ test('a remembered key survives a reload and the inline show/hide control works'
   const descriptor_row = provider_row(page);
   await open_provider_panel(page);
 
-  // The masked field reveals its value on request and masks it again.
+  // The field is masked and offers no reveal affordance, the same rule every
+  // platform follows.
   const credential_input = descriptor_row.locator('[data-provider-credential-input]');
-  const visibility_control = descriptor_row.locator('[data-provider-credential-visibility]');
   await credential_input.fill('test-key');
   await expect(credential_input).toHaveAttribute('type', 'password');
-  await visibility_control.click();
-  await expect(credential_input).toHaveAttribute('type', 'text');
-  await visibility_control.click();
-  await expect(credential_input).toHaveAttribute('type', 'password');
+  await expect(
+    descriptor_row.locator('[data-provider-credential-visibility]')).toHaveCount(0);
+  await expect(
+    descriptor_row.getByRole('button', { name: /show key|hide key/i })).toHaveCount(0);
+
+  // The browser's named persistence exception carries a visible warning.
+  await expect(page.locator('.settings-remember-warning'))
+    .toContainText('localStorage');
 
   // Opt into persistence, apply, then reload: the key re-registers itself
   // and the trip card shows the applied state without re-entry.

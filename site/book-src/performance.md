@@ -39,79 +39,59 @@ figures from your own device, power state and route mix.
 
 ## Frame the camera with the contract's helpers
 
-- Prefer the `fit_bounds` camera constructor for route previews and
-  search-result framing. It computes a top-down, north-up camera that
-  keeps the whole box visible inside the insets you give it, instead of a
-  hand-tuned zoom level that breaks on another screen size.
-- Give it real insets. Route cards, attribution, and sheets are overlays
-  your application owns; the insets tell the camera what the map may not
-  hide. The insets-aware framing is what keeps the destination inside the
-  visible region on every device.
-- Read the camera back with the attribute getters (`center`,
-  `zoomLevel`, `bearingDegrees`, `pitchDegrees`) when you need to persist
-  or compare a pose; the camera carries no setters, so a new pose is a
-  new constructor call.
+- Prefer `fit_bounds` for route previews and search-result framing. It computes
+  a top-down, north-up camera that keeps the whole box visible inside the
+  insets you give it, instead of a hand-tuned zoom that breaks on another screen
+  size.
+- Give it real insets. Route cards, attribution, and sheets are overlays your
+  application owns; the insets tell the camera what the map may not hide.
+- Read the camera back with the attribute getters (`center`, `zoomLevel`,
+  `bearingDegrees`, `pitchDegrees`) when you need to persist or compare a pose;
+  a new pose is a new constructor call.
 
 ## Let the render loop stay explicit
 
-- Frames are explicit by design: the platform view drives `draw` from its
-  own cadence (a display link or choreographer callback). Do not add a
-  second render loop; serialize draws and never call `draw` again while a
-  previous call is still in flight — a draw in flight reports the next
-  frame busy, and the cadence retries it.
-- Poll `isFrameSettled` in the render pump to skip `draw` when a re-draw
-  would present the same pixels: true when the camera, overlay list, and
-  location indicator are unchanged and no pending tile pixels remain.
-  This keeps battery cost near zero on a static map.
-- Read `FrameStatistics` from every draw. The four readiness counts
-  (`present`, `fallback`, `deferred`, `unavailable`) always add up to the
-  requested count, so a persistent slice of `deferred` tells you your
-  per-frame fetch budget is the limiter on your network, and a slice of
-  `unavailable` points at provider refusals rather than slow ones.
-- Feed gesture deltas through the SDK's camera seam (pan by pixels,
-  focal-point zoom and rotation) instead of moving the viewport yourself;
-  the SDK clamps zoom and pitch through the camera's own ranges and holds
-  the focal point exactly.
+- Frames are explicit by design: the platform view drives `draw` from its own
+  cadence. Do not add a second render loop, and never call `draw` again while a
+  previous call is in flight.
+- Poll `isFrameSettled` in the render pump to skip `draw` when a re-draw would
+  present the same pixels. This keeps battery cost near zero on a static map.
+- Read `FrameStatistics` from every draw. The four readiness counts (`present`,
+  `fallback`, `deferred`, `unavailable`) add up to the requested count, so a
+  persistent portion of `deferred` tells you the per-frame fetch budget is the
+  limiter, and a portion of `unavailable` points at provider refusals rather than
+  slow ones.
+- Feed gesture deltas through the SDK's camera seam instead of moving the
+  viewport yourself; the SDK clamps zoom and pitch and holds the focal point.
 
 ## Size the tile cache deliberately
 
-- Register the tile cache with an absolute byte budget that fits your
-  product (the reference application's demo budget is 16 MiB for the
-  whole bundled demo region). The budget is a registration-time fact:
-  retuning it means re-registering.
-- Set the tile time-to-live live through
-  `setRasterTileCacheTimeToLive`. Imagery-provider terms put a ceiling on
-  what the cache may retain; a request above the ceiling is accepted and
-  the ceiling clamps what is stored. Read `rasterTileCacheTerms` to
-  display the effective value, the ceiling, and the default in a settings
-  or diagnostics screen.
-- Do not set a zero time-to-live; the call is refused because it would
-  expire every entry on capture.
+Register the tile cache with an absolute byte budget that fits your product;
+the budget is a registration-time fact, so retuning it means re-registering.
+Set the tile time-to-live live through `setRasterTileCacheTimeToLive`; a request
+above the provider's ceiling is accepted and clamped, and
+`rasterTileCacheTerms` displays the effective value, the ceiling, and the
+default. Do not set a zero time-to-live; the call is refused because it would
+expire every entry on capture.
 
 ## Keep the provider path under your quota
 
-- The provider implementation carries a shared token-bucket rate limiter
-  and bounded idempotent retries. Treat `RateLimitExhausted` as "retry
-  after the next refill", not as an error to surface in the UI.
-- Cache-then-network is the default shape of every provider call, so
-  repeated identical requests inside the time-to-live cost no quota. The
-  tile category defaults to a 30-day time-to-live, the imagery terms
-  ceiling.
+- The provider implementation carries a shared token-bucket limiter and bounded
+  idempotent retries. Treat `RateLimitExhausted` as "retry after the next
+  refill", not as an error to surface in the UI.
+- Cache-then-network is the default shape of every provider call, so repeated
+  identical requests inside the time-to-live cost no quota.
 - Batch what the contracts batch: the distance matrix answers every
-  origin-destination pair in one call; fetching matrix cells one by one
-  multiplies your request count for the same data.
+  origin-destination pair in one call.
 
 ## Use offline where it pays
 
-- The offline routing provider answers routes over a memory-mapped
-  archive with A\*; no network round trip. Compile an extract sized to
-  the region your users drive in, not the planet: the compiler is
-  deterministic and the archive is self-describing.
-- The offline routing decorator retries over the offline graph when the
-  online provider fails, so a coverage-limited archive is a graceful
-  degradation, not a failure mode. You wire it around your online
-  provider; the SDK registers no fallback on your behalf. Its maneuver
-  texts stay honest where the archive carries no street names.
+The offline routing provider answers routes over a memory-mapped archive with
+A\* and no network request. Compile an extract sized to the region your users
+drive in, not the planet. The offline decorator retries over the offline graph
+when the online provider fails, so a coverage-limited archive is graceful
+degradation; you wire it around your online provider, and its maneuver texts
+stay honest where the archive carries no street names.
 
 ## Profile with the SDK's own readbacks
 

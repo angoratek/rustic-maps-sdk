@@ -539,12 +539,17 @@ retired (the current surface is in the UDL and the generated bindings).
 The browser cannot get its view class from the UDL: a DOM `HTMLCanvasElement`
 and a `GPUDevice` are not expressible in UniFFI types. A thin **wasm-bindgen**
 canvas adapter therefore stays hand-written, and it is the only hand-maintained
-piece of the wasm surface. Everything else is generated from the UDL: record
-shapes, enum spellings, method and class names and error variants come from the
-one contract, so the browser writes the same camelCase names as Kotlin, Swift
-and React Native. The page uses one wasm module for both rendering and the
-contract surface, with one initialization and one provider registry
-(`PRD.md` §6 items 27 and 30).
+piece of the wasm surface. Everything else is generated from the UDL by the
+`wasm2` bindgen: record shapes, enum spellings, method and class names and
+error variants come from the one contract, so the browser writes the same
+camelCase names as Kotlin, Swift and React Native. The page uses one wasm
+module for both rendering and the contract surface, with one initialization
+and one provider registry (`PRD.md` §6 items 27 and 30).
+
+The hand-written canvas class is exported as `BrowserMapView`, named distinctly
+so the contract `MapView`, which the WebAssembly contract strips, can never
+reach the page. `MapCamera` and the gesture pose algebra stay beside it in the
+same wasm-bindgen glue; the contract's records never cross into the canvas.
 
 The frame pump stays outside the contract: there is no SDK-internal render loop.
 The platform wrapper owns the pump and the canvas adapter reports its own device

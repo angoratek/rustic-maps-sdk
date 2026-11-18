@@ -65,10 +65,13 @@ const SCANNED_FILES = [
 /**
  * Build outputs, test artifacts, dependencies and gitignored scratch that are
  * not source: `tmp/` holds throwaway probe scripts and evidence captures,
- * which name whatever provider they happen to be probing.
+ * which name whatever provider they happen to be probing. `generated/`
+ * directories are build output too — the browser wasm2 package reproduces the
+ * contract's own documentation, and the native refapp bindings are emitted
+ * from the same UDL.
  */
 const SKIPPED_DIRECTORY_NAMES = new Set([
-  'node_modules', 'pkg', 'playwright-report', 'test-results', 'tmp',
+  'node_modules', 'pkg', 'generated', 'playwright-report', 'test-results', 'tmp',
 ]);
 
 /** The file extensions this guard reads. */

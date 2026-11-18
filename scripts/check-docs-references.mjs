@@ -136,7 +136,7 @@ for (const file_path of reference_files) {
     relative_path.includes("node_modules/")
     || relative_path.includes("/build/")
     || relative_path.includes("/target/")
-    || relative_path.includes("platform/web/pkg/")
+    || relative_path.includes("platform/web/generated/")
   ) {
     continue;
   }

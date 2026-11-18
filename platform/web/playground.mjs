@@ -1044,16 +1044,7 @@
             : 'Not available on this platform';
           input_element.dataset.providerCredentialInput = '';
           input_element.disabled = !registration_available;
-
-          const visibility_element = document.createElement('button');
-          visibility_element.type = 'button';
-          visibility_element.className = 'provider-credential-visibility';
-          visibility_element.textContent = 'Show';
-          visibility_element.dataset.providerCredentialVisibility = '';
-          visibility_element.setAttribute('aria-label', 'Show key');
-          visibility_element.setAttribute('aria-pressed', 'false');
-          visibility_element.disabled = !registration_available;
-          field_element.append(input_element, visibility_element);
+          field_element.append(input_element);
 
           const hint_element = document.createElement('p');
           hint_element.className = 'provider-hint';
@@ -1090,7 +1081,6 @@
           provider_credential_controls_by_key.set(provider_descriptor.provider_key, {
             provider_descriptor,
             input_element,
-            visibility_element,
             applied_chip_element,
             apply_element,
             clear_element,
@@ -1528,7 +1518,6 @@
           const {
             provider_descriptor,
             input_element,
-            visibility_element,
             apply_element,
             clear_element,
             registration_available,
@@ -1536,15 +1525,6 @@
           if (!registration_available) {
             continue;
           }
-          visibility_element.addEventListener('click', () => {
-            const is_visible = input_element.type === 'text';
-            input_element.type = is_visible ? 'password' : 'text';
-            visibility_element.textContent = is_visible ? 'Show' : 'Hide';
-            visibility_element.setAttribute(
-              'aria-label', is_visible ? 'Show key' : 'Hide key');
-            visibility_element.setAttribute('aria-pressed', String(!is_visible));
-            input_element.focus();
-          });
           apply_element.addEventListener('click', async () => {
             const credential_value = input_element.value.trim();
             if (credential_value === '') {
@@ -1557,10 +1537,6 @@
                 persist: remember_provider_credentials,
               });
               input_element.value = '';
-              input_element.type = 'password';
-              visibility_element.textContent = 'Show';
-              visibility_element.setAttribute('aria-label', 'Show key');
-              visibility_element.setAttribute('aria-pressed', 'false');
               refresh_credential_state();
               refresh_capability_provider_rows();
               refresh_map_layers_panel();
@@ -1584,10 +1560,6 @@
             capability_failure_text_by_key.clear();
             refresh_capability_provider_rows();
             input_element.value = '';
-            input_element.type = 'password';
-            visibility_element.textContent = 'Show';
-            visibility_element.setAttribute('aria-label', 'Show key');
-            visibility_element.setAttribute('aria-pressed', 'false');
             clear_provider_probe_results();
             write_local_storage(
               PROVIDER_CREDENTIAL_STORAGE_PREFIX + provider_descriptor.provider_key,
@@ -6842,8 +6814,7 @@
 
       function move_center_by_ground_delta(delta_x_pixels, delta_y_pixels) {
         apply_camera_pose(resolved_or_null(() =>
-          window.mapTest.panCameraByScreenPixels(
-            build_camera(),
+          build_camera().panByScreenPixels(
             delta_x_pixels,
             delta_y_pixels,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES,
@@ -6910,8 +6881,7 @@
         const zoom_target = Math.min(
           MAXIMUM_ZOOM_LEVEL, camera_state.zoomLevel() + DOUBLE_TAP_ZOOM_STEP);
         const double_tap_pose = resolved_or_null(() =>
-          window.mapTest.zoomCameraByLevelsAroundScreenPoint(
-            build_camera(),
+          build_camera().zoomByLevelsAroundScreenPoint(
             zoom_target - camera_state.zoomLevel(),
             canvas_point.x_pixels, canvas_point.y_pixels,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES,
@@ -6996,8 +6966,7 @@
           MINIMUM_ZOOM_LEVEL,
           camera_state.zoomLevel() - event.deltaY * ZOOM_WHEEL_SCALE));
         const wheel_pose = resolved_or_null(() =>
-          window.mapTest.zoomCameraByLevelsAroundScreenPoint(
-            build_camera(),
+          build_camera().zoomByLevelsAroundScreenPoint(
             zoom_target - camera_state.zoomLevel(),
             overlay_canvas.width / 2, overlay_canvas.height / 2,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES,
@@ -7060,8 +7029,8 @@
         const zoom_target = Math.min(MAXIMUM_ZOOM_LEVEL, Math.max(
           MINIMUM_ZOOM_LEVEL, camera_state.zoomLevel() + delta_zoom_levels));
         const zoom_pose = resolved_or_null(() =>
-          window.mapTest.zoomCameraByLevelsAroundScreenPoint(
-            build_camera(), zoom_target - camera_state.zoomLevel(),
+          build_camera().zoomByLevelsAroundScreenPoint(
+            zoom_target - camera_state.zoomLevel(),
             overlay_canvas.width / 2, overlay_canvas.height / 2,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES));
         if (!apply_camera_pose(zoom_pose)) {
@@ -7073,8 +7042,8 @@
         note_camera_gesture_in_progress();
         follow_demo_note_camera_gesture();
         const rotate_pose = resolved_or_null(() =>
-          window.mapTest.rotateCameraByDegreesAroundScreenPoint(
-            build_camera(), delta_bearing_degrees,
+          build_camera().rotateByDegreesAroundScreenPoint(
+            delta_bearing_degrees,
             overlay_canvas.width / 2, overlay_canvas.height / 2,
             overlay_canvas.width, overlay_canvas.height, FIELD_OF_VIEW_DEGREES));
         if (!apply_camera_pose(rotate_pose)) {
@@ -7296,7 +7265,6 @@
               : window.mapTest.TileResolution.Standard;
           gpu_map_canvas = new window.mapTest.MapView(
             map_canvas,
-            window.mapTest.maps,
             tile_resolution,
           );
           renderer_detail = `GPU adapter ${await gpu_map_canvas.initialize()}`;
@@ -8252,6 +8220,83 @@
         return record;
       }
 
+      // The export's defensive credential scrub, the same second pass the
+      // native consoles run: the diagnostics ring redacts at emission, and
+      // this protects a download or clipboard copy if an event field ever
+      // regresses. It removes every applied credential value literally plus
+      // the credential-shaped `name=value` and `"name": "value"` forms.
+      const PROVIDER_CONSOLE_CREDENTIAL_PARAMETER_NAMES = Object.freeze([
+        'key', 'apiKey', 'api_key', 'access_token', 'token', 'session', 'signature',
+      ]);
+      const PROVIDER_CONSOLE_REDACTION_PLACEHOLDER = '<redacted>';
+      const PROVIDER_CONSOLE_CREDENTIAL_NAME_ALTERNATION =
+        PROVIDER_CONSOLE_CREDENTIAL_PARAMETER_NAMES
+          .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+          .join('|');
+      const PROVIDER_CONSOLE_AUTHORIZATION_HEADER_PATTERN =
+        /(authorization\s*:\s*)[^\n\r]*/gi;
+      const PROVIDER_CONSOLE_BEARER_TOKEN_PATTERN = /(bearer\s+)\S+/gi;
+      const PROVIDER_CONSOLE_JSON_MEMBER_PATTERN = new RegExp(
+        `("(?:${PROVIDER_CONSOLE_CREDENTIAL_NAME_ALTERNATION})"\\s*:\\s*")[^"]*(")`,
+        'gi');
+      const PROVIDER_CONSOLE_QUERY_PARAMETER_PATTERN = new RegExp(
+        `([?&;]\\s*(?:${PROVIDER_CONSOLE_CREDENTIAL_NAME_ALTERNATION})=)[^&\\s"']+`,
+        'gi');
+      const PROVIDER_CONSOLE_ASSIGNMENT_PATTERN = new RegExp(
+        `(\\b(?:${PROVIDER_CONSOLE_CREDENTIAL_NAME_ALTERNATION})=)[^&\\s"']+`,
+        'gi');
+
+      /** Returns `text` with the applied credential values and the
+       * credential-bearing assignments replaced by the redaction placeholder. */
+      function provider_console_credential_free_text(text) {
+        let scrubbed_text = String(text);
+        for (const credential_value of provider_credentials_by_key.values()) {
+          if (typeof credential_value !== 'string'
+              || credential_value.trim() === '') {
+            continue;
+          }
+          scrubbed_text = scrubbed_text
+            .split(credential_value)
+            .join(PROVIDER_CONSOLE_REDACTION_PLACEHOLDER);
+        }
+        return scrubbed_text
+          .replace(
+            PROVIDER_CONSOLE_AUTHORIZATION_HEADER_PATTERN,
+            `$1${PROVIDER_CONSOLE_REDACTION_PLACEHOLDER}`)
+          .replace(
+            PROVIDER_CONSOLE_BEARER_TOKEN_PATTERN,
+            `$1${PROVIDER_CONSOLE_REDACTION_PLACEHOLDER}`)
+          .replace(
+            PROVIDER_CONSOLE_JSON_MEMBER_PATTERN,
+            `$1${PROVIDER_CONSOLE_REDACTION_PLACEHOLDER}$2`)
+          .replace(
+            PROVIDER_CONSOLE_QUERY_PARAMETER_PATTERN,
+            `$1${PROVIDER_CONSOLE_REDACTION_PLACEHOLDER}`)
+          .replace(
+            PROVIDER_CONSOLE_ASSIGNMENT_PATTERN,
+            `$1${PROVIDER_CONSOLE_REDACTION_PLACEHOLDER}`);
+      }
+
+      /** Scrubs every string inside one exported record, so the JSON stays
+       * valid while no field can carry a credential out. */
+      function provider_console_credential_free_record(record) {
+        if (typeof record === 'string') {
+          return provider_console_credential_free_text(record);
+        }
+        if (Array.isArray(record)) {
+          return record.map(provider_console_credential_free_record);
+        }
+        if (record !== null && typeof record === 'object') {
+          const scrubbed_record = {};
+          for (const [member_name, member_value] of Object.entries(record)) {
+            scrubbed_record[member_name] =
+              provider_console_credential_free_record(member_value);
+          }
+          return scrubbed_record;
+        }
+        return record;
+      }
+
       function set_provider_console_open(is_open) {
         if (provider_console_panel === null) {
           return;
@@ -8342,19 +8387,22 @@
           refresh_provider_console();
         });
         provider_console_copy.addEventListener('click', () => {
-          const text = provider_console_events()
-            .map((event) => {
-              const excerpt = event.providerRequest?.responseExcerpt
-                ? `\n${event.providerRequest.responseExcerpt}`
-                : '';
-              return `${provider_console_event_text(event)}${excerpt}`;
-            })
-            .join('\n');
+          const text = provider_console_credential_free_text(
+            provider_console_events()
+              .map((event) => {
+                const excerpt = event.providerRequest?.responseExcerpt
+                  ? `\n${event.providerRequest.responseExcerpt}`
+                  : '';
+                return `${provider_console_event_text(event)}${excerpt}`;
+              })
+              .join('\n'),
+          );
           navigator.clipboard?.writeText(text).catch(() => undefined);
         });
         provider_console_export.addEventListener('click', () => {
           const records = provider_console_events()
-            .map((event) => provider_console_export_record(event));
+            .map((event) => provider_console_credential_free_record(
+              provider_console_export_record(event)));
           const blob = new Blob([JSON.stringify(records, null, 2)], {
             type: 'application/json',
           });

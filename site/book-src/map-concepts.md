@@ -11,12 +11,10 @@ A position is a `GeographicCoordinate`: latitude and longitude in decimal
 degrees on the WGS 84 ellipsoid. Latitude runs from -90 to 90; longitude runs
 from -180 to 180.
 
-A region is a `BoundingBox` between a south-west and a north-east corner, each
-one a coordinate. A box never spans the antimeridian. If a region crosses it,
-encode the region as two adjacent boxes.
-
-The examples use Kotlin field spelling. Each binding uses its platform's spelling
-for the same records.
+A region is a `BoundingBox` between a south-west and a north-east corner. A box
+never spans the antimeridian; if a region crosses it, encode it as two adjacent
+boxes. The examples use Kotlin field spelling; each binding uses its platform's
+spelling for the same records.
 
 ```kotlin
 import uniffi.rustic_maps.BoundingBox
@@ -34,44 +32,36 @@ val downtownSacramento = BoundingBox(
 The SDK does not draw in latitude and longitude. Before anything is placed on
 screen, a coordinate is projected onto the Web Mercator world: a square where
 every position becomes two numbers in `[0, 1]`. The horizontal number is zero on
-the antimeridian and grows eastward. The vertical number is zero at the north
+the antimeridian and grows eastward; the vertical number is zero at the north
 pole and grows southward.
 
-Only part of the ellipsoid fits in that square. The projection stops at about
-85.05° north and south, and latitudes beyond the cutoff clamp to the edge. The
-top and bottom of the world square are therefore not the poles, and a coordinate
-near a pole sits on the boundary rather than beyond it.
-
-Mercator also changes scale across the map: it stretches the ground farther from
-the equator. At a given zoom, the ground distance covered by one screen pixel
-shrinks with the cosine of the center latitude. The camera answers that distance
-for a scale bar through `groundMetersPerScreenPixel`.
+The projection stops at about 85.05° north and south, and latitudes beyond the
+cutoff clamp to the edge, so a coordinate near a pole sits on the boundary
+rather than beyond it. Mercator also changes scale across the map: the ground
+distance covered by one screen pixel shrinks with the cosine of the center
+latitude. `groundMetersPerScreenPixel` answers that distance for a scale bar.
 
 ## Tiles
 
 A tile is one payload at one zoom level. Its address is a `TileKey`: a column, a
-row counted from the north, and the zoom level. This is the web-mercator XYZ
-scheme. At zoom 0 the whole world is one tile, and each level doubles the columns
-and rows, so zoom level `z` has `2^z` columns and `2^z` rows. A coordinate's
-address is the tile cell that contains its position in the world square.
+row counted from the north, and the zoom level in the web-mercator XYZ scheme.
+At zoom 0 the whole world is one tile, and each level doubles the columns and
+rows, so zoom level `z` has `2^z` columns and `2^z` rows.
 
 A raster tile is a pre-rendered image. The contract carries one as
 `RasterTileData`: the tile address, an image format (`Png` or `Jpeg`), a tile
 resolution, and the encoded bytes. `Standard` is the plain form; `Retina` is the
-`@2x` form with twice the texels per edge for the same logical tile span, which
-is what a high-density screen wants.
+`@2x` form with twice the texels per edge for the same logical tile span.
 
 A vector tile carries geometry and style rather than pixels. Its vertices are
 stored in the tile's own space, with x to the right and y down inside the tile.
 The SDK converts each vertex through the tile's web-mercator address into a
 `GeographicCoordinate`, so vector geometry and your own overlays share one
-coordinate space. The renderer paints a vector base map with a named style.
-Bright, Fiord, and Positron style OpenMapTiles-schema sources; Carto Light and
-Carto Dark style the Sourdough source.
-
-Either kind of tile is addressed, fetched, and reused by the same key. When the
-view moves, the SDK asks for the tiles the view now covers and keeps the ones it
-already holds.
+coordinate space. The renderer paints a vector base map with a named style:
+Bright, Fiord, and Positron for OpenMapTiles-schema sources, and Carto Light and
+Carto Dark for the Sourdough source. Either kind of tile is addressed, fetched,
+and reused by the same key; when the view moves, the SDK asks for the tiles the
+view now covers and keeps the ones it already holds.
 
 ## Zoom is continuous
 
@@ -80,11 +70,10 @@ on-screen scale. The camera accepts zoom 0 through 24.
 
 The tile grid changes only at whole levels, so a smooth pinch gesture passes
 through fractional zoom while the SDK picks the nearest whole level for a tile
-fetch: `tileZoomLevel`. To ask which tiles the view covers, use
-`visibleTileKeys`, which lists every tile at a chosen level whose area intersects
-the visible ground, sorted row-major from the north. A rotated or tilted view can
-cover tiles you would not guess from the center alone, so read the list instead
-of computing a rectangle.
+fetch: `tileZoomLevel`. `visibleTileKeys` lists every tile at a chosen level
+whose area intersects the visible ground, sorted row-major from the north. A
+rotated or tilted view can cover tiles you would not guess from the center
+alone, so read the list instead of computing a rectangle.
 
 ## The camera
 
@@ -112,22 +101,18 @@ val camera = MapCamera(
 )
 ```
 
-A camera is also the projection and the tile selector, not only a description.
-`projectToScreen` maps a coordinate to viewport pixels, and
-`screenToGroundCoordinate` maps a pixel back to the ground, returning nothing
-when the pixel's ray misses the ground. Both use the camera's pose, so your own
-UI and the renderer place things on the same pixel without duplicating the math.
-
-The second constructor, `fitBounds`, builds a camera that frames a bounding box:
-top-down and north-up, zoomed to the largest level that keeps the whole box
-inside the inset region you pass. Insets are the pixels your own UI keeps clear,
-such as a route card, a sheet panel, or an attribution label, so the box never
-hides beneath them.
+A camera is also the projection and the tile selector. `projectToScreen` maps a
+coordinate to viewport pixels, and `screenToGroundCoordinate` maps a pixel back
+to the ground, returning nothing when the pixel's ray misses the ground. The
+second constructor, `fitBounds`, frames a bounding box top-down and north-up,
+zoomed to the largest level that keeps the whole box inside the inset region you
+pass. Insets are the pixels your own UI keeps clear, such as a route card, a
+sheet panel, or an attribution label.
 
 ## Overlays are geography
 
-Everything drawn on top of the tiles is an overlay: a `MapOverlay` record with a
-kind and the payload that kind reads.
+Everything drawn on top of the tiles is a `MapOverlay` record with a kind and
+the payload that kind reads.
 
 | Kind | Payload |
 |---|---|
@@ -136,31 +121,14 @@ kind and the payload that kind reads.
 | `PointMarkers` and `PointPins` | `pointMarkerPositions`, one coordinate per marker |
 | `TrafficFlow` | `trafficFlowSegments`, traffic records whose `shapeCoordinates` are coordinates |
 
-The payload is the point: a list of `GeographicCoordinate`. An overlay is not a
-picture and not a set of screen pixels. It is geography plus a style (a color, a
-line width, a marker radius), and the SDK projects it through the same camera as
-the tiles in every frame.
+An overlay is not a picture and not a set of screen pixels. It is geography plus
+a style (a color, a line width, a marker radius), and the SDK projects it through
+the same camera as the tiles in every frame. That shared space is why an overlay
+needs no conversion work: flatten a calculated route's step shapes into one list
+and a `RoutePolyline` draws over the roads, and a search result's coordinate in
+`pointMarkerPositions` puts the marker on that place. Panning, zooming, rotating,
+and tilting keep the two layers aligned.
 
-That shared space is why an overlay needs no conversion work from your
-application. A calculated route carries its geometry as coordinates on its
-steps; flatten those shapes into one list and a `RoutePolyline` draws over the
-roads. A place returned by search carries a coordinate; put it in
-`pointMarkerPositions` and the marker sits on that place. Panning, zooming,
-rotating, and tilting keep the two layers aligned because every frame
-re-projects the same geographic inputs.
-
-## A frame in order
-
-A frame is one pass through the same few steps:
-
-1. You choose a `MapCamera` pose.
-2. The camera lists the tiles the view covers and maps every overlay coordinate
-   into the viewport.
-3. The SDK fetches the missing tiles, draws them, then draws the overlays
-   through the same camera.
-4. A new pose repeats the pass; the coordinate space never changes.
-
-Once those steps are clear, the guides are applications of them. Start with
-[Your first map](first-map.md), then continue to [Search and
+Start with [Your first map](first-map.md), then continue to [Search and
 routing](search-and-routing.md), [Turn-by-turn
 navigation](navigation-simulation.md), and [Offline maps](offline-maps.md).

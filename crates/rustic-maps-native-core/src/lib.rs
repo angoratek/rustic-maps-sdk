@@ -156,8 +156,13 @@ pub fn get_sdk_compiled_version() -> String {
     SDK_COMPILED_VERSION.to_string()
 }
 
-// Scaffolding generated at build time from the frozen UDL. The contract is
-// compiled on every target; the build script excludes only the native surface
-// `MapView` interface from the wasm scaffolding, because the browser owns the
-// surface in the hand-written canvas class.
+// Scaffolding generated at build time from the committed UDL. The contract is
+// compiled on every target: natively from the frozen contract, and on wasm
+// from `rustic_maps_wasm.udl`, which is the same contract without the native
+// surface `MapView` interface (the browser owns the surface in the
+// hand-written canvas class).
+#[cfg(target_arch = "wasm32")]
+uniffi::include_scaffolding!("rustic_maps_wasm");
+
+#[cfg(not(target_arch = "wasm32"))]
 uniffi::include_scaffolding!("rustic_maps");

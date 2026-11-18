@@ -2,9 +2,7 @@
 
 iOS exposes the full SDK surface: live provider APIs, keyless raster and
 vector base maps, the disk tile cache, offline routing and turn-by-turn
-navigation. This page lists the providers the shared registry declares, the
-public Swift calls each capability uses, and the code that switches a base
-map or registers a provider.
+navigation.
 
 ## What you need
 
@@ -53,17 +51,8 @@ shipped `MapView`'s vector base member and need no registration call.
 | OSRM | Map data © OpenStreetMap contributors (ODbL) — routing by OSRM | A self-hosted deployment follows its operator's terms; public demo servers are rate-limited and not for production use. |
 | Valhalla | Map data © OpenStreetMap contributors (ODbL) — routing by Valhalla | A self-hosted deployment follows its operator's terms; public demo servers are rate-limited and not for production use. |
 
-Each vector style also carries its own attribution line. The style ids are
-`carto-light` and `carto-dark` (OpenStreetMap US), `bright-light`, `fiord-dark`,
-and `positron-light` (OpenFreeMap), `omv-light` (HERE), and `streets-light`
-(Mapbox). The status readback returns the active style's line, so display it
-verbatim.
-
-HERE and Mapbox paint their vector tiles with the style document the provider
-publishes. The SDK fetches that document with the registered credential and
-keeps it in the installed tile cache for up to thirty days, or for the session
-when no tile cache is installed, so no style file ships with your application. The
-Mapbox document on Android, iOS and React Native requires a Mapbox Order.
+Each vector style also carries its own attribution line, and the status
+readback returns the active style's line, so display it verbatim.
 
 ## What you can call
 

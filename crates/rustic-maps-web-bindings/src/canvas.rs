@@ -1,8 +1,8 @@
 //! WebGPU map canvas: renders recorded raster tiles into an
 //! `HTMLCanvasElement` through `wgpu` on the browser.
 //!
-//! The page owns a [`MapView`] built over its own canvas element. Every
-//! [`MapView::render_frame`] call drives one complete frame: the bound
+//! The page owns a [`BrowserMapView`] built over its own canvas element. Every
+//! [`BrowserMapView::render_frame`] call drives one complete frame: the bound
 //! camera lists its visible tiles, the [`rustic_maps_rendering::TileScheduler`]
 //! resolves missing ones from the same-origin `/tiles` route (the local
 //! static server exposing the recorded platform tile fixtures — the browser
@@ -31,16 +31,16 @@
 //! through their own solid-color pipeline (same alpha blending). The page
 //! supplies the overlay list as
 //! plain JavaScript descriptor objects through
-//! [`MapView::set_overlays`] (the bulk call) or one at a time through
-//! [`MapView::add_overlay`], which answers an identifier the page can
-//! [`MapView::update_overlay`] and [`MapView::remove_overlay`] by; it clears
-//! everything through [`MapView::clear_overlays`]. Every invalid descriptor
+//! [`BrowserMapView::set_overlays`] (the bulk call) or one at a time through
+//! [`BrowserMapView::add_overlay`], which answers an identifier the page can
+//! [`BrowserMapView::update_overlay`] and [`BrowserMapView::remove_overlay`] by; it clears
+//! everything through [`BrowserMapView::clear_overlays`]. Every invalid descriptor
 //! is a coded rejection, never a panic.
 //!
 //! The location indicator rides the exact same seam (the native surface's
 //! top layer): the page supplies one fix-and-style descriptor pair through
-//! [`MapView::set_location_indicator`] and clears it through
-//! [`MapView::clear_location_indicator`]; [`MapView::render_frame`]
+//! [`BrowserMapView::set_location_indicator`] and clears it through
+//! [`BrowserMapView::clear_location_indicator`]; [`BrowserMapView::render_frame`]
 //! assembles its clip-space triangles with
 //! [`rustic_maps_rendering::location_indicator_vertices`] at the same camera pose and
 //! draws them through the same solid-color pipeline, after the overlays. The
@@ -57,7 +57,7 @@ use crate::exports::{
     ERROR_CODE_INVALID_ARGUMENT, ERROR_CODE_INVALID_COORDINATE_INPUT,
     ERROR_CODE_INVALID_RENDER_INPUT, ERROR_CODE_NETWORK_REQUEST_FAILED,
     ERROR_CODE_PROVIDER_NOT_CONFIGURED, ERROR_CODE_RENDERING_SURFACE_UNAVAILABLE,
-    ERROR_CODE_RESPONSE_PARSING_FAILURE, ERROR_CODE_UNSUPPORTED_CAPABILITY, MapCamera, MapsSdk,
+    ERROR_CODE_RESPONSE_PARSING_FAILURE, ERROR_CODE_UNSUPPORTED_CAPABILITY, MapCamera,
     failure_with_code, object_from_fields, sdk_error_failure,
 };
 use crate::generated_contract_field_names::*;
@@ -258,7 +258,7 @@ const DESIRED_MAXIMUM_FRAME_LATENCY: u32 = 2;
 
 /// Whether the raster tile base layer starts visible: the canvas draws the
 /// provider's raster tiles as the default base map until the page switches
-/// its base layer through [`MapView::set_tile_layer_visible`].
+/// its base layer through [`BrowserMapView::set_tile_layer_visible`].
 const TILE_LAYER_VISIBLE_BY_DEFAULT: bool = true;
 
 /// How many times one render frame tries to acquire the surface texture,
@@ -589,7 +589,7 @@ pub fn retina_device_pixel_ratio_threshold() -> f64 {
 /// detached document): one device pixel per CSS pixel.
 const FALLBACK_DEVICE_PIXEL_RATIO: f64 = 1.0;
 
-/// The tile resolution [`MapView::new`] uses when the caller omits it: the
+/// The tile resolution [`BrowserMapView::new`] uses when the caller omits it: the
 /// same rule the page applies with [`RETINA_DEVICE_PIXEL_RATIO_THRESHOLD`],
 /// so the two-argument constructor and the page's own choice cannot disagree.
 fn device_tile_resolution() -> CanvasTileResolution {
@@ -1231,7 +1231,7 @@ struct GlyphLabelDraw {
 ///
 /// The buffers and bind groups are handle clones, so the record outlives the
 /// frame's local variables while the GPU objects they name stay alive. The
-/// presenting pass and [`MapView::snapshot`]'s offscreen replay both encode
+/// presenting pass and [`BrowserMapView::snapshot`]'s offscreen replay both encode
 /// this same record through [`encode_frame_draw_calls`], which keeps the
 /// captured pixels and the presented pixels on one code path.
 struct FrameDrawRecord {
@@ -1260,7 +1260,7 @@ struct FrameDrawRecord {
 
 /// Records every draw call in `draw_record` into an already-open render pass.
 ///
-/// [`MapView::render_frame`] and [`MapView::snapshot`] share this function so
+/// [`BrowserMapView::render_frame`] and [`BrowserMapView::snapshot`] share this function so
 /// the offscreen snapshot can never drift from what the surface presents.
 fn encode_frame_draw_calls(
     render_pass: &mut wgpu::RenderPass<'_>,
@@ -1446,7 +1446,7 @@ struct CanvasDrawState {
     /// The browser clock reading the cross-fade's timestamps start from.
     zoom_transition_clock_origin_milliseconds: f64,
     /// The draw list of the most recently presented frame, replayed by
-    /// [`MapView::snapshot`] into an offscreen texture.
+    /// [`BrowserMapView::snapshot`] into an offscreen texture.
     last_frame_draw: Option<FrameDrawRecord>,
 }
 
@@ -2162,7 +2162,7 @@ struct PendingVectorBaseSource {
 }
 
 /// One installed vector base source's identity, mirroring the native
-/// `VectorBaseSourceSummary`: the fields [`MapView::vector_tile_source_status`]
+/// `VectorBaseSourceSummary`: the fields [`BrowserMapView::vector_tile_source_status`]
 /// reports back without borrowing the scheduler.
 #[derive(Debug, Clone)]
 struct VectorBaseSourceSummary {
@@ -2223,12 +2223,12 @@ const GEOGRAPHIC_BOUNDS_FIELD_NORTH_EAST_LATITUDE: &str = "northEastLatitude";
 const GEOGRAPHIC_BOUNDS_FIELD_NORTH_EAST_LONGITUDE: &str = "northEastLongitude";
 
 /// The browser GPU map canvas the page owns. Construct it over an
-/// `HTMLCanvasElement`, [`MapView::initialize`] it once (acquiring the
+/// `HTMLCanvasElement`, [`BrowserMapView::initialize`] it once (acquiring the
 /// adapter and device and building the tile pipeline), then call
-/// [`MapView::render_frame`] per wanted frame; each call re-schedules
+/// [`BrowserMapView::render_frame`] per wanted frame; each call re-schedules
 /// the visible tiles and redraws.
-#[wasm_bindgen(js_name = MapView)]
-pub struct MapView {
+#[wasm_bindgen]
+pub struct BrowserMapView {
     /// The canvas element the page renders onto; also the surface target.
     canvas: HtmlCanvasElement,
     /// This canvas' slot in the thread-local tile-arrival target registry,
@@ -2244,8 +2244,8 @@ pub struct MapView {
     /// Guards against (and reports) a second, racing `initialize`.
     initialization_claimed: Cell<bool>,
     /// Whether the raster tile base layer draws in every following
-    /// [`MapView::render_frame`] (see
-    /// [`MapView::set_tile_layer_visible`]); the overlay and
+    /// [`BrowserMapView::render_frame`] (see
+    /// [`BrowserMapView::set_tile_layer_visible`]); the overlay and
     /// location-indicator layers always draw, so the page can paint a vector
     /// base through them while this raster layer is hidden.
     tile_layer_visible: Cell<bool>,
@@ -2290,7 +2290,7 @@ pub struct MapView {
     previous_label_placements: RefCell<Vec<PlacedLabel>>,
     /// The installed vector base source: the shared
     /// [`VectorBaseScheduler`] fetches, decodes and styles the tileset, and
-    /// every following [`MapView::render_frame`] draws its overlays and label
+    /// every following [`BrowserMapView::render_frame`] draws its overlays and label
     /// candidates beneath the page's own layers, exactly like the native
     /// surface. `None` keeps the raster base in force.
     vector_base_scheduler: RefCell<Option<VectorBaseScheduler>>,
@@ -2323,7 +2323,7 @@ pub struct MapView {
     /// requested during a frame is deferred to the frame's restore, which
     /// drops the scheduler instead of writing it back.
     vector_base_draw_in_flight: Cell<bool>,
-    /// Marked by [`MapView::clear_vector_tile_source`] while a frame owns the
+    /// Marked by [`BrowserMapView::clear_vector_tile_source`] while a frame owns the
     /// scheduler; the frame's restore honours it by dropping the source, so a
     /// clear requested mid-frame still stops every following frame.
     vector_base_clear_requested: Cell<bool>,
@@ -2351,38 +2351,33 @@ pub struct MapView {
     /// `render_frame` (cleared — no indicator — until
     /// `set_location_indicator` supplies one).
     location_indicator: RefCell<Option<LocationIndicatorLayer>>,
-    /// Compiled version of the SDK root this view was constructed with (the
-    /// `MapsSdk.create()` result passed to the constructor), so a page can
-    /// report which SDK a canvas belongs to without a second lookup.
-    sdk_compiled_version: String,
     /// The one camera pose this view holds, mirroring the native surface's
     /// `camera`/`set_camera` pair. A rendered frame is authoritative and
     /// refreshes it from the frame's own camera argument.
     camera_store: CameraStore,
 }
 
-impl Drop for MapView {
+impl Drop for BrowserMapView {
     fn drop(&mut self) {
         unregister_map_tile_arrival_target(self.map_tile_arrival_target_index);
     }
 }
 
 #[wasm_bindgen]
-impl MapView {
-    /// Builds the canvas renderer over the page's canvas element, bound to
-    /// the SDK root it was created with (`new MapView(canvas, maps)`). The
-    /// tile pixel resolution is optional: omitted, it follows the same
+impl BrowserMapView {
+    /// Builds the canvas renderer over the page's canvas element
+    /// (`new BrowserMapView(canvas, tileResolution?)`). The tile pixel
+    /// resolution is optional: omitted, it follows the same
     /// device-pixel-ratio rule as `retinaDevicePixelRatioThreshold()`;
     /// supplied, it is honoured verbatim. Fails
     /// when the element cannot host a GPU surface (for example after another
-    /// context already claimed the element). Call [`MapView::initialize`]
-    /// before the first [`MapView::render_frame`].
+    /// context already claimed the element). Call [`BrowserMapView::initialize`]
+    /// before the first [`BrowserMapView::render_frame`].
     #[wasm_bindgen(constructor)]
     pub fn new(
         canvas: HtmlCanvasElement,
-        maps: &MapsSdk,
         tile_resolution: Option<CanvasTileResolution>,
-    ) -> Result<MapView, JsValue> {
+    ) -> Result<BrowserMapView, JsValue> {
         let tile_resolution = tile_resolution.unwrap_or_else(device_tile_resolution);
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
         let surface = instance
@@ -2435,15 +2430,8 @@ impl MapView {
             vector_base_install_generation: Cell::new(0),
             vector_base_document_installs_in_flight: Cell::new(0),
             location_indicator: RefCell::new(None),
-            sdk_compiled_version: maps.compiled_version(),
             camera_store: CameraStore::new(),
         })
-    }
-
-    /// Compiled version of the SDK root this view was constructed with.
-    #[wasm_bindgen(getter, js_name = sdkCompiledVersion)]
-    pub fn sdk_compiled_version(&self) -> String {
-        self.sdk_compiled_version.clone()
     }
 
     /// Reads the camera pose this view holds — the browser shape of the
@@ -2848,7 +2836,7 @@ impl MapView {
     /// drew none and still holds a retry schedule: the honest "waiting on the
     /// tile source" state rather than a silent black frame.
     /// With the raster tile layer hidden through
-    /// [`MapView::set_tile_layer_visible`] the frame skips the whole
+    /// [`BrowserMapView::set_tile_layer_visible`] the frame skips the whole
     /// tile pipeline and reports `requestedTiles`, `drawnTiles`,
     /// `drawnFragments` and `missingTiles` as zero while still presenting the
     /// overlay and indicator layers.
@@ -3864,7 +3852,7 @@ impl MapView {
     /// Answers the last presented frame's pixels as RGBA bytes without
     /// reading the canvas through the compositor.
     ///
-    /// The most recent [`MapView::render_frame`] left a draw list behind;
+    /// The most recent [`BrowserMapView::render_frame`] left a draw list behind;
     /// this method replays that list into an offscreen texture of the same
     /// format, extent and clear color, copies the texture into a CPU-readable
     /// buffer and maps it. The pixels therefore match the frame that was
@@ -4142,7 +4130,7 @@ impl MapView {
     }
 
     /// Sets the overlay list drawn over the tiles in every following
-    /// [`MapView::render_frame`], replacing any earlier list in order
+    /// [`BrowserMapView::render_frame`], replacing any earlier list in order
     /// (later list entries draw over earlier ones); an empty array clears.
     ///
     /// Each entry is a plain JavaScript object describing one overlay shape,
@@ -4303,7 +4291,7 @@ impl MapView {
     }
 
     /// Clears the overlay list; following frames draw the tiles alone until
-    /// [`MapView::set_overlays`] or [`MapView::add_overlay`] supplies a new
+    /// [`BrowserMapView::set_overlays`] or [`BrowserMapView::add_overlay`] supplies a new
     /// list. Clears the bulk list and every addressed overlay alike.
     #[wasm_bindgen(js_name = clearOverlays)]
     pub fn clear_overlays(&self) {
@@ -4316,7 +4304,7 @@ impl MapView {
     }
 
     /// Sets the location-indicator layer drawn over the overlays in every
-    /// following [`MapView::render_frame`] (the native surface's top layer),
+    /// following [`BrowserMapView::render_frame`] (the native surface's top layer),
     /// replacing any earlier layer.
     ///
     /// The state descriptor is `{coordinate: {latitude, longitude},
@@ -4373,7 +4361,7 @@ impl MapView {
     }
 
     /// Clears the location-indicator layer; following frames draw no
-    /// indicator until [`MapView::set_location_indicator`] supplies a
+    /// indicator until [`BrowserMapView::set_location_indicator`] supplies a
     /// new one.
     #[wasm_bindgen(js_name = clearLocationIndicator)]
     pub fn clear_location_indicator(&self) {
@@ -5231,11 +5219,11 @@ impl MapView {
     }
 
     /// Shows or hides the raster tile base layer in every following
-    /// [`MapView::render_frame`].
+    /// [`BrowserMapView::render_frame`].
     ///
     /// Hidden frames still clear the surface and draw the overlay and
     /// location-indicator layers, so the page can paint a vector base map
-    /// through [`MapView::set_overlays`] while this raster layer is
+    /// through [`BrowserMapView::set_overlays`] while this raster layer is
     /// hidden. A hidden frame skips the tile listing, same-origin fetches,
     /// scheduler warm/resolve, texture uploads and tile draws, and reports
     /// `requestedTiles: 0`, `drawnTiles: 0` and `missingTiles: 0` while
@@ -5466,7 +5454,7 @@ fn finish_coalesced_map_tile_arrival(target_index: usize) {
     dispatch_map_tile_arrived_for_target(target_index);
 }
 
-impl MapView {
+impl BrowserMapView {
     /// Replaces the canvas' raster scheduler, staging provider, uploaded
     /// textures and cross-fade state with fresh ones, so every following
     /// frame plans its fetches from the current raster sources and no payload

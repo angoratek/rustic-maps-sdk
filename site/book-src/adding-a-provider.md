@@ -1,10 +1,9 @@
 # Add a provider
 
-A provider is a set of implementations of the vendor-neutral contracts plus
-one descriptor in the shared provider registry. The descriptor carries the
-labels, availability, attribution, and tile sources; the implementations
-carry the vendor's requests and status mapping. No credential is ever part of
-either.
+A provider is a set of implementations of the vendor-neutral contracts plus one
+descriptor in the shared provider registry. The descriptor carries the labels,
+availability, attribution and tile sources; the implementations carry the
+vendor's requests and status mapping. No credential is part of either.
 
 There are two implementation routes and one no-code route:
 
@@ -20,8 +19,8 @@ There are two implementation routes and one no-code route:
 2. **A descriptor.** The shared registry entry that every application reads.
 3. **A dispatch arm.** The one place that maps the provider key to its
    registration call on a target.
-4. **Committed sample responses.** The tests and the demo read provider
-   payloads from committed sample data, never from the network.
+4. **Committed sample responses.** The tests and the demo read provider payloads
+   from committed sample data, never from the network.
 
 ## Route 1: a provider crate in the provider layer
 
@@ -68,8 +67,8 @@ The contracts are `Geocoder`, `PlaceSearchProvider`, `AutocompleteProvider`,
 `TourPlanner`, `NetworkPositioner`, `AttributeProvider`, `MapImageProvider`
 and `OfflineRoutingProvider`. A provider implements only the ones it serves.
 The bridge adapts geocoding, search, type-ahead, routing, distance matrix,
-traffic, raster tiles and vector tiles to the SDK's own records, so a vendor
-provider needs no adapter of its own for those contracts.
+traffic, raster tiles and vector tiles, so a vendor provider needs no adapter
+of its own for those.
 
 ### Register it in the core
 
@@ -88,25 +87,23 @@ fn registry_with(provider: Arc<dyn everymap_core::domains::routing::Router>) -> 
 }
 ```
 
-Use the provider layer's shared client for HTTP. It gives the native and browser builds one
-request, retry, and rate-limit path, so a provider behaves the same on every
-target.
+Use the provider layer's shared client for HTTP. It gives the native and
+browser builds one request, retry and rate-limit path, so a provider behaves
+the same on every target.
 
 ### Expose it to an application target
 
-1. **Add the descriptor.** One entry in the shared provider registry, with
-   the capabilities the provider serves in `served_contracts`.
-2. **Add the catalog row.** One entry in the SDK's provider catalog maps the
-   provider key to the crate's construction call and the capabilities it
-   serves. This row is what makes the key selectable; compiling the crate
-   into a binding alone does not.
-3. **Add committed sample responses.** Each served API gets a route pattern
-   and a committed response under the provider's key. The test server and
-   the demo use them; tests never reach the network.
+1. **Add the descriptor.** One entry in the shared provider registry, with the
+   capabilities the provider serves in `served_contracts`.
+2. **Add the catalog row.** One entry maps the provider key to the crate's
+   construction call and the capabilities it serves. This row makes the key
+   selectable; compiling the crate into a binding alone does not.
+3. **Add committed sample responses.** Each served API gets a route pattern and
+   a committed response under the provider's key; the test server and the demo
+   use them.
 
-An application then selects the provider by key. The call replaces one
-capability and leaves every other capability serving, so one app can search
-with one provider, route with another and draw tiles from a third.
+An application selects the provider by key. The call replaces one capability and
+leaves every other capability serving.
 
 **Kotlin**
 
@@ -150,15 +147,10 @@ at startup.
 
 ### Sample: a routing provider key in an app
 
-The steps below are the complete path from a routing crate to a working
-screen. The example uses the OSRM provider that ships with the SDK.
-
-1. Add the crate to the binding. The SDK already carries it, so this step is
-   the catalog row: `osrm` maps to `OsrmRouter::new`.
-2. Give the provider its deployment address. OSRM is keyless, so the
-   credential field carries the base URL of the deployment instead of a
-   secret; an empty string targets a local server.
-3. Choose it for routing at startup:
+The OSRM provider ships with the SDK, so its catalog row already maps `osrm`
+to `OsrmRouter::new`. OSRM is keyless: the credential field carries the
+deployment's base URL, and an empty string targets a local server. Choose it
+for routing at startup.
 
 **Kotlin**
 
@@ -180,10 +172,9 @@ try mapSdk.configureProvider(
 )
 ```
 
-4. Plan a route. `RoutingFacade.calculateRoute` resolves the routing slot, so
-   the result comes from the chosen provider and no other capability changes.
-
-To let the reader switch providers, render one row per capability from
+`RoutingFacade.calculateRoute` resolves the routing slot, so the result comes
+from the chosen provider and no other capability changes. To let the reader
+switch providers, render one row per capability from
 `providerRegistrations()`, list the descriptors whose `served_contracts`
 contain that capability, and call `configureProvider` with the picked key.
 
@@ -193,14 +184,13 @@ contain that capability, and call `configureProvider` with the picked key.
 - The crate owns its vendor URL, credential handling, status mapping, and
   error detail. It does not name another vendor.
 - Map transport failures to `NetworkRequestFailed`, unparseable payloads to
-  `ResponseParsingFailure`, documented application refusals to
-  `ProviderRequestRejected`, and an exhausted limiter to
-  `RateLimitExhausted`. Keep the provider's detail text verbatim.
-- A vector source's `source_name` is its cache namespace. Two tilesets must
+  `ResponseParsingFailure`, documented refusals to `ProviderRequestRejected`,
+  and an exhausted limiter to `RateLimitExhausted`. Keep the detail verbatim.
+- A vector source's `source_name` is its cache namespace; two tilesets must
   never share one name.
-- The provider name appears only in its crate, its sample-data directory,
-  the shared descriptor, and the dispatch arms; the provider-name guard
-  enforces that boundary.
+- The provider name appears only in its crate, its sample-data directory, the
+  shared descriptor and the dispatch arms; the provider-name guard enforces
+  that boundary.
 
 ## Route 2: a host implementation
 
@@ -366,26 +356,24 @@ try mapSdk.registerRasterTileProviderFromForeign(
   `registerTrafficIncidentProviderFromForeign`,
   `registerTrafficFlowProviderFromForeign`,
   `registerElevationProviderFromForeign` and
-  `registerRasterTileProviderFromForeign` (Swift spells each with its trailing
-  argument label).
-- The implementation runs on the foreign runtime and calls back into the
-  SDK. Do not block; hand long work to your own queue or coroutine scope.
+  `registerRasterTileProviderFromForeign`. Swift spells each with its
+  trailing argument label.
+- The implementation runs on the foreign runtime and calls back into the SDK.
+  Do not block; hand long work to your own queue or coroutine scope.
 - A failure must be one of the contract's `SdkError` variants. An
   unclassified failure still reaches the typed refusal at the call, and the
   SDK records it for `latestProviderFailureDiagnostics()`.
-- Registration is per `MapSdk` object and replaces that slot. The other
-  slots keep serving. There is no unregister call; a restart returns the
-  registry to its empty state.
-- The package handle on React Native does not expose these interfaces, and
-  the browser has no host-provided provider path. Use a Rust provider crate
-  there.
-- The provider's attribution and terms still belong in the descriptor, not
-  in the class.
+- Registration is per `MapSdk` object and replaces that slot; the other slots
+  keep serving. There is no unregister call.
+- The React Native package handle does not expose these interfaces, and the
+  browser has no host-provided provider path. Use a Rust provider crate there.
+- The provider's attribution and terms belong in the descriptor, not in the
+  class.
 
 ## Route 3: a URL-template source
 
 A plain XYZ tileset needs no provider code. Add a descriptor with the
-tileset's template, zoom span, and terms, then register the source once at
+tileset's template, zoom span and terms, then register the source once at
 startup.
 
 | Platform | Raster source | Styled vector base |
@@ -396,18 +384,17 @@ startup.
 | WebAssembly | `registerUrlTemplateRasterTileSource(source)` | `MapView.setVectorTileSource(source)` |
 | Rust | `UrlTemplateRasterTileProvider::new(source)` or `with_transport(source, transport)` | `UrlTemplateVectorTileProvider::new(source)` or `with_transport(source, transport)` |
 
-A raster source declares its image format, pixel resolution, and the
-`User-Agent` its requests carry. A vector source declares the committed
-style id it paints with. Templates must be absolute `http` or `https` URLs
-carrying `{z}`, `{x}`, and `{y}` and no other placeholders; the zoom span
-must not be inverted; the style id must name a committed style. A refused
-source keeps the previously serving base.
+A raster source declares its image format, pixel resolution and the
+`User-Agent` its requests carry. A vector source declares the committed style
+id it paints with. Templates must be absolute `http` or `https` URLs carrying
+`{z}`, `{x}` and `{y}` and no other placeholders; the zoom span must not be
+inverted; the style id must name a committed style. A refused source keeps
+the previously serving base.
 
 ## The descriptor
 
-One descriptor per provider lives in the shared registry. Every application,
-the test server, and the demo read it by name; none of them hardcode a
-provider.
+One descriptor per provider lives in the shared registry. Every application, the
+test server and the demo read it by name; none of them hardcode a provider.
 
 | Field | Meaning |
 |---|---|
@@ -431,16 +418,14 @@ A descriptor never carries a credential value.
 
 ## What the reader sees
 
-- The settings surface renders one credential row per descriptor, with the
-  provider's display name, credential label, hint, attribution, and terms.
-- The base-map section renders the keyless raster sources and one row per
-  vector style.
-- A keyless start is a first-class state: the app renders the recorded demo
-  until a credential is applied, and a provider-dependent call returns
-  `ProviderNotConfigured` verbatim.
-- Clearing a credential removes it from memory and the secure store, but the
-  running SDK keeps its registered providers; tell the reader that a restart
-  returns the session to the keyless state.
+The settings surface renders one credential row per descriptor, with the
+provider's display name, credential label, hint, attribution and terms. The
+base-map section renders the keyless raster sources and one row per vector
+style. A keyless start is a first-class state: the app renders the recorded demo
+until a credential is applied, and a provider-dependent call returns
+`ProviderNotConfigured` verbatim. Clearing a credential removes it from memory
+and the secure store, but the running SDK keeps its registered providers; a
+restart returns the session to the keyless state.
 
 ## Verify the addition
 
@@ -448,16 +433,13 @@ A descriptor never carries a credential value.
 2. The provider's sample responses serve through its provider key; no test
    reaches the network.
 3. The provider-name guard passes: the name appears only in the provider's
-   crate, its sample-data directory, the descriptor, and the dispatch arms.
-4. The platform builds and the provider's own tests pass on the exact tree
-   you ship.
+   crate, its sample-data directory, the descriptor and the dispatch arms.
+4. The platform builds and the provider's own tests pass.
 
 ## Where to go next
 
-- [Android](provider-capabilities-android.md), [iOS](provider-capabilities-ios.md),
-  [React Native](provider-capabilities-react-native.md),
-  [WebAssembly](provider-capabilities-wasm.md), and
-  [Rust](provider-capabilities-rust.md) list the calls each target exposes.
+- The [provider capability pages](provider-capabilities-android.md) list the
+  calls each target exposes.
 - [Your first map](first-map.md) shows the runtime credential path in a
   complete app.
 - [Offline maps](offline-maps.md) covers the tile cache and archive routing a

@@ -1,9 +1,9 @@
 # Mix providers per capability
 
-You can serve each capability of the map from a different provider. A typical
-application searches with one vendor, routes with a self-hosted engine and
-draws its base map from a public tileset. This page shows how selection
-works, what the SDK reports back, and what the reference apps put on screen.
+You can serve each capability of the map from a different provider: search
+with one vendor, route with a self-hosted engine, and draw the base map from a
+public tileset. This page shows how selection works, what the SDK reports back,
+and what the reference apps put on screen.
 
 ## What you get
 
@@ -27,11 +27,11 @@ Both are addition-safe: calling either replaces only the slots it names.
 
 ## A worked mix
 
-The example is an Android application in Kotlin. It serves geocoding from
-MapQuest, draws OpenStreetMap US vector tiles, and routes through a
-self-hosted OSRM deployment. Every target exposes these calls; the React
-Native package handle spells the whole-set call
-`configureProviderSet(providerKey, credential)`, the React Native wrapper `setProviderCredential(providerKey, credential)`.
+This Android example serves geocoding from MapQuest, draws OpenStreetMap US
+vector tiles, and routes through a self-hosted OSRM deployment. Every target
+exposes these calls; the React Native package handle spells the whole-set call
+`configureProviderSet(providerKey, credential)`, and its wrapper spells the
+per-capability call `setProviderCredential(providerKey, credential)`.
 
 1. **Set the vendor credential.** This fills every capability the full-service
    provider serves: geocoding, routing, distance matrix, place search, traffic
@@ -81,9 +81,9 @@ mapSdk.providerRegistrations().forEach { registration ->
 ## What the readback reports
 
 `providerRegistrations()` returns one entry per capability, every time,
-including capabilities with no provider. The order is stable:
-Geocoding, Routing, Distance Matrix, Place Search, Traffic Incidents, Traffic
-Flow, Elevation, Raster Tiles, Vector Tiles, Offline Routing.
+including capabilities with no provider, in a stable order: Geocoding,
+Routing, Distance Matrix, Place Search, Traffic Incidents, Traffic Flow,
+Elevation, Raster Tiles, Vector Tiles, Offline Routing.
 
 | Field | Meaning |
 |---|---|
@@ -92,29 +92,19 @@ Flow, Elevation, Raster Tiles, Vector Tiles, Offline Routing.
 | `display_name` | The provider's name from the shared registry, empty when none is installed |
 | `registered` | Whether a provider is installed for the capability |
 
-Binding surfaces spell the fields in their own style; the Kotlin example
-above reads `displayName`. Read the list after a selection and once at
-startup. The readback never changes a provider.
+Binding surfaces spell the fields in their own style; the Kotlin example above
+reads `displayName`. Read the list after a selection and once at startup; the
+readback never changes a provider.
 
 ## Keyless and keyed providers
 
-A provider's descriptor declares whether it needs a credential. The two paths
-differ only in the value passed to `configureProvider`.
-
-**Keyed.** Apply the credential through the settings surface, then select the
-provider for a capability:
-
-1. Apply the provider's key. `setProviderCredential(credential)` fills every
-   capability the full-service provider serves: geocoding, routing, the
-   distance matrix, place search, traffic incidents, traffic flow and raster
-   tiles. For any other provider, register its capabilities with
-   `configureProvider`, one call per contract its descriptor declares.
-2. Replace any capability that should use another provider with
-   `configureProvider`. The other capabilities keep serving.
-3. A provider that declares a credential refuses a blank one. The refusal
-   leaves the previous provider serving and states the reason in the row.
-
-**Keyless.** A self-hosted routing engine or a public instance has no key:
+A provider's descriptor declares whether it needs a credential. **Keyed:**
+apply the key, which fills every capability the full-service provider serves,
+then replace any capability that should use another provider with
+`configureProvider`. A provider that declares a credential refuses a blank
+one; the refusal leaves the previous provider serving and states the reason in
+the row. **Keyless:** a self-hosted routing engine or public instance takes a
+deployment URL instead of a secret:
 
 | Provider | Credential value |
 |---|---|
@@ -123,9 +113,9 @@ provider for a capability:
 | Photon | The deployment's base URL; an empty value means the public instance at `https://photon.komoot.io` |
 
 For OSRM and Valhalla, pass the public demo address when you want the shared
-server. An empty value points at the local deployment instead. The reference
-applications pass the registry descriptor's public address for a keyless
-pick, so a selection never silently points at a local deployment.
+server; an empty value points at the local deployment instead. The reference
+applications pass the registry descriptor's public address for a keyless pick,
+so a selection never silently points at a local deployment.
 
 ## Public demo endpoints and their limits
 
@@ -159,11 +149,11 @@ Each row composes the serving provider and its state in one line, such as
 offers the providers that declare that capability on the platform; a
 capability with no provider reads `Not configured`.
 
-The choice is remembered with the app's other remembered choices and
-re-applied at startup, after the session's credentials. A refused
-re-application reports in its row and leaves the previous provider serving.
-Raster tiles and vector tiles are read-only in settings because the map's
-layer control owns the base map; their rows point to the control.
+The choice is remembered with the app's other choices and re-applied at startup
+after the session's credentials. A refused re-application reports in its row
+and leaves the previous provider serving. Raster tiles and vector tiles are
+read-only in settings because the map's layer control owns the base map; their
+rows point to the control.
 
 ## Failure and next step
 
@@ -182,11 +172,10 @@ the previous choice keeps serving until you choose again.
 ## Rules to keep
 
 - A provider's name belongs in its crate, its sample-data directory, the
-  shared registry descriptor and the catalog row. Nothing else names it.
-- Sample responses are recorded data served from the demo's own origin;
-  tests never reach the network.
-- Changing a capability never silently changes another. If a call would
-  replace more than the capability it names, it is not this API.
+  shared registry descriptor and the catalog row.
+- Sample responses are recorded data served from the demo's own origin; tests
+  never reach the network.
+- Changing a capability never silently changes another.
 
 ## Next
 
@@ -196,5 +185,3 @@ the previous choice keeps serving until you choose again.
   capabilities serve.
 - [Map layers and traffic](map-layers-and-traffic.md) covers the on-map
   control that owns the base map and the traffic layer.
-- [Provider capabilities in Rust](provider-capabilities-rust.md) lists the
-  traits each capability maps to.

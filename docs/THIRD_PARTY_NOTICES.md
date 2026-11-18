@@ -248,7 +248,7 @@ This is a data license, not a software license: it covers the root-certificate b
 | `hyper-util` | 0.1.21 | <https://hyper.rs> |
 | `is-terminal†` | 0.4.17 | <https://github.com/sunfishcode/is-terminal> |
 | `libm` | 0.2.16 | <https://github.com/rust-lang/compiler-builtins> |
-| `libsqlite3-sys` | 0.38.2 | <https://github.com/rusqlite/rusqlite> |
+| `libsqlite3-sys` | 0.39.1 | <https://github.com/rusqlite/rusqlite> |
 | `mio` | 1.2.4 | <https://github.com/tokio-rs/mio> |
 | `nom` | 7.1.3 | <https://github.com/Geal/nom> |
 | `objc2` | 0.6.5 | <https://github.com/madsmtm/objc2> |
@@ -263,10 +263,10 @@ This is a data license, not a software license: it covers the root-certificate b
 | `protobuf-codegen†` | 3.7.2 | <https://github.com/stepancheg/rust-protobuf/> |
 | `protobuf-parse†` | 3.7.2 | <https://github.com/stepancheg/rust-protobuf/tree/master/protobuf-parse/> |
 | `protobuf-support` | 3.7.2 | <https://github.com/stepancheg/rust-protobuf/> |
-| `r2d2_sqlite` | 0.35.0 | <https://github.com/ivanceras/r2d2-sqlite> |
+| `r2d2_sqlite` | 0.36.0 | <https://github.com/ivanceras/r2d2-sqlite> |
 | `redox_syscall` | 0.5.18 | <https://gitlab.redox-os.org/redox-os/syscall> |
 | `rsqlite-vfs` | 0.1.1 | — |
-| `rusqlite` | 0.40.2 | <https://github.com/rusqlite/rusqlite> |
+| `rusqlite` | 0.41.1 | <https://github.com/rusqlite/rusqlite> |
 | `schannel` | 0.1.30 | <https://github.com/steffengy/schannel-rs> |
 | `scroll` | 0.12.0 | <https://github.com/m4b/scroll> |
 | `scroll_derive` | 0.12.1 | <https://github.com/m4b/scroll> |
@@ -707,7 +707,7 @@ First attribution lines extracted from the license files vendored in the local c
 - `hyper-util` 0.1.21 — Copyright (c) 2023-2025 Sean McArthur
 - `is-terminal` 0.4.17 — Copyright (c) 2015-2019 Doug Tangren
 - `libm` 0.2.16 — Copyright (c) 2018 Jorge Aparicio / Copyright © 2005-2020 Rich Felker, et al. / Copyright © 1993,2004 Sun Microsystems or
-- `libsqlite3-sys` 0.38.2 — Copyright (c) 2014 The rusqlite developers
+- `libsqlite3-sys` 0.39.1 — Copyright (c) 2014 The rusqlite developers
 - `mio` 1.2.4 — Copyright (c) 2014 Carl Lerche and other MIO contributors
 - `nom` 7.1.3 — Copyright (c) 2014-2019 Geoffroy Couprie
 - `oorandom` 11.1.5 — Copyright (c) 2019 Simon Heath
@@ -716,9 +716,9 @@ First attribution lines extracted from the license files vendored in the local c
 - `protobuf-codegen` 3.7.2 — Copyright (c) 2019 Stepan Koltsov
 - `protobuf-parse` 3.7.2 — Copyright (c) 2019 Stepan Koltsov / Copyright 2008 Google Inc.  All rights reserved.
 - `protobuf-support` 3.7.2 — Copyright (c) 2019 Stepan Koltsov
-- `r2d2_sqlite` 0.35.0 — Copyright (c) 2015 Jovansonlee Cesar
+- `r2d2_sqlite` 0.36.0 — Copyright (c) 2015 Jovansonlee Cesar
 - `redox_syscall` 0.5.18 — Copyright (c) 2017 Redox OS Developers
-- `rusqlite` 0.40.2 — Copyright (c) 2014 The rusqlite developers
+- `rusqlite` 0.41.1 — Copyright (c) 2014 The rusqlite developers
 - `schannel` 0.1.30 — Copyright (c) 2015 steffengy
 - `scroll_derive` 0.12.1 — Copyright (c) 2017
 - `slab` 0.4.12 — Copyright (c) 2019 Carl Lerche

@@ -1040,6 +1040,9 @@
       }
       #theme-toggle-control { align-self: flex-start; height: var(--control-height); padding: 0 14px; }
       .settings-toggle { margin-top: var(--stack-tight); }
+      /* The browser's named secure-store exception: the remembered key lives
+         in readable localStorage, so the opt-in carries a visible warning. */
+      .settings-remember-warning { color: var(--warning-color); }
       .settings-probe {
         display: flex;
         flex-direction: column;
@@ -1083,7 +1086,7 @@
       .provider-credential-row input {
         width: 100%;
         height: var(--control-height);
-        padding: 0 64px 0 10px;
+        padding: 0 10px;
         font: inherit;
         color: var(--text-primary-color);
         background: var(--surface-color);
@@ -1094,23 +1097,6 @@
         outline: none;
         border-color: var(--accent-color);
         box-shadow: 0 0 0 3px var(--accent-soft-color);
-      }
-      .provider-credential-visibility {
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        min-height: 28px;
-        height: 28px;
-        padding: 0 10px;
-        font-size: var(--type-caption-size);
-        color: var(--text-secondary-color);
-        border-color: transparent;
-        background: transparent;
-      }
-      .provider-credential-visibility:hover {
-        color: var(--accent-text-color);
-        border-color: var(--surface-border-color);
-        background: var(--surface-hover-color);
       }
       .provider-credential-actions { display: flex; gap: var(--stack-tight); }
       .provider-credential-actions button { min-height: var(--control-height); }

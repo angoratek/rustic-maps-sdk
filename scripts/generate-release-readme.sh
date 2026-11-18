@@ -165,9 +165,11 @@ npm install ./rustic-maps-sdk-web-v${version}.tgz
 \`\`\`
 
 Or without npm, extract the tarball and serve its \`package/\` directory as a
-static path root: it is the wasm-bindgen \`web\` emit
-(\`rustic_maps_web_bindings.js\`, \`rustic_maps_web_bindings_bg.wasm\`, the type
-declarations) with the licenses and notices. WebGPU is required; feature-detect
+static path root: it is the generated \`wasm2\` module
+(\`index.js\`, \`rustic_maps.js\`, \`rustic_maps-ffi.js\`, \`rustic_maps_bg.js\`,
+\`rustic_maps.wasm\`, the type declarations) with the licenses and notices.
+The module imports its player runtime (\`@ubjs/core\`, \`@ubjs/wasm\`) as bare
+specifiers; resolve them with an import map. WebGPU is required; feature-detect
 with \`navigator.gpu\` and serve the page from a secure context (HTTPS or
 localhost).
 

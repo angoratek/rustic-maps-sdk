@@ -295,7 +295,7 @@ readonly GENERATED_BINDING_SURFACE_PATHS=(
     "platform/android/map-sdk-native/src/main/kotlin/uniffi/rustic_maps/rustic_maps.kt"
     "platform/ios/Sources/RusticMapsSDK/rustic_maps.swift"
     "platform/rn/src/generated/rustic_maps.ts"
-    "platform/web/pkg/rustic_maps_web_bindings.d.ts"
+    "platform/web/generated/index.js"
 )
 
 assert_generated_api_references() {
@@ -309,7 +309,7 @@ assert_generated_api_references() {
         local binding_surface
         for binding_surface in "${GENERATED_BINDING_SURFACE_PATHS[@]}"; do
             [ -s "${REPO_ROOT}/${binding_surface}" ] \
-                || fail "publishing needs the generated binding surface ${binding_surface}; run scripts/build-android.sh, scripts/build-ios.sh, scripts/build-rn.sh and scripts/build-wasm.sh first"
+                || fail "publishing needs the generated binding surface ${binding_surface}; run scripts/build-android.sh, scripts/build-ios.sh, scripts/build-rn.sh and scripts/build-wasm2-package.sh first"
         done
     fi
 }
@@ -462,15 +462,18 @@ stage_live_demo() {
     local demo_directory="${stage_root}/site/demo"
     for demo_input in index.html playground.mjs styles/playground.css main.mjs \
         map_controls.mjs map_layers.mjs overlay_scenes.mjs vector_layer.mjs tile_switch.mjs \
-        ui_strings.mjs pkg/rustic_maps_web_bindings.js pkg/rustic_maps_web_bindings_bg.wasm; do
+        ui_strings.mjs generated/index.js generated/rustic_maps.js \
+        generated/rustic_maps-ffi.js generated/rustic_maps_bg.js \
+        generated/rustic_maps.wasm; do
         [ -f "${WEB_HARNESS_DIRECTORY}/${demo_input}" ] \
-            || fail "the live demo input platform/web/${demo_input} is missing; build the wasm package (cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown, then wasm-bindgen --target web --out-dir platform/web/pkg …) before staging the docs site"
+            || fail "the live demo input platform/web/${demo_input} is missing; build the generated wasm package (scripts/build-wasm2-package.sh) before staging the docs site"
     done
     [ -f "${REPO_ROOT}/platform/providers.json" ] \
         || fail "the provider registry platform/providers.json is missing"
     [ -f "${GLYPH_FIXTURES_DIRECTORY}/${GLYPH_FIXTURE_FILE_NAME}" ] \
         || fail "the committed glyph range ${GLYPH_FIXTURES_DIRECTORY}/${GLYPH_FIXTURE_FILE_NAME} is missing; the live demo's labels would silently disappear"
-    mkdir -p "${demo_directory}/pkg" "${demo_directory}/tiles" \
+    mkdir -p "${demo_directory}/generated" "${demo_directory}/generated-runtime" \
+        "${demo_directory}/tiles" \
         "${demo_directory}/offline-graph" "${demo_directory}/styles" \
         "${demo_directory}/glyphs/${GLYPH_SERVED_FONT_STACK}"
     cp "${WEB_HARNESS_DIRECTORY}/index.html" "${WEB_HARNESS_DIRECTORY}/playground.mjs" \
@@ -484,7 +487,10 @@ stage_live_demo() {
     cp "${REPO_ROOT}/platform/reference-scenes.json" "${stage_root}/site/reference-scenes.json"
     cp "${REPO_ROOT}/platform/reference-flows.json" "${stage_root}/site/reference-flows.json"
     cp "${REPO_ROOT}/platform/providers.json" "${demo_directory}/providers.json"
-    cp "${WEB_HARNESS_DIRECTORY}/pkg/"* "${demo_directory}/pkg/"
+    cp "${WEB_HARNESS_DIRECTORY}/generated/"* "${demo_directory}/generated/"
+    # The generated package's player runtime ships beside the page so the
+    # relative import map resolves inside the staged demo.
+    cp -R "${WEB_HARNESS_DIRECTORY}/node_modules/@ubjs" "${demo_directory}/generated-runtime/"
     cp "${TILE_FIXTURES_DIRECTORY}/"* "${demo_directory}/tiles/"
     cp "${GLYPH_FIXTURES_DIRECTORY}/${GLYPH_FIXTURE_FILE_NAME}" \
         "${demo_directory}/glyphs/${GLYPH_SERVED_FONT_STACK}/${GLYPH_SERVED_RANGE}.pbf"
@@ -559,9 +565,9 @@ verify_staged_demo() {
             || fail "the staged demo's ${copied_file} drifted from platform/web/${copied_file}"
     done
     local harness_package_file
-    for harness_package_file in "${WEB_HARNESS_DIRECTORY}/pkg/"*; do
-        cmp -s "${demo_directory}/pkg/$(basename "$harness_package_file")" "$harness_package_file" \
-            || fail "the staged demo's pkg/$(basename "$harness_package_file") drifted from platform/web/pkg"
+    for harness_package_file in "${WEB_HARNESS_DIRECTORY}/generated/"*; do
+        cmp -s "${demo_directory}/generated/$(basename "$harness_package_file")" "$harness_package_file" \
+            || fail "the staged demo's generated/$(basename "$harness_package_file") drifted from platform/web/generated"
     done
     cmp -s "${demo_directory}/glyphs/${GLYPH_SERVED_FONT_STACK}/${GLYPH_SERVED_RANGE}.pbf" \
         "${GLYPH_FIXTURES_DIRECTORY}/${GLYPH_FIXTURE_FILE_NAME}" \

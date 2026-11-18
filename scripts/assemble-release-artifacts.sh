@@ -236,7 +236,7 @@ fi
 
 if [ "$skip_wasm" = false ]; then
     log_step "building and packaging the one WebAssembly package"
-    "${REPO_ROOT}/scripts/build-wasm.sh"
+    "${REPO_ROOT}/scripts/build-wasm2-package.sh" --require-optimize
     "${REPO_ROOT}/scripts/package-web-npm.sh" --output-dir "$OUTPUT_DIR"
 fi
 
