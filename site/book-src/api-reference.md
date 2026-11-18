@@ -30,13 +30,13 @@ messages as the matching root member.
 
 | Type | Purpose | Android / iOS | React Native | WebAssembly | Rust |
 | --- | --- | --- | --- | --- | --- |
-| `MapSdk` | Provider registry root and async provider calls | `MapSdk` | `MapsSdk` package handle; generated `MapSdk` | `MapsSdk` | `ProviderRegistry` plus the provider traits |
-| `MapView` | Surface lifecycle, overlays, location layer, vector base, frame statistics | shipped widget plus generated `MapView` | `MapView` component | `MapView` canvas class | `SurfaceTileRenderer`, `HeadlessTileRenderer`, `WorldSpaceOverlayGeometry` |
-| `MapCamera` | Anchored camera: center, zoom, bearing, pitch | `MapCamera` plus `MapCameraPose` | generated `MapCamera`; `MapCamera` pose in the component | `MapCamera` | `MapCamera` |
-| `Navigator` | Turn-by-turn trip controller | `Navigator` | generated `Navigator` | `Navigator` | `NavigationSession` and `NavigationStateBroadcaster` |
-| `RouteSimulator` | Distance- or time-parameterized trip playback | `RouteSimulator` | generated `RouteSimulator` | `RouteSimulator` | `RouteWalk` |
-| `SearchEngine` | Search, suggestions and reverse geocoding | `SearchEngine` | generated `SearchEngine` | free functions | `SearchPlaceProvider`, `GeocodingProvider` |
-| `RoutingEngine` | Route calculation and distance matrix | `RoutingEngine` | generated `RoutingEngine` | free functions | `RoutingProvider`, `DistanceMatrixProvider` |
+| `MapSdk` | Provider registry root and async provider calls | `MapSdk` | `MapsSdk` package handle; generated `MapSdk` | generated `MapSdk` root | `ProviderRegistry` plus the provider traits |
+| `MapView` | Surface lifecycle, overlays, location layer, vector base, frame statistics | shipped widget plus generated `MapView` | `MapView` component | `BrowserMapView` canvas class | `SurfaceTileRenderer`, `HeadlessTileRenderer`, `WorldSpaceOverlayGeometry` |
+| `MapCamera` | Anchored camera: center, zoom, bearing, pitch | `MapCamera` plus `MapCameraPose` | generated `MapCamera`; `MapCamera` pose in the component | canvas `MapCamera` | `MapCamera` |
+| `Navigator` | Turn-by-turn trip controller | `Navigator` | generated `Navigator` | generated `Navigator` | `NavigationSession` and `NavigationStateBroadcaster` |
+| `RouteSimulator` | Distance- or time-parameterized trip playback | `RouteSimulator` | generated `RouteSimulator` | generated `RouteSimulator` | `RouteWalk` |
+| `SearchEngine` | Search, suggestions and reverse geocoding | `SearchEngine` | generated `SearchEngine` | generated `MapSdk` search calls | `SearchPlaceProvider`, `GeocodingProvider` |
+| `RoutingEngine` | Route calculation and distance matrix | `RoutingEngine` | generated `RoutingEngine` | generated `MapSdk` route call | `RoutingProvider`, `DistanceMatrixProvider` |
 | `OfflineManager` | Tile-cache terms and time-to-live | `OfflineManager` | generated `OfflineManager` | not exposed | `rustic-maps-core` cache policy |
 | `Diagnostics` | Structured log events | `Diagnostics` | generated `Diagnostics` | free functions | `tracing` events; `rustic-maps-navigation` recorder |
 

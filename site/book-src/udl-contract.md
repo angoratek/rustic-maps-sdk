@@ -29,10 +29,13 @@ dependency declaration and the loaded library disagree.
 
 ## How each target binds it
 
-The native targets are generated from the contract. The browser target is a
-hand-maintained TypeScript façade over the same Rust core, kept aligned by a
-parity check. Android and iOS call generated types; React Native calls a
-generated Turbo Module; WebAssembly calls the façade. The contract namespace is
+The native targets are generated from the contract. The browser contract
+surface is generated from the same UDL by the `wasm2` bindgen; a hand-written
+wasm-bindgen canvas adapter (`BrowserMapView`, `MapCamera`) sits beside it for
+the GPU surface the UDL cannot express, and the one module carries both.
+Android and iOS call generated types; React Native calls a generated Turbo
+Module; WebAssembly calls the generated contract surface. The contract
+namespace is
 `rustic_maps`, and the generated Kotlin package and Swift `RusticMapsSDK`
 module carry the generated surface. The UDL writes members and fields in
 `snake_case`; the bindings camelCase them. Kotlin enums are `UPPER_SNAKE`
@@ -107,8 +110,8 @@ payload. Retry `NetworkRequestFailed` with backoff, `RateLimitExhausted` after
 the next refill, and `RenderingSurfaceUnavailable` on the next frame. The other
 variants report a condition you must change: fix the input, register a provider,
 repair the archive or the cache, or report the verbatim detail. The generated
-Kotlin, Swift and React Native bindings expose the typed variant; the
-WebAssembly façade throws the verbatim message string. The [API
+Kotlin, Swift, React Native and WebAssembly bindings expose the typed variant.
+The [API
 reference](api-reference.md) lists every variant.
 
 ## Async rules

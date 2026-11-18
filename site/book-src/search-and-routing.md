@@ -325,17 +325,17 @@ process.
 
 ### Register the provider at runtime
 
-A browser page has no settings sheet. Provider registration is one call per
-capability, naming the contract, the provider key from the shared registry and
-your credential. Take the credential from a form, a server-issued token, or a
-test environment. Keyless, the demo searches recorded places and plans
-recorded routes.
+A browser page has no settings sheet. Provider registration is one method per
+capability on the `MapSdk` root, naming the contract member, the provider key
+from the shared registry and your credential. Take the credential from a form,
+a server-issued token, or a test environment. Keyless, the demo searches
+recorded places and plans recorded routes.
 
 ```js
-import { configureProvider } from './web/rustic_maps_web_bindings.js';
+import { ProviderContract } from './web/rustic_maps.js';
 
-configureProvider('Geocoding', 'mapquest', providerCredential);
-configureProvider('Routing', 'mapquest', providerCredential);
+mapSdk.configureProvider(ProviderContract.Geocoding, 'mapquest', providerCredential);
+mapSdk.configureProvider(ProviderContract.Routing, 'mapquest', providerCredential);
 ```
 
 The calls below reject with the provider's own error text when no provider is
@@ -344,30 +344,37 @@ registered or the provider refuses.
 ### Resolve the queries into places, then plan the route
 
 ```js
-import { forwardGeocode, calculateRoute } from './web/rustic_maps_web_bindings.js';
+import { RouteStrategy, TransportationMode, UnitSystem } from './web/rustic_maps.js';
 
 const originSearchQuery = 'Capitol Park';
 const destinationSearchQuery = 'Tower Bridge';
 
-const originPlace = (await forwardGeocode(originSearchQuery))[0] ?? null;
-const destinationPlace = (await forwardGeocode(destinationSearchQuery))[0] ?? null;
+const originPlace = (await mapSdk.forwardGeocode(originSearchQuery))[0] ?? null;
+const destinationPlace = (await mapSdk.forwardGeocode(destinationSearchQuery))[0] ?? null;
 if (originPlace === null || destinationPlace === null) {
   throw new Error('the provider resolved no place for one of the queries');
 }
 
-const plannedRoute = await calculateRoute(
-  originPlace.latitudeDegrees,
-  originPlace.longitudeDegrees,
-  destinationPlace.latitudeDegrees,
-  destinationPlace.longitudeDegrees,
+const plannedRoute = await mapSdk.calculateRoute(
+  [originPlace.coordinate, destinationPlace.coordinate],
+  {
+    transportationMode: TransportationMode.Automobile,
+    routeStrategy: RouteStrategy.Fastest,
+    unitSystem: UnitSystem.Metric,
+    avoidOptions: {
+      tollRoads: false,
+      limitedAccessHighways: false,
+      ferries: false,
+      unpavedRoads: false,
+    },
+  },
 );
 ```
 
-The records carry `structuredAddressText`, `latitudeDegrees` and
-`longitudeDegrees`; `suggestPlaces` and `searchPlaces` are the completion and
-search calls. `calculateRoute` uses the default request: automobile, fastest,
-metric. For a pedestrian route or explicit avoids, `calculateRouteWithOptions`
-takes the contract's `RouteOptions`.
+The records carry `structuredAddressText`, a nested `coordinate` and
+`geocodeQuality`; `suggest` and `search` are the completion and search calls.
+`calculateRoute` takes the contract's `RouteOptions` record: transport mode,
+strategy, unit system and the features to avoid.
 
 ### Frame the route preview
 

@@ -470,43 +470,44 @@ cp -r package ./web
 
 ### Start the SDK and show the map on a canvas
 
-One page creates one SDK root. Provider registration is a separate free call
-whose first argument is the provider key from the shared registry. Read the
-credential at **runtime** from a settings form, a server-issued token, or a
-test's environment, never from the bundle.
+One page creates one SDK root. Provider registration is a method on that root,
+naming the provider key from the shared registry. Read the credential at
+**runtime** from a settings form, a server-issued token, or a test's
+environment, never from the bundle.
 
-Supply a `<canvas>` element and hand it, plus the SDK root, to `MapView`. The
-view claims the element, acquires the WebGPU device, and renders tiles fetched
-from a same-origin path you host; the page keeps pointer handling.
+Supply a `<canvas>` element to the browser view. The view claims the element,
+acquires the WebGPU device, and renders tiles fetched from a same-origin path
+you host; the page keeps pointer handling.
 
 ```html
 <canvas id="map-canvas"></canvas>
 ```
 
 ```js
-import init, { MapsSdk, MapView, configureProviderSet } from './web/rustic_maps_web_bindings.js';
+import { uniffiInitAsync, MapSdk, getSdkCompiledVersion } from './web/index.js';
+import { BrowserMapView, MapCamera, TileResolution } from './web/rustic_maps_bg.js';
 
-await init();
-const mapSdk = await MapsSdk.create();
-configureProviderSet('mapquest', providerCredential);
+await uniffiInitAsync(new URL('./web/rustic_maps.wasm', import.meta.url));
+const mapSdk = new MapSdk();
+mapSdk.configureProviderSet('mapquest', providerCredential);
 
 const canvas = /** @type {HTMLCanvasElement} */ (
   document.querySelector('#map-canvas')
 );
-const mapView = new MapView(canvas, mapSdk);
+const mapView = new BrowserMapView(canvas);
 const adapterDescription = await mapView.initialize();
-console.log(`Maps SDK ready (version ${mapSdk.compiledVersion}) on ${adapterDescription}`);
+console.log(`Maps SDK ready (version ${getSdkCompiledVersion()}) on ${adapterDescription}`);
 ```
 
 The demo skips the registration call until a visitor supplies a key; recorded
 tiles and recorded places fill the map meanwhile. To serve one capability from
-one provider and another from a second, register them one at a time with
-`configureProvider`; [Provider capabilities on
+one provider and another from a second, register them one capability at a time
+with `mapSdk.configureProvider`; [Provider capabilities on
 WebAssembly](provider-capabilities-wasm.md) shows the readback.
 
-The status probe returns the native surfaces' version string. Tile resolution
-follows the device pixel ratio; the optional third constructor argument pins it
-(`new MapView(canvas, mapSdk, TileResolution.Retina)`). The canvas fetches
+The status probe returns the compiled version. Tile resolution follows the
+device pixel ratio; the optional second constructor argument pins it
+(`new BrowserMapView(canvas, TileResolution.Retina)`). The canvas fetches
 raster tiles from the same-origin `/tiles/{zoom}_{tileX}_{tileY}.png` path.
 
 If `initialize()` fails without WebGPU, give the page a degradation message
@@ -554,9 +555,7 @@ const tileKeys = camera.visibleTileKeys(
 );
 ```
 
-These methods return plain objects with lower-camel-case fields. Equivalent
-free functions (`panCameraByScreenPixels`, `zoomCameraByLevelsAroundScreenPoint`,
-`rotateCameraByDegreesAroundScreenPoint`) are also available.
+These methods return plain objects with lower-camel-case fields.
 
 ### Pan the camera from a gesture
 

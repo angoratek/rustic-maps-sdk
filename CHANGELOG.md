@@ -4,6 +4,36 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-17 — browser surface generated from the contract)
+
+- The browser API is generated from the frozen UniFFI contract by the
+  `wasm2` bindgen; the hand-written contract mirrors are retired outright (no
+  deprecation): `navigation.rs`, `positioning.rs`, `diagnostics.rs`,
+  `diagnostics_filter.rs`, `camera_interaction.rs`, the contract half of
+  `exports.rs` and `live_providers.rs`, and the unused contract field-name
+  constants. The crate now carries only the GPU canvas (`BrowserMapView`,
+  `MapCamera` and their pose algebra), the recorded-tile and vector-layer
+  helpers, the reference-application math, and the provider slots plus the
+  fixture-endpoint/clear seams the canvas reads.
+- The canvas class is exported as `BrowserMapView`, so the stripped contract
+  `MapView` never reaches the page; the canvas constructor takes only its
+  element and an optional tile resolution, and the obsolete compiled-version
+  hand-off is gone.
+- The WebAssembly package is `platform/web/generated`: `scripts/build-wasm2-package.sh`
+  compiles the ESM set and its `.d.ts` declarations from the bindgen output and
+  runs `wasm-opt`. `scripts/build-wasm.sh`, `scripts/check-wasm-package-freshness.mjs`,
+  `platform/web/pkg`, `platform/web/types/rustic_maps.d.ts`,
+  `rustic_maps_surface.d.ts`, and `scripts/generate-web-facade.mjs` and its
+  test are deleted.
+- `platform/web/types/browser_canvas.d.ts` declares the wasm-bindgen glue the
+  page imports. `contract_sync.mjs` is reduced to the stripped-UDL split and
+  the generated package identity; the npm package ships the generated ESM set,
+  its declarations, the canvas declarations, and the notices, with `@ubjs/core`
+  and `@ubjs/wasm` as runtime dependencies.
+- The docs site stages `/demo` from `platform/web/generated` and the player
+  runtime beside it; the reference generator, the snippet checker and the
+  browser guides read the generated declarations.
+
 ### Added (2026-11-17 — WebAssembly camera members)
 
 - The WebAssembly façade carries the camera contract. `MapCamera.interpolate`

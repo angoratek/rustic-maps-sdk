@@ -114,22 +114,26 @@ Ask for the Android runtime permission with `PermissionsAndroid` before
 ## WebAssembly
 
 ```ts
-import { PositionController } from './pkg/rustic_maps_web_bindings.js';
+import { PositionController, PositionSourceError } from './web/rustic_maps.js';
 
 const positionController = new PositionController();
 const watchIdentifier = navigator.geolocation.watchPosition(
   position => {
-    positionController.feedFix(
-      position.coords.latitude,
-      position.coords.longitude,
-      position.coords.accuracy,
-    );
+    positionController.feedFix({
+      coordinate: {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      },
+      horizontalAccuracyMeters: position.coords.accuracy,
+    });
     // Draw the tracking dot with the controller's smoothed course and centre
-    // the camera through MapView.setLocationIndicator and setCamera.
+    // the camera through BrowserMapView.setLocationIndicator and setCamera.
   },
   error => {
     positionController.sourceFailed(
-      error.code === 1 ? 'permissionDenied' : 'unavailable',
+      error.code === 1
+        ? PositionSourceError.PermissionDenied
+        : PositionSourceError.Unavailable,
     );
   },
 );

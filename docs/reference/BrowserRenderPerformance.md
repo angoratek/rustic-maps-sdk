@@ -341,6 +341,6 @@ pan does not have: the guidance card and the location puck.
 - **Moving the overlay-revision tessellation off the presenting frame**, the
   remaining tail cost the p99 column attributes.
 
-The `wasm-opt` step has landed: `scripts/build-wasm.sh` runs `wasm-opt -Oz`
-after `wasm-bindgen` and the browser package is 91.1 % of the unoptimized
-module.
+The `wasm-opt` step has landed: `scripts/build-wasm2-package.sh` runs
+`wasm-opt -Oz` over the staged module and records the optimized size against
+the budget.

@@ -512,18 +512,22 @@ navigationController.stopNavigation();
 ### Start the navigator on the route
 
 The browser `Navigator` carries `startNavigation`, `updateLocation`,
-`applyReroute`, `stopNavigation`, `currentTripState` and `hasActiveTrip`.
-`addNavigationListener` registers one callback per topic;
-`removeNavigationListener` removes it by id.
-
-Create the navigator on the planned route and drive it with the same walker
-the native tabs use. Each `updateLocation` returns the trip snapshot:
+`applyReroute`, `stopNavigation`, `currentTripState` and its typed
+subscriptions. Create the navigator on the planned route, start it in metric
+units with the default policies, and drive it with the same walker the native
+tabs use. `updateLocation` feeds the fix; `currentTripState` reads the trip
+snapshot:
 
 ```js
-import { Navigator, RouteSimulator } from './web/rustic_maps_web_bindings.js';
+import { Navigator, RouteSimulator, UnitSystem } from './web/rustic_maps.js';
 
 const navigationController = new Navigator();
-navigationController.startNavigation(route, 'metric');
+navigationController.startNavigation(
+  route,
+  UnitSystem.Metric,
+  defaultStepAdvancePolicy(),
+  defaultDeviationPolicy(),
+);
 
 const navigationRouteSimulator = new RouteSimulator(route, {
   speedMetersPerSecond: 1.4,
@@ -531,12 +535,14 @@ const navigationRouteSimulator = new RouteSimulator(route, {
 });
 
 const navigationFix = navigationRouteSimulator.fixAtElapsedSeconds(0.0);
-const tripSnapshot = navigationController.updateLocation({
+navigationController.updateLocation({
   coordinate: navigationFix.coordinate,
   horizontalAccuracyMeters: 8.0,
   courseHeadingDegrees: navigationFix.courseHeadingDegrees,
-  timestampSeconds: null,
 });
+
+/** @type {any} */
+const tripSnapshot = navigationController.currentTripState();
 
 // One snapshot is all the card needs.
 const phase = tripSnapshot.phase;
@@ -561,7 +567,7 @@ Ask the simulator for a fix at an elapsed time. Draw the route, place the
 location indicator on the fix, and present a course-up camera frame:
 
 ```js
-import { RouteSimulator } from './web/rustic_maps_web_bindings.js';
+import { RouteSimulator } from './web/rustic_maps.js';
 
 /** @type {any} */
 const plannedRoute = route;

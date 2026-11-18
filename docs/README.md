@@ -29,7 +29,7 @@ history.
 
 | File | Question it answers |
 |---|---|
-| `reference/BrowserLoop.md` | How do I build the wasm `pkg`, serve it, test it and use the browser harness? |
+| `reference/BrowserLoop.md` | How do I build the generated wasm package, serve it, test it and use the browser harness? |
 | `reference/BrowserRenderPerformance.md` | How is the browser frame measured, and what are the current numbers? |
 | `reference/BrowserRasterFallback.md` | When may a page's live raster source serve tiles, and how does a configured provider stay authoritative? |
 | `reference/TrafficLayerCaching.md` | How are traffic-layer answers cached, bounded and released? |

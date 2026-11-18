@@ -92,7 +92,7 @@ the table calls out where the gate is and is not met.
 | Android | `rustic-maps-sdk-android-vX.Y.Z.aar` (one artifact) | 16 MiB measured 2026-10-29 before the wrapper merge | arm64-v8a 12 MiB, armeabi-v7a 8.7 MiB, x86_64 13 MiB (`.so` after the release profile's `strip = true`) |
 | iOS | `rustic_mapsFFI.xcframework` (2 slices) | 434 MiB total | 217 MiB per slice; 207 MiB after `strip -x` |
 | React Native | `rustic-maps-sdk-rn-v0.1.0.tgz` | 249 MiB download, 786 MiB unpacked | three Android static archives (153–173 MiB each) and two arm64 iOS static archives (143 MiB each); the final link discards unused code |
-| Wasm | `platform/web/pkg` | 4.4 MiB | single `rustic_maps_web_bindings_bg.wasm`, 4.2 MiB |
+| Wasm | `platform/web/generated` | 6.3 MiB | the generated ESM set plus `rustic_maps.wasm`, 6.2 MiB |
 
 ### 2.1 Android — the AAR
 
@@ -330,39 +330,44 @@ npm install ./rustic-maps-sdk-rn-vX.Y.Z.tgz
 
 ### 2.4 WebAssembly — the wasm package and the served module
 
-What exists today. The `wasm-e2e` workflow compiles `rustic-maps-web-bindings`
-release with `wasm-bindgen-cli` locked at `0.2.129` (the version-locked
-pair is a recorded requirement: the CLI must match the crate) and emits
-`platform/web/pkg` — `rustic_maps_web_bindings.js` (235 KiB),
-`rustic_maps_web_bindings_bg.wasm` (4.2 MiB), the `.d.ts` files, both generated.
-`scripts/build-wasm.sh` passes the module through `wasm-opt -Oz`; the release
-job calls it with `--require-optimize` and installs binaryen first, so a
-published module is never the unoptimized emit.
+What exists today. `scripts/generate-wasm-bindings.sh` builds
+`rustic-maps-native-core` release with `wasm-bindgen-cli` locked at `0.2.129`
+(the version-locked pair is a recorded requirement: the CLI must match the
+crate), generates the contract TypeScript and stages the wasm-bindgen glue and
+the module; `scripts/build-wasm2-package.sh` then compiles the ESM set and its
+`.d.ts` declarations and emits `platform/web/generated` — `index.js`,
+`rustic_maps.js`, `rustic_maps-ffi.js`, `rustic_maps_bg.js`, `rustic_maps.wasm`
+(6.2 MiB) and the declarations. The packaging script passes the module through
+`wasm-opt -Oz`; the release job calls it with `--require-optimize` and installs
+binaryen first, so a published module is never the unoptimized emit.
 The dev server `platform/web/serve.mjs` maps four same-origin route
 families onto repo files with allow-listed names and traversal guards:
 `/tiles/{zoom}_{tileX}_{tileY}[@2x].png` (the recorded tile fixtures),
 `/golden/{name}.png` (exactly six committed goldens),
 `/reference-scenes.json` (the shared demo artifact), and
-`/offline-graph/{name}.rmog` (the compiled offline-routing fixture).
+`/offline-graph/{name}.rmog` (the compiled offline-routing fixture). It also
+serves the generated package's player runtime under
+`/generated-runtime/@ubjs/...`, which the page's import map names.
 `index.html` renders the attribution line the serving provider's descriptor
 declares, and carries a documented degradation path when browser WebGPU is
 unavailable.
 
 What the release adds.
 
-`scripts/check-wasm-package-freshness.mjs` guards every consumer of the
-package: it records a SHA-256 of the git-tracked Rust inputs beside the emit,
-recomputes it before the Playwright suite and before `npm pack`, and refuses a
-package whose sources changed, whose module exceeds the 8 MiB budget, or whose
-npm manifest version differs from the workspace version. A stale `pkg/` is
-therefore never tested or published.
+`scripts/check-wasm2-package-freshness.mjs` guards every consumer of the
+package: it records a SHA-256 of the git-tracked generation inputs beside the
+emit, recomputes it before the Playwright suite and before `npm pack`, and
+refuses a package whose sources changed, whose module exceeds the 8 MiB budget,
+or whose npm manifest version differs from the workspace version. A stale
+`generated/` is therefore never tested or published.
 
 - `@angoratek/rustic-maps-sdk-web`: an npm package whose content is the
-  `pkg/` emit (the JavaScript shim, the wasm module, both `.d.ts` files), the
-  generated `rustic_maps.d.ts` contract record declarations (written from the
-  UDL by `scripts/generate-web-facade.mjs`; the `./rustic_maps` type subpath),
-  a README with the browser-support statement below, the dual license
-  files, and the notices file. The consumer serves the package's directory
+  `generated/` emit (the ESM set, the wasm module, the generated `.d.ts`
+  declarations), the hand-written `types/browser_canvas.d.ts` published as
+  `rustic_maps_bg.d.ts` beside the glue, a README with the browser-support
+  statement below, the dual license files, and the notices file. The
+  `@ubjs/core` and `@ubjs/wasm` player runtime packages are its runtime
+  dependencies. The consumer serves the package's directory
   as a static path root (the same file layout the playground serves), or
   simply points at the demo. Asset name
   `rustic-maps-sdk-web-vX.Y.Z.tgz`, with the checksum and signature
@@ -610,7 +615,8 @@ Bundle plan (URL path → source → measured size, 2026-10-29):
 | Served path | Source | Size |
 |---|---|---|
 | `/demo/` | `platform/web/index.html` + `main.mjs`, `map_controls.mjs`, `overlay_scenes.mjs` (copied 1:1) | small |
-| `/demo/pkg/*` | `platform/web/pkg/*` (wasm-bindgen emit: `rustic_maps_web_bindings.js`, `rustic_maps_web_bindings_bg.wasm`, both `.d.ts`) | 3.6 MB |
+| `/demo/generated/*` | `platform/web/generated/*` (the generated ESM set, declarations and `rustic_maps.wasm`) | 6.3 MB |
+| `/demo/generated-runtime/@ubjs/*` | the page's player runtime from `platform/web/node_modules/@ubjs` | 0.9 MB |
 | `/demo/tiles/*` | `crates/rustic-maps-rendering/fixtures/render/tiles/*` (219 files) | 11 MB |
 | `/demo/reference-scenes.json` | `platform/reference-scenes.json` | 8 KB |
 | `/demo/offline-graph/routing_grid.rmog` | `crates/rustic-maps-offline-graph-compiler/fixtures/rmog/routing_grid.rmog` | 552 B |

@@ -1,80 +1,70 @@
 # The browser loop (`platform/web/`)
 
 This is the maintainer guide to the WebAssembly browser harness. It shows
-you how to build the `pkg`, serve it, test it in Playwright, and what the
-WebGPU canvas is allowed to assume. Every fact below is grounded in the
-named files.
+you how to build the generated package, serve it, test it in Playwright, and
+what the WebGPU canvas is allowed to assume. Every fact below is grounded in
+the named files.
 
 ## What lives where
 
 | File | Role |
 | --- | --- |
-| `crates/rustic-maps-web-bindings/` | `wasm-bindgen` cdylib: the JS surface (`exports.rs`) and the WebGPU canvas (`src/canvas.rs`, wasm32-only) |
-| `platform/web/pkg/` | Generated `wasm-bindgen` ES module (`--target web` shape); generated locally and gitignored, never committed |
-| `platform/web/serve.mjs` | Dependency-free static server on `127.0.0.1:8642` with the same-origin `/tiles/{zoom}_{x}_{y}.png` fixture route into `crates/rustic-maps-rendering/fixtures/render/tiles/` |
+| `crates/rustic-maps-native-core/` | Owns the one generated `wasm2` module: the contract surface plus the re-exported canvas |
+| `crates/rustic-maps-web-bindings/` | Hand-written `wasm-bindgen` canvas classes (`exports.rs`'s `MapCamera`, `src/canvas.rs`'s `BrowserMapView`, the provider slots) |
+| `platform/web/generated/` | The generated `wasm2` package (ESM set, `.d.ts` declarations, `rustic_maps.wasm`, `rustic_maps_bg.js`); generated locally and gitignored, never committed |
+| `platform/web/types/browser_canvas.d.ts` | Hand-written declarations for the wasm-bindgen `rustic_maps_bg.js` glue |
+| `platform/web/serve.mjs` | Dependency-free static server on `127.0.0.1:8642` with the same-origin `/tiles/{zoom}_{x}_{y}.png` fixture route into `crates/rustic-maps-rendering/fixtures/render/tiles/` and the generated package's `/generated-runtime/@ubjs/...` route |
 | `platform/web/index.html` | The playground: drag-pan, wheel zoom, bearing/pitch sliders, WebGPU canvas (`#map-canvas`) with the 2D tile-grid overlay (`#map-overlay`) above it |
-| `platform/web/main.mjs` | Loads the wasm module, creates the `MapsSdk` root (`await MapsSdk.create()`), and exposes the bound surface plus that root on `window.mapTest`; the `window.mapTestReady` promise gates every test |
+| `platform/web/main.mjs` | Opens the module with `uniffiInitAsync`, constructs the generated `MapSdk` root, and exposes the adapted surface on `window.mapTest`; the `window.mapTestReady` promise gates every test |
 | `platform/web/tests/sdk_core.spec.mjs` | The core Playwright tests (version, projection, round trip, antimeridian listing, WebGPU smoke, drag readout, overlay and theme controls) |
-| `platform/web/types/rustic_maps.d.ts` | Generated TypeScript mirror of the frozen UniFFI contract's records, enums and error unions; `scripts/generate-web-facade.mjs` writes it from the UDL (snake-case contract fields become lower camel case to match the runtime objects) and appends the hand-written projections in `rustic_maps_surface.d.ts` |
-| `platform/web/tests/contract_sync.mjs` | Contract-sync test (no npm dependency): runs the generator's `--check` mode and parses the wasm export sources to assert they serve the shared camera/projection surface |
-| `platform/web/playwright.config.mjs` | Chromium channel, viewport 640×480, `deviceScaleFactor: 1`, `globalSetup: ./global_setup.mjs` (the contract-sync assertions), `webServer: node serve.mjs` with `reuseExistingServer: false` |
+| `platform/web/generated/rustic_maps.d.ts` | Generated declarations of the frozen UniFFI contract's records, enums, errors and classes; `scripts/build-wasm2-package.sh` emits them from the generated TypeScript |
+| `platform/web/tests/contract_sync.mjs` | Contract-sync test (no npm dependency): asserts the stripped-UDL split and the generated package identity |
+| `platform/web/playwright.config.mjs` | Chromium channel, viewport 640×480, `deviceScaleFactor: 1`, `globalSetup: ./global_setup.mjs` (builds the package, then runs the file-parsing gates), `webServer: node serve.mjs` with `reuseExistingServer: false` |
 
-## Building the pkg
+## Building the generated package
 
-The harness has no bundler and no `wasm-pack`; `wasm-bindgen-cli` runs
-directly. Use the same commands as the README's WebAssembly section:
+The harness has no bundler; `scripts/generate-wasm-bindings.sh` builds
+`rustic-maps-native-core` for wasm, `ubrn` generates the TypeScript, and
+`scripts/build-wasm2-package.sh` compiles the ESM set and its declarations
+into `platform/web/generated`. Use the same script the release uses:
 
 ```bash
+npm ci                        # platform/web: tsc and the @ubjs runtime
+npm ci --prefix platform/rn   # platform/rn: ubrn
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli --version 0.2.129   # must match the crate version
-cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
-wasm-bindgen --target web --out-dir platform/web/pkg \
-  target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
+scripts/build-wasm2-package.sh
 ```
 
-`scripts/build-wasm.sh` runs those two steps and, when binaryen's
-`wasm-opt` is installed, optimizes the module (`-Oz`, about 91% of the
-unoptimized size). Pass `--no-optimize` to skip it.
+`scripts/build-wasm2-package.sh` runs the generation and packaging steps and,
+when binaryen's `wasm-opt` is installed, optimizes the module. Pass
+`--no-optimize` to skip it, `--no-generate` to repackage existing bindings, and
+`--require-optimize` to fail when `wasm-opt` is absent.
 
 **Version matching is load-bearing.** The CLI refuses mismatches, or
 corrupts the output, when its version differs from the `wasm-bindgen`
 crate version the wasm binary was compiled with. The workspace pins
-`wasm-bindgen 0.2.129` (the `crates/rustic-maps-web-bindings` dependency tree),
-and the installed CLI is 0.2.129. After you bump the crate version, you
-must reinstall the CLI at the same version and regenerate
-`platform/web/pkg`. Check both ends with `wasm-bindgen --version` and
-`cargo tree -p rustic-maps-web-bindings | grep wasm-bindgen`.
+`wasm-bindgen 0.2.129`, and the installed CLI is 0.2.129. After you bump the
+crate version, you must reinstall the CLI at the same version and regenerate
+`platform/web/generated`. Check both ends with `wasm-bindgen --version` and
+`cargo tree -p rustic-maps-native-core | grep wasm-bindgen`.
 
-Clippy runs for both hosts on this crate: `cargo clippy -p
-rustic-maps-web-bindings --target wasm32-unknown-unknown`. The GPU canvas slice
-is `cfg`-gated to wasm32.
+Clippy runs for both hosts on the canvas crate: `cargo clippy -p
+rustic-maps-web-bindings --target wasm32-unknown-unknown`. The GPU canvas is
+`cfg`-gated to wasm32.
 
-## The contract-sync test (UDL ↔ wasm surface)
+## The contract-sync test (UDL split and package identity)
 
 Run the sync test with `node --test platform/web/tests/contract_sync.mjs`.
-It asserts that the wasm surface mirrors the frozen UniFFI contract
-`crates/rustic-maps-native-core/src/rustic_maps.udl`, and it needs neither npm
-nor a browser: it first runs `scripts/generate-web-facade.mjs --check` against
-the committed TypeScript mirror (`platform/web/types/rustic_maps.d.ts`) and
-the generated Rust field-name constants, then reads the hand-reviewed wasm
-exports (`crates/rustic-maps-web-bindings/src/exports.rs`) and compares the
-shared camera/projection surface.
-
-Contract fields and enum values reach the mirror only through the generator:
-`tile_x` becomes `tileX`, for example, and the UniFFI types' TypeScript
-spellings
-(`double`/`u32` ↔ `number`). It then requires the frozen `MapCamera`
-methods and free helpers in the UDL and in both wasm sources, and it
-rejects a wasm member the UDL lacks (the wasm-only lifecycle helpers
-`initializeSdk` and `devicePixelRatioThreshold` are the documented
-exceptions; `MapsSdk.create()` is the SDK root's constructor, not a
-contract member). The comparison is addition-tolerant: contract-only members
-(the `MapSdk` provider surface, the `fit_bounds` constructor) are never
-required on wasm, so the UDL can grow without breaking the test. The
-generated `pkg/rustic_maps_web_bindings.d.ts` is checked the same way whenever
-the build artifact is present. You need no server or browser session to
-run it, and the Playwright config's `globalSetup` also runs it before
-every `npx playwright test`.
+It asserts that the committed WebAssembly contract
+`crates/rustic-maps-native-core/src/rustic_maps_wasm.udl` is exactly the frozen
+contract `rustic_maps.udl` minus the native `MapView` interface and its doc
+block, and that `platform/web/generated` carries the published surface: the
+entrypoint's `uniffiInitAsync`, the contract classes, the wasm-bindgen glue's
+distinct `BrowserMapView`, a signature table that never names `MapView`, and
+the workspace version. It needs no server or browser, but the package must
+have been built first; the Playwright config's `globalSetup` builds it and
+also runs the test before every `npx playwright test`.
 
 ## Serving the harness and testing by hand
 
@@ -107,9 +97,8 @@ the config's own webServer spins up `serve.mjs` with
 started server or another running harness will conflict. Kill it first,
 or the run fails to bind (see "Known gaps").
 
-Tests gate on `window.mapTestReady`, which resolves only after the
-Rust-side `MapsSdk.create()` completed (`initializeSdk()` remains the
-legacy alias). GPU-path assertions additionally gate on
+Tests gate on `window.mapTestReady`, which resolves only after
+`uniffiInitAsync` opened the module. GPU-path assertions additionally gate on
 `window.mapRendererMode()`, and the smoke test skips with a documented
 reason when the mode degrades to `overlay`.
 
@@ -141,7 +130,7 @@ reason when the mode degrades to `overlay`.
 
 ## The 2D-overlay fallback story
 
-`MapView::initialize` fails cleanly when no WebGPU adapter supports
+`BrowserMapView::initialize` fails cleanly when no WebGPU adapter supports
 the canvas, or when the device request fails: it returns a string error
 and never panics. The Playwright page catches that, abandons the GPU
 canvas, and reports `mode overlay (WebGPU unavailable: …)` in the status
@@ -226,7 +215,7 @@ versus the harness's 640×480 window.
   granularity for the browser probe too. The page also reproduces the
   golden harness's deliberate parent-fallback tile (the last visible
   scene tile drawn from its pooled zoom-13 parent via
-  `MapView::stageParentTile`); without it the browser
+  `BrowserMapView::stageParentTile`); without it the browser
   would draw sharper imagery than the reference.
 - **Hazards**:
   1. The freshness rule above: probe only right after a forced
@@ -250,9 +239,10 @@ versus the harness's 640×480 window.
   the machine's single port. A test-only copy with an environment-variable
   port override is the current workaround; upstreaming that override
   would be a one-line change.
-- `scripts/build-wasm.sh` automates the pkg step (the release build, the
-  `wasm-bindgen` emit and, when binaryen is installed, `wasm-opt -Oz`).
-  `pkg/` is gitignored, so the output is never committed.
+- `scripts/build-wasm2-package.sh` automates the package step (the generation,
+  the `ubrn` bindings, the ESM and declaration emit and, when binaryen is
+  installed, `wasm-opt -Oz`). `generated/` is gitignored, so the output is
+  never committed.
 - Playwright's WebKit browser binary is not installed by the harness (the
   config uses the system Chromium channel, `channel: 'chromium'`, in
   `playwright.config.mjs`). Enable the WebKit check with

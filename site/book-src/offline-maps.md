@@ -435,17 +435,15 @@ stored tiles expire.
 ### Route over the archive
 
 ```js
-import { offlineRouteFromArchiveBytes } from './web/rustic_maps_web_bindings.js';
+import { offlineRouteFromArchiveBytes } from './web/rustic_maps.js';
 
 const archiveResponse = await fetch('/offline-graph/routing-grid.rmog');
-const archiveBytes = new Uint8Array(await archiveResponse.arrayBuffer());
+const archiveBytes = await archiveResponse.arrayBuffer();
 
 const plannedRoute = await offlineRouteFromArchiveBytes(
   archiveBytes,
-  originLatitude,
-  originLongitude,
-  endLatitude,
-  endLongitude,
+  { latitude: originLatitude, longitude: originLongitude },
+  { latitude: endLatitude, longitude: endLongitude },
 );
 ```
 
