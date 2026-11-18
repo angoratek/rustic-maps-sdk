@@ -2,7 +2,7 @@
 
 Date: 2026-11-01 (M23). Scope: the browser path (`rustic-maps-web-bindings` → wgpu over
 WebGPU). The research that ranked the work is
-`docs/history/research/browser-render-performance.md`; this document is the
+`docs/reference/BrowserRenderPerformance.md`; this document is the
 measurement it asks for, and the numbers the performance chapter quotes.
 
 ## What the harness measures
@@ -88,8 +88,8 @@ The runner starts the harness's static server itself (or reuses one already on
 the port) and launches the host's Chromium with hardware WebGPU. It is
 deliberately **not** part of `npm test`: the Playwright suite runs under
 SwiftShader so CI is deterministic, and SwiftShader's absolute frame times say
-nothing about a GPU (the research's §3.3 measurement trap: MapLibre's benchmark
-under-reported by ~390× there). A number without the machine is not a
+nothing about a GPU (the measurement trap: MapLibre's benchmark under-reported
+by ~390× there). A number without the machine is not a
 measurement, so the report carries the browser build and the `GPUAdapter.info`
 descriptor.
 

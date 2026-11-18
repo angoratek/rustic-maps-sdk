@@ -91,7 +91,7 @@ Behavior rules:
 ## 4. Shared descriptor schema
 
 `platform/providers.json` is the single descriptor source every refapp, the
-dev server and the playground consume (M15; `docs/ProviderGenericity.md`).
+dev server and the playground consume (M15; `platform/providers.json`).
 Each entry carries the settings row's fields:
 
 ```json

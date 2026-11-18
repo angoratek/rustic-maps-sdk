@@ -3,7 +3,7 @@
  *
  * The shared demo artifact (`platform/reference-scenes.json`) and the shared
  * provider registry (`platform/providers.json`) are single sources for every
- * reference app (docs/ReferenceAppUX.md §8, docs/ProviderGenericity.md): the
+ * reference app (docs/ReferenceAppUX.md §8, platform/providers.json): the
  * RN shell consumes both through Metro `require`s, so the `platform/`
  * directory is a watch folder on top of the app root.
  *

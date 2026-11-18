@@ -1,5 +1,5 @@
 /**
- * The plan sheet's Directions control (docs/design/DirectionsModesAndStrategy.md):
+ * The plan sheet's Directions control (PRD.md §6 item 36):
  * Car and Fastest are the defaults, the strategy row is shown only for car
  * plans, and a choice the serving routing provider cannot honour is disabled
  * with its reason while the plan call sends an honoured pair.

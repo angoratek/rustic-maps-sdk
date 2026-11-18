@@ -127,7 +127,8 @@ The SDK must be provider-agnostic at **every** layer, not only in the Rust core:
   by one vendor's path; attribution and labels come from the descriptors.
 - **The question to ask on every change**: *would this work unchanged for a second
   provider?* If not, move the vendor-specific piece into the provider crate or the
-  descriptor. The audit and migration plan is `docs/ProviderGenericity.md` (M15).
+  descriptor. The registry is `platform/providers.json` and
+  `platform/web/tests/provider_name_guard.mjs` is the standing gate (M15).
 
 **Where to look.**
 
@@ -144,7 +145,6 @@ The SDK must be provider-agnostic at **every** layer, not only in the Rust core:
 | Demo scenes, places, plans and recorded routes | `platform/reference-scenes.json` |
 | How credentials work and why | `docs/ProviderCredentialsAndBrowserProviders.md` |
 | How a release is produced | `docs/PackagingAndRelease.md` |
-| The provider-genericity audit and migration | `docs/ProviderGenericity.md` |
 
 Prior research lives in `tmp/map-sdk-rs-research/` (superseded drafts; the
 handwritten JNI bridge there is deliberately discarded — UniFFI generates it).

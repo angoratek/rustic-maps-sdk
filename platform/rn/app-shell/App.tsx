@@ -373,7 +373,7 @@ const initialPlaybackState: PlaybackStateEvent = {
 
 /**
  * The provider-credential rows the settings sheet renders, driven by the
- * shared provider registry's descriptors (docs/ProviderGenericity.md): a
+ * shared provider registry's descriptors (platform/providers.json): a
  * malformed entry is dropped, and each valid descriptor gets one row. Module
  * scope keeps the list identity stable across renders.
  */
@@ -621,7 +621,7 @@ function ReferenceAppScreen(): React.JSX.Element {
     },
     [providerCredentialsState.rows],
   );
-  // --- The per-capability provider rows (docs/design/ProviderSelectionPerCapability.md) ---
+  // --- The per-capability provider rows (docs/design/ProviderCoverage.md §Per-capability selection) ---
   const [capabilityProviderRows, setCapabilityProviderRows] = useState<
     CapabilityProviderRow[]
   >([]);
@@ -637,7 +637,7 @@ function ReferenceAppScreen(): React.JSX.Element {
     useState<ReadonlyMap<ProviderContract, string>>(new Map());
   /** Whether the remembered per-capability choices have been re-applied. */
   const hasRestoredCapabilityProvidersRef = useRef(false);
-  // --- The plan sheet's Directions control (docs/design/DirectionsModesAndStrategy.md) ---
+  // --- The plan sheet's Directions control (PRD.md §6 item 36) ---
   const [routeCapabilities, setRouteCapabilities] =
     useState<RouteCapabilities | null>(null);
   const [routeCapabilitiesUnavailableText, setRouteCapabilitiesUnavailableText] =
@@ -763,7 +763,7 @@ function ReferenceAppScreen(): React.JSX.Element {
   // --- The map control cluster's read-only camera state (§4.2) ---
   const [cameraReadback, setCameraReadback] = useState<CameraReadbackEvent | null>(null);
   const [isAttributionPanelOpen, setIsAttributionPanelOpen] = useState(false);
-  // --- The on-map layer control (docs/design/MapControlsAndTrafficLayer.md) ---
+  // --- The on-map layer control (docs/ReferenceAppUX.md §4.2) ---
   const [mapLayersState, dispatchMapLayers] = useReducer(
     mapLayersPanelReducer,
     undefined,
@@ -1566,7 +1566,7 @@ function ReferenceAppScreen(): React.JSX.Element {
   );
 
   /**
-   * The type-ahead's provider choice (docs/design/Autocomplete.md): the
+   * The type-ahead's provider choice (docs/ReferenceAppUX.md §5.5): the
    * credentialed provider when the settings surface configured a key, the
    * keyless search provider otherwise. Both come from the shared registry and
    * the SDK's readback, never a provider name in this shell.
@@ -3513,7 +3513,7 @@ function ReferenceAppScreen(): React.JSX.Element {
     rememberedVectorBaseChoice,
     selectBaseMap,
   ]);
-  // --- The on-map layer control (docs/design/MapControlsAndTrafficLayer.md) ---
+  // --- The on-map layer control (docs/ReferenceAppUX.md §4.2) ---
   const trafficAvailability = useMemo(
     () => trafficLayerAvailability(providerDescriptors, appliedProviderKeys),
     [appliedProviderKeys],
@@ -3926,7 +3926,7 @@ function ReferenceAppScreen(): React.JSX.Element {
         style={[styles.bottomEndDock, { bottom: attributionBottomOffset }]}
         pointerEvents="box-none">
         {/* The on-map layer control docks directly above the attribution
-            notice (docs/design/MapControlsAndTrafficLayer.md). */}
+            notice (docs/ReferenceAppUX.md §4.2). */}
         <MapLayersControl
           ref={mapLayersControlRef}
           isNonDefaultLayerActive={isNonDefaultLayerSelected}
@@ -4502,7 +4502,7 @@ function ProviderCredentialRow(props: {
 }
 
 /**
- * One per-capability provider row (docs/design/ProviderSelectionPerCapability.md):
+ * One per-capability provider row (docs/design/ProviderCoverage.md §Per-capability selection):
  * the capability, the serving provider's name or the honest "Not configured"
  * line, and the registry's eligible providers as the picker. The two tile
  * rows are read-only because the map's layer control owns them.
@@ -4592,7 +4592,7 @@ function CapabilityProviderRowView(props: {
 }
 
 /**
- * The plan sheet's Directions control (docs/design/DirectionsModesAndStrategy.md):
+ * The plan sheet's Directions control (PRD.md §6 item 36):
  * the Car/Walk mode choice, then the Fastest/Shortest strategy for car plans
  * only. A choice the serving routing provider cannot honour is disabled and
  * states its reason.
@@ -4882,7 +4882,7 @@ function PlanFieldSearchControl(props: {
 }
 
 /**
- * The plan search view (§4.1 and docs/design/ReferenceApplicationBehavior.md):
+ * The plan search view (§4.1 and docs/ReferenceAppUX.md):
  * two visibly labeled fields (A/B markers), each with its inline Search
  * action and My location chip, one swap action, the Directions choices, the
  * shared result rows with the assigned-row state, and Done back to the half

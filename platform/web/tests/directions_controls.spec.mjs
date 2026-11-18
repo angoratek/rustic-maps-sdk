@@ -1,4 +1,4 @@
-// The browser demo's Directions control (docs/design/DirectionsModesAndStrategy.md):
+// The browser demo's Directions control (PRD.md §6 item 36):
 // every route plan carries a mode (Car or Walk, Car default) and a strategy
 // (Fastest or Shortest, Fastest default). Both are pressed-choice button
 // groups, both survive a reload through the page's remembered-choices record,

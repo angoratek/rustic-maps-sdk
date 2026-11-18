@@ -22,7 +22,7 @@
 //
 // WHY IT IS NOT A PLAYWRIGHT TEST. The standing test machine renders through
 // SwiftShader, whose absolute frame times say nothing about a GPU
-// (`docs/history/research/browser-render-performance.md` §3.3's measurement trap:
+// (the measurement trap `docs/reference/BrowserRenderPerformance.md` records:
 // MapLibre's benchmark under-reported by ~390× there). This runner therefore
 // launches the host's own Chromium with hardware WebGPU and is a
 // host-machine measurement, deliberately outside `npm test` so CI stays

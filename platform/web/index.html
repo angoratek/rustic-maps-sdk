@@ -90,7 +90,7 @@
             data-ui-label="plan.search_heading">Plan a route</h2>
         <p class="trip-subtitle">Enter an origin and a destination, plan the route,
           then start the trip simulation.</p>
-        <!-- The two labelled endpoint fields (docs/design/ReferenceApplicationBehavior.md
+        <!-- The two labelled endpoint fields (docs/ReferenceAppUX.md
              §Search, route card and navigation UX): a visible Origin/Destination
              label, the field's own search action, and its My location chip. The
              swap action beside the Origin label exchanges both the text and the
@@ -180,10 +180,10 @@
         <p id="trip-plan-route-reason" class="reason-strip"
            data-ui-label="plan.missing_both">Enter an origin and a destination
           to plan the route.</p>
-        <!-- The route card (docs/design/ReferenceApplicationBehavior.md §Route
-             card): destination title, distance · duration, the mode · strategy
-             caption, the ETA line and the maneuver note. The same card carries a
-             recorded demo route's honesty note. -->
+        <!-- The route card (docs/ReferenceAppUX.md §4.2): destination title,
+             distance · duration, the mode · strategy caption, the ETA line and
+             the maneuver note. The same card carries a recorded demo route's
+             honesty note. -->
         <div id="trip-route-result" class="trip-route-result" hidden>
           <p id="trip-route-title" class="trip-route-title"></p>
           <p id="trip-route-facts" class="trip-route-facts"></p>
@@ -195,7 +195,7 @@
         <!-- The trip card's ETA-distance line while a trip runs: the same
              prefix and labelled remaining values the native drawers show. -->
         <p id="trip-navigation-eta-line" class="then-line" hidden></p>
-        <!-- Directions (docs/design/DirectionsModesAndStrategy.md): the mode and
+        <!-- Directions (PRD.md §6 item 36): the mode and
              strategy every route plan carries. Both are two-value button
              groups with the page's pressed-choice pattern; Car and Fastest
              are the defaults. Strategy applies to automobile plans, so its
@@ -316,7 +316,7 @@
 
 <section class="control-group" id="diagnostics-controls">
         <h2 class="group-label" data-ui-label="diagnostics.title">Diagnostics</h2>
-        <!-- Diagnostics are opt-in (docs/design/ReferenceApplicationBehavior.md
+        <!-- Diagnostics are opt-in (docs/ReferenceAppUX.md
              §Diagnostics policy): opening this pane starts the one bounded
              stream at Info; Show debug events lowers it to Debug for the rest of
              the session. Nothing is subscribed while the pane stays closed. -->
@@ -383,7 +383,7 @@
                       aria-label="Fetched tile preview"></canvas>
             </div>
           </section>
-          <!-- Provider capabilities (docs/design/ReferenceApplicationBehavior.md
+          <!-- Provider capabilities (docs/ReferenceAppUX.md
                §Provider selection, descriptors and endpoints): one row per
                capability the registry offers on this platform. The row and every
                picker entry compose "{display name} · {credential state}", both
@@ -466,7 +466,7 @@
       <!-- The on-map layer control: a round button docked directly above the
            attribution notice on the map's end edge. Its panel carries the
            base map, the traffic layer, the demo overlay scenes and the device
-           location status (docs/design/MapControlsAndTrafficLayer.md). -->
+           location status (docs/ReferenceAppUX.md §4.2). -->
       <div id="map-layers-control-container">
         <section id="map-layers-panel" hidden aria-label="Map layers">
           <h2 class="map-layers-panel-title">Map layers</h2>

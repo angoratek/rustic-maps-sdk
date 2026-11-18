@@ -170,7 +170,7 @@ embed_license_notices() {
 
 sync_shared_provider_registry() {
     # The Swift package's MapNativeCoreUI resource bundle carries the shared
-    # provider registry (`platform/providers.json`, docs/ProviderGenericity.md).
+    # provider registry (`platform/providers.json`).
     # The copy is refreshed from its single source on every packaging run so
     # the wrapper's bundle can never drift from the file the other refapps
     # load. Demo content is not synced: the reference applications bundle

@@ -1,4 +1,4 @@
-//! The search fields' type-ahead (`docs/design/Autocomplete.md`): the
+//! The search fields' type-ahead (`docs/ReferenceAppUX.md §5.5`): the
 //! three-character threshold, the quiet window before a provider request,
 //! the five-row cap, cancellation of a superseded request, and the four
 //! visible states — nothing, suggestions, one no-match row, or one inline

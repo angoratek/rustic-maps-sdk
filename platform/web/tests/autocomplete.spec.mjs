@@ -1,4 +1,4 @@
-// The shared type-ahead rule (docs/design/Autocomplete.md) in the browser:
+// The shared type-ahead rule (docs/ReferenceAppUX.md §5.5) in the browser:
 // a query needs three characters, waits 250 ms of quiet before asking the
 // provider, restarts the timer on every keystroke (so a superseded query
 // never fires), shows at most five rows, and filling a field from a row

@@ -1,4 +1,4 @@
-//! The offline card's region-download state (docs/design/TilePackManager.md):
+//! The offline card's region-download state (crates/rustic-maps-cache/src/tile_packs.rs):
 //! the progress mapping (completed/total and the network-versus-disk split),
 //! the cancellation terminal state with its partial record, the stored
 //! region list and deletion refresh, the failure/resume path and the SDK's

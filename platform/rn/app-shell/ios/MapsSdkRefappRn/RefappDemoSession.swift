@@ -841,7 +841,7 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
 
     /// The explicit Plan route action (§4.1): plans between the two assigned
     /// coordinates with the plan sheet's Directions choice
-    /// (docs/design/DirectionsModesAndStrategy.md). A missing field rejects with a
+    /// (PRD.md §6 item 36). A missing field rejects with a
     /// reason naming it; nothing is invented.
     @objc(planRouteWithTransportationModeOrdinal:routeStrategyOrdinal:resolve:reject:)
     func planRoute(

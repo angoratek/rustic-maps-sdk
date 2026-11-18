@@ -72,13 +72,13 @@ export interface ReferenceAppPreferences {
   selectedSceneKeys: string[];
   /**
    * Whether the traffic layer was on, restored only when the serving provider
-   * can honour it in the next session (docs/design/MapControlsAndTrafficLayer.md).
+   * can honour it in the next session (docs/ReferenceAppUX.md §4.2).
    */
   trafficLayerEnabled: boolean;
   cameraPresetId: string | null;
   speedMultiplier: number;
   search: RememberedSearchTexts;
-  /** The plan sheet's mode choice (Car default, docs/design/DirectionsModesAndStrategy.md). */
+  /** The plan sheet's mode choice (Car default, PRD.md §6 item 36). */
   directionsTransportationMode: DirectionsTransportationModeName;
   /** The plan sheet's strategy choice (Fastest default, shown for car plans). */
   directionsRouteStrategy: DirectionsRouteStrategyName;

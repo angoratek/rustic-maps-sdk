@@ -154,7 +154,7 @@ export const FOLLOW_DEMO_FIX_HORIZONTAL_ACCURACY_METERS = 8.0;
 export const FOLLOW_DEMO_SPEED_METERS_PER_SECOND =
   1.4 * FOLLOW_DEMO_PLAYBACK_TIME_ACCELERATION_FACTOR;
 
-// --- The diagnostics pane's shared bounds (docs/design/ReferenceApplicationBehavior.md
+// --- The diagnostics pane's shared bounds (docs/ReferenceAppUX.md
 // §The bounded stream): one display window and one flush limit per pane, with
 // the refresh cadence the page coalesces its ring reads to. The values land as
 // behavior tokens in platform/reference-tokens.json so the four mirrors cannot

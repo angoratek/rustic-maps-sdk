@@ -307,7 +307,7 @@ const MAP_LAYERS_SOURCES = [
 ];
 
 /** The Directions control identifiers every route-planning surface shares
- * (docs/design/DirectionsModesAndStrategy.md). The browser demo declares them and
+ * (PRD.md §6 item 36). The browser demo declares them and
  * routes with the chosen values; a shell that drops one loses the parity the
  * design names. */
 const DIRECTIONS_CONTROL_SOURCES = [

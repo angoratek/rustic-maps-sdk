@@ -811,7 +811,7 @@
         margin-top: var(--stack-tight);
       }
 
-      /* --- The on-map layer control (docs/design/MapControlsAndTrafficLayer.md) ---
+      /* --- The on-map layer control (docs/ReferenceAppUX.md §4.2) ---
          The round layers button docks above the attribution notice on the
          map's end edge; its panel opens upward, clamped to 70% of the
          viewport height on a phone and scrolling inside. */
@@ -1196,7 +1196,7 @@
         color: var(--text-secondary-color);
       }
       /* The two endpoint fields' visible labels and the compact swap action
-         (docs/design/ReferenceApplicationBehavior.md §Home and search): the
+         (docs/ReferenceAppUX.md §4.1): the
          label row keeps the swap one tap away without costing a whole row on a
          phone sheet. */
       .trip-field-label-row {
@@ -1436,7 +1436,7 @@
         color: var(--text-secondary-color);
       }
       .trip-route-result p[hidden] { display: none; }
-      /* Directions (docs/design/DirectionsModesAndStrategy.md): mode and strategy
+      /* Directions (PRD.md §6 item 36): mode and strategy
          sit beside the plan action as the page's pressed-choice groups. The
          strategy row is hidden while the plan walks, so the two rows stay one
          eight-point rhythm apart. */

@@ -306,7 +306,7 @@
         !LOCAL_DEMO_HOSTNAMES.has(window.location.hostname)
         || new URLSearchParams(window.location.search)
           .has(LIVE_TILES_OPT_IN_PARAMETER);
-      // Diagnostics are opt-in (docs/design/ReferenceApplicationBehavior.md
+      // Diagnostics are opt-in (docs/ReferenceAppUX.md
       // §Diagnostics policy): the pane opens one bounded stream at Info and the
       // explicit Show debug events switch lowers it to Debug. Nothing is
       // subscribed before the visitor opens the pane, the window is the shared
@@ -572,7 +572,7 @@
       const capability_provider_rows =
         document.getElementById('capability-provider-controls');
       const capability_provider_status = document.getElementById('capability-provider-status');
-      // The diagnostics pane's opt-in controls (docs/design/ReferenceApplicationBehavior.md
+      // The diagnostics pane's opt-in controls (docs/ReferenceAppUX.md
       // §Diagnostics policy).
       const advanced_panel = document.getElementById('advanced-panel');
       const diagnostics_debug_events_control =
@@ -1090,7 +1090,7 @@
       }
       render_provider_credential_rows();
 
-      // --- Provider capabilities (docs/design/ReferenceApplicationBehavior.md
+      // --- Provider capabilities (docs/ReferenceAppUX.md
       // §Provider selection, descriptors and endpoints) ---
       // One row per capability the registry offers on this platform. The row
       // and every picker entry compose "{display name} · {credential state}";
@@ -1800,7 +1800,7 @@
           });
         }
 
-        // --- Type-ahead (docs/design/Autocomplete.md) -----------------------
+        // --- Type-ahead (docs/ReferenceAppUX.md §5.5) -----------------------
         // Per-field quiet timers and generations: each keystroke restarts the
         // timer, and an answer whose generation is stale is dropped, so a
         // superseded query can never replace the list.
@@ -3558,7 +3558,7 @@
       window.mapVectorBaseStatus = () =>
         base_map_status_element.hidden ? null : base_map_status_element.textContent;
 
-      // --- The on-map layer control (docs/design/MapControlsAndTrafficLayer.md) ----
+      // --- The on-map layer control (docs/ReferenceAppUX.md §4.2) ----
       // One round control docked above the attribution notice. Its panel
       // carries the registry's base sources and every committed vector style,
       // the traffic switch, the demo scene switches and the device-location
@@ -5934,7 +5934,7 @@
       attach_zoom_control(zoom_out_control, -1);
       attach_zoom_control(zoom_in_control, 1);
 
-      // My-location (§4.2/§5.3, docs/design/MapControlsAndTrafficLayer.md): during a
+      // My-location (§4.2/§5.3, docs/ReferenceAppUX.md §4.2): during a
       // simulated trip the control re-centers on the latest guided fix and
       // re-engages a follow broken by a gesture. Outside a trip it drives the
       // device location source: with the source off it requests permission,
@@ -6621,7 +6621,7 @@
 
       // The diagnostics readout (§4.1): the facts are the session's draw
       // facts; the event lines flush the wasm ring (oldest first). Diagnostics
-      // are opt-in (docs/design/ReferenceApplicationBehavior.md §Diagnostics
+      // are opt-in (docs/ReferenceAppUX.md §4.2
       // policy): nothing is subscribed until the Advanced pane opens, the
       // stream is bounded to the shared window, Show debug events lowers the
       // gate for this session only, and Clear resets the pane's displayed list.
@@ -7356,7 +7356,7 @@
         await run_render_step();
       }
 
-      // --- The reference-flow launch automation (docs/design/ReferenceApplicationBehavior.md
+      // --- The reference-flow launch automation (docs/ReferenceAppUX.md
       // §Launch automation) ---
       // `window.runReferenceFlow(flowId)` drives the four named flows through the
       // same user paths a visitor takes; it is a test seam, not a second

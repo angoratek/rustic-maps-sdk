@@ -200,7 +200,7 @@ export const themeFramingTokens = {
 } as const;
 
 /**
- * The diagnostics behavior tokens (docs/design/ReferenceApplicationBehavior.md
+ * The diagnostics behavior tokens (docs/ReferenceAppUX.md
  * §Diagnostics policy): the shared bounds the pane and the SDK ring use. The
  * values mirror `platform/reference-tokens.json` one for one.
  */
@@ -496,7 +496,7 @@ export const appStrings = {
     'Vector base tiles failed this frame: ',
   /** The credential row's hint when a not-yet-servable base map points at it. */
   providerCredentialEnterHintText: 'Enter a key, then Apply.',
-  // --- The per-capability provider rows (docs/design/ProviderSelectionPerCapability.md) ---
+  // --- The per-capability provider rows (docs/design/ProviderCoverage.md) ---
   /** The settings section that chooses the provider serving each capability. */
   capabilityProviderSectionHeaderText: 'Providers by capability',
   /** A capability with no installed provider reads honestly, never blank. */
@@ -524,7 +524,7 @@ export const appStrings = {
   capabilityProviderNeedsCredentialTemplate: 'Needs {credential}.',
   /** The picker's reason when the registry does not offer the chosen provider. */
   capabilityProviderNotOfferedTemplate: 'The provider {provider} is not offered for this capability.',
-  // --- The plan sheet's Directions control (docs/design/DirectionsModesAndStrategy.md) ---
+  // --- The plan sheet's Directions control (PRD.md §6 item 36) ---
   /** The Directions group's title in the plan sheet. */
   directionsTitleText: 'Directions',
   directionsModeRowTitleText: 'Mode',

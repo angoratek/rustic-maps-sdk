@@ -1,5 +1,5 @@
 /**
- * The shared provider registry (docs/ProviderGenericity.md): the RN shell
+ * The shared provider registry (platform/providers.json): the RN shell
  * consumes `platform/providers.json` by name through a Metro `require`,
  * exactly the file the SwiftPM bundle, the Android Gradle copy task, the dev
  * server and the web playground carry, so the provider descriptors cannot

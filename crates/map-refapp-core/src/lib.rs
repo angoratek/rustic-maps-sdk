@@ -7,7 +7,7 @@
 //! source compiles for native targets and for WebAssembly.
 //!
 //! The crate answers the one question the four reference applications must
-//! answer identically (see `docs/design/ReferenceApplicationBehavior.md`):
+//! answer identically (see `docs/ReferenceAppUX.md`):
 //! given the current flow state and an event, what should the user see next?
 //! The follow-camera state machine, the circular course median, the easing
 //! primitives, the scale-bar ladder and the recorded-trace cursor sit beside

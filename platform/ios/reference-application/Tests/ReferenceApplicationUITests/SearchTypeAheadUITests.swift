@@ -1,4 +1,4 @@
-//! The type-ahead UI cases (`docs/design/Autocomplete.md`): the three-
+//! The type-ahead UI cases (`docs/ReferenceAppUX.md §5.5`): the three-
 //! character threshold, the quiet window, the five-row cap, cancellation of
 //! a superseded request, selection filling the field and planning, the
 //! no-match and failure states, and the keyless provider the startup

@@ -1,4 +1,4 @@
-// The second-provider proof (M15 phase 5, docs/ProviderGenericity.md): the
+// The second-provider proof (M15 phase 5): the
 // shared registry declares a second, keyless provider whose single recorded
 // vector-tile fixture is served by the generic `/providers/{key}/…` router.
 // The descriptor claims no credential label, no wasm registration and no

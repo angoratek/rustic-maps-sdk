@@ -1,8 +1,7 @@
 //! The provider console's text: row lines, detail sections and the export
-//! payload (docs/design/ProviderConsole.md "Event shape" and "Panel
-//! behaviour"). Everything here is pure so the formatting, the filter, the
-//! honest cache rows and the credential-free export are unit-testable
-//! without a view.
+//! payload (docs/design/DeveloperConsole.md "Provider request console").
+//! Everything here is pure so the formatting, the filter, the honest cache
+//! rows and the credential-free export are unit-testable without a view.
 //!
 //! A provider row never parses the composed message line: it reads the typed
 //! `ProviderRequestTrace` the contract delivers. The one place the composed

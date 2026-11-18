@@ -66,7 +66,7 @@ export interface RefappMapModule {
    * plan fields and resolves `true` once the plan settled; a missing field
    * rejects with a reason naming it. The two generated enum ordinals are the
    * Directions choice every live plan carries
-   * (docs/design/DirectionsModesAndStrategy.md). */
+   * (PRD.md §6 item 36). */
   planRoute(
     transportationMode: number,
     routeStrategy: number,

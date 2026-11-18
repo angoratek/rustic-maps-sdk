@@ -19,7 +19,7 @@ import uniffi.rustic_maps.TrafficFlowData
 
 /**
  * The base-map row's selection: a registry descriptor's raster source or one
- * committed vector style (docs/design/MapControlsAndTrafficLayer.md).
+ * committed vector style (docs/ReferenceAppUX.md §4.2).
  */
 sealed class MapLayerBaseSelection {
     /** A registry descriptor's raster source, addressed by its provider key. */
@@ -142,7 +142,7 @@ enum class DeviceLocationPanelStatus(
 
 /**
  * The on-map layer panel's state machine
- * (docs/design/MapControlsAndTrafficLayer.md): the panel's open state, the base-map
+ * (docs/ReferenceAppUX.md §4.2): the panel's open state, the base-map
  * rows, the traffic layer's debounced capability calls, the device-location
  * status row and the remembered traffic choice.
  *

@@ -825,7 +825,7 @@ private fun PlanSearchView(
         // The Directions section sits beside the plan action: the mode and
         // strategy every plan in the application carries, with a choice the
         // serving provider cannot honour disabled and annotated
-        // (docs/design/DirectionsModesAndStrategy.md).
+        // (PRD.md §6 item 36).
         DirectionsGroup(applicationState = applicationState)
         // The explicit Plan route action: enabled while both fields hold text;
         // pressing it resolves each field and names any field that resolves to
@@ -891,7 +891,7 @@ private fun PlanSearchView(
 
 /**
  * The Directions section beside the plan action
- * (docs/design/DirectionsModesAndStrategy.md): the Car/Walk mode control and the
+ * (PRD.md §6 item 36): the Car/Walk mode control and the
  * Fastest/Shortest strategy control, with a choice the serving provider
  * cannot honour disabled and annotated with its reason. The strategy control
  * is shown for automobile plans, the only ones its providers document.
@@ -2815,7 +2815,7 @@ private fun LabeledSearchField(
                     .padding(horizontal = ReferenceAppUXDimensions.StackTight),
             )
         }
-        // The field's type-ahead answer (docs/design/Autocomplete.md): at
+        // The field's type-ahead answer (docs/ReferenceAppUX.md §5.5): at
         // most the shared cap of suggestion rows, one no-match row instead of
         // an empty list, or the provider's one inline sentence while the text
         // stays. A cancelled request renders none of these.

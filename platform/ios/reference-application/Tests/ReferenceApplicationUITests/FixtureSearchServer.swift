@@ -1,5 +1,5 @@
 //! A loopback fixture server for the type-ahead UI cases
-//! (`docs/design/Autocomplete.md`): it answers the SDK's suggest requests
+//! (`docs/ReferenceAppUX.md §5.5`): it answers the SDK's suggest requests
 //! from committed fixture documents, records what the provider asked for,
 //! and can delay one answer so a superseded request is provably dropped.
 //!

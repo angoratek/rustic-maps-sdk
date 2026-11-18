@@ -1,5 +1,5 @@
 /**
- * The opt-in diagnostics stream (docs/design/ReferenceApplicationBehavior.md,
+ * The opt-in diagnostics stream (docs/ReferenceAppUX.md,
  * §Diagnostics policy): nothing subscribes before the pane opens, opening
  * subscribes at Info and flushes the bounded backlog, the debug switch lowers
  * the gate once per session, and the display window is coalesced and bounded.

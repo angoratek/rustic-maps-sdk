@@ -287,7 +287,7 @@ enum ReferenceApplicationConfiguration {
     /// URL-template source covers its published range from level zero).
     static let baseMapMinimumZoomLevel: UInt8 = 0
 
-    // MARK: Directions (docs/design/DirectionsModesAndStrategy.md)
+    // MARK: Directions (PRD.md §6 item 36)
 
     /// The Directions section's group label.
     static let directionsGroupLabel = "Directions"
@@ -378,7 +378,7 @@ enum ReferenceApplicationConfiguration {
     /// The offline card's line before the first drawn frame.
     static let offlineCardNoFrameYetText = "Tiles last frame: the first map frame has not drawn yet…"
 
-    // MARK: Offline region downloads (docs/design/TilePackManager.md)
+    // MARK: Offline region downloads (crates/rustic-maps-cache/src/tile_packs.rs)
 
     /// The offline card's region-download control while no download runs
     /// (§2.5 `offline.download_action`).

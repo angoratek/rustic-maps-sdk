@@ -1,4 +1,4 @@
-//! The on-map layer control (docs/design/MapControlsAndTrafficLayer.md): the
+//! The on-map layer control (docs/ReferenceAppUX.md §4.2): the
 //! collapsed round control docked above the attribution notice, and the
 //! panel it opens — Base map, Traffic, Overlays and Device location, in that
 //! order. The panel renders the shared registry's descriptors; it names no

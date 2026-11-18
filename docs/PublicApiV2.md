@@ -694,7 +694,7 @@ split in `PRD.md` §6 item 22.
 ## 8. Device positioning
 
 The contract carries one positioning controller and its records (added in
-0.1.0; see `docs/history/PositioningResearch.md` for the platform research):
+0.1.0; the host split is `PRD.md` §6 item 25):
 
 ```text
 dictionary PositionFix {

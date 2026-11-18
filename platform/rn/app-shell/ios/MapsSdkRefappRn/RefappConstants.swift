@@ -176,7 +176,7 @@ enum RefappConstants {
     static let sheetHalfHeightFraction = 0.5
 
     // --- The shared behavior model's consumer copy
-    // (docs/design/ReferenceApplicationBehavior.md; the same values theme.ts
+    // (docs/ReferenceAppUX.md; the same values theme.ts
     // carries) ---
     static let planOriginLabelText = "Origin"
     static let planDestinationLabelText = "Destination"

@@ -164,7 +164,7 @@ private fun LayersGlyph(color: Color) {
 }
 
 /**
- * The layer panel (docs/design/MapControlsAndTrafficLayer.md): Base map, Traffic,
+ * The layer panel (docs/ReferenceAppUX.md §4.2): Base map, Traffic,
  * Overlays and Device location, in that order. It renders the shared
  * registry's descriptors and the shared scenes artifact at runtime, names no
  * provider and carries no credential.

@@ -658,7 +658,7 @@ semantics and wording are not.
 ### 5.5 Type-ahead in the plan fields
 
 Both endpoint fields suggest places while the visitor types, on every target,
-under one rule (`docs/design/Autocomplete.md`): three characters
+under one rule: three characters
 (`autocomplete-minimum-query-characters`), a 250 ms quiet window
 (`autocomplete-debounce-milliseconds`), at most five rows
 (`autocomplete-maximum-results`), one request in flight per field, a dropped
@@ -710,7 +710,7 @@ browser's `requestAnimationFrame`, the Android Compose frame clock, the iOS
 `TimelineView` and the React Native module's frame callback. The follow camera
 consumes fixes, not interpolated poses (§5.3), so the puck's motion never drags
 the camera. The motion model and its measured cadences are recorded in
-`docs/design/LocationInterpolation.md`.
+`PRD.md §6 item 66`.
 
 ### 5.7 North-up during navigation
 
@@ -733,8 +733,7 @@ React Native uses the documented TypeScript mirror of the same model
 (`platform/rn/src/followBearingMode.ts`), including these mode transitions; the
 shared Rust `FollowCamera` in `map-refapp-core` is the reference. The compass
 visibility threshold and the re-north animation are §2.4 tokens, and the
-control's placement and states are in §4.2 and
-`docs/design/MapControlsAndTrafficLayer.md`.
+control's placement and states are in §4.2.
 
 ## 6. Status, readiness, and provider-echoing errors
 
@@ -1040,7 +1039,7 @@ first).
 `platform/reference-scenes.json` is the language-neutral demo content every
 refapp loads, so the three apps present identical demo data. Provider
 descriptors live in the separate shared registry `platform/providers.json`
-(`docs/ProviderGenericity.md`), not this artifact. Sections:
+(`platform/providers.json`), not this artifact. Sections:
 
 | Section | Contents |
 | --- | --- |

@@ -1,4 +1,4 @@
-//! The offline card's region-download state (docs/design/TilePackManager.md):
+//! The offline card's region-download state (crates/rustic-maps-cache/src/tile_packs.rs):
 //! the demo region's tile count, the download's live progress, cancellation,
 //! the stored-region list and deletion.
 //!

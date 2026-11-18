@@ -515,7 +515,7 @@ class ReferenceApplicationAndroidTest {
     }
 
     /**
-     * The Directions control (docs/design/DirectionsModesAndStrategy.md): it starts
+     * The Directions control (PRD.md §6 item 36): it starts
      * on Car and Fastest, carries the selected mode in its plan options, and
      * reflects the serving provider's capability answer — the contract's own
      * reason while no routing provider is installed, and the offered choices
@@ -685,7 +685,7 @@ class ReferenceApplicationAndroidTest {
      * The plan action's disabled-with-reason line names the empty field; once
      * both fields hold text the action is enabled, and editing a resolved
      * field's text clears only its assignment because the typed text resolves
-     * on press (docs/design/ReferenceApplicationBehavior.md).
+     * on press (docs/ReferenceAppUX.md).
      */
     @Test
     fun thePlanActionNamesTheMissingFieldWhileDisabled() {
@@ -762,7 +762,7 @@ class ReferenceApplicationAndroidTest {
     /**
      * The shared result list assigns to the field whose search produced it,
      * and the sheet states which field the next result fills
-     * (docs/design/PositioningAndRouteUx.md §2).
+     * (docs/ReferenceAppUX.md §4.1).
      */
     @Test
     fun aSearchResultAssignsToTheFieldThatSearched() {
@@ -925,7 +925,7 @@ class ReferenceApplicationAndroidTest {
     }
 
     // ---------------------------------------------------------------
-    // Type-ahead (docs/design/Autocomplete.md)
+    // Type-ahead (docs/ReferenceAppUX.md §5.5)
     // ---------------------------------------------------------------
 
     /**
@@ -2669,7 +2669,7 @@ class ReferenceApplicationAndroidTest {
     }
 
     // -------------------------------------------------------------------
-    // The on-map layer panel (docs/design/MapControlsAndTrafficLayer.md)
+    // The on-map layer panel (docs/ReferenceAppUX.md §4.2)
     // -------------------------------------------------------------------
 
     @Test

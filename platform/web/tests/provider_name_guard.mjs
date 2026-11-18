@@ -1,4 +1,4 @@
-// Provider-name guard (M15, docs/ProviderGenericity.md §5): the north star is
+// Provider-name guard (M15): the north star is
 // that a provider name lives only in its provider crate, its fixture
 // directory, the shared registry `platform/providers.json` and a registration
 // dispatch arm. This check scans the layers M15 migrated and hardened since —

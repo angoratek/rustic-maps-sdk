@@ -1,6 +1,6 @@
 /**
  * The shared reference-application flow schema
- * (docs/design/ReferenceApplicationBehavior.md): the ordered flows every
+ * (docs/ReferenceAppUX.md): the ordered flows every
  * target runs, with each step's action, visible outcomes, copy IDs and
  * per-platform automation hook. The RN shell consumes
  * `platform/reference-flows.json` by name through a Metro `require`, exactly

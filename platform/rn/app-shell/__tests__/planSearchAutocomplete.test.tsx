@@ -1,5 +1,5 @@
 /**
- * The plan fields' type-ahead (docs/design/Autocomplete.md): the three-
+ * The plan fields' type-ahead (docs/ReferenceAppUX.md §5.5): the three-
  * character threshold, the quiet timer, the five-row cap, the cancellation of
  * a superseded request, selection filling the field, and the keyless/keyed
  * provider choice. The provider rows come from the shared registry fixture

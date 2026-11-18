@@ -1,5 +1,5 @@
 // Reference-flow gate: the ordered flows every reference application must run
-// (docs/design/ReferenceApplicationBehavior.md).
+// (docs/ReferenceAppUX.md).
 //
 // The gate reads `platform/reference-flows.json`, the shared copy artifact
 // (`platform/reference-tokens.json`), the provider registry
