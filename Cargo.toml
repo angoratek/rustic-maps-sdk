@@ -76,7 +76,7 @@ r2d2_sqlite = { version = "0.36", features = ["bundled"] }
 # `fs4::available_space(path)` free function.
 fs4 = "1.1"
 sha2 = "0.11"
-glam = "0.30"
+glam = "0.34"
 # PNG only: the raster path decodes the MapQuest PNG tile payloads, so the
 # default feature set would compile unneeded codecs (and their decoder
 # dependency trees). This is the same narrowing rustic-maps-web-bindings states
