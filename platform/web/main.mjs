@@ -7,20 +7,29 @@
 // The package is one generated `wasm2` module that carries two surfaces:
 //
 // - the contract namespace (`./generated/index.js`): the generated `MapSdk`
-//   and its provider, search, plan, traffic and diagnostics members, plus
-//   the `SdkError` typed failures and the pure projection/offline calls,
-//   initialized explicitly by `uniffiInitAsync`;
+//   and its provider, search, plan, traffic and diagnostics members, the
+//   generated `Navigator` and `PositionController`, plus the `SdkError` typed
+//   failures and the pure projection/offline calls, initialized explicitly by
+//   `uniffiInitAsync`;
 // - the wasm-bindgen glue (`./generated/rustic_maps_bg.js`): the canvas
-//   `MapView`, its camera, the keyless URL-template raster fallback,
-//   navigation and positioning. Objects never cross the two ABIs, so the
-//   page keeps the glue's `MapCamera` for canvas frames and the generated
-//   record types never reach the canvas.
+//   `MapView`, its camera and the keyless URL-template raster fallback.
+//   Objects never cross the two ABIs, so the page keeps the glue's
+//   `MapCamera` for canvas frames and the generated record types never reach
+//   the canvas.
 //
 // The `window.mapTest` names and shapes the harness relies on are preserved
 // here; the façade is the only place a generated difference is adapted.
 import {
+  DistancePhraseKind,
+  DistanceUnit,
   GeocodeQuality,
+  ManeuverInstructionTextKind,
   MapSdk as GeneratedMapSdk,
+  NavigationPhase,
+  NavigationPhaseChange,
+  Navigator as GeneratedNavigator,
+  PositionController as GeneratedPositionController,
+  PositionSourceError,
   ProviderContract,
   RasterImageFormat,
   RasterTileResolution,
@@ -33,6 +42,8 @@ import {
   TransportationMode,
   UnitSystem,
   coordinateToNormalizedWorld as generated_coordinate_to_normalized_world,
+  defaultDeviationPolicy,
+  defaultStepAdvancePolicy,
   getSdkCompiledVersion,
   offlineRouteFromArchiveBytes as generated_offline_route_from_archive_bytes,
   tileKeyForCoordinate as generated_tile_key_for_coordinate,
@@ -43,8 +54,6 @@ import {
   MapCamera,
   MapView as BrowserMapView,
   MapsSdk,
-  Navigator,
-  PositionController,
   TileResolution,
   clearProviderRegistrations as canvas_clear_provider_registrations,
   clearSharedProviderSlots,
@@ -563,6 +572,518 @@ const PAGE_DIAGNOSTIC_LISTENER = {
   onDiagnosticEvent() {},
 };
 
+// ---------------------------------------------------------------------------
+// Navigation and positioning adapters. The contract carries typed topic
+// listeners, policy records and numeric enums; the page and its harness read
+// one callback-style event stream and plain snapshot. These adapters are the
+// only place those generated differences are mapped, so the `window.mapTest`
+// member names and shapes stay exactly as they were.
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds one failure carrying the page's legacy `{ code, message }` shape,
+ * used where the adapter itself refuses an argument (a spelling the generated
+ * enum cannot take).
+ * @param {string} code
+ * @param {string} message
+ * @returns {Error}
+ */
+function legacy_named_failure(code, message) {
+  const failure = new Error(message);
+  // An empty `name` keeps `Error.prototype.toString` at the message alone.
+  failure.name = '';
+  failure.code = code;
+  return failure;
+}
+
+/** The generated `UnitSystem` member for the page's `"metric"`/`"imperial"`. */
+function unit_system_from_page_name(unit_system_name) {
+  switch (unit_system_name) {
+    case 'metric':
+      return UnitSystem.Metric;
+    case 'imperial':
+      return UnitSystem.Imperial;
+    default:
+      throw legacy_named_failure(
+        'invalidNavigationInput',
+        `the unit system must be "metric" or "imperial", not \`${unit_system_name}\``,
+      );
+  }
+}
+
+/** The page's `phase` spelling for a generated `NavigationPhase` member. */
+function navigation_phase_text(navigation_phase) {
+  switch (navigation_phase) {
+    case NavigationPhase.Navigating:
+      return 'navigating';
+    case NavigationPhase.OffRoute:
+      return 'offRoute';
+    case NavigationPhase.Arrived:
+      return 'arrived';
+    default:
+      return String(navigation_phase);
+  }
+}
+
+/** The page's `phaseChange` spelling for a generated `NavigationPhaseChange`. */
+function navigation_phase_change_text(navigation_phase_change) {
+  switch (navigation_phase_change) {
+    case NavigationPhaseChange.OffRouteEntered:
+      return 'offRouteEntered';
+    case NavigationPhaseChange.OffRouteCleared:
+      return 'offRouteCleared';
+    case NavigationPhaseChange.RerouteApplied:
+      return 'rerouteApplied';
+    case NavigationPhaseChange.Arrived:
+      return 'arrived';
+    default:
+      return String(navigation_phase_change);
+  }
+}
+
+/**
+ * The canonical distance phrase text the page's banner line shows (`"now"`,
+ * `"130 meters"`, …), reproduced from the contract's phrase record with the
+ * same increments the SDK rounds it to.
+ */
+function distance_phrase_text(distance_phrase) {
+  switch (distance_phrase.phraseKind) {
+    case DistancePhraseKind.Immediate:
+      return 'now';
+    case DistancePhraseKind.Suppressed:
+      return '';
+    case DistancePhraseKind.Quantity:
+      switch (distance_phrase.magnitudeUnit) {
+        case DistanceUnit.Meters:
+          return `${(distance_phrase.magnitude ?? 0).toFixed(0)} meters`;
+        case DistanceUnit.Kilometers:
+          return `${(distance_phrase.magnitude ?? 0).toFixed(1)} kilometers`;
+        case DistanceUnit.Feet:
+          return `${(distance_phrase.magnitude ?? 0).toFixed(0)} feet`;
+        case DistanceUnit.Miles:
+          return `${(distance_phrase.magnitude ?? 0).toFixed(1)} miles`;
+        default:
+          return '';
+      }
+    default:
+      return '';
+  }
+}
+
+/**
+ * The page's banner channels for one generated `ManeuverInstructionText`: the
+ * composed display and speech strings, and the provider-authored display
+ * sentence when the provider wrote one. An unavailable variant answers the
+ * empty strings and a null provider sentence, exactly as the browser seam
+ * always did (nothing is invented).
+ */
+function maneuver_text_fields(maneuver_instruction_text) {
+  if (maneuver_instruction_text.textKind === ManeuverInstructionTextKind.Unavailable) {
+    return { displayText: '', speechText: '', providerDisplayText: null };
+  }
+  const provider_display_text = maneuver_instruction_text.providerDisplayText ?? '';
+  return {
+    displayText: maneuver_instruction_text.composedDisplayText ?? '',
+    speechText: maneuver_instruction_text.composedSpeechText ?? '',
+    providerDisplayText: provider_display_text === '' ? null : provider_display_text,
+  };
+}
+
+/**
+ * The page's trip snapshot: the generated `TripNavigationState` and
+ * `NavigationInstruction` projected into the flat object every navigation
+ * consumer has read. Enums become the page's spellings, the 64-bit step
+ * position becomes a number, and the deviation is carried exactly while the
+ * phase is off route (the seam's snapshot rule).
+ * @param {GeneratedNavigator} generated_navigator
+ * @returns {object | null}
+ */
+function navigation_snapshot_from_generated(generated_navigator) {
+  const trip_state = generated_navigator.currentTripState();
+  if (trip_state === null || trip_state === undefined) {
+    return null;
+  }
+  const instruction = generated_navigator.currentInstructions();
+  if (instruction === null || instruction === undefined) {
+    return null;
+  }
+  const active_text = maneuver_text_fields(instruction.activeManeuver.instruction);
+  const upcoming_text = instruction.upcomingManeuver === null
+    || instruction.upcomingManeuver === undefined
+    ? null
+    : maneuver_text_fields(instruction.upcomingManeuver.instruction);
+  const is_off_route = trip_state.phase === NavigationPhase.OffRoute;
+  const deviation = is_off_route
+    && trip_state.deviation !== null
+    && trip_state.deviation !== undefined
+    ? {
+      statusChangeKind: 'OffRoute',
+      distanceFromRouteMeters: trip_state.deviation.deviationFromRouteMeters,
+    }
+    : null;
+  const snapped_coordinate = trip_state.snappedCoordinate === null
+    || trip_state.snappedCoordinate === undefined
+    ? null
+    : {
+      latitude: trip_state.snappedCoordinate.latitude,
+      longitude: trip_state.snappedCoordinate.longitude,
+    };
+  return {
+    phase: navigation_phase_text(trip_state.phase),
+    instruction: {
+      activeManeuver: {
+        displayText: active_text.displayText,
+        speechText: active_text.speechText,
+        distancePhraseText: distance_phrase_text(instruction.activeManeuver.distancePhrase),
+        providerDisplayText: active_text.providerDisplayText,
+      },
+      upcomingManeuver: upcoming_text === null
+        ? null
+        : {
+          displayText: upcoming_text.displayText,
+          speechText: upcoming_text.speechText,
+          providerDisplayText: null,
+        },
+      progress: {
+        distanceToNextManeuverMeters: trip_state.progress.distanceToNextManeuverMeters,
+        distanceRemainingMeters: trip_state.progress.distanceRemainingMeters,
+        durationRemainingSeconds: trip_state.progress.durationRemainingSeconds,
+      },
+      isArrival: instruction.isArrival,
+      isReroutingRequired: instruction.isReroutingRequired,
+    },
+    deviation,
+    snappedCoordinate: snapped_coordinate,
+    isArrived: trip_state.phase === NavigationPhase.Arrived,
+    currentStepIndex: Number(trip_state.currentStepPosition),
+  };
+}
+
+/**
+ * The page's route object as the generated `Route` record: every field the
+ * contract requires is present, and the `geometry` field an assembled route
+ * may omit becomes the empty polyline its steps carry, exactly as the browser
+ * seam defaulted it.
+ */
+function generated_route_from_page(route) {
+  return {
+    distanceMeters: route.distanceMeters,
+    durationSeconds: route.durationSeconds,
+    boundingBox: route.boundingBox,
+    geometry: route.geometry ?? [],
+    legs: route.legs,
+  };
+}
+
+/**
+ * The page's fix object as the generated `NavigationLocationUpdate`. The
+ * page's null optionals become the generated record's undefined optionals:
+ * the generated converter distinguishes the two.
+ */
+function generated_location_update_from_page(update) {
+  return {
+    coordinate: {
+      latitude: update.coordinate.latitude,
+      longitude: update.coordinate.longitude,
+    },
+    horizontalAccuracyMeters: update.horizontalAccuracyMeters ?? undefined,
+    courseHeadingDegrees: update.courseHeadingDegrees ?? undefined,
+    timestampSeconds: update.timestampSeconds ?? undefined,
+  };
+}
+
+/**
+ * The page's `Navigator`: the generated contract controller behind the
+ * callback-style surface the page and its harness consume. The generated
+ * class delivers typed topic callbacks and takes policy records; this adapter
+ * registers one bridge listener, records the dispatched topics, and emits the
+ * single `{ topic, snapshot, speechText?, phaseChange? }` stream once the
+ * controller call returns, so the snapshot always describes the state that
+ * produced it. `updateLocation` keeps answering the snapshot; the policies
+ * are the SDK defaults the browser seam always installed.
+ */
+class PageNavigator {
+  constructor() {
+    this.generated_navigator = new GeneratedNavigator();
+    this.page_listeners = new Map();
+    this.next_listener_identifier = 1;
+    this.pending_events = [];
+    // The foreign listener object every topic reaches; kept referenced so the
+    // callback handle's JavaScript side cannot be collected.
+    this.bridge_listener = {
+      onNavigationInstruction: () => {
+        this.pending_events.push({ topic: 'instruction' });
+      },
+      onDeviationStatusChange: () => {
+        this.pending_events.push({ topic: 'deviation' });
+      },
+      onNavigationPhaseChange: (navigation_phase_change) => {
+        this.pending_events.push({
+          topic: 'phase',
+          phaseChange: navigation_phase_change_text(navigation_phase_change),
+        });
+      },
+      onSpeechInstruction: (speech_instruction) => {
+        this.pending_events.push({
+          topic: 'speech',
+          speechText: speech_instruction.utteranceSpeechText,
+        });
+      },
+    };
+    this.generated_subscription =
+      this.generated_navigator.addNavigationListener(this.bridge_listener);
+  }
+
+  /**
+   * Registers one callback on the event stream and answers its identifier.
+   * @param {(event: object) => void} listener
+   * @returns {number}
+   */
+  addNavigationListener(listener) {
+    const listener_identifier = this.next_listener_identifier;
+    this.next_listener_identifier += 1;
+    this.page_listeners.set(listener_identifier, listener);
+    return listener_identifier;
+  }
+
+  /**
+   * Removes one registered callback and answers whether it was registered.
+   * @param {number} listener_identifier
+   * @returns {boolean}
+   */
+  removeNavigationListener(listener_identifier) {
+    return this.page_listeners.delete(listener_identifier);
+  }
+
+  /** Hands one event to every live callback; a throwing callback is ignored. */
+  deliver_navigation_event(event) {
+    for (const listener of this.page_listeners.values()) {
+      try {
+        listener(event);
+      } catch {
+        // Navigation is the primary job; events are best effort.
+      }
+    }
+  }
+
+  /**
+   * Emits the topics dispatched by the controller call that just returned,
+   * all against the state that call produced, and answers that snapshot.
+   * @param {object | null} [snapshot] Pre-composed state, when the caller
+   *   already read it.
+   * @returns {object | null}
+   */
+  emit_pending_navigation_events(snapshot = undefined) {
+    const resolved_snapshot = snapshot === undefined
+      ? navigation_snapshot_from_generated(this.generated_navigator)
+      : snapshot;
+    const pending_events = this.pending_events;
+    this.pending_events = [];
+    if (resolved_snapshot === null) {
+      return null;
+    }
+    for (const pending_event of pending_events) {
+      const event = { topic: pending_event.topic, snapshot: resolved_snapshot };
+      if (pending_event.speechText !== undefined) {
+        event.speechText = pending_event.speechText;
+      }
+      if (pending_event.phaseChange !== undefined) {
+        event.phaseChange = pending_event.phaseChange;
+      }
+      this.deliver_navigation_event(event);
+    }
+    return resolved_snapshot;
+  }
+
+  /**
+   * Begins navigating `route` in `unit_system` (`"metric"` or `"imperial"`)
+   * with the SDK default step-advance and deviation policies, replacing any
+   * active trip. The trip-start stream is the initial instruction payload,
+   * the phase topic (which names no transition at start) and the speech line
+   * when the composition carries one.
+   * @param {object} route
+   * @param {string} unit_system_name
+   */
+  startNavigation(route, unit_system_name) {
+    this.pending_events = [];
+    try {
+      this.generated_navigator.startNavigation(
+        generated_route_from_page(route),
+        unit_system_from_page_name(unit_system_name),
+        defaultStepAdvancePolicy(),
+        defaultDeviationPolicy(),
+      );
+    } catch (failure) {
+      this.pending_events = [];
+      throw adapted_failure(failure);
+    }
+    const snapshot = navigation_snapshot_from_generated(this.generated_navigator);
+    if (snapshot === null) {
+      this.pending_events = [];
+      return;
+    }
+    this.pending_events.push({ topic: 'phase' });
+    const speech_text = snapshot.instruction.activeManeuver.speechText;
+    if (speech_text !== '') {
+      this.pending_events.push({ topic: 'speech', speechText: speech_text });
+    }
+    this.emit_pending_navigation_events(snapshot);
+  }
+
+  /**
+   * Delivers one position fix to the active trip and answers the resulting
+   * snapshot, or null without an active trip (the fix is then dropped).
+   * @param {object} update
+   * @returns {object | null}
+   */
+  updateLocation(update) {
+    this.pending_events = [];
+    try {
+      this.generated_navigator.updateLocation(
+        generated_location_update_from_page(update),
+      );
+    } catch (failure) {
+      this.pending_events = [];
+      throw adapted_failure(failure);
+    }
+    return this.emit_pending_navigation_events();
+  }
+
+  /**
+   * Replaces the active trip's route (a reroute); without an active trip the
+   * route is dropped. The replacement uses the SDK default step-advance
+   * policy, as the browser seam always did.
+   * @param {object} route
+   */
+  applyReroute(route) {
+    this.pending_events = [];
+    try {
+      this.generated_navigator.applyReroute(
+        generated_route_from_page(route),
+        defaultStepAdvancePolicy(),
+      );
+    } catch (failure) {
+      this.pending_events = [];
+      throw adapted_failure(failure);
+    }
+    this.emit_pending_navigation_events();
+  }
+
+  /** Ends the active trip and emits the wasm-only stop topic. */
+  stopNavigation() {
+    this.generated_navigator.stopNavigation();
+    this.pending_events = [];
+    this.deliver_navigation_event({ topic: 'stop', snapshot: null });
+  }
+
+  /** The latest trip snapshot, or null without an active trip. */
+  currentTripState() {
+    return navigation_snapshot_from_generated(this.generated_navigator);
+  }
+
+  /** Whether a trip is active. */
+  hasActiveTrip() {
+    const trip_state = this.generated_navigator.currentTripState();
+    return trip_state !== null && trip_state !== undefined;
+  }
+}
+
+/** The page's source-status name by generated `PositionSourceError` member. */
+const POSITION_SOURCE_ERROR_NAME_BY_MEMBER = new Map([
+  [PositionSourceError.PermissionDenied, 'permissionDenied'],
+  [PositionSourceError.ServiceDisabled, 'serviceDisabled'],
+  [PositionSourceError.Unavailable, 'unavailable'],
+  [PositionSourceError.Timeout, 'timeout'],
+]);
+
+/** The generated `PositionSourceError` member by the page's status name. */
+const POSITION_SOURCE_ERROR_MEMBER_BY_NAME = new Map(
+  [...POSITION_SOURCE_ERROR_NAME_BY_MEMBER].map(
+    ([source_error_member, source_error_name]) => [source_error_name, source_error_member],
+  ),
+);
+
+/**
+ * The page's `PositionController`: the generated contract controller behind
+ * the page's positional fix signature and named source statuses. The fix
+ * record, the nullable scalars and the source-status enum are adapted here;
+ * validation, smoothing and staleness stay in the Rust controller.
+ */
+class PagePositionController {
+  constructor() {
+    this.generated_position_controller = new GeneratedPositionController();
+  }
+
+  /**
+   * Feeds one fix from the page's geolocation source. The controller validates
+   * every scalar and refuses an invalid fix with the contract's typed failure,
+   * adapted to the page's `{ code, message }` shape.
+   */
+  feedFix(
+    latitude,
+    longitude,
+    horizontal_accuracy_meters,
+    course_heading_degrees,
+    timestamp_seconds,
+  ) {
+    return with_adapted_sync_failure(() => {
+      this.generated_position_controller.feedFix({
+        coordinate: { latitude, longitude },
+        horizontalAccuracyMeters: horizontal_accuracy_meters ?? undefined,
+        courseHeadingDegrees: course_heading_degrees ?? undefined,
+        timestampSeconds: timestamp_seconds ?? undefined,
+      });
+    });
+  }
+
+  /** Records a source failure by its documented page name. */
+  sourceFailed(status_name) {
+    const source_error = POSITION_SOURCE_ERROR_MEMBER_BY_NAME.get(status_name);
+    if (source_error === undefined) {
+      throw legacy_named_failure(
+        'invalidArgument',
+        'the position source status must be permissionDenied, serviceDisabled, '
+        + `unavailable or timeout, got ${status_name}`,
+      );
+    }
+    this.generated_position_controller.sourceFailed(source_error);
+  }
+
+  /** The latest accepted fix in the page's flat shape, or null before one. */
+  latestFix() {
+    const latest_fix = this.generated_position_controller.latestFix();
+    if (latest_fix === null || latest_fix === undefined) {
+      return null;
+    }
+    return {
+      latitude: latest_fix.coordinate.latitude,
+      longitude: latest_fix.coordinate.longitude,
+      horizontalAccuracyMeters: latest_fix.horizontalAccuracyMeters ?? null,
+      courseHeadingDegrees: latest_fix.courseHeadingDegrees ?? null,
+      timestampSeconds: latest_fix.timestampSeconds ?? null,
+    };
+  }
+
+  /** The smoothed course in degrees clockwise from true north, or null. */
+  smoothedCourseDegrees() {
+    return this.generated_position_controller.smoothedCourseDegrees();
+  }
+
+  /** Whether the latest fix is older than the threshold at `now_seconds`. */
+  isStale(now_seconds) {
+    return this.generated_position_controller.isStale(now_seconds);
+  }
+
+  /** The last source failure's name, or null when the last event was a fix. */
+  sourceStatus() {
+    const source_error = this.generated_position_controller.sourceStatus();
+    if (source_error === null || source_error === undefined) {
+      return null;
+    }
+    return POSITION_SOURCE_ERROR_NAME_BY_MEMBER.get(source_error) ?? null;
+  }
+}
+
 window.mapTestReady = (async () => {
   await uniffiInitAsync(GENERATED_MODULE_URL);
   // The contract SDK every provider, search, plan and diagnostics call
@@ -583,8 +1104,8 @@ window.mapTestReady = (async () => {
     MapCamera,
     MapView: BrowserMapView,
     MapsSdk,
-    Navigator,
-    PositionController,
+    Navigator: PageNavigator,
+    PositionController: PagePositionController,
     maps,
     TileResolution,
     SdkLogSeverity,
