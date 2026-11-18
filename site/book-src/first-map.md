@@ -1,29 +1,43 @@
 # Your first map
 
-Install the SDK, register a map provider, and draw your first map. Choose your
-platform and follow the steps in order. Every tab uses the same demo camera:
-Capitol Park, Sacramento at 38.5766, -121.4944, zoom 12, north-up and
-top-down. The SDK calls compile against the [FFI contract](udl-contract.md).
-If you are new to map SDKs, read [Map concepts](map-concepts.md) first.
+Install the SDK, register a map provider, and draw your first map. Every tab
+uses the same demo camera: Capitol Park, Sacramento at 38.5766, -121.4944,
+zoom 12, north-up and top-down. Every call compiles against the [FFI
+contract](udl-contract.md); [Map concepts](map-concepts.md) covers the model.
 
-## Choosing a provider
+## Before you start
 
-Register one provider, then apply its credential at **runtime** from a settings
-screen, secure storage, or a launch environment for automated tests; never bake
-it into the build. A keyless base map still draws; search, routing and traffic
-respond once a provider that serves those contracts has a credential. The
-[provider capability pages](provider-capabilities-android.md) list each provider,
-what it serves and its credential.
+| Platform | What you need |
+|---|---|
+| Android | Android Studio with the SDK 36 toolchain, a project with `minSdk = 24`, and the AAR from the SDK build script in `app/libs/`. |
+| iOS | Xcode with Swift 5.10 (`swift-tools-version: 5.10`), an iOS 17 deployment target, and the package from the SDK build script. |
+| React Native | Node.js and npm, a bare-workflow React Native 0.88 or later application on React 19 or later, Android Studio with the SDK and NDK or Xcode and CocoaPods, and the tarball from the SDK build script. |
+| WebAssembly | A Chromium-based browser with WebGPU, flag-free since Chromium 113, Safari 26 and Firefox 141 on desktop, and the package from the SDK build script. |
 
-## Camera and overlay rules
+## Choose a provider
 
-`animateCamera` eases to a pose over a duration, and `fitBounds` frames a box
-inside a viewport with edge insets. `zoomByLevelsAroundScreenPoint` and
-`rotateByDegreesAroundScreenPoint` apply pinch and twist deltas with the same
-focal-point correction on every platform. `setOverlays` replaces the drawn list
-in one go; `addOverlay`, `updateOverlay` and `removeOverlay` address one entry
-at a time with an identifier that is monotonic per view. The browser descriptor
-spells the color field `color`; the native tabs spell it `rgbaColor`.
+Register one provider and apply its credential at **runtime** from a settings
+screen, secure storage, or a launch environment for automated tests. No Gradle
+field, `Info.plist` or `.xcconfig` entry carries one. Registration throws the
+provider's message when the key is refused. A keyless base map still draws;
+search, routing and traffic answer once a provider serving those contracts has
+a credential. [Provider capabilities](provider-capabilities-android.md) lists
+each provider, what it serves and its credential.
+
+## Camera, gesture and overlay rules
+
+- `setCamera` takes a pose: latitude, longitude, zoom, bearing and pitch.
+  `animateCamera` eases to a pose; `fitBounds` frames a box inside a viewport
+  with edge insets.
+- `panByScreenPixels` keeps the grabbed ground point as the center;
+  `zoomByLevelsAroundScreenPoint` and `rotateByDegreesAroundScreenPoint` apply
+  pinch and twist deltas with the same focal-point correction. `MapView` runs
+  its own gestures; call these members from your own control or a test.
+- `setOverlays` replaces the drawn list; `addOverlay`, `updateOverlay` and
+  `removeOverlay` address one entry by the identifier `addOverlay` returns. An
+  overlay is a kind, coordinates, a color and a pixel width; kinds are
+  `RoutePolyline`, `FilledPolygon`, `PointMarkers`, `PointPins` and
+  `TrafficFlow`. Native tabs spell the color `rgbaColor`, the browser `color`.
 
 <div class="platform-tabs">
 <div class="platform-tab-titles" role="tablist">
@@ -35,17 +49,9 @@ spells the color field `color`; the native tabs spell it `rgbaColor`.
 
 <div class="platform-tab-panel" data-platform-panel="android">
 
-### Before you start
-
-- Android Studio with the SDK 36 toolchain.
-- A project with `minSdk = 24`.
-- The AAR built by the SDK build script, copied into `app/libs/`.
-- A provider API key for the provider you register.
-
 ### Install the artifact
 
-In your application module's `build.gradle.kts`, add the local AAR and the two
-runtime dependencies the Kotlin bindings need:
+In your application module's `build.gradle.kts`:
 
 ```kotlin
 repositories {
@@ -59,16 +65,12 @@ dependencies {
 }
 ```
 
-Keep the version in each file name exact.
-
-The Compose entry point is optional; the AAR declares its Compose
-dependencies `compileOnly`. A Compose host adds the Compose BOM,
-`androidx.compose.ui:ui` and
+Keep each file name's version exact. The Compose entry point is optional; the
+AAR declares its Compose dependencies `compileOnly`, and a Compose host adds the
+Compose BOM, `androidx.compose.ui:ui` and
 `androidx.lifecycle:lifecycle-runtime-compose:2.9.4` from its own module.
 
-### Build the SDK and register the provider
-
-Construct the SDK and install the map-platform provider set in one call:
+### Create the SDK and show the map
 
 ```kotlin
 import uniffi.rustic_maps.MapSdk
@@ -78,15 +80,8 @@ val mapSdk = MapSdk()
 mapSdk.configureProviderSet("mapquest", providerApiKey)
 ```
 
-The call throws the provider's message when the key is refused. Read the key
-from a settings screen or secure configuration; the SDK has no build field for
-a credential.
-
-### Show the map in your layout
-
 The package ships a lifecycle-aware `MapView` that owns the surface, frame
-pump, resizing, gestures and camera animation. Drop it into your composition
-and give it the SDK:
+pump, resizing, gestures and camera animation:
 
 ```kotlin
 import com.rusticmaps.sdk.compose.MapView
@@ -98,13 +93,10 @@ MapView(
 )
 ```
 
-Place the plain view in your layout when you are not using Compose, or host it
-with `AndroidView`; the widget is a plain `SurfaceView` subclass. It owns
-attach, frames and detach.
+Without Compose, place the plain `SurfaceView` subclass in your layout or host
+it with `AndroidView`.
 
 ### Open the map
-
-Set the camera the view draws with:
 
 <!-- docs-snippet: begin first-map/open-the-map android -->
 ```kotlin
@@ -119,84 +111,14 @@ mapView.setCamera(mapCamera)
 ```
 <!-- docs-snippet: end first-map/open-the-map android -->
 
-Use `fitBounds` to frame a bounded region instead of hand-tuning zoom.
-
-### Pan the camera from a gesture
-
-Forward the drag delta to the camera member and keep the pose it returns; the
-ground point the pointer grabbed becomes the new center:
-
-```kotlin
-val pannedCamera = camera.panByScreenPixels(
-    deltaXPixels = dragDeltaXPixels,
-    deltaYPixels = dragDeltaYPixels,
-    viewport = ViewportSize(
-        widthPixels = viewportWidthPixels,
-        heightPixels = viewportHeightPixels,
-    ),
-    fieldOfViewDegrees = 60.0,
-)
-center = pannedCamera.center()
-```
-
-`MapView` applies pan, pinch and rotation from its own gesture handlers; call
-this member when you drive the camera from your own control or a test.
-
-### Add your first overlay
-
-Set the overlay list the surface draws every frame. This route polyline uses
-the demo's two waypoints (Capitol Park to Tower Bridge):
-
-```kotlin
-import uniffi.rustic_maps.GeographicCoordinate
-import uniffi.rustic_maps.MapOverlay
-import uniffi.rustic_maps.MapOverlayKind
-import uniffi.rustic_maps.OverlayColor
-
-mapView.setOverlays(
-    listOf(
-        MapOverlay(
-            kind = MapOverlayKind.ROUTE_POLYLINE,
-            coordinates = listOf(
-                GeographicCoordinate(38.5766, -121.4944),
-                GeographicCoordinate(38.5802, -121.5083),
-            ),
-            rgbaColor = OverlayColor(red = 0.2, green = 0.4, blue = 0.9, alpha = 0.9),
-            widthPixels = 3.0,
-            // The other payload fields stay null for this kind.
-            ringCoordinates = null,
-            pointMarkerPositions = null,
-            pointMarkerRadiusPixels = null,
-            trafficFlowSegments = null,
-        ),
-    ),
-)
-```
-
-For overlays you keep across frames, address them individually:
-
-```kotlin
-val routeOverlayId = mapView.addOverlay(routePolylineOverlay)
-// ...later, when the route changes:
-mapView.updateOverlay(routeOverlayId, replacementPolylineOverlay)
-// ...and when it is dismissed:
-mapView.removeOverlay(routeOverlayId)
-```
-
 </div>
 
 <div class="platform-tab-panel" data-platform-panel="ios">
 
-### Before you start
+### Install the artifact
 
-- Xcode with Swift 5.10 (`swift-tools-version: 5.10`).
-- A project with an iOS 17 deployment target.
-- The iOS package built by the SDK build script.
-- A provider API key for the provider you register.
-
-Add the built Swift package and both products: `RusticMapsSDK`, the generated
-bindings, and `MapNativeCoreUI`, the map view. The manifest pins the checksummed
-XCFramework as its binary target:
+Add the built package's `RusticMapsSDK` and `MapNativeCoreUI` products; the
+manifest pins the checksummed XCFramework as its binary target:
 
 ```swift
 // Package.swift
@@ -223,7 +145,7 @@ let package = Package(
 )
 ```
 
-### Build the SDK and register the provider
+### Create the SDK and show the map
 
 ```swift
 import RusticMapsSDK
@@ -233,27 +155,10 @@ let mapSdk = MapSdk()
 try mapSdk.configureProviderSet(providerKey: "mapquest", credential: providerApiKey)
 ```
 
-The call throws the provider's message when the key is refused. Read the key
-from app settings, a secure configuration store, or a launch environment for
-automated tests; do not add it to `Info.plist` or to a shipped `.xcconfig`.
-
-### Show the map in your layout
-
-The `MapNativeCoreUI` package ships a `MapView` that owns the Metal surface,
-frame pump, resizing, gestures and camera animation:
-
-```swift
-// `mapView` is the `MapNativeCoreUI.MapView` the package ships: it owns the
-// Metal surface, the frame pump, resizing and gestures.
-mapView.sdk = mapSdk
-```
-
-`SwiftUIMapView` wraps the same view for SwiftUI hosts. The view owns attach,
-frames and teardown; you never create a surface handle or drive a display link.
+The `MapNativeCoreUI` view owns the Metal surface, resizing and gestures; set
+`mapView.sdk = mapSdk`. `SwiftUIMapView` wraps it for SwiftUI hosts.
 
 ### Open the map
-
-Set the camera the view draws with:
 
 <!-- docs-snippet: begin first-map/open-the-map ios -->
 ```swift
@@ -268,92 +173,26 @@ mapView.setCamera(mapCamera)
 ```
 <!-- docs-snippet: end first-map/open-the-map ios -->
 
-### Pan the camera from a gesture
-
-Keep the gesture recognizers in your view and forward their deltas to the
-camera member:
-
-```swift
-let pannedCamera = try camera.panByScreenPixels(
-    deltaXPixels: dragDeltaPixels.width,
-    deltaYPixels: dragDeltaPixels.height,
-    viewport: viewport,
-    fieldOfViewDegrees: fieldOfViewDegrees
-)
-let pannedCenter = pannedCamera.center()
-```
-
-### Fit the map to what you show
-
-For a bounded region, let the camera fit the box instead of hand-tuning
-zoom:
-
-```swift
-let fittedCamera = try MapCamera.fitBounds(
-    boundingBox: regionBox,
-    viewport: viewport,
-    edgeInsets: EdgeInsets(
-        left: 224, top: 48, right: 48, bottom: 96
-    ),
-    maximumZoomLevel: 22
-)
-```
-
 </div>
 
 <div class="platform-tab-panel" data-platform-panel="react-native">
 
-### Before you start
-
-- Node.js and npm.
-- An initialized React Native bare-workflow application, using React Native
-  0.88 or later and React 19 or later.
-- Android: Android Studio with the Android SDK and NDK. iOS: Xcode and
-  CocoaPods.
-- The tarball built by the SDK build script. It carries the TurboModule glue
-  and the compiled Rust libraries for Android (arm64-v8a, armeabi-v7a,
-  x86_64) and iOS (arm64 device and simulator); no Rust toolchain is needed.
-- A provider API key for the provider you register.
-
 ### Install the artifact
 
-Install the tarball you built; no registry is involved:
-
-```bash
-npm install ./rustic-maps-sdk-rn-v0.1.0.tgz
-```
-
-The package carries the TurboModule glue and the compiled Rust libraries, so
-your build does not compile Rust. Link it with normal autolinking. On iOS, run
-`pod install`. On Android, set
+Install the tarball with `npm install ./rustic-maps-sdk-rn-v0.1.0.tgz`; no
+registry is involved. It carries the TurboModule glue and the compiled Rust
+libraries for Android (arm64-v8a, armeabi-v7a, x86_64) and iOS (arm64 device
+and simulator), so no Rust toolchain is needed. Link it with normal
+autolinking. On iOS, run `pod install`. On Android, set
 `reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64` in
 `android/gradle.properties`; the template default adds `x86`, which the
 package does not ship.
 
-### Build the SDK and register the provider
+### Create the SDK and show the map
 
-The package owns one native SDK per process. Create it and register the
-provider's credential:
-
-```js
-import { MapsSdk } from '@angoratek/rustic-maps-sdk/MapsSdk';
-
-export async function createMapSdk(providerKey, providerApiKey) {
-  const mapSdk = await MapsSdk.create();
-  const registration = await mapSdk.setProviderCredential(
-    providerKey,
-    providerApiKey,
-  );
-  if (!registration.isApplied) {
-    throw new Error(registration.detailText);
-  }
-  return mapSdk;
-}
-```
-
-A refused credential resolves with `isApplied: false` and the verbatim
-`detailText`; surface it rather than continuing. Register one provider and
-apply its credential:
+The package owns one native SDK per process. Create it and apply the
+credential; a refused credential resolves with `isApplied: false` and the
+verbatim `detailText`, so surface it rather than continuing.
 
 ```js
 import { MapsSdk } from '@angoratek/rustic-maps-sdk/MapsSdk';
@@ -364,51 +203,15 @@ const mapSdk = await MapsSdk.create();
 await mapSdk.setProviderCredential('mapquest', providerApiKey);
 ```
 
-Take the key from a settings screen, secure storage, or a launch environment
-for automated tests. Do not bake it into the JS bundle or a native build file.
-
-### Draw a map surface
-
-The package ships a typed `<MapView>` component over the native widget
-(Android `SurfaceView`, iOS `CAMetalLayer`). It owns the surface lifecycle,
-frame pump, gestures, camera calls, id-addressed overlays and callbacks. Create
-the one native SDK instance before you mount the view.
-
-<!-- docs-snippet: skip — a JSX fragment outside the docs checks. -->
-```tsx
-import { useRef } from 'react';
-import { MapView, type MapViewHandle } from '@angoratek/rustic-maps-sdk/MapView';
-
-// Hold the handle to drive the camera, overlays and location layer.
-const mapViewRef = useRef<MapViewHandle | null>(null);
-
-<MapView
-  ref={mapViewRef}
-  style={{ flex: 1 }}
-  topBarInsetPixels={topBarInsetPixels}
-  bottomBarInsetPixels={bottomBarInsetPixels}
-  onMapReady={() => { /* the first frame presented */ }}
-  onCameraChanged={(camera, isGestureDriven) => { /* reflect the pose */ }}
-  onError={(failure) => { /* failure.phase, failure.message */ }}
-/>;
-```
-
-Use the component as the documented path; it keeps one SDK instance and one
-frame pump. The generated contract classes remain available for advanced use
-such as a custom host view.
-
-Check the installation with the compiled-version probe:
-
-```js
-import { getSdkCompiledVersion } from '@angoratek/rustic-maps-sdk';
-
-getSdkCompiledVersion();
-// → "0.1.0": the Rust core loaded and answered through the TurboModule.
-```
+The typed `<MapView>` component owns the surface lifecycle, frame pump,
+gestures, camera calls, id-addressed overlays and callbacks. Pass a
+`MapViewHandle` ref and the `topBarInsetPixels`, `bottomBarInsetPixels`,
+`onMapReady`, `onCameraChanged(camera, isGestureDriven)` and `onError(failure)`
+props. The generated contract classes remain available for a custom host view.
+`getSdkCompiledVersion()` returns `"0.1.0"` once the Rust core answers through
+the TurboModule.
 
 ### Open the map
-
-The component's handle takes the same camera values the other tabs use:
 
 <!-- docs-snippet: begin first-map/open-the-map react-native -->
 ```ts
@@ -423,65 +226,24 @@ mapView.setCamera(mapCamera);
 ```
 <!-- docs-snippet: end first-map/open-the-map react-native -->
 
-### Pan the camera from a gesture
-
-The generated `MapCamera` carries the same gesture members on the JavaScript
-side. The native views call them for their gestures; use them when you drive
-the camera from a control of your own or a test:
-
-```js
-const pannedCamera = camera.panByScreenPixels(
-  dragDeltaXPixels,
-  dragDeltaYPixels,
-  viewport,
-  fieldOfViewDegrees,
-);
-const pannedCenter = pannedCamera.center();
-```
-
 </div>
 
 <div class="platform-tab-panel" data-platform-panel="wasm">
 
-### Before you start
-
-- A Chromium-based browser with WebGPU: flag-free in Chromium since 113,
-  Safari from 26, and Firefox from 141 on desktop.
-- The package built by the SDK build script for WebAssembly.
-
-A page needs a provider key only for live search, routing, and imagery;
-keyless, it renders recorded tiles and recorded places.
-
 ### Install the artifact
 
-Install the WebAssembly package with npm, or extract the same tarball and serve
-its `package/` directory over HTTPS or localhost:
-
-```bash
-npm install ./rustic-maps-sdk-web-v0.1.0.tgz
-cp -r node_modules/@angoratek/rustic-maps-sdk-web ./web
-python3 -m http.server 8000   # any static server; localhost is fine
-```
-
-```bash
-tar -xzf rustic-maps-sdk-web-v0.1.0.tgz
-cp -r package ./web
-```
+Install with `npm install ./rustic-maps-sdk-web-v0.1.0.tgz` and copy
+`node_modules/@angoratek/rustic-maps-sdk-web` to `./web`, or extract the
+tarball and serve its `package/` directory over HTTPS or localhost, such as
+with `python3 -m http.server 8000`. A page needs a provider key only for live
+search, routing and imagery; keyless, it renders recorded tiles and places.
 
 ### Start the SDK and show the map on a canvas
 
-One page creates one SDK root. Provider registration is a method on that root,
-naming the provider key from the shared registry. Read the credential at
-**runtime** from a settings form, a server-issued token, or a test's
-environment, never from the bundle.
-
-Supply a `<canvas>` element to the browser view. The view claims the element,
-acquires the WebGPU device, and renders tiles fetched from a same-origin path
-you host; the page keeps pointer handling.
-
-```html
-<canvas id="map-canvas"></canvas>
-```
+One page creates one SDK root, and provider registration is a method on that
+root. Supply a `<canvas>` element, here `#map-canvas`; the view claims it,
+acquires the WebGPU device and renders same-origin tiles, while the page keeps
+pointer handling.
 
 ```js
 import { uniffiInitAsync, MapSdk, getSdkCompiledVersion } from './web/index.js';
@@ -499,24 +261,17 @@ const adapterDescription = await mapView.initialize();
 console.log(`Maps SDK ready (version ${getSdkCompiledVersion()}) on ${adapterDescription}`);
 ```
 
-The demo skips the registration call until a visitor supplies a key; recorded
-tiles and recorded places fill the map meanwhile. To serve one capability from
-one provider and another from a second, register them one capability at a time
-with `mapSdk.configureProvider`; [Provider capabilities on
-WebAssembly](provider-capabilities-wasm.md) shows the readback.
-
-The status probe returns the compiled version. Tile resolution follows the
-device pixel ratio; the optional second constructor argument pins it
-(`new BrowserMapView(canvas, TileResolution.Retina)`). The canvas fetches
-raster tiles from the same-origin `/tiles/{zoom}_{tileX}_{tileY}.png` path.
-
-If `initialize()` fails without WebGPU, give the page a degradation message
-that names `navigator.gpu` and links the MDN compatibility table. Never sniff
-the user agent.
+The demo skips registration until a visitor supplies a key; recorded tiles and
+places fill the map. Register one capability at a time with
+`mapSdk.configureProvider` when two providers serve different capabilities;
+[Provider capabilities on WebAssembly](provider-capabilities-wasm.md) shows the
+readback. Tile resolution follows the device pixel ratio;
+`new BrowserMapView(canvas, TileResolution.Retina)` pins it, and raster tiles
+come from the same-origin `/tiles/{zoom}_{tileX}_{tileY}.png` path. If
+`initialize()` fails without WebGPU, show a degradation message naming
+`navigator.gpu` and the MDN compatibility table; never sniff the user agent.
 
 ### Open the map
-
-Set the camera the view draws with, then present a frame:
 
 ```js
 const mapCamera = new MapCamera(38.5766, -121.4944, 12.0, 0.0, 0.0);
@@ -525,84 +280,20 @@ const frameStatistics = await mapView.renderFrame(mapCamera, fieldOfViewDegrees)
 ```
 
 `renderFrame` takes the camera by value, so build a fresh `MapCamera` for each
-changed pose. The native tabs let their view pump frames; the browser page
-calls `renderFrame` itself on every change.
-
-### Project and unproject
-
-The same camera projects and unprojects without rendering:
-
-```js
-const screenPoint = camera.projectToScreen(
-  latitudeDegrees,
-  longitudeDegrees,
-  canvas.width,
-  canvas.height,
-  fieldOfViewDegrees,
-);
-const groundCoordinate = camera.screenToGroundCoordinate(
-  screenPoint.x,
-  screenPoint.y,
-  canvas.width,
-  canvas.height,
-  fieldOfViewDegrees,
-);
-const tileKeys = camera.visibleTileKeys(
-  canvas.width,
-  canvas.height,
-  fieldOfViewDegrees,
-  tileZoom,
-);
-```
-
-These methods return plain objects with lower-camel-case fields.
-
-### Pan the camera from a gesture
-
-Keep pointer capture, wheel and touch handling in your page and forward the
-travel to the camera member:
-
-```js
-const pannedCamera = camera.panByScreenPixels(
-  deltaXPixels,
-  deltaYPixels,
-  canvas.width,
-  canvas.height,
-  fieldOfViewDegrees,
-);
-const pannedCenter = pannedCamera.center();
-```
-
-Equivalent free functions (`panCameraByScreenPixels`,
-`zoomCameraByLevelsAroundScreenPoint`,
-`rotateCameraByDegreesAroundScreenPoint`) are also available.
-
-### Add your first overlay
-
-Set the overlay list the view draws every frame:
-
-```js
-const routeOverlay = {
-  kind: 'routePolyline',
-  coordinates: [
-    { latitude: 38.5766, longitude: -121.4944 },
-    { latitude: 38.5802, longitude: -121.5083 },
-  ],
-  color: { red: 0.2, green: 0.4, blue: 0.9, alpha: 0.9 },
-  widthPixels: 3.0,
-};
-mapView.setOverlays([routeOverlay]);
-```
+changed pose; native views pump their own frames. The camera also projects and
+unprojects without rendering: `projectToScreen`, `screenToGroundCoordinate` and
+`visibleTileKeys` return plain objects with lower-camel-case fields. The free
+functions `panCameraByScreenPixels`, `zoomCameraByLevelsAroundScreenPoint` and
+`rotateCameraByDegreesAroundScreenPoint` are the gesture equivalents.
 
 </div>
 
 </div>
 
-## Where to continue
+## What you should see
 
-These guides are one worked example. The same `mapCamera`, `mapSdk`, and
-`mapView` continue through [Search and routing](search-and-routing.md),
-[Turn-by-turn navigation](navigation-simulation.md), and [Offline
-maps](offline-maps.md). The [FFI contract](udl-contract.md) carries every
-member you called, and the generated [API reference](api-reference.md)
-documents them.
+A keyless session draws the provider's base map at the demo camera; with a
+credential applied, search, routing and traffic answer. Continue with [Search
+and routing](search-and-routing.md), [Turn-by-turn navigation](navigation-simulation.md),
+and [Offline maps](offline-maps.md); the [FFI contract](udl-contract.md)
+carries every member you called.

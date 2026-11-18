@@ -4,6 +4,17 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — documentation cut by content, not line wrapping)
+
+- The six contributor guides fell from 50,342 to 40,262 words: `Architecture` 9,851 → 7,331, `Browser` 6,355 → 4,246, `Providers` 6,764 → 4,792, `StyleSupport` 9,348 → 6,605, `Release` 5,873 → 5,626 and `ReferenceAppUX` 12,151 → 11,659. Process narrative, the everymap release diary, the style implementation order and residual backlog, and the spent history-rewrite runbook are gone; the substantive style backlog and open questions moved to `PLAN.md`. Every constant, path, command, contract name, capability row and failure mode stayed.
+- The tutorial chapters lost 44–46% of their words: `first-map` 2,383 → 1,330 and `navigation-simulation` 1,866 → 1,017. Shared rules now sit above the four platform tabs, and per-tab prose that restated them, along with duplicated listener and gesture code, is gone.
+- The style guides were the largest prose wins; `ReferenceAppUX` keeps 96% of its words because the consumer-copy table, token tables and component inventory are the design contract itself. The remaining book volume is fenced code (1,630 lines), provider rows and reference tables, not narrative.
+
+### Fixed (2026-11-18 — two documentation gates that were not checking)
+
+- `check-provider-docs.mjs` accepted only five-column provider rows. The merged capability tables carry attribution and terms as two trailing cells, so every availability and capability check was silently skipped while the gate reported success. It now reads rows with trailing cells and fails a page with no readable provider row.
+- `generate-doc-snippets.mjs --check` failed at `HEAD`: `search-and-routing/frame-the-route` had no source region in any reference application. The two blocks are tutorial-only, so they are no longer marked as generated; the generator now reports 32 chapters, 0 drifted.
+
 ### Added (2026-11-18 — the WebAssembly API reference covers the contract classes)
 
 - The generated reference page now parses the class declarations in the

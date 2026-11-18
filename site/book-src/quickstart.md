@@ -50,33 +50,15 @@ the guide that shows it in full.
    the `Navigator`. The reducer reports the active step, the distance
    remaining, and when a fix is off route.
 
-## Positions and the world square
+## Positions, tiles and the camera
 
-A position is a `GeographicCoordinate`: latitude and longitude in decimal
-degrees on the WGS 84 ellipsoid. A region is a `BoundingBox` between a
-south-west and a north-east corner and never spans the antimeridian. Every
-coordinate is projected into the Web Mercator world square, where each position
-becomes two numbers in `[0, 1]`; the projection stops at about 85.05° north and
-south.
-
-## Tiles and zoom
-
-A tile is one payload at one zoom level, addressed by a `TileKey`: a column, a
-row counted from the north, and the zoom level. At zoom 0 the world is one tile;
-each level doubles the columns and rows. A camera's zoom is continuous from 0
-through 24 and each unit doubles the on-screen scale. `tileZoomLevel` gives the
-nearest whole level for a tile fetch, and `visibleTileKeys` lists every tile at
-a chosen level that intersects the visible ground.
-
-## Cameras
-
-A `MapCamera` is an immutable pose of center, zoom, bearing, and pitch. A new
-pose is a new camera. Pitch measures tilt from straight down, from 0° to a
-maximum of 75°, and bearing wraps into `[0, 360)`. The camera is also the
-projection and tile selector: `projectToScreen` maps a coordinate to viewport
-pixels, `screenToGroundCoordinate` maps a pixel back to the ground, and
-`groundMetersPerScreenPixel` sizes a scale bar. The `fitBounds` constructor
-frames a bounding box inside an inset region you pass.
+A position is a `GeographicCoordinate` on the WGS 84 ellipsoid; a region is a
+`BoundingBox` that never spans the antimeridian. Tiles are addressed by a
+`TileKey`, zoom is continuous from 0 through 24, and `tileZoomLevel` gives the
+nearest whole level for a fetch. A `MapCamera` is an immutable pose of center,
+zoom, bearing and pitch, and it is also the projection: `projectToScreen`,
+`screenToGroundCoordinate` and `groundMetersPerScreenPixel`. [Map
+concepts](map-concepts.md) covers the model and its limits.
 
 ## Styles and overlays
 

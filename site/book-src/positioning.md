@@ -1,24 +1,17 @@
 # Show the device's location
 
-Show the user's position on the map: a tracking dot with the source's accuracy
-ring, a camera centred on the fix, and an honest line when the permission is
-denied or the service is unavailable.
+Show the user's position on the map: a tracking dot with the source's accuracy ring, a
+camera centred on the fix, and an honest line when the permission is denied or the
+service is unavailable.
 
-The host owns the operating system's location API and its permission prompt.
-Every host pushes its fixes into the same Rust `PositionController`, which
-validates them, ignores stationary repeats when smoothing course and tracks
-staleness. The renderer draws the dot; the camera and the navigation controller
-read the same stream.
-
-## The shared scenario
-
-- Start the source after the permission is granted.
-- Draw the tracking dot with `showAccuracyRing` and the controller's smoothed
-  course.
-- Centre the camera on each fix at follow zoom 15.
-- Stop the source when the control is turned off and clear the layer.
-- State a denied permission, a disabled service, an unavailable source and a
-  timeout in the same words on every platform.
+The host owns the operating system's location API and its permission prompt. Every host
+pushes its fixes into the same Rust `PositionController`, which validates them, ignores
+stationary repeats when smoothing course and tracks staleness. The renderer draws the
+dot; the camera and the navigation controller read the same stream. Start the source
+after permission is granted, draw the dot with `showAccuracyRing` and the controller's
+smoothed course, centre the camera on each fix at follow zoom 15, and stop the source
+and clear the layer when the control is turned off. A denied permission, a disabled
+service, an unavailable source and a timeout read the same words on every platform.
 
 ## Android
 
@@ -109,7 +102,7 @@ await sdk.stopDeviceLocation();
 ```
 
 Ask for the Android runtime permission with `PermissionsAndroid` before
-`startDeviceLocation`; the iOS authorization prompt is raised by the source.
+`startDeviceLocation`; iOS raises the authorization prompt from the source.
 
 ## WebAssembly
 
@@ -152,6 +145,6 @@ let mut controller = PositionController::new();
 controller.feed_fix(source.fix_at_elapsed_seconds(0.0))?;
 ```
 
-A Rust application supplies fixes from its own OS source (or the simulated
-source above) and reads `latest_fix`, `smoothed_course_heading_degrees` and
-`is_stale`. See [Use the SDK from Rust](rust.md).
+A Rust application supplies fixes from its own OS source or the simulated source above,
+then reads `latest_fix`, `smoothed_course_heading_degrees` and `is_stale`. See [Use the
+SDK from Rust](rust.md).

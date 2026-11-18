@@ -1,9 +1,9 @@
 # Add a provider
 
-A provider is a set of implementations of the vendor-neutral contracts plus one
+A provider is a set of vendor-neutral contract implementations plus one
 descriptor in the shared provider registry. The descriptor carries the labels,
 availability, attribution and tile sources; the implementations carry the
-vendor's requests and status mapping. No credential is part of either.
+vendor's requests and status mapping. Neither carries a credential.
 
 There are two implementation routes and one no-code route:
 
@@ -13,24 +13,14 @@ There are two implementation routes and one no-code route:
 | Host implementation | The provider serves geocoding or raster tiles from code that already lives in the native app | A Kotlin or Swift class implementing the interface, a registration call, and a descriptor |
 | URL-template source | The provider publishes ordinary `{z}/{x}/{y}` raster or vector tiles | A descriptor only; the SDK's generic source does the work |
 
-## What every provider needs
-
-1. **Implementations.** One struct or class per contract the provider serves.
-2. **A descriptor.** The shared registry entry that every application reads.
-3. **A dispatch arm.** The one place that maps the provider key to its
-   registration call on a target.
-4. **Committed sample responses.** The tests and the demo read provider payloads
-   from committed sample data, never from the network.
-
 ## Route 1: a provider crate in the provider layer
 
 ### Implement the contract
 
-Implement the matching contract from `everymap-core`. The methods are async
-and return the provider layer's error type on refusal or failure. The SDK
-adapts the implementation to its own records at
-`rustic_maps_core::everymap_bridge`, so the vendor crate never names an SDK
-type.
+Implement the matching `everymap-core` contract. The methods are async and
+return the provider layer's error type on refusal or failure. The SDK adapts
+the implementation at `rustic_maps_core::everymap_bridge`, so the vendor crate
+never names an SDK type.
 
 ```rust
 use async_trait::async_trait;
@@ -65,10 +55,9 @@ The contracts are `Geocoder`, `PlaceSearchProvider`, `AutocompleteProvider`,
 `Router`, `DistanceMatrixProvider`, `TrafficProvider`, `RasterTileProvider`,
 `VectorTileProvider`, `ElevationProvider`, `IsolineProvider`, `RouteMatcher`,
 `TourPlanner`, `NetworkPositioner`, `AttributeProvider`, `MapImageProvider`
-and `OfflineRoutingProvider`. A provider implements only the ones it serves.
+and `OfflineRoutingProvider`. Implement only the ones the provider serves.
 The bridge adapts geocoding, search, type-ahead, routing, distance matrix,
-traffic, raster tiles and vector tiles, so a vendor provider needs no adapter
-of its own for those.
+traffic, raster tiles and vector tiles, so those need no vendor adapter.
 
 ### Register it in the core
 
@@ -93,17 +82,17 @@ the same on every target.
 
 ### Expose it to an application target
 
-1. **Add the descriptor.** One entry in the shared provider registry, with the
-   capabilities the provider serves in `served_contracts`.
-2. **Add the catalog row.** One entry maps the provider key to the crate's
-   construction call and the capabilities it serves. This row makes the key
-   selectable; compiling the crate into a binding alone does not.
+1. **Add the descriptor.** One entry in the shared registry, with the served
+   capabilities in `served_contracts`.
+2. **Add the catalog row.** It maps the provider key to the crate's
+   construction call and its capabilities. The row makes the key selectable;
+   compiling the crate into a binding alone does not.
 3. **Add committed sample responses.** Each served API gets a route pattern and
    a committed response under the provider's key; the test server and the demo
    use them.
 
-An application selects the provider by key. The call replaces one capability and
-leaves every other capability serving.
+An application selects the provider by key. The call replaces one capability
+and leaves the rest serving.
 
 **Kotlin**
 
@@ -133,17 +122,15 @@ let routing = mapSdk.providerRegistrations()
 precondition(routing?.registered == true && routing?.providerKey == "my-provider")
 ```
 
-`providerRegistrations()` answers every capability in the same order every
-time — geocoding, routing, distance matrix, place search, traffic incidents,
-traffic flow, elevation, raster tiles, vector tiles, offline routing — so a
-settings surface can render one row per capability without knowing the list.
-A capability with no provider reports `registered` false and an empty key.
+`providerRegistrations()` answers every capability in a stable order —
+geocoding, routing, distance matrix, place search, traffic incidents, traffic
+flow, elevation, raster tiles, vector tiles, offline routing — so a settings
+surface can render one row per capability without knowing the list. A
+capability with no provider reports `registered` false and an empty key.
 
-A provider that needs no credential accepts an empty string; a provider with
-a credential refuses a blank one and leaves the previously serving provider
-in place. That is the whole integration: the application stores its own
-choice (a key and, when needed, a credential) and calls `configureProvider`
-at startup.
+A keyless provider accepts an empty string; a provider with a credential
+refuses a blank one and leaves the previously serving provider in place. The
+application stores its own choice and calls `configureProvider` at startup.
 
 ### Sample: a routing provider key in an app
 
@@ -196,13 +183,11 @@ contain that capability, and call `configureProvider` with the picked key.
 
 Every provider contract can be implemented directly in application code:
 geocoding, routing, distance matrix, place search, traffic incidents, traffic
-flow, elevation, and raster tiles. Register the implementation on the
-`MapSdk` object that the map view and every provider call use; it replaces
-that one capability and leaves the others serving.
+flow, elevation, and raster tiles. Register the implementation on the `MapSdk`
+object the map view and every provider call use; it replaces that capability
+and leaves the others serving.
 
 ### Geocoding in Kotlin
-
-**Kotlin**
 
 ```kotlin
 import uniffi.rustic_maps.GeocodingProvider
@@ -228,8 +213,6 @@ mapSdk.registerGeocodingProviderFromForeign(AppGeocodingProvider())
 
 ### Geocoding in Swift
 
-**Swift**
-
 ```swift
 import RusticMapsSDK
 
@@ -250,8 +233,6 @@ try mapSdk.registerGeocodingProviderFromForeign(
 ```
 
 ### Routing in Kotlin
-
-**Kotlin**
 
 ```kotlin
 import uniffi.rustic_maps.GeographicCoordinate
@@ -275,8 +256,6 @@ mapSdk.registerRoutingProviderFromForeign(AppRoutingProvider())
 
 ### Routing in Swift
 
-**Swift**
-
 ```swift
 import RusticMapsSDK
 
@@ -294,8 +273,6 @@ try mapSdk.registerRoutingProviderFromForeign(routingProvider: AppRoutingProvide
 ```
 
 ### Raster tiles in Kotlin
-
-**Kotlin**
 
 ```kotlin
 import uniffi.rustic_maps.MapSdk
@@ -321,8 +298,6 @@ mapSdk.registerRasterTileProviderFromForeign(AppRasterTileProvider())
 ```
 
 ### Raster tiles in Swift
-
-**Swift**
 
 ```swift
 import RusticMapsSDK
@@ -388,8 +363,8 @@ A raster source declares its image format, pixel resolution and the
 `User-Agent` its requests carry. A vector source declares the committed style
 id it paints with. Templates must be absolute `http` or `https` URLs carrying
 `{z}`, `{x}` and `{y}` and no other placeholders; the zoom span must not be
-inverted; the style id must name a committed style. A refused source keeps
-the previously serving base.
+inverted; the style id must name a committed style. A refused source keeps the
+previous base.
 
 ## The descriptor
 
@@ -418,14 +393,14 @@ A descriptor never carries a credential value.
 
 ## What the reader sees
 
-The settings surface renders one credential row per descriptor, with the
-provider's display name, credential label, hint, attribution and terms. The
-base-map section renders the keyless raster sources and one row per vector
-style. A keyless start is a first-class state: the app renders the recorded demo
-until a credential is applied, and a provider-dependent call returns
-`ProviderNotConfigured` verbatim. Clearing a credential removes it from memory
-and the secure store, but the running SDK keeps its registered providers; a
-restart returns the session to the keyless state.
+The settings surface renders one credential row per descriptor: display name,
+credential label, hint, attribution and terms. The base-map section renders the
+keyless raster sources and one row per vector style. A keyless start is a
+first-class state; the app renders the recorded demo until a credential is
+applied, and a provider-dependent call returns `ProviderNotConfigured`
+verbatim. Clearing a credential removes it from memory and the secure store,
+but the running SDK keeps its registered providers; a restart returns the
+session to the keyless state.
 
 ## Verify the addition
 
@@ -438,9 +413,8 @@ restart returns the session to the keyless state.
 
 ## Where to go next
 
-- The [provider capability pages](provider-capabilities-android.md) list the
-  calls each target exposes.
+- [Provider capability pages](provider-capabilities-android.md) list the calls
+  each target exposes.
 - [Your first map](first-map.md) shows the runtime credential path in a
   complete app.
-- [Offline maps](offline-maps.md) covers the tile cache and archive routing a
-  provider-backed app can add.
+- [Offline maps](offline-maps.md) covers the tile cache and archive routing.

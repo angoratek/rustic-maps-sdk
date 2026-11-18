@@ -64,6 +64,12 @@ One concept keeps one name across platforms: `MapView`, `MapCamera`,
 platform spelling rule once (Kotlin `UPPER_SNAKE` enum constants, Swift
 lowerCamel cases, TypeScript string unions) instead of repeating it per tab.
 
+Shared prose lives above the tab set. State the rule, the prerequisite, the
+ordering and the expected result once for the page; a tab carries only the code,
+the artifact name and the facts that genuinely differ on that platform. Never
+repeat the same paragraph inside two tabs, and never restate the page's outcome
+at the start of each one.
+
 Platform tabs are one page-wide choice. The selected platform is written to
 the URL fragment (`first-map.html#android`) with `history.replaceState`, a deep
 link wins over the remembered choice, and a link to a heading inside a panel

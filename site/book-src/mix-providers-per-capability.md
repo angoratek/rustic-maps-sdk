@@ -2,15 +2,9 @@
 
 You can serve each capability of the map from a different provider: search
 with one vendor, route with a self-hosted engine, and draw the base map from a
-public tileset. This page shows how selection works, what the SDK reports back,
-and what the reference apps put on screen.
-
-## What you get
-
-- One call per capability, so a choice never disturbs the rest of the map.
-- A readback that names the serving provider for every capability.
-- A refused choice that leaves the previous provider serving, so a bad
-  credential never leaves the app without a provider.
+public tileset. A choice replaces one capability and leaves the rest serving.
+This page shows how selection works, what the SDK reports back, and what the
+reference apps put on screen.
 
 ## How selection works
 
@@ -168,14 +162,6 @@ rows point to the control.
 
 A failure never swaps in a different provider. The row states the reason and
 the previous choice keeps serving until you choose again.
-
-## Rules to keep
-
-- A provider's name belongs in its crate, its sample-data directory, the
-  shared registry descriptor and the catalog row.
-- Sample responses are recorded data served from the demo's own origin; tests
-  never reach the network.
-- Changing a capability never silently changes another.
 
 ## Next
 

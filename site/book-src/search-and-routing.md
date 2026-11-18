@@ -1,16 +1,15 @@
 # Search and routing
 
-Turn a typed query into places, plan a route between them, and draw it on
-the map. This guide continues from [Your first map](first-map.md); every
-code block compiles against the [FFI contract](udl-contract.md).
+Turn a typed query into places, plan a route, and draw it on the map. This
+guide continues from [Your first map](first-map.md); every code block compiles
+against the [FFI contract](udl-contract.md).
 
-## Choose the transport mode and strategy
+## Transport mode and strategy
 
-`RouteOptions` carries the transport mode and the route strategy for every
-plan. The SDK can express Car, Walk and Bicycle, and the Fastest and Shortest
-strategies. A provider may not serve all of them, so read
-`routeCapabilities()` before you show the control. It answers the supported
-modes and whether Shortest is available.
+`RouteOptions` carries the transport mode and strategy for every plan: Car,
+Walk or Bicycle, with Fastest or Shortest. Read `routeCapabilities()` before
+you show the control; it answers the supported modes and whether Shortest is
+available.
 
 | Provider | Car | Walk | Bicycle | Fastest | Shortest |
 |---|---|---|---|---|---|
@@ -18,17 +17,16 @@ modes and whether Shortest is available.
 | Valhalla | yes | yes | yes | yes | automobile only |
 | OSRM | yes | yes | yes | yes | no |
 
-Shortest applies to automobile plans only. A walk plan always sends Fastest.
+Shortest applies to automobile plans only; a walk plan always sends Fastest.
 OSRM has no route-service switch for the ranking, so both strategies produce
 the same request and the deployment's profile decides the path.
 
-A choice the provider reports as unsupported is disabled with a reason. A
-remembered choice the provider cannot honour falls back without being
-rewritten: an unsupported mode falls back to Car, then Walk, and Shortest
-falls back to Fastest. Returning to a provider that supports the choice
-restores it.
+An unsupported choice is disabled with a reason. A remembered choice the
+provider cannot honour falls back without being rewritten: an unsupported mode
+falls back to Car, then Walk; Shortest falls back to Fastest. Returning to a
+provider that supports the choice restores it.
 
-The exact disabled-with-reason sentence each surface shows:
+Each surface shows the disabled-with-reason sentence:
 
 | Surface | Unsupported mode | Unsupported Shortest |
 |---|---|---|
@@ -37,24 +35,22 @@ The exact disabled-with-reason sentence each surface shows:
 | React Native | `The serving provider does not support walking routes.` or `The serving provider does not support car routes.` | `The serving provider does not support shortest routes.` |
 | WebAssembly | No reason line. The browser API exposes `routeCapabilities()`; the demo sends the selected pair and the route card states the mode and strategy. | No reason line. The selected strategy is sent, and the provider's documented ranking applies. |
 
-On Android, iOS and React Native, if the capability read fails because no
-routing provider is installed, the surface disables both mode choices and
-Shortest with the contract's sentence,
-`no 'RoutingProvider' provider is configured`.
+On Android, iOS and React Native, a capability read that fails because no
+routing provider is installed disables both mode choices and Shortest with the
+contract's sentence, `no 'RoutingProvider' provider is configured`.
 
 ## The calls
 
-`forwardGeocode` returns every candidate the provider resolved, most likely
-first; `suggest` returns completions while the user types, and `search` returns
-full results for a settled query, each with an optional `BoundingBox`.
-`calculateRoute` takes ordered waypoints and `RouteOptions`, defaulting to Car
-and Fastest with metric units and no avoids; the returned `Route` carries
-distance, duration, the bounding box, and one leg per waypoint pair with its
-steps. `fitBounds` frames that box with the insets your own panels keep clear,
-and a refused fit surfaces its reason. Draw one route-polyline overlay from the
-flattened step shapes; the overlay fields are in [Your first map](first-map.md).
-`SearchEngine` and `RoutingEngine` are thin facades over the same SDK with the
-same typed failures.
+`forwardGeocode` returns every candidate, most likely first; `suggest` returns
+completions while the user types; `search` returns full results for a settled
+query, each with an optional `BoundingBox`. `calculateRoute` takes ordered
+waypoints and `RouteOptions`, defaulting to Car and Fastest with metric units
+and no avoids; the `Route` carries distance, duration, the bounding box, and
+one leg per waypoint pair with its steps. `fitBounds` frames that box with the
+insets your panels keep clear, and a refused fit surfaces its reason. Draw one
+route-polyline overlay from the flattened step shapes; the overlay fields are
+in [Your first map](first-map.md). `SearchEngine` and `RoutingEngine` are thin
+facades over the same SDK with the same typed failures.
 
 <div class="platform-tabs">
 <div class="platform-tab-titles" role="tablist">
@@ -68,8 +64,7 @@ same typed failures.
 
 ### Resolve a query into places
 
-Provider calls on Android are Kotlin `suspend fun`s; run them from a coroutine
-scope:
+Provider calls are Kotlin `suspend fun`s; run them from a coroutine scope:
 
 <!-- docs-snippet: begin search-and-routing/search-for-places android -->
 ```kotlin
@@ -103,9 +98,8 @@ val plannedRoute = mapSdk.calculateRoute(
 ```
 <!-- docs-snippet: end search-and-routing/plan-the-route android -->
 
-### Frame the route preview
+### Frame and draw the route
 
-<!-- docs-snippet: begin search-and-routing/frame-the-route android -->
 ```kotlin
 import uniffi.rustic_maps.EdgeInsets
 import uniffi.rustic_maps.MapCamera
@@ -124,9 +118,6 @@ val fittedCamera = try {
     null
 }
 ```
-<!-- docs-snippet: end search-and-routing/frame-the-route android -->
-
-### Draw the route
 
 <!-- docs-snippet: begin search-and-routing/draw-the-route android -->
 ```kotlin
@@ -197,7 +188,6 @@ let plannedRoute = try await mapSdk.calculateRoute(
 
 ### Frame and draw the preview
 
-<!-- docs-snippet: begin search-and-routing/frame-the-route ios -->
 ```swift
 let fittedCamera = try MapCamera.fitBounds(
     boundingBox: plannedRoute.boundingBox,
@@ -207,7 +197,6 @@ let fittedCamera = try MapCamera.fitBounds(
 )
 pinnedFitBoundsCamera = fittedCamera
 ```
-<!-- docs-snippet: end search-and-routing/frame-the-route ios -->
 
 <!-- docs-snippet: begin search-and-routing/draw-the-route ios -->
 ```swift
@@ -249,8 +238,7 @@ let plannedRoute = try await routingEngine.calculateRoute(
 
 ### Resolve a query into places
 
-The package's `MapsSdk` handle returns the contract's search and routing calls
-as promises:
+The package's `MapsSdk` handle returns the contract's calls as promises:
 
 <!-- docs-snippet: begin search-and-routing/search-for-places react-native -->
 ```ts
@@ -260,9 +248,9 @@ const destinationPlace =
 ```
 <!-- docs-snippet: end search-and-routing/search-for-places react-native -->
 
-A query that resolves to no place leaves the field `null`. The example stops
-before planning rather than inventing a coordinate. Pass `undefined` or omit
-the boundary to search worldwide.
+A query that resolves to no place leaves the field `null`; the example stops
+before planning rather than inventing a coordinate. Omit the boundary to
+search worldwide.
 
 ### Plan the route
 
@@ -287,10 +275,10 @@ const plannedRoute = await mapSdk.calculateRoute(
 ```
 <!-- docs-snippet: end search-and-routing/plan-the-route react-native -->
 
-A rejected promise carries the typed `SdkError`. Surface it in your error
-state rather than retrying blindly; the rate limiter refills on its own.
+A rejected promise carries the typed `SdkError`; surface it in your error
+state rather than retrying blindly. The rate limiter refills on its own.
 
-### Frame the route preview
+### Frame and draw the route
 
 ```js
 mapView.fitBounds(
@@ -299,8 +287,6 @@ mapView.fitBounds(
   22,
 );
 ```
-
-### Draw the route
 
 <!-- docs-snippet: begin search-and-routing/draw-the-route react-native -->
 ```ts
@@ -315,9 +301,8 @@ await mapView.setOverlays([routeOverlay]);
 <!-- docs-snippet: end search-and-routing/draw-the-route react-native -->
 
 Keep the single package handle from the [first map](first-map.md) guide. The
-generated engine classes wrap a lower-level `MapSdk` instance, which would be
-a second SDK with its own provider registry and tile cache in the same
-process.
+generated engine classes wrap a lower-level `MapSdk` instance, a second SDK
+with its own provider registry and tile cache in the same process.
 
 </div>
 
@@ -328,7 +313,7 @@ process.
 A browser page has no settings sheet. Provider registration is one method per
 capability on the `MapSdk` root, naming the contract member, the provider key
 from the shared registry and your credential. Take the credential from a form,
-a server-issued token, or a test environment. Keyless, the demo searches
+a server-issued token, or a test environment; keyless, the demo searches
 recorded places and plans recorded routes.
 
 ```js
@@ -341,7 +326,7 @@ mapSdk.configureProvider(ProviderContract.Routing, 'mapquest', providerCredentia
 The calls below reject with the provider's own error text when no provider is
 registered or the provider refuses.
 
-### Resolve the queries into places, then plan the route
+### Resolve, plan, frame and draw
 
 ```js
 import { RouteStrategy, TransportationMode, UnitSystem } from './web/rustic_maps.js';
@@ -376,8 +361,6 @@ The records carry `structuredAddressText`, a nested `coordinate` and
 `calculateRoute` takes the contract's `RouteOptions` record: transport mode,
 strategy, unit system and the features to avoid.
 
-### Frame the route preview
-
 ```js
 /** @type {any} */
 const plannedRoute = route;
@@ -404,12 +387,9 @@ const fittedCamera = MapCamera.fittingBounds(
 );
 ```
 
-A refused fit throws the reason; keep the previous camera.
-
-### Draw the route
-
-Build one route-polyline overlay from the planned geometry. The browser
-descriptor spells the color field `color`.
+A refused fit throws the reason; keep the previous camera. Build one
+route-polyline overlay from the planned geometry; the browser descriptor
+spells the color field `color`.
 
 ```js
 const plannedRoute = route;

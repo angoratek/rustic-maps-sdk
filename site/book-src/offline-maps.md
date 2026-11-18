@@ -1,13 +1,11 @@
 # Offline maps
 
-Keep map imagery and routing working without a network. A disk response
-cache holds raster tile imagery under your byte budget, including named
-regions you download ahead of time, and a compiled routing archive returns
-routes with no network request. Downloaded regions also have their own
-pack byte budget, separate from the general cache and unbounded until you set
-one. Android, iOS and React Native download regions; the browser surface has no
-disk store for offline regions and keeps offline imagery in the page's own
-storage.
+Keep map imagery and routing working without a network. A disk response cache
+holds raster tiles under your byte budget, including named regions you
+download ahead of time, and a compiled routing archive returns routes with no
+network request. Regions have their own pack byte budget, separate from the
+general cache. Android, iOS and React Native download regions; the browser has
+no SDK-owned disk store and keeps offline imagery in the page's own storage.
 
 ## Rules that apply on the native platforms
 
@@ -15,48 +13,45 @@ storage.
   raster-tile contract in a disk response cache at a path you own, under an
   absolute byte budget. A refusal, such as an unusable path or a non-positive
   budget, returns the reason verbatim.
-- The cache starts at the tiles category's default time-to-live of 30 calendar
-  days, the imagery-provider terms ceiling. `setRasterTileCacheTimeToLive`
-  tunes the value; `rasterTileCacheTerms` reads the effective value, the
-  provider's declared ceiling and the category default. A request above the
-  ceiling is accepted, and the ceiling clamps what the cache retains.
-- A downloaded region has its own payload-byte budget beside the general
-  cache. Until you set one, packs have no separate byte limit and the only
-  size limit is the 65,536-tile structural cap. A download that would cross
-  the budget stops, keeps the tiles already stored, and reports a cache
-  failure; set a higher budget and call `downloadRegion` again to resume. A
-  zero budget is refused with the reason, and a missing tile cache reports
-  that the tile cache is not configured.
-- A region download writes every tile of a bounding box and zoom range into
-  the same SQLite cache the live map reads, pins those tiles against ordinary
-  eviction, and reports progress. `regionTileCount` validates the definition
-  and counts the tiles before anything is written; a maximum zoom deeper than
-  the provider's declared ceiling, or a region above the tile limit, throws
-  before the download starts.
+- The cache starts at the tiles category's 30-calendar-day default time-to-live,
+  the imagery-provider terms ceiling. `setRasterTileCacheTimeToLive` tunes it;
+  `rasterTileCacheTerms` reads the effective value, the provider's declared
+  ceiling and the category default. A higher request is accepted, and the
+  ceiling clamps what the cache retains.
+- A region pack has its own byte budget beside the general cache. Until you set
+  one, packs have no separate byte limit and the only size cap is the
+  65,536-tile structural limit. A download that would cross the budget stops,
+  keeps the tiles already stored and reports a cache failure; raise the budget
+  and call `downloadRegion` again to resume. A zero budget is refused with the
+  reason, and a missing tile cache reports that the cache is not configured.
+- A download writes every tile of a bounding box and zoom range into the same
+  SQLite cache the live map reads, pins those tiles against ordinary eviction,
+  and reports progress. `regionTileCount` validates the definition and counts
+  tiles before anything is written; a zoom deeper than the provider's declared
+  ceiling, or a region above the tile limit, throws before the download starts.
 - The progress listener receives one `Downloading` report before the first
-  tile, one report per completed tile, and exactly one terminal `Completed`,
-  `Cancelled` or `Failed` report. It runs on an SDK worker thread, so post the
-  UI update to the main thread; do not call back into the manager from it.
+  tile, one per completed tile, and exactly one terminal `Completed`,
+  `Cancelled` or `Failed` report. It runs on an SDK worker thread: post the UI
+  update to the main thread and do not call back into the manager.
 - Cancellation is a partial success: the terminal phase is `Cancelled`, the
   returned record keeps `presentTileCount` below `memberTileCount`, and the
-  next `downloadRegion` call fetches only the missing tiles.
-- Stop the app, turn off the network, and open it again. The downloaded tiles
-  render from disk at the zooms you downloaded, and `regionRecords()` still
-  returns the region with its stored tile count, payload bytes and effective
-  retention. Deleting the region returns the map to network rendering.
-- Cached tile responses render whenever the network is unavailable: a cache
-  miss goes to the network and back-fills, and a cache hit comes from disk.
-  Render the regions your users expect to revisit once while online.
+  next `downloadRegion` fetches only the missing tiles.
+- Stop the app, turn off the network and open it again: downloaded tiles
+  render from disk at the downloaded zooms, and `regionRecords()` still returns
+  the region with its stored tile count, payload bytes and effective retention.
+  Deleting the region returns the map to network rendering. Cached responses
+  also render whenever the network is unavailable: a miss goes to the network
+  and back-fills, a hit comes from disk. Render the regions your users expect
+  to revisit once while online.
 - The offline routing layer runs inside the SDK over a compiled RMOG archive:
   an OpenStreetMap extract in, a self-describing archive out, A\* over the
-  graph, recorded turn restrictions honored, and maneuver text derived from
-  the geometry. Pass the archive bytes, not a path, so the same call works on
-  every platform. The request uses the archive profile's default options:
-  automobile, fastest, metric. A corrupt archive fails with
-  `OfflineRoutingFailure`. The SDK does not fall back to the archive when the
-  online provider fails; catch the online failure and call the archive route
-  yourself. Maneuver texts stay honest where the extract carries no street
-  names.
+  graph, turn restrictions honored, and maneuver text derived from the
+  geometry. Pass the archive bytes, not a path, so the call works on every
+  platform. The request uses the archive profile defaults: automobile,
+  fastest, metric. A corrupt archive fails with `OfflineRoutingFailure`. The
+  SDK does not fall back to the archive when the online provider fails; catch
+  that failure and call the archive route yourself. Maneuver texts stay honest
+  where the extract carries no street names.
 
 <div class="platform-tabs">
 <div class="platform-tab-titles" role="tablist">
@@ -419,18 +414,17 @@ const plannedOfflineRoute = await offlineRouteFromArchiveBytes(
 
 ### What the browser surface carries
 
-The browser surface has no SDK-owned disk store: no SQLite tile cache, no
-byte budget, and no offline-region store. The region download, progress,
-listing and deletion steps of the native tabs have no counterpart here, and
-the WebAssembly TypeScript surface neither declares nor serves those members.
+The browser surface has no SDK-owned disk store: no SQLite tile cache, no byte
+budget and no offline-region store. The region download, progress, listing and
+deletion steps of the native tabs have no counterpart, and the WebAssembly
+TypeScript surface neither declares nor serves those members.
 
-The WebAssembly build carries the routing archive: archive bytes in, route
-records out, with no provider and no network request. A page that needs
-offline imagery keeps the tiles it fetched in the browser's own storage, such
-as Cache Storage or IndexedDB, and serves them to the SDK through a
-URL-template raster source it controls. The SDK does not download, pin, count
-or delete those tiles; your page owns that lifecycle, including when the
-stored tiles expire.
+The build carries the routing archive: archive bytes in, route records out,
+with no provider and no network request. A page that needs offline imagery
+keeps fetched tiles in the browser's own storage, such as Cache Storage or
+IndexedDB, and serves them through a URL-template raster source it controls.
+The SDK does not download, pin, count or delete those tiles; your page owns
+that lifecycle, including when they expire.
 
 ### Route over the archive
 
@@ -448,13 +442,12 @@ const plannedRoute = await offlineRouteFromArchiveBytes(
 ```
 
 The result is the same `Route`/`RouteLeg`/`RouteStep` record the live route
-call returns, so the route overlay and framing steps from [Search and
+call returns, so the overlay and framing steps from [Search and
 routing](search-and-routing.md) apply unchanged. The call rejects with the
 reason when the bytes fail archive validation, a coordinate falls outside
-every node's snap tolerance, or the two points are not connected in the
-graph. Ship the archive with the app, fetch it once and keep it in the
-browser's own storage, or read it from `<input type="file">` for a local
-preview.
+every node's snap tolerance, or the two points are not connected in the graph.
+Ship the archive with the app, fetch it once and keep it in browser storage,
+or read it from `<input type="file">` for a local preview.
 
 </div>
 
