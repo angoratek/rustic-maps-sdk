@@ -134,6 +134,31 @@ scanning and push protection, Dependabot alerts, Discussions, a seeded
 `good first issue` set, the provider layer repository fixes, and the first
 versioned release when the product is ready.
 
+## Repository settings at opening
+
+These are host-side settings, not files. Apply them to the new public
+repository in one pass so it never exists in an unprotected state:
+
+- Description naming the product and its four targets; homepage the published
+  documentation site; topics `rust`, `maps`, `android`, `ios`,
+  `react-native`, `webassembly`, `uniffi`, `openstreetmap`.
+- Default branch `main`; squash-merge only; automatic branch deletion after
+  merge; auto-merge off until rulesets are in place.
+- Ruleset on `main`: require a pull request, require the aggregate `CI` check,
+  require conversation resolution, block force-pushes and deletions. Tag
+  ruleset `v*` restricted to maintainers.
+- Private vulnerability reporting on; secret scanning and push protection on;
+  Dependabot alerts and automated security fixes on.
+- Actions: allowed actions limited to GitHub-authored and the pinned
+  third-party set, workflow permissions read-only by default, no
+  `pull_request_target` workflows, fork PRs receive no secrets.
+- Environments `release` and `hosted-demo` with required reviewers and
+  deployment branches limited to `main` and version tags.
+- Discussions enabled; issue forms and the pull-request template already in
+  the tree.
+- The docs repository keeps its own deploy path; its deploy key is an owner
+  action and never a repository secret in the SDK.
+
 ## Acceptance
 
 The opening is ready when:
