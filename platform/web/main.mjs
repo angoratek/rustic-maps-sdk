@@ -26,6 +26,7 @@ import {
   RasterTileResolution,
   RouteStrategy,
   SdkError_Tags,
+  SdkLogSeverity,
   TrafficFlowCongestionLevel,
   TrafficIncidentSeverity,
   TrafficIncidentType,
@@ -44,19 +45,15 @@ import {
   MapsSdk,
   Navigator,
   PositionController,
-  SdkLogSeverity,
   TileResolution,
   clearProviderRegistrations as canvas_clear_provider_registrations,
   clearSharedProviderSlots,
   clearUrlTemplateRasterTileSource,
   devicePixelRatioThreshold,
-  flushRecentDiagnosticEvents,
   panCameraByScreenPixels,
   registerUrlTemplateRasterTileSource,
   rotateCameraByDegreesAroundScreenPoint,
   setProviderBaseUrl,
-  setResponseExcerptCapture,
-  subscribeToDiagnosticEvents,
   zoomCameraByLevelsAroundScreenPoint,
 } from './generated/rustic_maps_bg.js';
 
@@ -529,6 +526,43 @@ function traffic_flow_cache_statistics_from_generated(statistics) {
   };
 }
 
+/**
+ * One generated `LogEvent` in the shape the console and its specs read: the
+ * severity as its contract name, the timestamp as a number, and the provider
+ * request under `providerRequest` with its 64-bit counters converted.
+ */
+function diagnostic_event_from_generated(event) {
+  const provider_request_trace = event.providerRequestTrace;
+  return {
+    timestampMillisecondsSinceEpoch: Number(event.timestampMillisecondsSinceEpoch),
+    severity: enum_member_name(SdkLogSeverity, event.severity),
+    subsystemTarget: event.subsystemTarget,
+    messageLine: event.messageLine,
+    providerRequest: provider_request_trace === undefined || provider_request_trace === null
+      ? null
+      : {
+        providerKey: provider_request_trace.providerKey,
+        providerContract: provider_request_trace.providerContract,
+        httpMethod: provider_request_trace.httpMethod,
+        requestPath: provider_request_trace.requestPath,
+        statusClass: provider_request_trace.statusClass,
+        outcome: provider_request_trace.outcome,
+        durationMilliseconds: Number(provider_request_trace.durationMilliseconds),
+        responseBytes: Number(provider_request_trace.responseBytes),
+        responseExcerpt: provider_request_trace.responseExcerpt ?? null,
+      },
+  };
+}
+
+/**
+ * The listener the page's readout subscribes with: the browser surface has
+ * no live-event consumer, so it lowers the recording gate and discards each
+ * delivered event, exactly as the wasm seam's own subscription did.
+ */
+const PAGE_DIAGNOSTIC_LISTENER = {
+  onDiagnosticEvent() {},
+};
+
 window.mapTestReady = (async () => {
   await uniffiInitAsync(GENERATED_MODULE_URL);
   // The contract SDK every provider, search, plan and diagnostics call
@@ -819,11 +853,30 @@ window.mapTestReady = (async () => {
         );
         return new Uint8Array(raster_tile_data.imageBytes);
       }),
-    // The browser transport's diagnostics ring stays on the wasm-bindgen
-    // glue for now; the generated listener migration follows separately.
-    subscribeToDiagnosticEvents,
-    flushRecentDiagnosticEvents,
-    setResponseExcerptCapture,
+    // The contract's live listener stream and its non-destructive flush both
+    // read the same bounded rings the console always read: the subscription
+    // lowers the recording gate and discards deliveries, and the flush
+    // collects the events into the array the page asserts on.
+    subscribeToDiagnosticEvents: (minimum_severity) =>
+      generated_map_sdk.subscribeToDiagnosticEvents(
+        PAGE_DIAGNOSTIC_LISTENER,
+        minimum_severity,
+      ),
+    flushRecentDiagnosticEvents: (minimum_severity, maximum_count) => {
+      const flushed_events = [];
+      generated_map_sdk.flushRecentDiagnosticEvents(
+        {
+          onDiagnosticEvent(event) {
+            flushed_events.push(diagnostic_event_from_generated(event));
+          },
+        },
+        minimum_severity,
+        maximum_count,
+      );
+      return flushed_events;
+    },
+    setResponseExcerptCapture: (enabled) =>
+      generated_map_sdk.setResponseExcerptCapture(enabled),
   };
   const status_element = document.getElementById('harness-status');
   if (status_element) {
