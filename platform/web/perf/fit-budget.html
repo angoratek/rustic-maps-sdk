@@ -4,6 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Vector fit-budget measurement</title>
+    <!-- The generated package's only bare specifiers are the player runtime
+         (`@ubjs/wasm`) and its core (`@ubjs/core`); the import map and the
+         dev server's `/generated-runtime/@ubjs/...` route resolve them. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@ubjs/core": "/generated-runtime/@ubjs/core/dist/esm/index.js",
+          "@ubjs/wasm": "/generated-runtime/@ubjs/wasm/dist/browser/src/index.js",
+          "@ubjs/wasm/core": "/generated-runtime/@ubjs/wasm/dist/core/src/index.js"
+        }
+      }
+    </script>
     <style>
       /* One bare GPU surface: no controls, no page pump, no overlay canvas. */
       html, body { margin: 0; padding: 0; background: #101418; }
