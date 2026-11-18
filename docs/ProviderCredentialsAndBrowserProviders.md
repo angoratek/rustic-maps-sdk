@@ -244,7 +244,12 @@ the revision of the published set.
    reports; redaction is tested by a grep-style gate where practical.
 3. Masked fields only; clipboard paste allowed, no "show key" affordance.
 4. Persistence only through the platform secure store, only when the user
-   opts in; the toggle's default is off. Automation injection is session-only
+   opts in; the toggle's default is off. **One recorded browser exception
+   (owner ruling 2026-11-17):** the browser has no platform secure store, so
+   the demo may persist a key in this origin's `localStorage` only behind the
+   explicit opt-in and a visible warning that the value is stored in readable
+   form and a shared computer should not use the option. Native targets keep
+   the secure store and the off default. Automation injection is session-only
    and never persisted.
 5. Clear removes both memory and secure-store copies; the running-session
    limitation is stated, not hidden.
