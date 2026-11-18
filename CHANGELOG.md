@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Removed (2026-11-18 — dead contract field names)
+
+- Twelve `generated_contract_field_names` constants had no reader outside their own module: the two bounding-box fields and the ten route fields. They are deleted, and the module's `#[allow(dead_code)]` is gone, so the next unused name fails the build instead of drifting. The remaining constants are imported by the canvas, vector-layer and vector-source readers.
+
 ### Changed (2026-11-18 — documentation cut by content, not line wrapping)
 
 - The six contributor guides fell from 50,342 to 40,262 words: `Architecture` 9,851 → 7,331, `Browser` 6,355 → 4,246, `Providers` 6,764 → 4,792, `StyleSupport` 9,348 → 6,605, `Release` 5,873 → 5,626 and `ReferenceAppUX` 12,151 → 11,659. Process narrative, the everymap release diary, the style implementation order and residual backlog, and the spent history-rewrite runbook are gone; the substantive style backlog and open questions moved to `PLAN.md`. Every constant, path, command, contract name, capability row and failure mode stayed.

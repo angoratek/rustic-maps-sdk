@@ -145,7 +145,7 @@ One line each; the full record is `CHANGELOG.md` and git history. Each completed
 - [ ] Wasm fetch-shim / IndexedDB tile-cache seams.
 - [ ] Native `CameraInteraction` FFI wiring (round-13 §5 item 1): decide the answer shape, then implement.
 - [x] Binding-surface consolidation audit (round 174): the audit ranks nine duplications with files, proposals, risk and size. Highest value: generate the wasm façade from the existing contract parser (medium), extend the UDL `MapView` with camera/fit/bounds members and `MapCamera.interpolate` (large contract addition), and generate the RN declaration/ordinal layer from the UDL (large). A live consequence was fixed: the RN iOS overlay decoder now accepts `PointPins` (it rejected the contract's ordinal 4). The proposal slate is carried in §2.
-- [ ] Repo-wide refinement critic sweep.
+- [x] Repo-wide refinement critic sweep (2026-11-18): twenty findings with file references, a concrete change, the closing gate and a risk level are recorded in §2; each is a standalone slice except the iOS/Android state split and the `DeviationInfo` rename.
 - [ ] Next addition-only contract wave: `start_trip_with_arrival_policy`, `course_heading_degrees` + `CourseFiltering`, `NavigationRecorder` start/stop/drain, a typed `CameraPose`-answer `CameraInteraction`, and proper `SdkError` variants for offline/cache failures; each ships the UDL + wasm mirror + four wrapper regens in one commit.
 
 ### M65 — Responsive tile throughput and smooth zoom (M23 residual) · *status: open (owner-directed 2026-11-03; PRD §6 item 50)*
@@ -592,6 +592,29 @@ Owner rulings: the public history is a rewritten mirror pushed to a **new public
 - [ ] CI and deploy (2026-11-18): the public repository runs the gate on every pull request and `main`; the documentation site and both demos build from the public history; no workflow reads a private-repository secret.
 
 ## 2. Backlog & cross-cutting
+
+**Refinement sweep (2026-11-18, read-only audit).** Each finding closes with its own gate; the file references are the start, not the whole change.
+
+- [ ] One Mercator implementation and one `MAXIMUM_MERCATOR_LATITUDE_DEGREES` in `geospatial-types`; five copies in rendering, cache and core call it (projection, GeoJSON source, vector style, tile packs, traffic-flow cache). Gate: moved projection tests plus cross-crate corner agreement and `cargo test --workspace`.
+- [ ] One tile GPU pipeline for `headless.rs`, `surface.rs` and the canvas shaders; keep only the thin upload methods. Gate: the golden suites and wasm check.
+- [ ] Move `offline_routing_benchmark.rs` (503 production lines) and `dijkstra_reference_search` behind a non-default `benchmark-support` feature or into bench support. Gate: release build excludes it; bench builds with the feature.
+- [ ] One `camera_geographic_bounds` in `rustic-maps-rendering::camera` for the browser and native copies. Gate: top-down and 70° pitch tests plus the existing bounds tests.
+- [ ] `BoundingBox::from_coordinates` in `geospatial-types` replaces five hand-rolled aggregations. Gate: empty, one-point, negative-longitude tests and existing routing/traffic tests.
+- [ ] Shared `tests/common/golden.rs` for the eight golden-image harnesses. Gate: the eight suites in committed and `UPDATE_GOLDENS=1` modes.
+- [ ] Shared fixture server for the five native vendor tests under `tests/common/`. Gate: the five test targets.
+- [ ] Delete the twelve dead `generated_contract_field_names` constants and correct the comment. Gate: `-D warnings` check and a grep gate for the remaining names.
+- [ ] Share the RN text, error and registration helpers; export the pure credential-status helper. Gate: existing jest suites plus direct helper tests.
+- [ ] Split `canvas.rs` at its shader, tile-fetch, statistics, vector-base and fixture seams. Gate: wasm check and the browser suite; one module per commit.
+- [ ] Move the inline test modules of `labels.rs`, `surface_view.rs` and `reducer.rs` into child files. Gate: the three crate test runs.
+- [ ] Split `records.rs` into domain modules behind the same public paths. Gate: native-core tests and wasm check.
+- [ ] Split the RN `App.tsx` helper and component groups into `src/` modules. Gate: App, reference-flow and flow suites.
+- [ ] Extract the iOS and Android reference-app state domains one platform and one domain at a time. Gate: XCTest and the Android unit/suite runs.
+- [ ] Name the cache TTL arithmetic in `response_category.rs`. Gate: the expiry-age test plus exact constant assertions.
+- [ ] One `MAXIMUM_TILE_ZOOM_LEVEL` used by projection, camera and `TileKey::new`; reject zoom 64 and above. Gate: clamp tests and a new out-of-range test.
+- [ ] Derive the native provider catalog metadata from `PROVIDER_ENTRIES`; fix the two stale install comments. Gate: the two catalog parity tests.
+- [ ] Dev-only `rustic-maps-test-support` crate for the repeated `coordinate`, `viewport`, Sacramento and camera fixtures. Gate: workspace test compile.
+- [ ] Split `OfflineRoutingNetworkGraph::from_bytes` into four named validation phases. Gate: archive round-trip, mapped and malformed-input tests.
+- [ ] Full-name sweep: rename `StyleLayer`'s `min_zoom`/`max_zoom` and internal `MAX_*` constants; defer `DeviationInfo` to a contract wave. Gate: workspace tests plus a grep gate; the FFI rename ships with regenerated bindings.
 
 - [ ] Gesture-cancel proof (M62 residual): a running camera animation cancelled by a gesture is implemented, but the JVM stub `android.jar` cannot drive `SurfaceView`/`Choreographer`/`MotionEvent`; pin it with a Robolectric or instrumentation test.
 - [ ] Instrumentation permission reset (M62 residual): a runtime location grant outlives a case and revoking it in-process kills the target process that hosts the runner, so the suite keeps whatever grant a previous case applied; reset the application's permissions by restarting the emulator (or a host-side revoke) before a run that needs the ungranted state.

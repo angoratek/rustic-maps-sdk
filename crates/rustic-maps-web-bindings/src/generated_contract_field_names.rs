@@ -7,17 +7,10 @@
 
 // The constants sit in a skipped block so their values stay byte stable under
 // `cargo fmt`; the values are the formatted contract field names, not
-// hand-wrapped text. The canvas modules import them with a glob, so the
-// compiler sees every declaration used.
-#[allow(dead_code)]
+// hand-wrapped text. Every constant is imported by the canvas or the vector
+// layer, so an unused one fails the build instead of drifting.
 #[rustfmt::skip]
 mod field_names {
-    /// JavaScript field name of the contract's `BoundingBox.north_east`.
-    pub(crate) const BOUNDING_BOX_FIELD_NORTH_EAST: &str = "northEast";
-
-    /// JavaScript field name of the contract's `BoundingBox.south_west`.
-    pub(crate) const BOUNDING_BOX_FIELD_SOUTH_WEST: &str = "southWest";
-
     /// JavaScript field name of the contract's `TileKey.tile_x`.
     pub(crate) const TILE_FIELD_TILE_X: &str = "tileX";
 
@@ -101,36 +94,6 @@ mod field_names {
 
     /// JavaScript field name of the contract's `ProviderVectorTileSource.style_id`.
     pub(crate) const PROVIDER_VECTOR_SOURCE_FIELD_STYLE_ID: &str = "styleId";
-
-    /// JavaScript field name of the contract's `Route.bounding_box`.
-    pub(crate) const ROUTE_FIELD_BOUNDING_BOX: &str = "boundingBox";
-
-    /// JavaScript field name of the contract's `Route.distance_meters`.
-    pub(crate) const ROUTE_FIELD_DISTANCE_METERS: &str = "distanceMeters";
-
-    /// JavaScript field name of the contract's `Route.duration_seconds`.
-    pub(crate) const ROUTE_FIELD_DURATION_SECONDS: &str = "durationSeconds";
-
-    /// JavaScript field name of the contract's `Route.geometry`.
-    pub(crate) const ROUTE_FIELD_GEOMETRY: &str = "geometry";
-
-    /// JavaScript field name of the contract's `RouteStep.instruction_display_text`.
-    pub(crate) const ROUTE_FIELD_INSTRUCTION_DISPLAY_TEXT: &str = "instructionDisplayText";
-
-    /// JavaScript field name of the contract's `RouteStep.instruction_speech_text`.
-    pub(crate) const ROUTE_FIELD_INSTRUCTION_SPEECH_TEXT: &str = "instructionSpeechText";
-
-    /// JavaScript field name of the contract's `Route.legs`.
-    pub(crate) const ROUTE_FIELD_LEGS: &str = "legs";
-
-    /// JavaScript field name of the contract's `RouteStep.maneuver_type`.
-    pub(crate) const ROUTE_FIELD_MANEUVER_TYPE: &str = "maneuverType";
-
-    /// JavaScript field name of the contract's `RouteStep.shape`.
-    pub(crate) const ROUTE_FIELD_SHAPE: &str = "shape";
-
-    /// JavaScript field name of the contract's `RouteLeg.steps`.
-    pub(crate) const ROUTE_FIELD_STEPS: &str = "steps";
 
     /// JavaScript field name of the contract's `ScreenPoint.x`.
     pub(crate) const SCREEN_POINT_FIELD_X: &str = "x";
