@@ -90,7 +90,7 @@ web-sys = "0.3"
 js-sys = "0.3"
 # The native binding layer's UniFFI release; the `uniffi-bindgen` CLI and the
 # build-time scaffolding must be re-generated from the same version.
-uniffi = "0.31.2"
+uniffi = "0.32.2"
 # The structured event facade the diagnostics subscriber (round 10's
 # `SdkDiagnosticEventListener`) records from; wasm-safe (no runtime deps).
 tracing = "0.1.41"
