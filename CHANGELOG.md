@@ -4,6 +4,28 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-17 — internal documentation trimmed to the live guides)
+
+- The implemented design notes are retired: `Autocomplete.md`,
+  `DirectionsModesAndStrategy.md`, `LocationInterpolation.md`,
+  `MapControlsAndTrafficLayer.md`, `PositioningAndRouteUx.md`,
+  `ReferenceAppSettingsAndPersistence.md`, `ReferenceApplicationBehavior.md`,
+  `RouteShields.md`, `TilePackManager.md`, `BindingSurfaceConsolidation.md`,
+  `PlanFlowAudit.md`, `ProviderGenericity.md`, the three `history/` records and
+  the three merged pointer stubs are deleted (4,261 lines); `docs/` holds 25
+  documents and `docs/README.md` indexes every one. The decisions they recorded
+  nowhere else are `PRD.md` §6 items 66–69 (puck interpolation with dead
+  reckoning opt-in, the versioned preferences record, the per-surface
+  directions reason text, and the five platform-owned surface concerns), with
+  the Rust-desktop positioning question in `PLAN.md` §5 item 29.
+- Every reference from source comments, tests, scripts and the root documents
+  now points at a surviving home: `PRD.md` §6 items, `docs/ReferenceAppUX.md`
+  §2.5/§4.1/§4.2/§5.5, `platform/providers.json`, `platform/reference-flows.json`,
+  `docs/reference/BrowserRenderPerformance.md`, `docs/design/DeveloperConsole.md`,
+  `docs/design/ProviderCoverage.md`, `docs/design/EverymapAdoption.md` and the
+  code that implements the design. No behaviour, assertion, workflow or site
+  page changed.
+
 ### Changed (2026-11-17 — browser surface generated from the contract)
 
 - The browser API is generated from the frozen UniFFI contract by the
