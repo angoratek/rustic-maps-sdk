@@ -176,6 +176,29 @@ pub(crate) const PROVIDER_CATALOG: &[ProviderCatalogEntry] = &[
     },
 ];
 
+/// The browser-only fixture-origin override for a provider key, when the page
+/// registered one with `setProviderBaseUrl`.
+///
+/// The credential-only catalog installs carry no endpoint of their own, so a
+/// browser that serves a provider's routes itself would otherwise reach the
+/// public endpoint. On wasm the generated `MapSdk` consults the override the
+/// canvas keeps, which makes a generated `configure_provider` or
+/// `configure_provider_set` build the same fixture-backed provider the page's
+/// own registration does. A native build has no such seam and never calls it,
+/// so native registration behaviour is unchanged.
+#[cfg(target_arch = "wasm32")]
+fn browser_base_url_override(provider_key: &str) -> Option<String> {
+    crate::browser_canvas::live_providers::base_url_override(provider_key)
+}
+
+/// The browser-only fixture-origin override for a provider key. A native
+/// build carries no override table, so this always answers `None` and every
+/// install path keeps the credential-only behaviour it had.
+#[cfg(not(target_arch = "wasm32"))]
+fn browser_base_url_override(_provider_key: &str) -> Option<String> {
+    None
+}
+
 /// The credential a keyless provider reads as an optional deployment address.
 ///
 /// A self-hosted routing engine has no key: the application supplies the base
@@ -231,7 +254,7 @@ fn install_osrm_contract(
     }
     let configuration = everymap_providers_osrm::OsrmProviderConfiguration {
         base_url: validated_deployment_base_url(
-            credential,
+            &browser_base_url_override("osrm").unwrap_or_else(|| credential.to_string()),
             everymap_providers_osrm::DEFAULT_OSRM_BASE_URL,
         )?,
         ..Default::default()
@@ -270,7 +293,7 @@ fn install_photon_contract(
     }
     let configuration = everymap_providers_photon::PhotonProviderConfiguration {
         base_url: deployment_base_url_or_default(
-            credential,
+            &browser_base_url_override("photon").unwrap_or_else(|| credential.to_string()),
             everymap_providers_photon::DEFAULT_PHOTON_BASE_URL,
         ),
         ..Default::default()
@@ -323,7 +346,7 @@ fn install_valhalla_contract(
     }
     let configuration = everymap_providers_valhalla::ValhallaProviderConfiguration {
         base_url: validated_deployment_base_url(
-            credential,
+            &browser_base_url_override("valhalla").unwrap_or_else(|| credential.to_string()),
             everymap_providers_valhalla::DEFAULT_VALHALLA_BASE_URL,
         )?,
         ..Default::default()
@@ -372,10 +395,14 @@ fn install_mapquest_contract(
 /// contract they served; the provider layer has no shared pacing state to
 /// lose by not sharing one.
 fn mapquest_provider_client(credential: &str, contract: ProviderContract) -> Arc<MapQuestClient> {
-    let mut client = MapQuestClient::new(MapQuestProviderConfiguration {
+    let mut configuration = MapQuestProviderConfiguration {
         api_key: credential.to_string(),
         ..MapQuestProviderConfiguration::default()
-    });
+    };
+    if let Some(base_url) = browser_base_url_override("mapquest") {
+        configuration.base_url = base_url;
+    }
+    let mut client = MapQuestClient::new(configuration);
     client.set_observer(Arc::new(EveryMapRequestObserver::new(
         &contract_name_of(contract),
         "mapquest",
@@ -466,7 +493,7 @@ fn install_shared_vendor(
     let implementations = rustic_maps_providers::build_vendor(
         provider_key,
         credential,
-        None,
+        browser_base_url_override(provider_key).as_deref(),
         &contract_name_of(contract),
     )
     .ok_or_else(|| contract_not_served(contract))?;

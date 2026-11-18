@@ -197,6 +197,11 @@ const WASM_ONLY_FREE_HELPER_NAMES = [
   // no member for.
   'setProviderBaseUrl',
   'clearProviderRegistrations',
+  // The browser-only companion of the Clear act: a page that replaces its
+  // generated `MapSdk` drops the native registry, so this clears the provider
+  // mirrors that registry published to the canvas. No contract member owns
+  // canvas state.
+  'clearSharedProviderSlots',
   'forwardGeocode',
   'reverseGeocode',
   'routeCapabilities',

@@ -410,6 +410,19 @@ fn base_url_override_for(state: &ProviderState, provider_key: &str) -> Option<St
         .map(|override_entry| override_entry.base_url.clone())
 }
 
+/// The base URL override a provider key was given, if any.
+///
+/// This is the read side of [`set_provider_base_url`], carried across the
+/// crate boundary so the generated contract registry in
+/// `rustic-maps-native-core` installs the same fixture-backed provider the
+/// browser canvas' own registration builds. It stays browser-only and
+/// exists for a page that serves a provider's routes itself, such as the
+/// test harness; a deployed page never sets an override.
+#[cfg(target_arch = "wasm32")]
+pub fn base_url_override(provider_key: &str) -> Option<String> {
+    PROVIDER_STATE.with(|state_slot| base_url_override_for(&state_slot.borrow(), provider_key))
+}
+
 /// Records which provider serves a capability, replacing any earlier
 /// selection for it.
 fn record_selection(
@@ -425,6 +438,24 @@ fn record_selection(
         contract,
         provider_key: provider_key.to_string(),
         display_name: display_name.to_string(),
+    });
+}
+
+/// Records the provider the generated contract registry chose for a
+/// capability, so the canvas' own provider-key checks (a provider-backed
+/// vector base's descriptor, a raster selection) read the same choice the
+/// page made through `MapSdk`.
+///
+/// `rustic-maps-native-core` mirrors every successful registration here on
+/// wasm, beside the provider handle it publishes to the canvas' shared
+/// slots. A native build has no canvas to inform.
+pub fn record_shared_provider_selection(
+    contract: ProviderContract,
+    provider_key: &str,
+    display_name: &str,
+) {
+    with_provider_state(|state| {
+        record_selection(state, contract, provider_key, display_name);
     });
 }
 
@@ -1097,6 +1128,42 @@ pub(crate) fn registered_raster_tile_provider() -> Option<Arc<dyn RasterTileProv
         .or_else(|| {
             LIVE_RASTER_FALLBACK_PROVIDER.with(|provider_slot| provider_slot.borrow().clone())
         })
+}
+
+/// The page-registered URL-template raster source, if any.
+///
+/// The generated contract registry in `rustic-maps-native-core` reads this on
+/// wasm when its own raster-tile slot is empty, so the keyless fallback the
+/// canvas draws also answers a generated `fetch_raster_tile`. It is the
+/// browser-only counterpart of the shared slot mirror, and a page that
+/// configured a provider never reaches it.
+pub fn browser_raster_tile_fallback() -> Option<Arc<dyn RasterTileProvider>> {
+    LIVE_RASTER_FALLBACK_PROVIDER.with(|provider_slot| provider_slot.borrow().clone())
+}
+
+/// Clears every provider slot the canvas consults on the generated contract
+/// registry's behalf — the browser-only companion of the page's Clear act.
+///
+/// A page that replaces its `MapSdk` drops the native registry, but the
+/// mirrors it published to the canvas would otherwise keep serving. The
+/// page-registered URL-template fallback survives, exactly as it survives
+/// [`clear_provider_registrations`].
+#[wasm_bindgen(js_name = clearSharedProviderSlots)]
+pub fn clear_shared_provider_slots() {
+    SHARED_RASTER_TILE_PROVIDER.with(|provider_slot| {
+        *provider_slot.borrow_mut() = None;
+    });
+    SHARED_VECTOR_TILE_PROVIDER.with(|provider_slot| {
+        *provider_slot.borrow_mut() = None;
+    });
+    SHARED_VECTOR_STYLE_RESOURCES.with(|style_slot| {
+        *style_slot.borrow_mut() = None;
+    });
+    SHARED_VECTOR_STYLE_RESOURCE_HOSTS.with(|hosts_slot| hosts_slot.borrow_mut().clear());
+    // The selections the generated registry mirrored are its choices too: a
+    // cleared page names no serving provider.
+    with_provider_state(|state| state.selections.clear());
+    bump_raster_tile_provider_registration_revision();
 }
 
 /// Installs the vector-tile provider the generated contract registry holds,
