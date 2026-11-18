@@ -1,0 +1,15 @@
+[package]
+name = "rustic-maps-offline-graph-archive"
+description = "OfflineRoutingNetworkGraph archive format: deterministic writer, fully validating in-memory reader, native mmap seam"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+geospatial-types.workspace = true
+
+# The mmap-based archive reader seam; native-only (the browser loads the
+# graph from in-memory bytes, no `mmap` in the wasm path).
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+memmap2.workspace = true

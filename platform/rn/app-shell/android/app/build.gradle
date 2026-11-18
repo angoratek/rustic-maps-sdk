@@ -1,0 +1,221 @@
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+
+/**
+ * This is the configuration block to customize your React Native Android app.
+ * By default you don't need to apply any configuration, just uncomment the lines you need.
+ */
+react {
+    /* Folders */
+    //   The root of your project, i.e. where "package.json" lives. Default is '../..'
+    // root = file("../../")
+    //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
+    // reactNativeDir = file("../../node_modules/react-native")
+    //   The folder where the react-native Codegen package is. Default is ../../node_modules/@react-native/codegen
+    // codegenDir = file("../../node_modules/@react-native/codegen")
+    //   The cli.js file which is the React Native CLI entrypoint. Default is ../../node_modules/react-native/cli.js
+    // cliFile = file("../../node_modules/react-native/cli.js")
+
+    /* Variants */
+    //   The list of variants to that are debuggable. For those we're going to
+    //   skip the bundling of the JS bundle and the assets. Default is "debug", "debugOptimized".
+    //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
+    // debuggableVariants = ["liteDebug", "liteDebugOptimized", "prodDebug", "prodDebugOptimized"]
+
+    /* Bundling */
+    //   A list containing the node command and its flags. Default is just 'node'.
+    // nodeExecutableAndArgs = ["node"]
+    //
+    //   The command to run when bundling. By default is 'bundle'
+    // bundleCommand = "ram-bundle"
+    //
+    //   The path to the CLI configuration file. Default is empty.
+    // bundleConfig = file(../rn-cli.config.js)
+    //
+    //   The name of the generated asset file containing your JS bundle
+    // bundleAssetName = "MyApplication.android.bundle"
+    //
+    //   The entry file for bundle generation. Default is 'index.android.js' or 'index.js'
+    // entryFile = file("../js/MyApplication.android.js")
+    //
+    //   A list of extra flags to pass to the 'bundle' commands.
+    //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
+    // extraPackagerArgs = []
+
+    /* Hermes Commands */
+    //   The hermes compiler command to run. By default it is 'hermesc'
+    // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
+    //
+    //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
+    // hermesFlags = ["-O", "-output-source-map"]
+
+    /* Autolinking */
+    autolinkLibrariesWithApp()
+}
+
+/**
+ * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ */
+def enableProguardInReleaseBuilds = false
+
+/**
+ * The preferred build flavor of JavaScriptCore (JSC)
+ *
+ * For example, to use the international variant, you can use:
+ * `def jscFlavor = io.github.react-native-community:jsc-android-intl:2026004.+`
+ *
+ * The international variant includes ICU i18n library and necessary data
+ * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
+ * give correct results when using with locales other than en-US. Note that
+ * this variant is about 6MiB larger per architecture than default.
+ */
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdk rootProject.ext.compileSdkVersion
+
+    namespace "com.rusticmaps.sdk.refapprn"
+    defaultConfig {
+        applicationId "com.rusticmaps.sdk.refapprn"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+    }
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildFeatures {
+        buildConfig = true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        getByName("main") {
+            assets.srcDir(layout.buildDirectory.dir("generated/reference-assets"))
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug
+            minifyEnabled enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+repositories {
+   // The shipped SDK AAR — the generated bindings, the per-ABI Rust libraries
+    // and the `com.rusticmaps.sdk.MapView` widget in one artifact — consumed
+    // as a prebuilt file (see settings.gradle's note for why the shell reads
+    // the AAR rather than the source module).
+    flatDir {
+        dirs("../../../../android/maps-sdk/build/outputs/aar")
+    }
+}
+
+dependencies {
+    // The version of react-native is set by the React Native Gradle Plugin
+    implementation("com.facebook.react:react-android")
+
+    if (hermesEnabled.toBoolean()) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation jscFlavor
+    }
+
+    // The ubrn TurboModule library (TS + JSI glue over the frozen UDL) and
+    // the prebuilt uniffi Kotlin bindings + per-ABI Rust cdylib AAR the
+    // surface module drives (the Compose reference application's consumption
+    // shape; see settings.gradle's note for why it is an AAR and not a source
+    // module here).
+    implementation(project(":maps-sdk-rn"))
+
+    // The shipped SDK AAR (the flatDir repository above): the generated
+    // bindings and the native map host the package draws through, in one
+    // artifact.
+    implementation(name: "maps-sdk-release", ext: "aar")
+
+    // The AAR's own dependencies, re-declared verbatim from the source
+    // module's build file (the flatDir artifact carries none of them).
+    implementation("net.java.dev.jna:jna:5.18.1@aar")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+
+    // kotlinx-coroutines-android ships `withFrameNanos`, the Choreographer-
+    // backed frame clock the serialized per-frame draw pump mirrors from the
+    // Compose reference application's frame pump.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+// The recorded synthetic walk trace the simulated navigation drives; the file
+// stays the single committed source (`crates/rustic-maps-navigation/fixtures/...`,
+// byte-locked by rustic-maps-navigation's own tests) and is bundled identically here,
+// mirroring the Compose reference application's copy tasks.
+def repositoryRootDirectory = rootDir.parentFile.parentFile.parentFile.parentFile.absolutePath
+
+tasks.register("copyNavigationTraceCleanWalk", Copy) {
+    from(new File(repositoryRootDirectory, "crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_clean_walk.json"))
+    into(layout.buildDirectory.dir("generated/reference-assets"))
+}
+
+// The deviation demo-plan traces (round 9's demo-plan picker ask): the two
+// recorded walks the picker offers beyond the clean walk, each bundled from
+// its single committed source, mirroring the Compose application's copy
+// tasks for the same fixture set.
+tasks.register("copyNavigationTraceDeviationRecovery", Copy) {
+    from(new File(repositoryRootDirectory, "crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_recovery.json"))
+    into(layout.buildDirectory.dir("generated/reference-assets"))
+}
+
+tasks.register("copyNavigationTraceDeviationReroute", Copy) {
+    from(new File(repositoryRootDirectory, "crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_reroute.json"))
+    into(layout.buildDirectory.dir("generated/reference-assets"))
+}
+
+// The shared demo artifact (§9): the single committed `platform/reference-
+// scenes.json` bundled from its one source, so the Kotlin half (the overlay
+// scenes, the demo position, the trace asset name) and the JavaScript half
+// (the Metro require) consume byte-identical demo data.
+tasks.register("copyReferenceScenes", Copy) {
+    from(new File(repositoryRootDirectory, "platform/reference-scenes.json"))
+    into(layout.buildDirectory.dir("generated/reference-assets"))
+}
+
+// The committed compiled offline routing archive the offline card's route
+// control reads: the same test graph the wasm seam and the contract tests use,
+// bundled from its single committed source.
+tasks.register("copyOfflineRoutingArchive", Copy) {
+    from(new File(repositoryRootDirectory, "crates/rustic-maps-offline-graph-compiler/fixtures/rmog/routing_grid.rmog"))
+    into(layout.buildDirectory.dir("generated/reference-assets"))
+}
+
+tasks.named("preBuild") {
+    dependsOn(
+        "copyNavigationTraceCleanWalk",
+        "copyNavigationTraceDeviationRecovery",
+        "copyNavigationTraceDeviationReroute",
+        "copyReferenceScenes",
+        "copyOfflineRoutingArchive",
+    )
+}

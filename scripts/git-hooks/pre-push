@@ -1,0 +1,38 @@
+#!/bin/sh
+# Pre-push verification gate: the three checks CI runs on every push (see
+# .github/workflows/format-and-lint.yml, whose job now also runs the unit,
+# integration and rustdoc suites), so a red
+# CI run never surprises anyone. Each step fast-fails: the first failing
+# gate stops the push and its output names the fix.
+#
+# The full gate takes minutes (clippy and the workspace tests dominate);
+# bypass a single push with MAPS_SDK_SKIP_HOOKS=1, e.g.
+#
+#     MAPS_SDK_SKIP_HOOKS=1 git push
+#
+# Install (repo-local, one-off): scripts/install-git-hooks
+set -u
+
+if [ -n "${MAPS_SDK_SKIP_HOOKS:-}" ]; then
+    printf '%s\n' 'maps-sdk pre-push: MAPS_SDK_SKIP_HOOKS is set; skipping the verification gate.'
+    exit 0
+fi
+
+# Runs one gate: a header with the gate name, then the command; a failure
+# stops the push with the remedy spelled out.
+gate() {
+    gate_name="$1"
+    shift
+    printf '\n==> maps-sdk pre-push: %s\n' "$gate_name"
+    if ! "$@"; then
+        printf '\nmaps-sdk pre-push: the %s gate failed (output above). Fix it and push again, or bypass once with MAPS_SDK_SKIP_HOOKS=1.\n' "$gate_name"
+        exit 1
+    fi
+}
+
+gate 'cargo fmt' cargo fmt --all --check
+gate 'cargo clippy' cargo clippy --workspace --all-targets -- -D warnings
+printf '%s\n' 'maps-sdk pre-push: the workspace tests take a few minutes.'
+gate 'cargo test' cargo test --workspace
+
+printf '\nmaps-sdk pre-push: all three gates green.\n'

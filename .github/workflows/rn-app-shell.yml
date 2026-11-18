@@ -1,0 +1,74 @@
+name: rn-app-shell
+
+# Runs the React Native reference application's JavaScript gates (jest and
+# strict TypeScript) on every change that can affect the shell: the app
+# itself, the generated binding package it consumes, or the frozen UDL it
+# mirrors. Native builds stay with scripts/build-rn.sh and the platform
+# workflows; this job keeps the JS seam honest on every PR.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "platform/rn/**"
+      - "crates/rustic-maps-native-core/src/rustic_maps.udl"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/rn-app-shell.yml"
+  pull_request:
+    paths:
+      - "platform/rn/**"
+      - "crates/rustic-maps-native-core/src/rustic_maps.udl"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/rn-app-shell.yml"
+
+concurrency:
+  group: rn-app-shell-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rn-app-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/rn/app-shell/package-lock.json
+
+      - name: Install the binding package's dependencies
+        # The shell's tests import the package's TypeScript sources directly,
+        # so the package's own runtime dependencies must resolve from
+        # `platform/rn/node_modules` (the installed app-shell tree cannot
+        # satisfy a relative import's own node_modules lookup).
+        run: npm ci --no-audit --no-fund
+        working-directory: platform/rn
+
+      - name: Install the shell's dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: platform/rn/app-shell
+
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Generate the binding package's sources
+        # `src/index.ts` and `src/generated/` are gitignored ubrn output; the
+        # suite and the typecheck resolve the package from them.
+        run: ./scripts/generate-rn-bindings.sh
+
+      - name: Jest (screen + speech consumer)
+        run: npx jest --ci
+        working-directory: platform/rn/app-shell
+
+      - name: Strict TypeScript
+        run: npx tsc --noEmit
+        working-directory: platform/rn/app-shell

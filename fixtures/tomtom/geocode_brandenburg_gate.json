@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "position": {
+        "lat": 52.52,
+        "lon": 13.405
+      },
+      "address": {
+        "freeformAddress": "Brandenburg Gate, Berlin",
+        "municipality": "Berlin",
+        "country": "Germany",
+        "countryCode": "DEU"
+      },
+      "resultType": "Point Address",
+      "score": 0.95,
+      "id": "tomtom_place_1"
+    }
+  ],
+  "summary": {
+    "numResults": 1,
+    "query": "Brandenburg Gate"
+  }
+}

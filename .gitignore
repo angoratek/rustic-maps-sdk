@@ -1,0 +1,55 @@
+# Rust build artifacts
+/target
+/target-*/
+**/target/
+# Cargo.lock is tracked: the workspace ships packaged artifacts (AAR,
+# XCFramework, wasm cdylib) and CI resolves --offline, so dependency
+# versions must be pinned reproducibly.
+
+# Scratch and prior research (superseded drafts)
+tmp/
+
+# Release assembly output (the release workflow uploads this tree)
+/dist
+
+# Agent worktrees (parallel rounds use isolated checkouts; never commit them)
+.claude/worktrees/
+
+# Editor and OS noise
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Node tooling (RN platform packages)
+node_modules/
+# Kotlin Gradle plugin session state
+.kotlin/
+
+# API keys and local secrets — never commit; .env.example stays trackable
+.env
+.env.*
+!.env.example
+
+# Test and profiling leftovers. A JVM heap dump is hundreds of megabytes and
+# can carry process memory, so it is never a source artifact.
+*.profraw
+*.profdata
+*.hprof
+# Playwright + generated wasm bindings output
+platform/web/pkg/
+test-results/
+playwright-report/
+
+# Refapp-only generated bindings and native libraries
+# (scripts/build-refapp-core.sh). Never part of a published package.
+platform/android/reference-application/src/refapp-core/generated/
+platform/ios/reference-application/Generated/
+
+# The hosted demo's injected credential (scripts/inject-hosted-demo-credential.sh).
+# Generated on the build machine from a secret; never a build input for a
+# distributed artifact.
+platform/android/reference-application/src/main/assets/hosted-demo-credential.json
+platform/rn/app-shell/android/app/src/main/assets/hosted-demo-credential.json

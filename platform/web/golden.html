@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Golden Compare Fixture</title>
+  </head>
+  <body>
+    <!-- No interactive UI: the Playwright golden-compare test drives every
+         frame through the page's `mapGolden*` window API. The canvas keeps
+         the golden scenes' 512x512 extent, so the GPU surface is 1:1 with
+         the committed golden fixtures at device scale one. -->
+    <canvas id="golden-canvas" width="512" height="512"></canvas>
+    <script type="module" src="./golden.mjs"></script>
+  </body>
+</html>

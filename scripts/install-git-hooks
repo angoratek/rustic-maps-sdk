@@ -1,0 +1,14 @@
+#!/bin/sh
+# Points this repository's git hooks at the tracked scripts/git-hooks/
+# directory (a one-off `git config core.hooksPath` in this repo — never the
+# global config). The hooks are the pre-push CI gate
+# (scripts/git-hooks/pre-push) and the pre-commit format check
+# (scripts/git-hooks/pre-commit); either run can be bypassed once with
+# MAPS_SDK_SKIP_HOOKS=1.
+set -eu
+
+cd "$(dirname "$0")/.."
+git config core.hooksPath scripts/git-hooks
+printf '%s\n' 'maps-sdk: core.hooksPath set to scripts/git-hooks (repo-local).'
+printf '%s\n' 'The pre-push gate now runs cargo fmt --check, clippy and the workspace tests before every push;'
+printf '%s\n' 'bypass either hook for one command with MAPS_SDK_SKIP_HOOKS=1.'

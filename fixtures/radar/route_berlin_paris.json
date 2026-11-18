@@ -1,0 +1,30 @@
+{
+  "meta": { "code": 200 },
+  "routes": [
+    {
+      "duration": { "value": 120.5, "text": "2h 0m" },
+      "distance": { "value": 250000, "text": "250 km" },
+      "legs": [
+        {
+          "startLocation": { "latitude": 52.5163, "longitude": 13.3777 },
+          "endLocation": { "latitude": 48.8566, "longitude": 2.3522 },
+          "duration": { "value": 120.5, "text": "2h 0m" },
+          "distance": { "value": 250000, "text": "250 km" },
+          "steps": [
+            {
+              "distance": { "value": 500, "text": "0.5 km" },
+              "duration": { "value": 1.0, "text": "1 min" },
+              "start_location": { "latitude": 52.5163, "longitude": 13.3777 },
+              "end_location": { "latitude": 52.52, "longitude": 13.38 },
+              "bearing_before": 0,
+              "bearing_after": 90,
+              "instructions": "Head north on Pariser Platz",
+              "maneuver": "start"
+            }
+          ]
+        }
+      ],
+      "geometry": { "polyline": "w{idcBgiooXfzj~Evd}_T" }
+    }
+  ]
+}

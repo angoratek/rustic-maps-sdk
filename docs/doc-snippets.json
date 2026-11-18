@@ -1,0 +1,22 @@
+{
+  "$comment": "Tutorial snippet sources (see docs/reference/DocumentationSnippets.md). Each platform names the reference-application roots the generator scans for marked regions; chapters are the markdown files it rewrites. No chapter hard-codes a file path.",
+  "platforms": [
+    {
+      "platform": "android",
+      "roots": ["platform/android/reference-application/src/main/kotlin"]
+    },
+    {
+      "platform": "ios",
+      "roots": ["platform/ios/reference-application/Sources"]
+    },
+    {
+      "platform": "react-native",
+      "roots": ["platform/rn/app-shell/src", "platform/rn/src"]
+    },
+    {
+      "platform": "wasm",
+      "roots": ["platform/web"]
+    }
+  ],
+  "chapters": ["site/book-src"]
+}

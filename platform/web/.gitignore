@@ -1,0 +1,7 @@
+# Generated wasm bindings (built by cargo + wasm-bindgen into pkg/)
+pkg/
+
+# Playwright run artifacts
+test-results/
+playwright-report/
+blob-report/

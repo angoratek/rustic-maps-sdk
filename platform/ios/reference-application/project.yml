@@ -1,0 +1,175 @@
+name: ReferenceApplication
+options:
+  bundleIdPrefix: com.rusticmaps.sdk
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  RusticMapsSDK:
+    path: ../
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  ReferenceApplication:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rusticmaps.sdk.referenceapplication
+    sources:
+      - path: Sources
+      # The refapp-only UniFFI bindings, generated into a gitignored directory
+      # by scripts/build-refapp-core.sh. The application compiles the
+      # generated Swift directly and links the refapp-only static-library
+      # XCFramework declared below.
+      - path: Generated/RefappCore
+      # The app remembers its own choices in `UserDefaults` (the versioned
+      # preferences record); the declaration names that required-reason use.
+      - path: Sources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      # The shared demo artifact, bundled straight from the single source
+      # (platform/reference-scenes.json): no copy, no drift (docs/Reference
+      # AppUX.md §9).
+      - path: ../../reference-scenes.json
+        buildPhase: resources
+      # The shared reference-flow schema, bundled straight from the single
+      # source: the flows the automated runs and the manual capture scenario
+      # follow (platform/reference-flows.json).
+      - path: ../../reference-flows.json
+        buildPhase: resources
+      # The recorded synthetic navigation traces, bundled straight from
+      # the committed fixtures (the single sources of the simulated
+      # journeys and the demo-plan picker's plans).
+      - path: ../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_clean_walk.json
+        buildPhase: resources
+      - path: ../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_recovery.json
+        buildPhase: resources
+      - path: ../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_reroute.json
+        buildPhase: resources
+      # The committed compiled offline routing archive the offline card's
+      # route control plans over: the same test graph the wasm seam and the
+      # contract tests read, bundled straight from its single source.
+      - path: ../../../crates/rustic-maps-offline-graph-compiler/fixtures/rmog/routing_grid.rmog
+        buildPhase: resources
+    dependencies:
+      # The demo wrapper product keeps its name; the core product/module is
+      # RusticMapsSDK (docs/PackagingAndRelease.md §1 ruling 2).
+      - package: RusticMapsSDK
+        product: MapNativeCoreUI
+      # The refapp-only static library (one device and one simulator slice)
+      # the generated Swift bindings import as `map_refapp_coreFFI`. It is
+      # built and joined by scripts/build-refapp-core.sh into a gitignored
+      # directory and is never part of the published SDK package.
+      - framework: Generated/refapp-core/map_refapp_coreFFI.xcframework
+        embed: false
+    info:
+      path: Sources/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        CFBundleDisplayName: Rustic Maps SDK Ref App
+        NSLocationWhenInUseUsageDescription: Show your device's position on the map.
+        # Background location stays off: this application declares only
+        # when-in-use authorization. An application that needs updates while
+        # backgrounded must add `location` to `UIBackgroundModes`, declare
+        # `NSLocationAlwaysAndWhenInUseUsageDescription`, and pass
+        # `enablesBackgroundLocationUpdates: true` to `DeviceLocationSource`;
+        # the source enables the capability only when all three hold.
+        UIBackgroundModes: []
+        # The hosted demo's own credential (M24, owner ruling 2026-10-30):
+        # an empty value in every ordinary build, and resolved from the build
+        # setting the hosted-demo pipeline passes, so the key never enters
+        # this repository.
+        HostedDemoProviderAPIKey: $(HOSTED_DEMO_PROVIDER_API_KEY)
+        HostedDemoProviderKey: $(HOSTED_DEMO_PROVIDER_KEY)
+  ReferenceApplicationTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.rusticmaps.sdk.referenceapplication.ReferenceApplicationTests
+        # The unit tests import the application module (`@testable import
+        # ReferenceApplication`) to exercise its state types with fakes.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/ReferenceApplication.app/ReferenceApplication"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+    sources:
+      - path: Tests/ReferenceApplicationTests
+    dependencies:
+      - target: ReferenceApplication
+      # The contract records and the registry's decoded descriptor schema.
+      - package: RusticMapsSDK
+        product: RusticMapsSDK
+      - package: RusticMapsSDK
+        product: MapNativeCoreUI
+  ReferenceApplicationUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.rusticmaps.sdk.referenceapplication.ReferenceApplicationUITests
+    sources:
+      - path: Tests/ReferenceApplicationUITests
+      # The shared-artifact model and loader live in the application, not the
+      # shipped SDK package; the UI suite compiles them so it can read the
+      # same demo places and routes the application renders.
+      - path: Sources/ReferenceScenesCatalog.swift
+      - path: Sources/ReferenceScenesCatalogLoader.swift
+      # The shared demo artifact, bundled straight from the single source
+      # (platform/reference-scenes.json): the suite reads the same demo
+      # places and routes the application bundles.
+      - path: ../../reference-scenes.json
+        buildPhase: resources
+        group: SharedReferenceScenesArtifact
+      # The recorded trace fixtures ride the test bundle too: the suite
+      # derives the expected banner texts from the same committed single
+      # sources (network-free, never hardcoded).
+      - path: ../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_clean_walk.json
+        buildPhase: resources
+      - path: ../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_recovery.json
+        buildPhase: resources
+      - path: ../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_reroute.json
+        buildPhase: resources
+      # The shared provider registry rides the test bundle too: the styled-base
+      # case names its demo base map and vector style from the same committed
+      # descriptor source the application renders, never from hardcoded names.
+      # The explicit group keeps the file reference's path relative to the
+      # project directory (the inferred group would root it one level off when
+      # the shared platform directory supplies two resources).
+      - path: ../../providers.json
+        buildPhase: resources
+        group: SharedProviderRegistry
+      # The recorded OSRM route payload rides the test bundle too: the routing
+      # provider proof serves it from the loopback fixture server, the same
+      # committed answer the Rust provider tests parse.
+      - path: ../../../fixtures/osrm/sacramento_route.json
+        buildPhase: resources
+    dependencies:
+      - target: ReferenceApplication
+      # The registry's decoded model (the application's own descriptor type),
+      # so the test reads the artifact with the single schema decoder.
+      - package: RusticMapsSDK
+        product: MapNativeCoreUI
+      # The shared-artifact model and loader compiled into the suite import the
+      # contract records they convert the artifact into.
+      - package: RusticMapsSDK
+        product: RusticMapsSDK
+schemes:
+  ReferenceApplication:
+    build:
+      targets:
+        ReferenceApplication: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ReferenceApplicationTests
+        - ReferenceApplicationUITests

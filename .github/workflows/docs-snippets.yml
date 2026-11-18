@@ -1,0 +1,173 @@
+name: docs-snippets
+
+# Makes the tutorial claim "every snippet compiles" machine-true (PLAN.md M18).
+# The harness extracts every fenced block from site/book-src and type-checks it
+# against the generated surface for its platform:
+#   - TypeScript/JavaScript against the generated wasm package and the
+#     generated ubrn React Native surface,
+#   - Swift against generated UniFFI bindings with swiftc -typecheck,
+#   - Kotlin by API symbol assertion against the generated bindings (there is
+#     no Kotlin compiler in the documented toolchain; the harness reports that
+#     honestly rather than pretending to type-check).
+# It also runs the harness self-test first, so a checker that silently
+# extracts nothing or accepts broken code cannot pass.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "site/book-src/**"
+      - "scripts/check-doc-snippets.mjs"
+      - "scripts/generate-doc-snippets.mjs"
+      - "docs/doc-snippets.json"
+      - "platform/android/reference-application/src/main/kotlin/**"
+      - "platform/ios/reference-application/Sources/**"
+      - "platform/rn/app-shell/src/**"
+      - "platform/rn/src/**"
+      - "platform/web/**"
+      - "platform/web/types/**"
+      - "crates/rustic-maps-native-core/src/rustic_maps.udl"
+      - ".github/workflows/docs-snippets.yml"
+  pull_request:
+    paths:
+      - "site/book-src/**"
+      - "scripts/check-doc-snippets.mjs"
+      - "scripts/generate-doc-snippets.mjs"
+      - "docs/doc-snippets.json"
+      - "platform/android/reference-application/src/main/kotlin/**"
+      - "platform/ios/reference-application/Sources/**"
+      - "platform/rn/app-shell/src/**"
+      - "platform/rn/src/**"
+      - "platform/web/**"
+      - "platform/web/types/**"
+      - "crates/rustic-maps-native-core/src/rustic_maps.udl"
+      - ".github/workflows/docs-snippets.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # The wasm and React Native TypeScript surfaces are generated from the same
+  # frozen contract the snippets import; both are built here so the check is
+  # against real declarations, never a hand-written stand-in.
+  typescript-snippets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Compile the wasm bindings
+        run: cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
+
+      - name: Resolve the pinned wasm-bindgen version
+        id: wasm_bindgen_version
+        run: |
+          version="$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version' \
+            | head -n1)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the pinned wasm-bindgen CLI
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: wasm-bindgen-cli-${{ runner.os }}-${{ steps.wasm_bindgen_version.outputs.version }}
+
+      - name: Bind the wasm module for the documentation check
+        run: |
+          wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wasm_bindgen_version.outputs.version }}" \
+            || cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
+          wasm-bindgen --target web --out-dir platform/web/pkg \
+            target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/rn/package-lock.json
+
+      - name: Install the React Native generation toolchain
+        run: npm ci --no-audit --no-fund
+        working-directory: platform/rn
+
+      - name: Generate the React Native TypeScript surface
+        # Only the TypeScript binding is needed; no native build is performed.
+        run: |
+          ../../platform/rn/node_modules/.bin/ubrn generate jsi bindings \
+            src/rustic_maps.udl \
+            --crate rustic-maps-native-core \
+            --ts-dir "$GITHUB_WORKSPACE/platform/rn/src/generated" \
+            --cpp-dir "$GITHUB_WORKSPACE/platform/rn/cpp/generated"
+        working-directory: crates/rustic-maps-native-core
+
+      - name: Install the pinned TypeScript compiler
+        run: npm install --global typescript@5.9.3
+
+      - name: Prove the generator detects drift
+        run: node scripts/generate-doc-snippets.mjs --self-test
+
+      - name: Check every generated tutorial block matches its source
+        run: node scripts/generate-doc-snippets.mjs --check
+
+      - name: Prove the checker detects broken snippets
+        run: node scripts/check-doc-snippets.mjs --langs js,ts --self-test --strict
+
+      - name: Type-check the TypeScript and JavaScript snippets
+        run: node scripts/check-doc-snippets.mjs --langs js,ts --strict
+
+      - name: Check the internal docs index and every docs/ reference
+        # A moved or deleted internal document must not leave a dangling path
+        # behind in PLAN.md, the scripts or the code comments.
+        run: node scripts/check-docs-references.mjs
+
+  # Swift needs the macOS SDK. Kotlin rides here too because the same pinned
+  # uniffi-bindgen generation step produces both surfaces.
+  native-snippets:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Generate Swift and Kotlin bindings from the frozen UDL
+        run: |
+          cargo run --quiet --bin uniffi-bindgen -- generate \
+            crates/rustic-maps-native-core/src/rustic_maps.udl \
+            --language swift \
+            --out-dir target/uniffi/swift
+          cargo run --quiet --bin uniffi-bindgen -- generate \
+            crates/rustic-maps-native-core/src/rustic_maps.udl \
+            --language kotlin \
+            --out-dir target/uniffi/kotlin \
+            --no-format
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Prove the checker detects broken snippets
+        run: >-
+          node scripts/check-doc-snippets.mjs
+          --langs swift,kotlin --strict --self-test
+          --swift-dir target/uniffi/swift
+          --kotlin-file target/uniffi/kotlin/uniffi/rustic_maps/rustic_maps.kt
+
+      - name: Type-check the Swift snippets and assert the Kotlin API symbols
+        run: >-
+          node scripts/check-doc-snippets.mjs
+          --langs swift,kotlin --strict
+          --swift-dir target/uniffi/swift
+          --kotlin-file target/uniffi/kotlin/uniffi/rustic_maps/rustic_maps.kt

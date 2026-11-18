@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "code": 200
+  },
+  "addresses": [
+    {
+      "latitude": 52.5163,
+      "longitude": 13.3777,
+      "country": "Germany",
+      "countryCode": "DE",
+      "county": "Berlin",
+      "confidence": "exact",
+      "city": "Berlin",
+      "number": "1",
+      "postalCode": "10117",
+      "stateCode": "BE",
+      "state": "Berlin",
+      "street": "Pariser Platz",
+      "formattedAddress": "Brandenburg Gate, Pariser Platz 1, 10117 Berlin, Germany",
+      "layer": "address"
+    }
+  ]
+}

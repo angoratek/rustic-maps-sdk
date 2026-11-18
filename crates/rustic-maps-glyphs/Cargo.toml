@@ -1,0 +1,16 @@
+[package]
+name = "rustic-maps-glyphs"
+description = "Mapbox glyph PBF reader, byte-bounded range cache and R8Unorm atlas packer for the label pipeline"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+# The workspace's dependency-free protobuf wire reader; reusing it keeps a
+# second protobuf implementation (and dependency) out of the tree.
+rustic-maps-vector-tiles.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

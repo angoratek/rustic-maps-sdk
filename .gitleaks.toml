@@ -1,0 +1,25 @@
+# Gitleaks configuration for the repository.
+#
+# The default rule set stays in force (`useDefault`). The allowlist below is
+# deliberately narrow: one documented synthetic fixture value, and two
+# generated files whose dependency checksums the generic-api-key rule mistakes
+# for credentials. No path that can hold a real credential is exempted.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented synthetic fixture values and generated checksum files"
+regexes = [
+  # fixtures/mapquest/directions_route_two_waypoints.json records a synthetic
+  # session id so the fixture can never be mistaken for a captured credential.
+  '''synthetic-session-id''',
+]
+paths = [
+  # Design-token names such as "navigation-follow-pitch-3d" match the generic
+  # API-key rule; the file holds presentation values only.
+  '''^platform/reference-tokens\.json$''',
+  # CocoaPods' generated lock file records each dependency's 40-hex checksum,
+  # which matches the same generic rule; it holds no credential.
+  '''^platform/rn/app-shell/ios/Podfile\.lock$''',
+]

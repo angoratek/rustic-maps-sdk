@@ -1,0 +1,30 @@
+name: dco
+
+# Requires a Developer Certificate of Origin sign-off on every commit in a
+# pull request. The check is a checked-in Node script, so it needs no
+# third-party application or token and works for fork pull requests too.
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sign-off:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify every commit carries a matching Signed-off-by trailer
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-dco-signoff.mjs --range "${BASE_SHA}..${HEAD_SHA}"

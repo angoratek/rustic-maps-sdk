@@ -1,0 +1,96 @@
+{
+  "version": 8,
+  "name": "neutral-streets-schema-fixture",
+  "metadata": {
+    "fixture": "synthetic",
+    "note": "Neutral test document with the Streets schema's source-layer names and resource references. It carries no vendor asset; the layers, colours and wording are authored for this fixture.",
+    "schema": "streets"
+  },
+  "glyphs": "glyphs/{fontstack}/{range}.pbf",
+  "sprite": "sprite",
+  "sources": {
+    "base": {
+      "type": "vector"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": [245, 244, 240, 1]
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": [158, 197, 215, 1]
+      }
+    },
+    {
+      "id": "road",
+      "type": "line",
+      "source": "base",
+      "source-layer": "road",
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": [255, 255, 255, 1],
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8, 1,
+          16, 6
+        ],
+        "line-translate": [1.5, -1],
+        "line-translate-anchor": "viewport"
+      }
+    },
+    {
+      "id": "place-label",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "place_label",
+      "minzoom": 4,
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 13,
+        "text-font": ["Noto Sans Regular"],
+        "text-padding": 4,
+        "text-pitch-alignment": "viewport"
+      },
+      "paint": {
+        "text-color": [44, 44, 44, 1],
+        "text-halo-color": [255, 255, 255, 1],
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "poi-label",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "poi_label",
+      "minzoom": 4,
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 12,
+        "text-font": ["Noto Sans Regular"],
+        "icon-image": ["get", "maki"],
+        "icon-size": 1,
+        "icon-padding": 3,
+        "icon-text-fit": "both",
+        "icon-text-fit-padding": [1, 1, 1, 1]
+      },
+      "paint": {
+        "text-color": [90, 90, 90, 1],
+        "icon-opacity": 0.9
+      }
+    }
+  ]
+}

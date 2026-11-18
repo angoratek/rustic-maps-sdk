@@ -1,0 +1,138 @@
+[package]
+name = "rustic-maps-native-core"
+description = "The only UniFFI binding crate of the Maps SDK"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+# The uniffi-generated foreign-callback adapters implement the exported
+# callback traits through the `async_trait` desugaring, so the exported
+# provider contracts below use the same de-facto standard.
+async-trait.workspace = true
+geospatial-types.workspace = true
+geospatial-traits.workspace = true
+rustic-maps-core.workspace = true
+rustic-maps-navigation.workspace = true
+rustic-maps-positioning.workspace = true
+rustic-maps-rendering.workspace = true
+# The provider layer's vendor providers: the exported
+# `register_mapquest_providers` call installs the MapQuest set onto the
+# registry, and the catalog builds OSRM and Valhalla from the same crates.
+url.workspace = true
+everymap-providers-mapquest.workspace = true
+everymap-providers-photon.workspace = true
+everymap-providers-osrm.workspace = true
+everymap-providers-valhalla.workspace = true
+# The credentialed vendor providers the catalog offers beside the four above.
+everymap-providers-here.workspace = true
+everymap-providers-google.workspace = true
+everymap-providers-tomtom.workspace = true
+everymap-providers-mapbox.workspace = true
+everymap-providers-radar.workspace = true
+# The provider layer's URL-template sources: the exported
+# `register_url_template_raster_tile_source` and
+# `MapView::set_vector_tile_source` calls install any web-mercator XYZ tileset
+# a `{z}/{x}/{y}` template addresses, with no vendor crate.
+everymap-core.workspace = true
+everymap-providers-url-template-raster.workspace = true
+everymap-providers-url-template-vector.workspace = true
+rustic-maps-providers.workspace = true
+# The target's default transport that provider serves its fetches through
+# (reqwest natively, browser `fetch` on wasm).
+# The raw window handle wrappers [platform_surface] builds from the exported
+# surface handle record; `wgpu` consumes these types, so it shares this same
+# release.
+raw-window-handle = "0.6"
+wgpu.workspace = true
+# UDL-first contract (PRD §6, decision 1). The base declaration carries the
+# scaffolding macros on every target; the per-target tables add the `cli`
+# binary seam natively and the single-threaded wasm runtime path on wasm.
+uniffi.workspace = true
+# The single-threaded wasm runtime path the `wasm2` player requires (its
+# futures and callback handles carry no `Send`/`Sync` bounds), declared
+# directly because `ubrn build wasm2` checks the manifest for it. Only
+# `uniffi_core` carries the feature: `uniffi_macros` stays on its standard
+# `Send` callback desugaring, which the provider traits and the browser
+# transport already meet. The feature is inert outside
+# `target_arch = "wasm32"` (its cfg includes the target), so the native
+# builds are unchanged.
+uniffi_core = { version = "0.31.2", features = ["wasm-unstable-single-threaded"] }
+# The event facade the diagnostics rings record from (round 10's
+# diagnostics seam); the SDK crates emit plain `tracing` events.
+tracing.workspace = true
+# The subscriber contract's span types (`span::Current`), which `tracing`
+# does not re-export.
+tracing-core.workspace = true
+# The wall clock and monotonic time source: `std::time` panics on
+# `wasm32-unknown-unknown` (the browser has no OS clock), while `web-time`
+# reads the browser's clocks there and re-exports `std::time` elsewhere.
+web-time.workspace = true
+
+# The native-only half of the binding surface. The `uniffi` CLI seam ships
+# the `uniffi-bindgen` binary entry point pinned to this same release; the
+# disk cache behind the with-tile-cache provider registration has no browser
+# store (its bundled SQLite is native-only); and the crate-owned runtime the
+# exported `[Async]` futures hand their reactor-dependent work to needs a
+# multi-thread tokio runtime (`reqwest` connections, retry back-offs), which
+# no wasm build has.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustic-maps-cache = { path = "../rustic-maps-cache" }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time"] }
+uniffi = { workspace = true, features = ["cli"] }
+
+# The wasm half: the player's allocator and panic-hook exports. The
+# single-threaded runtime path itself comes from the `uniffi_core` feature
+# above; the `extern crate` reference for these helpers' side effects lives
+# in `lib.rs`, because without it rustc drops the rlib and the player cannot
+# find `__ubrn_alloc`.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+uniffi-runtime-wasm = "0.31.0-6"
+# The hand-written browser canvas (the GPU `MapView` and its helpers), folded
+# into this crate's wasm build so one generated module carries both the
+# generated contract surface and the canvas classes, with one initialization
+# and one provider registry. The binding crate re-exports the crate in
+# `lib.rs`, which keeps its `wasm_bindgen` exports linked into the module;
+# native builds never see it.
+rustic-maps-web-bindings = { path = "../rustic-maps-web-bindings" }
+
+# The Android JNI surface-pointer shim (M17): the fixed `Java_...` symbols
+# compiled into the same `librustic_maps.so` the Kotlin AAR ships. `jni`
+# supplies the JNI types of the exported signatures and `ndk-sys` the
+# `ANativeWindow` declarations plus the `-landroid` link attribute; both are
+# target-gated so the host, wasm and iOS builds never see them.
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-sys = "0.6"
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"] }
+
+# Platform packaging (M4): the FFI artifacts consumed by the Android AAR
+# (`cdylib`) and the iOS XCFramework (`staticlib`) are built from this same
+# crate; `lib` preserves the in-process Rust testing and the `uniffi-bindgen`
+# CLI entry point.
+[lib]
+# The library artifact keeps the contract-bound name `rustic_maps`: the
+# generated Kotlin loader derives its `loadLibrary` name from the artifact and
+# the generated Swift module (`rustic_mapsFFI`) from the UDL namespace, while
+# the package name stays `rustic-maps-native-core`.
+name = "rustic_maps"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dev-dependencies]
+# Path conversions for `uniffi::generate` in the bindings-generation test.
+camino = "1"
+# The `record_demo_routes` example reads and merges the shared reference
+# artifact, whose members it round-trips as JSON.
+serde.workspace = true
+serde_json.workspace = true
+# Executor for the Rust-side tests of the exported async methods; the
+# exported futures themselves are now runtime-independent (see the
+# `runtime` module), but the tests drive them through a real executor.
+tokio.workspace = true
+# The panic-boundary tests call the uniffi-generated scaffolding symbols
+# directly (handles, `RustCallStatus`, the `Lower` trait) to pin the FFI
+# containment the crate relies on.
+uniffi = { workspace = true, default-features = false }

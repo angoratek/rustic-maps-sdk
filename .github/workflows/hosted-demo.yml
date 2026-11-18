@@ -1,0 +1,142 @@
+name: hosted-demo
+
+# Publishes the hosted mobile demo's builds (M24, docs/history/research/
+# hosted-mobile-demo-appetize.md §6).
+#
+# Builds the Android reference application (APK) and the iOS reference
+# application (a zipped Simulator `.app`, which is what Appetize runs), then
+# updates both apps **in place** so their public build ids never change. The
+# upload tool writes `platform/demo-builds.json`, which the docs build stages at
+# `/demo/mobile/demo-builds.json`.
+#
+# The Appetize API token is a repository secret and is absent by default: every
+# step after the builds is skipped when it is unset, so a fork or a repository
+# without the secret still gets a green run of the builds and no upload.
+#
+# The uploads carry no secret of their own. The build may carry the demo's
+# dedicated provider credential, injected from a repository secret below and
+# never committed; with that secret unset every build is keyless and the demo
+# still runs.
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+concurrency:
+  group: hosted-demo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: macos-15
+    env:
+      # Secret values are not placed at job level: each one is read only by
+      # the step that consumes it, and this presence flag (never the value)
+      # decides whether the upload steps run.
+      APPETIZE_TOKEN_PRESENT: ${{ secrets.APPETIZE_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build the Android reference application
+        # The hosted demo's dedicated credential (M24, owner ruling 2026-10-30).
+        # A separate secret from the fixture-recording key; unset, the build is
+        # keyless and the demo still works against the mock scene.
+        env:
+          HOSTED_DEMO_PROVIDER_API_KEY: ${{ secrets.HOSTED_DEMO_PROVIDER_API_KEY }}
+          HOSTED_DEMO_PROVIDER_KEY: ${{ vars.HOSTED_DEMO_PROVIDER_KEY || 'mapquest' }}
+        run: |
+          set -euo pipefail
+          # The hosted demo's own dedicated credential (M24, owner ruling
+          # 2026-10-30): injected from a repository secret on the runner, read
+          # at startup, never committed. Unset, the build stays keyless.
+          if [ -n "${HOSTED_DEMO_PROVIDER_API_KEY:-}" ]; then
+            ./scripts/inject-hosted-demo-credential.sh
+          else
+            echo "HOSTED_DEMO_PROVIDER_API_KEY is not set: this build will be keyless."
+          fi
+          ./scripts/build-android.sh
+          # `build-android.sh` assembles the SDK AAR, not the application:
+          # the upload step needs an APK, so the app is assembled here.
+          ./platform/android/gradlew -p platform/android :reference-application:assembleDebug
+
+      - name: Build the React Native reference application
+        run: |
+          set -euo pipefail
+          # The RN shell carries the credential asset too (the injection above
+          # writes it), so this build needs no launch extras. A **release**
+          # build, not debug: a debug APK needs a Metro server the hosted
+          # device cannot reach, while the release build embeds the JS bundle.
+          # The React Native iOS shell is not built here: its pod install does
+          # not complete in this project's environment yet (PLAN.md §2).
+          ./scripts/build-rn.sh
+          ./platform/rn/app-shell/android/gradlew -p platform/rn/app-shell/android assembleRelease
+
+      - name: Build the iOS reference application for the simulator
+        # `project.yml` expands these build settings into the Info.plist entry
+        # the application reads at startup; the credential is written into the
+        # build only, never into the repository.
+        env:
+          HOSTED_DEMO_PROVIDER_API_KEY: ${{ secrets.HOSTED_DEMO_PROVIDER_API_KEY }}
+          HOSTED_DEMO_PROVIDER_KEY: ${{ vars.HOSTED_DEMO_PROVIDER_KEY || 'mapquest' }}
+        run: |
+          set -euo pipefail
+          # The XCFramework the application links against.
+          ./scripts/build-ios.sh
+          # The application's Xcode project is generated from `project.yml`
+          # and never committed, so a fresh runner has none: the script runs
+          # xcodegen first, then builds into the derived-data path the archive
+          # step below knows. A concrete simulator destination keeps the build
+          # arm64-only: the XCFramework carries device and simulator arm64
+          # slices but no x86_64 slice.
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          ./scripts/build-ios-reference-application.sh
+
+      - name: Archive the simulator application
+        run: |
+          set -euo pipefail
+          application_path="$(find platform/ios/reference-application/build -name 'ReferenceApplication.app' -type d | head -n 1)"
+          test -n "${application_path}"
+          ditto -c -k --keepParent "${application_path}" "${RUNNER_TEMP}/ReferenceApplication.zip"
+
+      - name: Upload the builds to Appetize
+        if: env.APPETIZE_TOKEN_PRESENT == 'true'
+        env:
+          APPETIZE_TOKEN: ${{ secrets.APPETIZE_TOKEN }}
+        run: |
+          set -euo pipefail
+          apk_path="$(find platform/android/reference-application/build/outputs/apk -name '*-debug.apk' | head -n 1)"
+          test -n "${apk_path}"
+          react_native_apk_path="$(find platform/rn/app-shell/android/app/build/outputs/apk/release -name '*-release.apk' | head -n 1)"
+          test -n "${react_native_apk_path}"
+          node scripts/upload-demo-builds.mjs \
+            --android "${apk_path}" \
+            --ios "${RUNNER_TEMP}/ReferenceApplication.zip" \
+            --rn-android "${react_native_apk_path}"
+
+      - name: Report the skipped upload
+        if: env.APPETIZE_TOKEN_PRESENT != 'true'
+        run: |
+          echo "APPETIZE_TOKEN is not set: the builds ran, nothing was published."
+          echo "Set the repository secret to publish the hosted demo."
+
+      - name: Upload the manifest as an artifact
+        if: env.APPETIZE_TOKEN_PRESENT == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: demo-builds
+          path: platform/demo-builds.json

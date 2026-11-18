@@ -1,0 +1,11 @@
+[package]
+name = "rustic-maps-positioning"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+geospatial-types.workspace = true
+rustic-maps-navigation.workspace = true
+thiserror.workspace = true

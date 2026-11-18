@@ -1,0 +1,490 @@
+//! Golden-image harness for the styled vector base the native surfaces draw.
+//!
+//! One scene renders the committed OpenMapTiles z14 fixture through the
+//! shared `VectorBaseScheduler` with the Bright style, composes the frame's
+//! overlays and labels and captures the headless frame. Android, iOS and
+//! React Native all draw this same Rust pipeline, so this golden is the
+//! native family's styled-base reference; the browser has one golden per
+//! named style of its own.
+//!
+//! Comparison is tolerant in the same way as the raster goldens: GPUs differ
+//! in sampler behavior. A missing golden is written deliberately with
+//! `UPDATE_GOLDENS=1`; the test skips when no graphics adapter exists.
+
+use async_trait::async_trait;
+use geospatial_traits::{VectorTileProvider, VectorTileSourceDescriptor};
+use geospatial_types::{GeographicCoordinate, SDKError, VectorTileData};
+use rustic_maps_rendering::labels::LabelLayer;
+use rustic_maps_rendering::overlay::ClipSpaceOverlayVertex;
+use rustic_maps_rendering::vector_base::VectorBaseScheduler;
+use rustic_maps_rendering::vector_style::{
+    VECTOR_STYLE_ID_BRIGHT_LIGHT, VECTOR_STYLE_ID_CARTO_LIGHT, VECTOR_STYLE_ID_OPENMAPTILES_LIGHT,
+};
+use rustic_maps_rendering::{
+    CapturedFrame, DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer,
+    MapCamera, TileKey, TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
+};
+use std::path::PathBuf;
+use std::sync::Arc;
+
+/// Frame edge in pixels (the other golden scenes' extent).
+const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
+/// The committed OpenMapTiles z14 fixture's center: the camera keeps exactly
+/// the served tile in view.
+const TILE_CENTER_LATITUDE_DEGREES: f64 = 38.573_937_515_575_91;
+const TILE_CENTER_LONGITUDE_DEGREES: f64 = -121.519_775_390_625;
+/// The fixture tile's address.
+const FIXTURE_TILE_KEY: TileKey = TileKey {
+    tile_x: 2661,
+    tile_y: 6286,
+    zoom_level: 14,
+};
+/// The committed fixture the served tile answers with.
+const FIXTURE_TILE_BYTES: &[u8] =
+    include_bytes!("../../../fixtures/openfreemap/openmaptiles_tile_z14_x2661_y6286.pbf");
+/// The golden file the Bright scene pins.
+const STYLED_BASE_GOLDEN_FILE: &str = "sacramento_zoom14_bright_vector_base.png";
+/// The golden file the OpenMapTiles-schema scene pins: the same fixture tile
+/// painted by the schema style, whose symbol layers must draw text.
+const OPENMAPTILES_STYLED_BASE_GOLDEN_FILE: &str =
+    "sacramento_zoom14_openmaptiles_light_vector_base.png";
+/// The recorded OpenStreetMap US z9 tile over the demo's region: the frame the
+/// owner reported as thick and overlapping, pinned after the road hierarchy
+/// work.
+const REGIONAL_TILE_KEY: TileKey = TileKey {
+    tile_x: 83,
+    tile_y: 196,
+    zoom_level: 9,
+};
+const REGIONAL_TILE_BYTES: &[u8] =
+    include_bytes!("../../../fixtures/openstreetmap-us/osmus_tile_z9_x83_y196.mvt");
+/// The regional tile's center, so the camera keeps exactly it in view.
+const REGIONAL_CENTER_LATITUDE_DEGREES: f64 = 38.554_8;
+const REGIONAL_CENTER_LONGITUDE_DEGREES: f64 = -121.289_062_5;
+/// The golden file the Carto regional scene pins.
+const REGIONAL_CARTO_GOLDEN_FILE: &str = "sacramento_region_zoom9_carto_light.png";
+/// Tolerances mirrored from `golden_image.rs`.
+const MEAN_ABSOLUTE_ERROR_TOLERANCE: f64 = 2.0;
+const OUTLIER_CHANNEL_ERROR: f64 = 24.0;
+const OUTLIER_PIXEL_FRACTION_LIMIT: f64 = 0.02;
+
+/// A provider serving the one committed tile; any other address fails, so
+/// only the fixture contributes geometry.
+struct FixtureTileProvider;
+
+#[async_trait]
+impl VectorTileProvider for FixtureTileProvider {
+    fn source_descriptor(&self) -> VectorTileSourceDescriptor {
+        VectorTileSourceDescriptor {
+            source_name: "golden-vector".to_string(),
+            attribution_text: "Committed golden vector tile".to_string(),
+            minimum_zoom_level: 0,
+            maximum_zoom_level: 14,
+            style_hints: Vec::new(),
+        }
+    }
+
+    async fn fetch_vector_tile(
+        &self,
+        tile_x: u32,
+        tile_y: u32,
+        zoom_level: u8,
+    ) -> Result<VectorTileData, SDKError> {
+        let tile_key = TileKey::new(tile_x, tile_y, zoom_level)?;
+        let tile_bytes: &[u8] = if tile_key == FIXTURE_TILE_KEY {
+            FIXTURE_TILE_BYTES
+        } else if tile_key == REGIONAL_TILE_KEY {
+            REGIONAL_TILE_BYTES
+        } else {
+            return Err(SDKError::ResponseParsingFailure(format!(
+                "the golden provider serves no {zoom_level}/{tile_x}/{tile_y}"
+            )));
+        };
+        VectorTileData::from_wire_bytes(tile_x, tile_y, zoom_level, tile_bytes.to_vec())
+    }
+}
+
+/// Builds the fixture scene's camera (top-down, north up).
+fn build_camera() -> MapCamera {
+    MapCamera::new(
+        GeographicCoordinate {
+            latitude: TILE_CENTER_LATITUDE_DEGREES,
+            longitude: TILE_CENTER_LONGITUDE_DEGREES,
+        },
+        14.0,
+        0.0,
+        0.0,
+    )
+}
+
+/// Renders the fixture tile through the named style, asserting that the frame
+/// draws and that its symbol layers place at least one label: a style that
+/// silently lost its text would otherwise still compare as a valid image.
+async fn render_styled_base(style_id: &str, style_description: &str) -> Option<CapturedFrame> {
+    render_styled_base_scene(
+        style_id,
+        style_description,
+        build_camera(),
+        FIXTURE_TILE_KEY.zoom_level,
+    )
+    .await
+}
+
+/// Renders the scene at `camera`, resolving the visible tiles at the camera's
+/// zoom, and asserts the frame draws a label.
+async fn render_styled_base_scene(
+    style_id: &str,
+    style_description: &str,
+    camera: MapCamera,
+    served_zoom_level: u8,
+) -> Option<CapturedFrame> {
+    let mut renderer = request_renderer_or_skip()?;
+    let viewport = ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
+        .expect("the viewport extent is valid");
+    let mut scheduler = VectorBaseScheduler::from_style_id(Arc::new(FixtureTileProvider), style_id)
+        .expect("the committed style loads");
+    let visible_tile_keys =
+        camera.visible_tile_keys(&viewport, DEFAULT_FIELD_OF_VIEW_DEGREES, served_zoom_level);
+    let vector_base_frame = scheduler
+        .resolve_frame(&visible_tile_keys, camera.zoom_level)
+        .await;
+    assert!(
+        vector_base_frame.drawn_tile_count > 0,
+        "{style_description}: the fixture tile must draw"
+    );
+    let label_layer =
+        vector_base_frame.label_layer(&camera, &viewport, DEFAULT_FIELD_OF_VIEW_DEGREES);
+    assert!(
+        label_layer.as_ref().is_some_and(|layer| !layer.is_empty()),
+        "{style_description}: the style must place at least one label"
+    );
+    if let Some(background) = vector_base_frame.background {
+        renderer.set_clear_color_rgba(background);
+    }
+    let mut pool = TileTexturePool::new(0);
+    Some(
+        renderer
+            .render_captured_frame_layers_and_labels(
+                &camera,
+                &viewport,
+                &[],
+                &mut pool,
+                &vector_base_frame.overlays,
+                None,
+                label_layer.as_ref(),
+            )
+            .expect("the styled base frame renders"),
+    )
+}
+
+#[tokio::test]
+async fn the_bright_styled_base_matches_its_golden() {
+    let Some(captured_frame) =
+        render_styled_base(VECTOR_STYLE_ID_BRIGHT_LIGHT, "Bright light").await
+    else {
+        return;
+    };
+    compare_or_create_golden(&captured_frame, STYLED_BASE_GOLDEN_FILE);
+}
+
+/// Builds the regional scene's camera (top-down, north up at zoom 9).
+fn build_regional_camera() -> MapCamera {
+    MapCamera::new(
+        GeographicCoordinate {
+            latitude: REGIONAL_CENTER_LATITUDE_DEGREES,
+            longitude: REGIONAL_CENTER_LONGITUDE_DEGREES,
+        },
+        f64::from(REGIONAL_TILE_KEY.zoom_level),
+        0.0,
+        0.0,
+    )
+}
+
+#[tokio::test]
+async fn the_regional_carto_base_draws_its_shields_and_matches_its_golden() {
+    let Some(captured_frame) = render_styled_base_scene(
+        VECTOR_STYLE_ID_CARTO_LIGHT,
+        "Carto light at the regional zoom",
+        build_regional_camera(),
+        REGIONAL_TILE_KEY.zoom_level,
+    )
+    .await
+    else {
+        return;
+    };
+    compare_or_create_golden(&captured_frame, REGIONAL_CARTO_GOLDEN_FILE);
+}
+
+/// The regional Carto scene's placed label layer and its viewport, assembled
+/// through the same scheduler path the rendered golden uses.
+async fn regional_label_layer() -> (LabelLayer, ViewportPixels) {
+    let viewport = ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
+        .expect("the viewport extent is valid");
+    let camera = build_regional_camera();
+    let mut scheduler = VectorBaseScheduler::from_style_id(
+        Arc::new(FixtureTileProvider),
+        VECTOR_STYLE_ID_CARTO_LIGHT,
+    )
+    .expect("the committed style loads");
+    let visible_tile_keys = camera.visible_tile_keys(
+        &viewport,
+        DEFAULT_FIELD_OF_VIEW_DEGREES,
+        REGIONAL_TILE_KEY.zoom_level,
+    );
+    let vector_base_frame = scheduler
+        .resolve_frame(&visible_tile_keys, camera.zoom_level)
+        .await;
+    let label_layer = vector_base_frame
+        .label_layer(&camera, &viewport, DEFAULT_FIELD_OF_VIEW_DEGREES)
+        .expect("the regional scene places labels");
+    (label_layer, viewport)
+}
+
+/// The regional tile's `routes` layer carries both road and transit refs; the
+/// shield path must place both as badges, and neither may paint as a road name.
+#[tokio::test]
+async fn the_regional_carto_labels_place_a_road_ref_and_a_transit_ref_as_badges() {
+    let (label_layer, _viewport) = regional_label_layer().await;
+    let labels = label_layer.labels();
+    let shield_texts: Vec<&str> = labels
+        .iter()
+        .filter(|label| label.shield.is_some())
+        .map(|label| label.text.as_str())
+        .collect();
+    // The fixture's `routes` layer carries these road refs.
+    let road_reference = shield_texts
+        .iter()
+        .find(|text| matches!(**text, "5" | "49" | "50" | "65" | "80" | "99"));
+    assert!(
+        road_reference.is_some(),
+        "the regional frame must place a road ref badge; placed shield texts: {shield_texts:?}"
+    );
+    // ...and these transit refs.
+    let transit_reference = shield_texts.iter().find(|text| {
+        matches!(
+            **text,
+            "Blue"
+                | "Green"
+                | "Gold"
+                | "Coast Starlight"
+                | "CZ"
+                | "Gold Runner"
+                | "Capitol Corridor"
+        )
+    });
+    assert!(
+        transit_reference.is_some(),
+        "the regional frame must place a transit ref badge; placed shield texts: {shield_texts:?}"
+    );
+    // A route reference never paints as a road name: every badge's text is a
+    // reference from the routes layer, and the old ref-only text layer is gone.
+    for label in labels {
+        if label.shield.is_none() {
+            assert!(
+                !matches!(
+                    label.text.as_str(),
+                    "5" | "49"
+                        | "50"
+                        | "65"
+                        | "80"
+                        | "99"
+                        | "Blue"
+                        | "Green"
+                        | "Gold"
+                        | "Coast Starlight"
+                        | "CZ"
+                        | "Gold Runner"
+                        | "Capitol Corridor"
+                ),
+                "a route reference painted as plain text: {:?}",
+                label.text
+            );
+        }
+    }
+}
+
+/// The committed badge vertex stream of the regional Carto scene. The bytes
+/// are the encoded solid vertices the native and browser renderers upload, in
+/// draw order, so a one-float change in the badge tessellation fails this test
+/// even when the tolerant image compare absorbs it.
+const BADGE_VERTEX_GOLDEN_FILE: &str = "sacramento_region_zoom9_carto_light_badges.bin";
+/// The exact number of badge vertices the regional scene emits.
+const EXPECTED_BADGE_VERTEX_COUNT: usize = 2304;
+/// The exact clip-space extent of the badge stream, `[min x, min y, max x,
+/// max y]`.
+const EXPECTED_BADGE_CLIP_EXTENT: [f32; 4] = [-0.995_769_2, -1.088_066_2, 1.056_355, 1.057_235_2];
+
+/// Encodes badge vertices exactly as the renderers upload them: clip position
+/// then colour, each component little-endian.
+fn badge_vertex_bytes(vertices: &[ClipSpaceOverlayVertex]) -> Vec<u8> {
+    const BYTES_PER_VERTEX: usize = std::mem::size_of::<ClipSpaceOverlayVertex>();
+    let mut bytes = Vec::with_capacity(vertices.len() * BYTES_PER_VERTEX);
+    for vertex in vertices {
+        for component in vertex.clip_position {
+            bytes.extend_from_slice(&component.to_le_bytes());
+        }
+        for component in vertex.rgba_color {
+            bytes.extend_from_slice(&component.to_le_bytes());
+        }
+    }
+    bytes
+}
+
+/// The badge stream's clip-space extent, `[min x, min y, max x, max y]`.
+fn badge_clip_extent(vertices: &[ClipSpaceOverlayVertex]) -> [f32; 4] {
+    let mut extent = [
+        f32::INFINITY,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        f32::NEG_INFINITY,
+    ];
+    for vertex in vertices {
+        extent[0] = extent[0].min(vertex.clip_position[0]);
+        extent[1] = extent[1].min(vertex.clip_position[1]);
+        extent[2] = extent[2].max(vertex.clip_position[0]);
+        extent[3] = extent[3].max(vertex.clip_position[1]);
+    }
+    extent
+}
+
+/// Pins the regional scene's badge vertex stream byte-for-byte, plus its exact
+/// vertex count and clip-space extent. The committed bytes carry both a road
+/// ref and a transit ref badge.
+///
+/// The committed bytes were generated on macOS. The geometry is CPU-only, but
+/// a different platform's libm can differ in the last unit in the last place
+/// of the projection and rotation math, so a Linux run may produce a different
+/// stream. The remedy is a deliberate `UPDATE_GOLDENS=1` regeneration on that
+/// platform, reviewed and committed; the assertion stays byte-exact.
+#[tokio::test]
+async fn the_regional_badge_vertex_stream_is_byte_exact() {
+    let (label_layer, viewport) = regional_label_layer().await;
+    let vertices = label_layer.quad_vertices(&viewport).badge;
+    eprintln!(
+        "badge vertex count {} clip extent {:?}",
+        vertices.len(),
+        badge_clip_extent(&vertices)
+    );
+    assert_eq!(
+        vertices.len(),
+        EXPECTED_BADGE_VERTEX_COUNT,
+        "the regional badge vertex count changed"
+    );
+    assert_eq!(
+        badge_clip_extent(&vertices),
+        EXPECTED_BADGE_CLIP_EXTENT,
+        "the regional badge clip extent changed"
+    );
+    let bytes = badge_vertex_bytes(&vertices);
+    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures/render/golden")
+        .join(BADGE_VERTEX_GOLDEN_FILE);
+    if !golden_path.exists() {
+        if std::env::var("UPDATE_GOLDENS").is_err() {
+            panic!(
+                "badge vertex golden is missing at {golden_path:?}; regenerate deliberately \
+                 with UPDATE_GOLDENS=1 and commit the result"
+            );
+        }
+        std::fs::write(&golden_path, &bytes).expect("the badge vertex golden is written");
+        println!("wrote {golden_path:?}; review and commit it");
+        return;
+    }
+    let golden_bytes = std::fs::read(&golden_path).expect("the badge vertex golden is readable");
+    if bytes != golden_bytes {
+        let first_difference = bytes
+            .iter()
+            .zip(&golden_bytes)
+            .position(|(captured, golden)| captured != golden)
+            .unwrap_or(bytes.len().min(golden_bytes.len()));
+        panic!(
+            "the regional badge vertex stream drifted from {golden_path:?}: {} captured bytes, \
+             {} golden bytes, first difference at byte {first_difference}",
+            bytes.len(),
+            golden_bytes.len()
+        );
+    }
+}
+
+#[tokio::test]
+async fn the_openmaptiles_styled_base_draws_its_labels_and_matches_its_golden() {
+    let Some(captured_frame) =
+        render_styled_base(VECTOR_STYLE_ID_OPENMAPTILES_LIGHT, "OpenMapTiles light").await
+    else {
+        return;
+    };
+    compare_or_create_golden(&captured_frame, OPENMAPTILES_STYLED_BASE_GOLDEN_FILE);
+}
+
+/// Acquires the renderer or prints why the CPU-only environment skips.
+fn request_renderer_or_skip() -> Option<HeadlessTileRenderer> {
+    match WgpuGraphicsContextSource.request_graphics_context() {
+        Ok(graphics_context) => Some(
+            HeadlessTileRenderer::with_graphics_context(graphics_context)
+                .expect("the pipeline builds on the acquired context"),
+        ),
+        Err(error) => {
+            println!("skipping GPU golden test: no graphics adapter available ({error})");
+            None
+        }
+    }
+}
+
+/// Compares against (or deliberately writes) the scene's golden.
+fn compare_or_create_golden(captured_frame: &CapturedFrame, golden_file_name: &str) {
+    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("fixtures/render/golden")
+        .join(golden_file_name);
+    if !golden_path.exists() {
+        if std::env::var("UPDATE_GOLDENS").is_err() {
+            panic!(
+                "golden fixture is missing at {golden_path:?}; regenerate deliberately with \
+                 UPDATE_GOLDENS=1 and commit the result"
+            );
+        }
+        image::save_buffer(
+            &golden_path,
+            &captured_frame.rgba_bytes,
+            captured_frame.width_pixels,
+            captured_frame.height_pixels,
+            image::ColorType::Rgba8,
+        )
+        .expect("the golden fixture is written");
+        println!("wrote {golden_path:?}; review and commit it");
+        return;
+    }
+    let golden_image = image::open(&golden_path)
+        .expect("the golden fixture is readable")
+        .to_rgba8();
+    let golden_bytes = golden_image.as_raw();
+    let pixel_count = captured_frame.width_pixels * captured_frame.height_pixels;
+    let mut absolute_error_sum = 0.0_f64;
+    let mut outlier_pixel_count = 0_u64;
+    for (captured_pixel, golden_pixel) in captured_frame
+        .rgba_bytes
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(golden_bytes.as_chunks::<4>().0)
+    {
+        let mut pixel_maximum_error = 0.0_f64;
+        for channel in 0..4 {
+            let channel_error = f64::from(captured_pixel[channel].abs_diff(golden_pixel[channel]));
+            absolute_error_sum += channel_error;
+            pixel_maximum_error = pixel_maximum_error.max(channel_error);
+        }
+        if pixel_maximum_error > OUTLIER_CHANNEL_ERROR {
+            outlier_pixel_count += 1;
+        }
+    }
+    let mean_absolute_error = absolute_error_sum / (f64::from(pixel_count) * 4.0);
+    let outlier_pixel_fraction = outlier_pixel_count as f64 / f64::from(pixel_count);
+    assert!(
+        mean_absolute_error <= MEAN_ABSOLUTE_ERROR_TOLERANCE,
+        "the styled base drifted from {golden_path:?}: mean absolute error {mean_absolute_error}"
+    );
+    assert!(
+        outlier_pixel_fraction <= OUTLIER_PIXEL_FRACTION_LIMIT,
+        "the styled base drifted from {golden_path:?}: outlier fraction {outlier_pixel_fraction}"
+    );
+}

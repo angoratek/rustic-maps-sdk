@@ -1,0 +1,37 @@
+{
+  "version": 8,
+  "name": "Label coverage probe",
+  "sources": {
+    "base": { "type": "vector" }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": [0, 0, 0, 1]
+      }
+    },
+    {
+      "id": "coverage-probe",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "place",
+      "filter": ["==", ["get", "name"], "West Sacramento"],
+      "layout": {
+        "text-field": "I",
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 48,
+        "symbol-placement": "point",
+        "text-allow-overlap": true,
+        "text-ignore-placement": true,
+        "symbol-avoid-edges": false
+      },
+      "paint": {
+        "text-color": [255, 255, 255, 1],
+        "text-halo-width": 0,
+        "text-halo-color": [0, 0, 0, 0]
+      }
+    }
+  ]
+}

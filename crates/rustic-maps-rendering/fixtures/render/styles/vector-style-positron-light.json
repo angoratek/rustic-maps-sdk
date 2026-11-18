@@ -1,0 +1,1715 @@
+{
+  "version": 8,
+  "name": "vector-style-positron-light",
+  "metadata": {
+    "source_artifact": "vector-style-positron-light.json"
+  },
+  "sources": {
+    "base": {
+      "type": "vector"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": [
+          241.99499999999998,
+          243.015,
+          239.95499999999998,
+          1
+        ]
+      }
+    },
+    {
+      "id": "vector-style-positron-light-0",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "residential"
+      ],
+      "paint": {
+        "fill-color": [
+          233.07000000000002,
+          234.09,
+          231.03,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-1",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "pitch"
+      ],
+      "paint": {
+        "fill-color": [
+          230.01000000000002,
+          233.07000000000002,
+          228.99,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-2",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landuse",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "stadium"
+      ],
+      "paint": {
+        "fill-color": [
+          230.01000000000002,
+          233.07000000000002,
+          228.99,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-3",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landcover",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "grass"
+      ],
+      "paint": {
+        "fill-color": [
+          223.89000000000001,
+          231.03,
+          219.045,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-4",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "landcover",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "wood"
+      ],
+      "paint": {
+        "fill-color": [
+          204,
+          217.005,
+          196.095,
+          0.55
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-5",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "park",
+      "paint": {
+        "fill-color": [
+          230.01000000000002,
+          233.07000000000002,
+          228.99,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-6",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": [
+          194.055,
+          199.92000000000002,
+          201.96,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-7",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "building",
+      "minzoom": 12,
+      "paint": {
+        "fill-color": [
+          234.09,
+          234.09,
+          228.99,
+          1
+        ],
+        "fill-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-8",
+      "type": "line",
+      "source": "base",
+      "source-layer": "waterway",
+      "paint": {
+        "line-color": [
+          194.055,
+          199.92000000000002,
+          201.96,
+          1
+        ],
+        "line-width": 1.6,
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-9",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 4,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "paint": {
+        "line-color": [
+          212.92499999999998,
+          212.92499999999998,
+          212.92499999999998,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          1.35,
+          8,
+          1.35,
+          10,
+          3.15,
+          12,
+          5.4,
+          14,
+          9,
+          18,
+          10.35
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-10",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 4,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "paint": {
+        "line-color": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          4,
+          1.05,
+          8,
+          1.05,
+          10,
+          2.45,
+          12,
+          4.2,
+          14,
+          7,
+          18,
+          8.05
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-11",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 6,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "primary"
+      ],
+      "paint": {
+        "line-color": [
+          212.92499999999998,
+          212.92499999999998,
+          212.92499999999998,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          1.11,
+          8,
+          1.11,
+          10,
+          2.59,
+          12,
+          4.44,
+          14,
+          7.4,
+          18,
+          8.51
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-12",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 8,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "secondary"
+      ],
+      "paint": {
+        "line-color": [
+          212.92499999999998,
+          212.92499999999998,
+          212.92499999999998,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1.11,
+          10,
+          2.59,
+          12,
+          4.44,
+          14,
+          7.4,
+          18,
+          8.51
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-13",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 10,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "tertiary"
+      ],
+      "paint": {
+        "line-color": [
+          212.92499999999998,
+          212.92499999999998,
+          212.92499999999998,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          2.59,
+          12,
+          4.44,
+          14,
+          7.4,
+          18,
+          8.51
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-14",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 6,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "primary"
+      ],
+      "paint": {
+        "line-color": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          0.78,
+          8,
+          0.78,
+          10,
+          1.82,
+          12,
+          3.12,
+          14,
+          5.2,
+          18,
+          5.98
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-15",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 8,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "secondary"
+      ],
+      "paint": {
+        "line-color": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          0.78,
+          10,
+          1.82,
+          12,
+          3.12,
+          14,
+          5.2,
+          18,
+          5.98
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-16",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 10,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "tertiary"
+      ],
+      "paint": {
+        "line-color": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          1.82,
+          12,
+          3.12,
+          14,
+          5.2,
+          18,
+          5.98
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-17",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 12,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "minor"
+      ],
+      "paint": {
+        "line-color": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          1.56,
+          14,
+          2.6,
+          18,
+          2.99
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-18",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 14,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "service"
+      ],
+      "paint": {
+        "line-color": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          2.6,
+          18,
+          2.99
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-19",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 13,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "track"
+      ],
+      "paint": {
+        "line-color": [
+          255,
+          255,
+          255,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          2.08,
+          14,
+          2.6,
+          18,
+          2.99
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-20",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "minzoom": 14,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "path"
+      ],
+      "paint": {
+        "line-color": [
+          204,
+          204,
+          197.88,
+          1
+        ],
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          1.1,
+          18,
+          1.265
+        ],
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-21",
+      "type": "line",
+      "source": "base",
+      "source-layer": "transportation",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "rail"
+      ],
+      "paint": {
+        "line-color": [
+          198.9,
+          198.9,
+          193.8,
+          1
+        ],
+        "line-width": 1.2,
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-22",
+      "type": "line",
+      "source": "base",
+      "source-layer": "boundary",
+      "paint": {
+        "line-color": [
+          182.07,
+          182.07,
+          180.03,
+          1
+        ],
+        "line-width": 1.6,
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-23",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 11,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          10,
+          14,
+          12,
+          18,
+          16
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          121.999905,
+          124.000125,
+          128.000055,
+          1
+        ],
+        "text-halo-color": [
+          255,
+          255,
+          255,
+          0.9
+        ],
+        "text-halo-width": 1.2
+      }
+    },
+    {
+      "id": "vector-style-positron-light-24",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 13,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "primary"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          10,
+          14,
+          11,
+          18,
+          14
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          121.999905,
+          124.000125,
+          128.000055,
+          1
+        ],
+        "text-halo-color": [
+          255,
+          255,
+          255,
+          0.9
+        ],
+        "text-halo-width": 1.2
+      }
+    },
+    {
+      "id": "vector-style-positron-light-25",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 14,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "secondary"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          10,
+          18,
+          13
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          121.999905,
+          124.000125,
+          128.000055,
+          1
+        ],
+        "text-halo-color": [
+          255,
+          255,
+          255,
+          0.9
+        ],
+        "text-halo-width": 1.2
+      }
+    },
+    {
+      "id": "vector-style-positron-light-26",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 14,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "tertiary"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          9,
+          18,
+          12
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          121.999905,
+          124.000125,
+          128.000055,
+          1
+        ],
+        "text-halo-color": [
+          255,
+          255,
+          255,
+          0.9
+        ],
+        "text-halo-width": 1.2
+      }
+    },
+    {
+      "id": "vector-style-positron-light-27",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "transportation_name",
+      "minzoom": 14,
+      "maxzoom": 24,
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "minor"
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          9,
+          18,
+          12
+        ],
+        "symbol-placement": "line",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          121.999905,
+          124.000125,
+          128.000055,
+          1
+        ],
+        "text-halo-color": [
+          255,
+          255,
+          255,
+          0.9
+        ],
+        "text-halo-width": 1.2
+      }
+    },
+    {
+      "id": "vector-style-positron-light-28",
+      "type": "circle",
+      "source": "base",
+      "source-layer": "place",
+      "paint": {
+        "circle-color": [
+          124.95,
+          130.05,
+          140.25,
+          0.6
+        ],
+        "circle-radius": 1.8,
+        "circle-opacity": 1
+      }
+    },
+    {
+      "id": "vector-style-positron-light-29",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "poi",
+      "minzoom": 14,
+      "maxzoom": 24,
+      "filter": [
+        "all",
+        [
+          "case",
+          [
+            "in",
+            [
+              "get",
+              "class"
+            ],
+            [
+              "literal",
+              [
+                "atm",
+                "bank",
+                "bar",
+                "beer",
+                "bicycle_parking",
+                "bicycle_rental",
+                "bus",
+                "butcher",
+                "cafe",
+                "car",
+                "clothing_store",
+                "dentist",
+                "drinking_water",
+                "escape_game",
+                "fast_food",
+                "fuel",
+                "grocery",
+                "ice_cream",
+                "lodging",
+                "office",
+                "parking",
+                "railway",
+                "recycling",
+                "restaurant",
+                "running",
+                "shelter",
+                "shop",
+                "toilets",
+                "veterinary",
+                "waste_basket"
+              ]
+            ]
+          ],
+          [
+            "step",
+            [
+              "zoom"
+            ],
+            false,
+            16,
+            true
+          ],
+          true
+        ],
+        [
+          "<=",
+          [
+            "max",
+            0,
+            [
+              "min",
+              4294967295,
+              [
+                "floor",
+                [
+                  "coalesce",
+                  [
+                    "get",
+                    "rank"
+                  ],
+                  4294967295
+                ]
+              ]
+            ]
+          ],
+          [
+            "step",
+            [
+              "zoom"
+            ],
+            6,
+            16,
+            16,
+            18,
+            4294967295
+          ]
+        ]
+      ],
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          10,
+          18,
+          14
+        ],
+        "symbol-placement": "point",
+        "symbol-sort-key": 2,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          121.999905,
+          124.000125,
+          128.000055,
+          1
+        ],
+        "text-halo-color": [
+          255,
+          255,
+          255,
+          0.9
+        ],
+        "text-halo-width": 1.2
+      }
+    },
+    {
+      "id": "vector-style-positron-light-30",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "place",
+      "minzoom": 8,
+      "maxzoom": 24,
+      "layout": {
+        "text-field": [
+          "case",
+          [
+            "all",
+            [
+              "has",
+              "name:latin"
+            ],
+            [
+              "!=",
+              [
+                "get",
+                "name:latin"
+              ],
+              ""
+            ],
+            [
+              "==",
+              [
+                "get",
+                "name:latin"
+              ],
+              [
+                "to-string",
+                [
+                  "get",
+                  "name:latin"
+                ]
+              ]
+            ]
+          ],
+          [
+            "get",
+            "name:latin"
+          ],
+          [
+            "case",
+            [
+              "all",
+              [
+                "has",
+                "name"
+              ],
+              [
+                "!=",
+                [
+                  "get",
+                  "name"
+                ],
+                ""
+              ],
+              [
+                "==",
+                [
+                  "get",
+                  "name"
+                ],
+                [
+                  "to-string",
+                  [
+                    "get",
+                    "name"
+                  ]
+                ]
+              ]
+            ],
+            [
+              "get",
+              "name"
+            ],
+            ""
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          10,
+          14,
+          13,
+          18,
+          18
+        ],
+        "symbol-placement": "point",
+        "symbol-sort-key": 1,
+        "text-allow-overlap": false
+      },
+      "paint": {
+        "text-color": [
+          89.999955,
+          93.00003,
+          98.999925,
+          1
+        ],
+        "text-halo-color": [
+          255,
+          255,
+          255,
+          0.9
+        ],
+        "text-halo-width": 1.2
+      }
+    }
+  ]
+}

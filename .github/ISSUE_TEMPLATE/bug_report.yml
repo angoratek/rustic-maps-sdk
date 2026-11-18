@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a defect in the SDK, a binding, a reference application, or the build.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include a provider credential, token, or personal file path.
+        Report a security issue through SECURITY.md, never in a public issue.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Where did the defect occur?
+      options:
+        - Rust core
+        - Android
+        - iOS
+        - React Native
+        - WebAssembly
+        - Documentation
+        - Build and tooling
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Version or revision
+      description: The SDK version, release tag, or commit SHA.
+      placeholder: 0.1.0 or a commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Rust version, Node.js version, device or simulator, and browser.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: List the smallest steps that reproduce the defect.
+      placeholder: |
+        1. Build with ...
+        2. Open ...
+        3. Tap ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the error message or the observed state.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted logs
+      description: Paste logs after removing credentials, tokens, and personal paths.
+      render: text
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I removed every credential, token, and personal path from this report.
+          required: true
+        - label: This is not a security vulnerability, which belongs in the private advisory flow.
+          required: true

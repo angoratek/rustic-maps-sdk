@@ -1,0 +1,74 @@
+{
+  "version": 8,
+  "name": "neutral-omv-schema-fixture",
+  "metadata": {
+    "fixture": "synthetic",
+    "note": "Neutral test document with the OMV schema's source-layer names and document-relative resource references. It carries no vendor asset; the layers, colours and wording are authored for this fixture.",
+    "schema": "omv"
+  },
+  "glyphs": "glyphs/{fontstack}/{range}.pbf",
+  "sprite": "sprite",
+  "sources": {
+    "base": {
+      "type": "vector"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": [242, 240, 236, 1]
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "base",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": [170, 211, 223, 1]
+      }
+    },
+    {
+      "id": "roads",
+      "type": "line",
+      "source": "base",
+      "source-layer": "roads",
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": [255, 255, 255, 1],
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          8, 1,
+          16, 6
+        ]
+      }
+    },
+    {
+      "id": "places",
+      "type": "symbol",
+      "source": "base",
+      "source-layer": "places",
+      "minzoom": 4,
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-size": 13,
+        "text-font": ["Noto Sans Regular"],
+        "text-padding": 3,
+        "icon-image": ["get", "maki"],
+        "icon-size": 1,
+        "icon-padding": 3
+      },
+      "paint": {
+        "text-color": [51, 51, 51, 1],
+        "icon-opacity": 1
+      }
+    }
+  ]
+}

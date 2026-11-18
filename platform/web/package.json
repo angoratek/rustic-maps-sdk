@@ -1,0 +1,12 @@
+{
+  "name": "maps-sdk-web-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "perf": "node perf/run-frame-budget.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.64"
+  }
+}

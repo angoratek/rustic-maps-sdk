@@ -1,0 +1,60 @@
+# cargo-deny configuration: license audit gate. Adopted at M0; extended
+# as M1+ land. With cargo-deny (>= 0.18) the license policy is allow-list
+# based — the block is implicit: only the expressions listed below pass, so
+# GPL-only dependencies (PRD §5 licensing) are rejected without an explicit
+# deny list (the `deny` key was removed in
+# https://github.com/EmbarkStudios/cargo-deny/pull/611).
+
+[graph]
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-pc-windows-msvc" },
+]
+
+[licenses]
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "CC0-1.0",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
+    "LGPL-2.1-or-later",
+]
+
+[advisories]
+version = 2
+yanked = "warn"
+# Three advisories are upstream-pinned and cannot be fixed from this
+# workspace. Each is ignored by ID only (never by category or severity), so
+# any other advisory still fails the gate, and each entry names the upgrade
+# that retires it.
+ignore = [
+    # askama_derive 0.16.1 (pulled in by the contract-frozen uniffi_bindgen
+    # 0.32.2) depends on the unmaintained basic-toml. Re-evaluate on the next
+    # UniFFI bump.
+    { id = "RUSTSEC-2026-0374", reason = "transitive through the pinned uniffi_bindgen 0.31.2 (askama_derive 0.14); no safe upgrade within that line" },
+    # osmpbf 0.3.8 is the latest release and pins memmap2 ^0.5; 0.5.10 is the
+    # last 0.5 release, and the fix (RUSTSEC-2026-0186) exists only on the 0.9
+    # line. osmpbf is used by rustic-maps-offline-graph-compiler, a native
+    # maintainer tool that is never linked into a distributed build: the
+    # unsound API is not reachable from the SDK libraries, reference apps, the
+    # wasm package or release binaries. Re-evaluate on the next osmpbf release.
+    { id = "RUSTSEC-2026-0186", reason = "memmap2 0.5.10 is pinned by the latest osmpbf 0.3.8; the mmap reader is compiler-only and never linked into a distributed build" },
+    # chrono 0.4.45 is the latest release (jiff/time are not drop-in for the
+    # upstream crates). It is transitive through the published everymap
+    # provider crates 0.4.x, which take no untrusted date input from this
+    # workspace. Re-evaluate when everymap drops chrono.
+    { id = "RUSTSEC-2026-0543", reason = "chrono 0.4.45 is the latest release, transitive through everymap-providers-google/here 0.4.x; retire when everymap drops it" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

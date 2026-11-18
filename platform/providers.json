@@ -1,0 +1,640 @@
+{
+  "schema_version": 1,
+  "fixture_base_path": "/providers",
+  "reference_app_user_agent_template": "RusticMapsReferenceApp/%s (+https://angoratek.github.io/rustic-maps-sdk-docs/)",
+  "keyless_base_map": {
+    "provider_key": "openfreemap",
+    "style_id": "bright-light"
+  },
+  "providers": [
+    {
+      "provider_key": "mapquest",
+      "display_name": "MapQuest",
+      "credential_label": "API key",
+      "raster_tile_cache_ceiling_days": 30,
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — tile imagery © MapQuest",
+      "terms_note": "MapQuest terms apply: rate limits and a 30-day raster-tile caching ceiling.",
+      "settings_hint": "Create a key in the MapQuest developer console.",
+      "wasm_registration": "mapquest",
+      "fixture_routes": [
+        {
+          "purpose": "geocoding",
+          "method": "GET",
+          "path_pattern": "^geocoding/v1/address$",
+          "fixture": "fixtures/mapquest/geocode_address_city.json"
+        },
+        {
+          "purpose": "reverse_geocoding",
+          "method": "GET",
+          "path_pattern": "^geocoding/v1/reverse$",
+          "fixture": "fixtures/mapquest/geocode_reverse_capitol.json"
+        },
+        {
+          "purpose": "search",
+          "method": "GET",
+          "path_pattern": "^search/v3/prediction$",
+          "fixture": "fixtures/mapquest/search_prediction_denver.json",
+          "expectations": {
+            "suggestion_text": "Denver Int'l Airport, 8500 Pena Blvd, Denver, CO 80249-6205, United States",
+            "suggestion_quality": "Point"
+          }
+        },
+        {
+          "purpose": "directions",
+          "method": "GET",
+          "path_pattern": "^directions/v2/route$",
+          "fixture": "fixtures/mapquest/directions_route_two_waypoints.json"
+        },
+        {
+          "purpose": "distance_matrix",
+          "method": "POST",
+          "path_pattern": "^directions/v2/routematrix$",
+          "fixture": "fixtures/mapquest/routematrix_three_locations_unit_k.json"
+        },
+        {
+          "purpose": "traffic_incidents",
+          "method": "GET",
+          "path_pattern": "^traffic/v2/incidents$",
+          "fixture": "fixtures/mapquest/traffic_incidents_denver.json"
+        },
+        {
+          "purpose": "traffic_flow",
+          "method": "GET",
+          "path_pattern": "^traffic/v2/flow$",
+          "fixture": "fixtures/mapquest/traffic_flow_new_york.json"
+        },
+        {
+          "purpose": "raster_tiles",
+          "method": "GET",
+          "path_pattern": "^tiles/v1/render/latest/[a-z0-9_-]+/(?<tile_zoom_level>\\d+)/(?<tile_x>\\d+)/(?<tile_y>\\d+)/(?<size_segment>256|256@2x)/(?<format>png|jpeg)$",
+          "fixture_kind": "tile_directory",
+          "fixture_directory": "crates/rustic-maps-rendering/fixtures/render/tiles",
+          "image_format": "png",
+          "standard_size_segment": "256",
+          "retina_size_segment": "256@2x"
+        }
+      ],
+      "served_contracts": [
+        "geocoding",
+        "routing",
+        "distance_matrix",
+        "place_search",
+        "traffic_incidents",
+        "traffic_flow",
+        "raster_tiles"
+      ]
+    },
+    {
+      "provider_key": "here",
+      "display_name": "HERE",
+      "credential_label": "API key",
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "© 20XX HERE, XXX",
+      "attribution_note": "Replace 20XX with the current year and XXX with the licensee, and refresh the notice within 24 hours.",
+      "terms_note": "HERE terms apply: per-plan transaction limits and a caching policy that bounds stored results.",
+      "settings_hint": "Create a key in the HERE developer console.",
+      "wasm_registration": "here",
+      "fixture_routes": [
+        {
+          "purpose": "geocoding",
+          "method": "GET",
+          "path_pattern": "^geocode$",
+          "fixture": "fixtures/here/geocode_brandenburg_gate.json"
+        },
+        {
+          "purpose": "routing",
+          "method": "POST",
+          "path_pattern": "^routes$",
+          "fixture": "fixtures/here/route_two_sections.json"
+        },
+        {
+          "purpose": "traffic_incidents",
+          "method": "GET",
+          "path_pattern": "^incidents$",
+          "fixture": "fixtures/here/traffic_incidents_berlin.json"
+        },
+        {
+          "purpose": "traffic_flow",
+          "method": "GET",
+          "path_pattern": "^flow$",
+          "fixture": "fixtures/here/traffic_flow_berlin.json"
+        },
+        {
+          "purpose": "vector_tiles",
+          "method": "GET",
+          "path_pattern": "^vectortiles/base/mc/6/18/27/omv$",
+          "fixture": "fixtures/here/vendor_style_tile.mvt",
+          "note": "A neutral authored tile with the OMV schema's water, roads and places layers, with document-relative resources and no vendor material."
+        },
+        {
+          "purpose": "style_document",
+          "method": "GET",
+          "path_pattern": "^styles/berlin/base/mapbox/tilezen$",
+          "fixture": "fixtures/here/vendor_style_document.json",
+          "note": "A synthetic document with the OMV schema's layer names; the vendor prohibits redistributing its own style, so no vendor file is committed."
+        },
+        {
+          "purpose": "glyphs",
+          "method": "GET",
+          "path_pattern": "^styles/berlin/base/mapbox/glyphs/[^/]+/0-255\\.pbf$",
+          "fixture": "fixtures/glyphs/noto_sans_regular_0-255.pbf",
+          "note": "The committed Latin block the style document's own relative glyph endpoint resolves to; the suite never reaches the network."
+        },
+        {
+          "purpose": "glyphs",
+          "method": "GET",
+          "path_pattern": "^styles/berlin/base/mapbox/glyphs/[^/]+/256-511\\.pbf$",
+          "fixture": "fixtures/glyphs/noto_sans_regular_256-511.pbf",
+          "note": "The committed second Latin block the style document's own relative glyph endpoint resolves to."
+        },
+        {
+          "purpose": "sprite_sheet",
+          "method": "GET",
+          "path_pattern": "^styles/berlin/base/mapbox/sprite\\.json$",
+          "fixture": "crates/rustic-maps-style/fixtures/sprites/icon-sprite.json",
+          "note": "The committed sprite index and sheet the style document's own relative sprite base resolves to."
+        },
+        {
+          "purpose": "sprite_sheet",
+          "method": "GET",
+          "path_pattern": "^styles/berlin/base/mapbox/sprite\\.png$",
+          "fixture": "crates/rustic-maps-style/fixtures/sprites/icon-sprite.png",
+          "note": "The committed sheet the style document's own relative sprite base resolves to."
+        }
+      ],
+      "maximum_zoom_level": 17,
+      "vector_styles": [
+        {
+          "style_id": "omv-light",
+          "display_name": "HERE Base",
+          "theme": "light",
+          "attribution_text": "© 20XX HERE, XXX",
+          "attribution_note": "Replace 20XX with the current year and XXX with the licensee, and refresh the notice within 24 hours.",
+          "document_url": "https://assets.vector.hereapi.com/styles/berlin/base/mapbox/tilezen",
+          "note": "The provider's published style; the SDK fetches it with the registered credential and caches it on the device. No vendor copy is committed."
+        }
+      ],
+      "style_resource_hosts": [
+        "assets.vector.hereapi.com"
+      ],
+      "served_contracts": [
+        "geocoding",
+        "routing",
+        "traffic_incidents",
+        "traffic_flow",
+        "vector_tiles"
+      ]
+    },
+    {
+      "provider_key": "google",
+      "display_name": "Google Maps",
+      "credential_label": "API key",
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "Map data © Google",
+      "terms_note": "Google Maps Platform terms apply: billing per SKU, caching restrictions, and no permanent storage of most content.",
+      "settings_hint": "Create a key in the Google Cloud console and enable the Maps APIs.",
+      "wasm_registration": "google",
+      "fixture_routes": [
+        {
+          "purpose": "geocoding",
+          "method": "GET",
+          "path_pattern": "^maps/api/geocode/json$",
+          "fixture": "fixtures/google/geocode_brandenburg_gate.json"
+        },
+        {
+          "purpose": "routing",
+          "method": "POST",
+          "path_pattern": "^directions/v2:computeRoutes$",
+          "fixture": "fixtures/google/route_berlin_paris.json"
+        }
+      ],
+      "served_contracts": [
+        "geocoding",
+        "routing"
+      ]
+    },
+    {
+      "provider_key": "tomtom",
+      "display_name": "TomTom",
+      "credential_label": "API key",
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "© TomTom",
+      "terms_note": "TomTom terms apply: per-plan request quotas and a caching policy for stored tiles and results.",
+      "settings_hint": "Create a key in the TomTom developer portal.",
+      "wasm_registration": "tomtom",
+      "fixture_routes": [
+        {
+          "purpose": "geocoding",
+          "method": "GET",
+          "path_pattern": "^search/2/geocode/.*\\.json$",
+          "fixture": "fixtures/tomtom/geocode_brandenburg_gate.json"
+        },
+        {
+          "purpose": "routing",
+          "method": "GET",
+          "path_pattern": "^routing/1/calculateRoute/-?[0-9.]+,-?[0-9.]+:-?[0-9.]+,-?[0-9.]+/json$",
+          "fixture": "fixtures/tomtom/route_berlin_london.json"
+        },
+        {
+          "purpose": "traffic_incidents",
+          "method": "GET",
+          "path_pattern": "^traffic/services/5/incidentDetails$",
+          "fixture": "fixtures/tomtom/traffic_incidents_berlin.json"
+        },
+        {
+          "purpose": "traffic_flow",
+          "method": "GET",
+          "path_pattern": "^traffic/services/4/flowSegmentData/absolute/10/json$",
+          "fixture": "fixtures/tomtom/traffic_flow_berlin.json"
+        },
+        {
+          "purpose": "raster_tiles",
+          "method": "GET",
+          "path_pattern": "^map/1/tile/basic/main/13/1331/3143\\.png$",
+          "fixture": "crates/rustic-maps-rendering/fixtures/render/tiles/13_1331_3143.png",
+          "note": "One recorded PNG of the Map Display layer at zoom 13; the native suite serves the same bytes on a loopback server."
+        },
+        {
+          "purpose": "raster_tiles",
+          "method": "GET",
+          "path_pattern": "^map/1/tile/basic/main/(?<tile_zoom_level>\\d+)/(?<tile_x>\\d+)/(?<tile_y>\\d+)\\.png$",
+          "fixture": "crates/rustic-maps-rendering/fixtures/render/tiles/14_2661_6286.png",
+          "note": "The demo camera's own recorded tile served under the provider's route, so fixture mode can paint this base without a vendor asset or a network request. It is one recorded tile, not a complete set, so the row still waits for its credential."
+        }
+      ],
+      "served_contracts": [
+        "geocoding",
+        "routing",
+        "traffic_incidents",
+        "traffic_flow",
+        "raster_tiles"
+      ]
+    },
+    {
+      "provider_key": "mapbox",
+      "display_name": "Mapbox",
+      "credential_label": "Access token",
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "© Mapbox © OpenStreetMap contributors",
+      "terms_note": "Mapbox terms apply: usage-based billing and attribution of Mapbox and OpenStreetMap wherever the data is shown.",
+      "settings_hint": "Create an access token in the Mapbox account page.",
+      "wasm_registration": "mapbox",
+      "fixture_routes": [
+        {
+          "purpose": "geocoding",
+          "method": "GET",
+          "path_pattern": "^search/geocode/v6/forward$",
+          "fixture": "fixtures/mapbox/geocode_berlin.json"
+        },
+        {
+          "purpose": "routing",
+          "method": "GET",
+          "path_pattern": "^directions/v5/mapbox/[a-z]+/-?[0-9.]+,-?[0-9.]+;-?[0-9.]+,-?[0-9.]+$",
+          "fixture": "fixtures/mapbox/route_berlin_paris.json"
+        },
+        {
+          "purpose": "vector_tiles",
+          "method": "GET",
+          "path_pattern": "^v4/mapbox\\.mapbox-streets-v8/14/2661/6286\\.mvt$",
+          "fixture": "fixtures/mapbox/vendor_style_tile.pbf",
+          "note": "A neutral authored tile with the Streets schema's road, water, place_label and poi_label layers and current attributes, with document-relative resources and no vendor material."
+        },
+        {
+          "purpose": "style_document",
+          "method": "GET",
+          "path_pattern": "^styles/v1/mapbox/streets-v11$",
+          "fixture": "fixtures/mapbox/vendor_style_document.json",
+          "note": "A synthetic document with the Streets schema's layer names; the vendor prohibits redistributing its own style, so no vendor file is committed."
+        },
+        {
+          "purpose": "glyphs",
+          "method": "GET",
+          "path_pattern": "^styles/v1/mapbox/glyphs/[^/]+/0-255\\.pbf$",
+          "fixture": "fixtures/glyphs/noto_sans_regular_0-255.pbf",
+          "note": "The committed Latin block the style document's own relative glyph endpoint resolves to; the suite never reaches the network."
+        },
+        {
+          "purpose": "glyphs",
+          "method": "GET",
+          "path_pattern": "^styles/v1/mapbox/glyphs/[^/]+/256-511\\.pbf$",
+          "fixture": "fixtures/glyphs/noto_sans_regular_256-511.pbf",
+          "note": "The committed second Latin block the style document's own relative glyph endpoint resolves to."
+        },
+        {
+          "purpose": "sprite_sheet",
+          "method": "GET",
+          "path_pattern": "^styles/v1/mapbox/sprite\\.json$",
+          "fixture": "crates/rustic-maps-style/fixtures/sprites/icon-sprite.json",
+          "note": "The committed sprite index and sheet the style document's own relative sprite base resolves to."
+        },
+        {
+          "purpose": "sprite_sheet",
+          "method": "GET",
+          "path_pattern": "^styles/v1/mapbox/sprite\\.png$",
+          "fixture": "crates/rustic-maps-style/fixtures/sprites/icon-sprite.png",
+          "note": "The committed sheet the style document's own relative sprite base resolves to."
+        }
+      ],
+      "maximum_zoom_level": 22,
+      "vector_styles": [
+        {
+          "style_id": "streets-light",
+          "display_name": "Mapbox Streets",
+          "theme": "light",
+          "attribution_text": "© Mapbox © OpenStreetMap contributors",
+          "document_url": "https://api.mapbox.com/styles/v1/mapbox/streets-v11",
+          "note": "The provider's published style; the SDK fetches it with the registered access token and caches it on the device. No vendor copy is committed."
+        }
+      ],
+      "style_resource_hosts": [
+        "api.mapbox.com"
+      ],
+      "served_contracts": [
+        "geocoding",
+        "routing",
+        "vector_tiles"
+      ]
+    },
+    {
+      "provider_key": "radar",
+      "display_name": "Radar",
+      "credential_label": "API key",
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "© Radar",
+      "terms_note": "Radar terms apply: per-plan request quotas and no permanent storage of geocoding results.",
+      "settings_hint": "Create a key in the Radar dashboard.",
+      "wasm_registration": "radar",
+      "fixture_routes": [
+        {
+          "purpose": "geocoding",
+          "method": "GET",
+          "path_pattern": "^v1/geocode/forward$",
+          "fixture": "fixtures/radar/geocode_brandenburg_gate.json"
+        },
+        {
+          "purpose": "routing",
+          "method": "GET",
+          "path_pattern": "^v1/route/directions$",
+          "fixture": "fixtures/radar/route_berlin_paris.json"
+        }
+      ],
+      "served_contracts": [
+        "geocoding",
+        "routing"
+      ]
+    },
+    {
+      "provider_key": "osmus",
+      "display_name": "OpenStreetMap US",
+      "credential_label": "",
+      "registration_available": {
+        "android": false,
+        "ios": false,
+        "react_native": false,
+        "wasm": false
+      },
+      "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — vector tiles © OpenStreetMap US",
+      "terms_note": "OpenStreetMap US tileservice terms apply: free for low-volume, non-commercial use with attribution.",
+      "settings_hint": "",
+      "wasm_registration": null,
+      "url_template": "https://tiles.openstreetmap.us/vector/sourdough/{z}/{x}/{y}.mvt",
+      "glyphs_url_template": "https://tiles.openstreetmap.us/fonts/{fontstack}/{range}.pbf",
+      "maximum_zoom_level": 15,
+      "vector_style": "carto",
+      "fixture_routes": [
+        {
+          "purpose": "vector_tiles",
+          "method": "GET",
+          "path_pattern": "^vector/sourdough/6/18/27\\.mvt$",
+          "fixture": "fixtures/openstreetmap-us/sourdough_tile_z6_x18_y27.mvt"
+        },
+        {
+          "purpose": "vector_tiles",
+          "method": "GET",
+          "path_pattern": "^vector/sourdough/9/83/196\\.mvt$",
+          "fixture": "fixtures/openstreetmap-us/osmus_tile_z9_x83_y196.mvt"
+        }
+      ],
+      "vector_styles": [
+        {
+          "style_id": "carto-light",
+          "display_name": "Carto Light",
+          "theme": "light",
+          "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — vector tiles © OpenStreetMap US"
+        },
+        {
+          "style_id": "carto-dark",
+          "display_name": "Carto Dark",
+          "theme": "dark",
+          "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — vector tiles © OpenStreetMap US"
+        }
+      ],
+      "served_contracts": [
+        "vector_tiles"
+      ]
+    },
+    {
+      "provider_key": "openfreemap",
+      "display_name": "OpenFreeMap",
+      "credential_label": "",
+      "registration_available": {
+        "android": false,
+        "ios": false,
+        "react_native": false,
+        "wasm": false
+      },
+      "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — vector tiles © OpenFreeMap and OpenMapTiles",
+      "terms_note": "OpenFreeMap terms apply: free public use with attribution; bulk downloads are limited to 3,000 tiles or 50 MB per download.",
+      "settings_hint": "",
+      "wasm_registration": null,
+      "url_template": "https://tiles.openfreemap.org/planet/latest/{z}/{x}/{y}.pbf",
+      "glyphs_url_template": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+      "maximum_zoom_level": 14,
+      "vector_style": "openmaptiles",
+      "vector_styles": [
+        {
+          "style_id": "bright-light",
+          "display_name": "Bright",
+          "theme": "light",
+          "attribution_text": "Map data © OpenStreetMap contributors (ODbL) · style Bright from OpenFreeMap styles, design CC BY 4.0"
+        },
+        {
+          "style_id": "fiord-dark",
+          "display_name": "Fiord",
+          "theme": "dark",
+          "attribution_text": "Map data © OpenStreetMap contributors (ODbL) · style Fiord from OpenFreeMap styles, design CC BY 4.0"
+        },
+        {
+          "style_id": "positron-light",
+          "display_name": "Positron",
+          "theme": "light",
+          "attribution_text": "Map data © OpenStreetMap contributors (ODbL) · style Positron (CartoDB lineage) from OpenFreeMap styles, design CC BY 4.0 / CC BY 3.0"
+        }
+      ],
+      "fixture_routes": [
+        {
+          "purpose": "vector_tiles",
+          "method": "GET",
+          "path_pattern": "^planet/latest/14/2661/6286\\.pbf$",
+          "fixture": "fixtures/openfreemap/openmaptiles_tile_z14_x2661_y6286.pbf"
+        }
+      ],
+      "served_contracts": [
+        "vector_tiles"
+      ]
+    },
+    {
+      "provider_key": "openstreetmap",
+      "display_name": "OpenStreetMap Standard",
+      "credential_label": "",
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": false
+      },
+      "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — raster tiles © OpenStreetMap contributors",
+      "terms_note": "OpenStreetMap tile usage policy applies: low-volume use only, with attribution.",
+      "settings_hint": "",
+      "wasm_registration": null,
+      "raster_url_template": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "maximum_zoom_level": 19,
+      "fixture_routes": [],
+      "served_contracts": [
+        "raster_tiles"
+      ]
+    },
+    {
+      "provider_key": "osrm",
+      "display_name": "OSRM",
+      "credential_label": "",
+      "served_contracts": [
+        "routing"
+      ],
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — routing by OSRM",
+      "terms_note": "Project OSRM's public demo server is for reasonable, non-commercial use capped at one request per second, with no uptime, latency or data-update guarantee; a self-hosted OSRM deployment follows its operator's terms.",
+      "demo_base_url": "https://router.project-osrm.org",
+      "demo_base_url_note": "Public demo server, rate-limited and not for production use.",
+      "settings_hint": "Enter the base URL of your OSRM deployment, or use the public demo server declared by the registry.",
+      "wasm_registration": "osrm",
+      "fixture_routes": [
+        {
+          "purpose": "routing",
+          "method": "GET",
+          "path_pattern": "^route/v1/driving/-122\\.3937,37\\.7955;-122\\.2711,37\\.8044$",
+          "fixture": "fixtures/osrm/san_francisco_oakland_ferry_route.json"
+        },
+        {
+          "purpose": "routing",
+          "method": "GET",
+          "path_pattern": "^route/v1/[a-z]+/.*$",
+          "fixture": "fixtures/osrm/sacramento_route.json"
+        }
+      ]
+    },
+    {
+      "provider_key": "valhalla",
+      "display_name": "Valhalla",
+      "credential_label": "",
+      "served_contracts": [
+        "routing"
+      ],
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — routing by Valhalla",
+      "terms_note": "FOSSGIS e.V. terms of use apply to the public demo server: one request per second, an identifying User-Agent, attribution to OpenStreetMap contributors, and no high-traffic or production use; a self-hosted Valhalla deployment follows its operator's terms.",
+      "demo_base_url": "https://valhalla1.openstreetmap.de",
+      "demo_base_url_note": "FOSSGIS public demo server, limited to one request per second and not for production use.",
+      "settings_hint": "Enter the base URL of your Valhalla deployment, or use the public demo server declared by the registry.",
+      "wasm_registration": "valhalla",
+      "fixture_routes": [
+        {
+          "purpose": "routing",
+          "method": "POST",
+          "path_pattern": "^route$",
+          "fixture": "fixtures/valhalla/route_sacramento.json"
+        }
+      ]
+    },
+    {
+      "provider_key": "photon",
+      "display_name": "Photon",
+      "credential_label": "",
+      "served_contracts": [
+        "geocoding",
+        "place_search"
+      ],
+      "registration_available": {
+        "android": true,
+        "ios": true,
+        "react_native": true,
+        "wasm": true
+      },
+      "attribution_text": "Map data © OpenStreetMap contributors (ODbL) — search by Photon",
+      "terms_note": "The public Photon instance is offered for reasonable, non-commercial use with no uptime or latency guarantee; a self-hosted Photon deployment follows its operator's terms.",
+      "demo_base_url": "https://photon.komoot.io",
+      "demo_base_url_note": "Public Photon instance, best-effort and not for production use.",
+      "settings_hint": "Enter the base URL of your Photon deployment, or use the public instance declared by the registry.",
+      "wasm_registration": "photon",
+      "fixture_routes": [
+        {
+          "purpose": "search",
+          "method": "GET",
+          "path_pattern": "^api$",
+          "fixture": "fixtures/photon/search_sacramento.json",
+          "expectations": {
+            "suggestion_text": "Capitol Mall",
+            "suggestion_quality": "Street"
+          }
+        },
+        {
+          "purpose": "reverse_geocoding",
+          "method": "GET",
+          "path_pattern": "^reverse$",
+          "fixture": "fixtures/photon/reverse_sacramento.json"
+        }
+      ]
+    }
+  ]
+}

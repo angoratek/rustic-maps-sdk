@@ -1,0 +1,13 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc a6ea29a8dca9ee41dbf98ade4ee7072a5568f311e4d4c2e4a791bde08cc92f20 # shrinks to center_latitude = 0.0, center_longitude = 0.0, zoom_level = 10.409840271770703, bearing_degrees = 95.602470913859, pitch_degrees = 37.34335226604436, latitude_offset = 0.0, longitude_offset = 0.011799035286033755
+cc a0808dda79f7898521c00f2d2e5490713deb29f6bc2d77fe3137fcf4b854aa52 # shrinks to center_latitude = 0.0, center_longitude = 149.9427760648867, zoom_level = 10.671615039420526, bearing_degrees = 162.3317448981136, pitch_degrees = 1.8491790763595215, screen_x = 0.0, screen_y = 10.0
+cc 9d42b6cb563e05ded36525ed73329bd7a700aa79978133b7ddf081a950aa34ad # shrinks to center_latitude = 0.0, center_longitude = 0.0, zoom_level = 16.396093069146396, bearing_degrees = -173.97221799398548, pitch_degrees = 0.0, latitude_offset = 0.0, longitude_offset = -0.19842384486219625
+cc b53af3fad54917e25795cf484d6af211c736c5293cebe57dc735ddeda66bdf75 # shrinks to center_latitude = 0.0, center_longitude = -176.88301689296898, zoom_level = 2.0, bearing_degrees = -129.00085762815328, pitch_degrees = 0.0, screen_x = 909.1268447863098, screen_y = 10.0
+cc 32da56b55c74faf6eb218a11e4e9587f9051811352cd5859757666bb400caebd # shrinks to center_latitude = -76.14958210950611, center_longitude = 0.0, zoom_level = 2.0, bearing_degrees = 132.7051649275112, pitch_degrees = 0.0, screen_x = 906.8048834699505, screen_y = 10.0
+cc 7b47553848793bd49edc0d477c7cf0f4fa1f1f90cc69a76d3a6ab223b03c0c99 # shrinks to center_latitude = 64.05526725177018, center_longitude = 0.0, zoom_level = 17.280030339515314, bearing_degrees = -125.22732728870122, pitch_degrees = 46.52967394580469, latitude_offset = -0.2251241266354387, longitude_offset = -0.23521884367977586
+cc b5c444575e20a8e2d74be5fae20308fbdddad00bef4d583905ba89d4dc87f955 # shrinks to center_latitude = 0.0, center_longitude = 0.0, zoom_level = 17.722863918124197, bearing_degrees = 36.96317891883703, pitch_degrees = 41.55679904276321, latitude_offset = 0.2095547141077463, longitude_offset = 0.24878702367488925

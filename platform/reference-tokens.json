@@ -1,0 +1,711 @@
+{
+  "artifact": {
+    "name": "reference-tokens",
+    "version": 1,
+    "purpose": "The single language-neutral source of the reference applications' design language (docs/ReferenceAppUX.md §2): the §2.1 semantic color roles, the §2.3 typography scale, the §2.4 spacing/radii/gutter/behavior constants, the §2.5 consumer copy (`ui_labels`), and the unified SDK error-detail strings. Every platform mirror (Compose, SwiftUI, React Native, the web playground) must reproduce these names and values; scripts/check_ux_parity.mjs is the gate."
+  },
+  "color_roles": [
+    {
+      "token": "surface",
+      "dark": "rgba(20, 24, 30, 0.86)",
+      "light": "rgba(255, 255, 255, 0.92)",
+      "role": "panel background"
+    },
+    {
+      "token": "surface-border",
+      "dark": "rgba(255, 255, 255, 0.14)",
+      "light": "rgba(0, 0, 0, 0.12)",
+      "role": "panel + divider borders"
+    },
+    {
+      "token": "text-primary",
+      "dark": "#f2f4f8",
+      "light": "#1c1e21",
+      "role": "primary panel text"
+    },
+    {
+      "token": "text-secondary",
+      "dark": "#9aa4b2",
+      "light": "#565c66",
+      "role": "labels, hints, value lines"
+    },
+    {
+      "token": "accent",
+      "dark": "#4c8dff",
+      "light": "#2563eb",
+      "role": "interactive: sliders, links, focus, route imagery"
+    },
+    {
+      "token": "positive",
+      "dark": "#34c07c",
+      "light": "#1d8a4e",
+      "role": "readiness 'ready', arrival"
+    },
+    {
+      "token": "warning",
+      "dark": "#e0a03a",
+      "light": "#a07016",
+      "role": "readiness 'degraded', the pending-reason strips"
+    },
+    {
+      "token": "danger",
+      "dark": "#e05656",
+      "light": "#c22f2f",
+      "role": "readiness 'failed', errors, the off-route alert"
+    }
+  ],
+  "typography_scale": [
+    {
+      "token": "type-caption",
+      "size_pixels": 12,
+      "font_weight": 400,
+      "use": "status line, attribution, reasons"
+    },
+    {
+      "token": "type-body",
+      "size_pixels": 13,
+      "font_weight": 400,
+      "use": "panel body, control labels"
+    },
+    {
+      "token": "type-body-strong",
+      "size_pixels": 13,
+      "font_weight": 600,
+      "use": "group labels, toggle labels"
+    },
+    {
+      "token": "type-title",
+      "size_pixels": 14,
+      "font_weight": 600,
+      "use": "panel titles"
+    },
+    {
+      "token": "type-maneuver",
+      "size_pixels": 22,
+      "font_weight": 600,
+      "use": "the turn banner's instruction text"
+    },
+    {
+      "token": "type-maneuver-distance",
+      "size_pixels": 22,
+      "font_weight": 400,
+      "use": "the turn banner's distance phrase"
+    }
+  ],
+  "spacing_tokens": [
+    {
+      "token": "gutter-inline",
+      "pixels": 16,
+      "use": "viewport edge → panel edge"
+    },
+    {
+      "token": "gutter-block",
+      "pixels": 16,
+      "use": "viewport edge → panel edge, vertical"
+    },
+    {
+      "token": "panel-padding",
+      "pixels": 14,
+      "use": "panel inner padding"
+    },
+    {
+      "token": "stack-tight",
+      "pixels": 8,
+      "use": "between controls inside a group"
+    },
+    {
+      "token": "map-control-diameter",
+      "pixels": 40,
+      "use": "the circular map control buttons (zoom, my-location, 2D/3D, layers, attribution)"
+    },
+    {
+      "token": "stack-group",
+      "pixels": 12,
+      "use": "between groups inside a panel"
+    }
+  ],
+  "radius_tokens": [
+    {
+      "token": "radius-surface",
+      "pixels": 12,
+      "use": "panels"
+    },
+    {
+      "token": "radius-control",
+      "pixels": 8,
+      "use": "cards, embedded boxes, buttons"
+    },
+    {
+      "token": "radius-inline",
+      "pixels": 6,
+      "use": "status line, chips, small reasons"
+    }
+  ],
+  "behavior_tokens": [
+    {
+      "token": "elevation-surface",
+      "value": "0 1px 4px rgba(0, 0, 0, 0.25)",
+      "use": "floating panels"
+    },
+    {
+      "token": "sheet-half-height",
+      "value": 0.5,
+      "unit": "viewport-height-fraction",
+      "use": "the home sheet's half state"
+    },
+    {
+      "token": "sheet-half-phone-height",
+      "value": 0.55,
+      "unit": "viewport-height-fraction",
+      "use": "the half state's phone-width cap"
+    },
+    {
+      "token": "sheet-peek-content-rows",
+      "value": 2,
+      "unit": "rows",
+      "use": "peek-state rows (search field + one action row); peek height is content-driven, never a viewport fraction"
+    },
+    {
+      "token": "field-of-view-degrees",
+      "value": 60,
+      "unit": "degrees",
+      "use": "the archetypal framed camera (mirrors rustic-maps-rendering's default)"
+    },
+    {
+      "token": "navigation-follow-zoom",
+      "value": 17,
+      "unit": "zoom-level",
+      "use": "the navigation follow camera's base zoom (§5.3); locked deeper than mapbox's 16.35 nav ladder top so turn geometry is legible"
+    },
+    {
+      "token": "navigation-follow-zoom-maximum",
+      "value": 17.5,
+      "unit": "zoom-level",
+      "use": "the fixed follow zoom's clamp toward trip end (§5.3)"
+    },
+    {
+      "token": "navigation-follow-pitch-3d",
+      "value": 45,
+      "unit": "degrees",
+      "use": "the 3D follow camera's pitch; the 2D/3D toggle sets it to 0 in 2D"
+    },
+    {
+      "token": "map-control-zoom-step",
+      "value": 1,
+      "unit": "zoom-level",
+      "use": "one tap of the zoom +/− control"
+    },
+    {
+      "token": "map-control-zoom-repeat-interval",
+      "value": 250,
+      "unit": "milliseconds",
+      "use": "holding a zoom button repeats its step at this cadence"
+    },
+    {
+      "token": "compass-visibility-bearing-threshold",
+      "value": 1,
+      "unit": "degrees",
+      "use": "the compass control appears only while the camera's bearing is off north by at least this much"
+    },
+    {
+      "token": "compass-renorth-animation",
+      "value": 300,
+      "unit": "milliseconds",
+      "use": "the eased 'north up' return when the compass is tapped"
+    },
+    {
+      "token": "location-animation-duration-milliseconds",
+      "value": 1000,
+      "unit": "milliseconds",
+      "use": "the longest motion one fix may start; the actual duration is the interval between fixes, clamped to this ceiling"
+    },
+    {
+      "token": "location-animation-minimum-milliseconds",
+      "value": 120,
+      "unit": "milliseconds",
+      "use": "the shortest motion one fix starts, so a fast fix stream still animates instead of teleporting"
+    },
+    {
+      "token": "location-animation-dead-reckoning",
+      "value": "off",
+      "unit": "choice",
+      "use": "reserved: whether the puck predicts motion between fixes; off because a wrong prediction draws a place the visitor never was"
+    },
+    {
+      "token": "scale-bar-width-range",
+      "minimum_pixels": 50,
+      "maximum_pixels": 120,
+      "use": "the scale bar targets a width in this range, then picks a clean distance from the 1-2-3-5-10 ladder"
+    },
+    {
+      "token": "diagnostics-event-window",
+      "value": 100,
+      "unit": "events",
+      "use": "the diagnostics pane's visible event window; the most recent window stays and the oldest events drop"
+    },
+    {
+      "token": "diagnostics-backlog-flush-limit",
+      "value": 100,
+      "unit": "events",
+      "use": "the number of buffered SDK events the diagnostics pane flushes when it opens"
+    },
+    {
+      "token": "diagnostics-refresh-cadence-milliseconds",
+      "value": 500,
+      "unit": "milliseconds",
+      "use": "the diagnostics pane's display refresh cadence while it is open"
+    },
+    {
+      "token": "diagnostics-minimum-severity",
+      "value": "Info",
+      "unit": "log-severity",
+      "use": "the severity the live diagnostics subscription starts at when the pane opens"
+    },
+    {
+      "token": "diagnostics-debug-severity",
+      "value": "Debug",
+      "unit": "log-severity",
+      "use": "the severity the explicit Show debug events switch lowers the subscription to"
+    },
+    {
+      "token": "diagnostics-ring-capacity",
+      "value": 512,
+      "unit": "events",
+      "use": "the SDK's per-subsystem in-memory diagnostics ring capacity the pane reads"
+    },
+    {
+      "token": "autocomplete-minimum-query-characters",
+      "value": 3,
+      "unit": "characters",
+      "use": "type-ahead starts once the query reaches three characters"
+    },
+    {
+      "token": "autocomplete-debounce-milliseconds",
+      "value": 250,
+      "unit": "milliseconds",
+      "use": "quiet period before a type-ahead request"
+    },
+    {
+      "token": "autocomplete-maximum-results",
+      "value": 5,
+      "unit": "rows",
+      "use": "type-ahead row cap; the provider asks for the same number"
+    }
+  ],
+  "ui_labels": [
+    {
+      "id": "peek.primary_action",
+      "text": "Start simulated navigation",
+      "role": "the peek's action row: the route's Start (planning is reached through the search field)"
+    },
+    {
+      "id": "plan.origin_hint",
+      "text": "Search an origin",
+      "role": "the origin search field's hint"
+    },
+    {
+      "id": "plan.destination_hint",
+      "text": "Where to?",
+      "role": "the destination search field's hint"
+    },
+    {
+      "id": "plan.destination_placeholder",
+      "text": "Search a destination",
+      "role": "the destination field's placeholder text"
+    },
+    {
+      "id": "plan.search_heading",
+      "text": "Plan a route",
+      "role": "the search view's heading"
+    },
+    {
+      "id": "plan.plan_route_action",
+      "text": "Plan route",
+      "role": "the explicit two-field plan action"
+    },
+    {
+      "id": "plan.planning_in_flight",
+      "text": "Planning the route…",
+      "role": "the route summary's in-flight line"
+    },
+    {
+      "id": "plan.searching_in_flight",
+      "text": "Searching…",
+      "role": "the search view's in-flight line"
+    },
+    {
+      "id": "plan.empty_results_hint",
+      "text": "No results yet; search a place above.",
+      "role": "the result list's empty-state hint"
+    },
+    {
+      "id": "plan.no_matches",
+      "text": "No matching places.",
+      "role": "the type-ahead's one row when the provider matched nothing"
+    },
+    {
+      "id": "plan.autocomplete_unavailable",
+      "text": "Suggestions are unavailable; keep typing to try again.",
+      "role": "the type-ahead's inline sentence when the provider failed without a detail"
+    },
+    {
+      "id": "plan.demo_places_heading",
+      "text": "Demo places",
+      "role": "the result list's heading when the keyless demo filter answered"
+    },
+    {
+      "id": "plan.demo_no_match_hint",
+      "text": "No demo place matches the {field}; apply a provider key in Settings for live search.",
+      "role": "the keyless search's honest no-match line"
+    },
+    {
+      "id": "plan.recorded_route_note",
+      "text": "Recorded demo route, pedestrian, fastest.",
+      "role": "the route summary's note when the planned route is the artifact's recorded one"
+    },
+    {
+      "id": "plan.no_recorded_route_hint",
+      "text": "No recorded demo route from {origin} to {destination}; apply a provider key for live routing.",
+      "role": "the keyless plan's honest refusal when the pair has no recorded route"
+    },
+    {
+      "id": "plan.origin_label",
+      "text": "Origin",
+      "role": "the visible label of the search view's first field"
+    },
+    {
+      "id": "plan.destination_label",
+      "text": "Destination",
+      "role": "the visible label of the search view's second field"
+    },
+    {
+      "id": "plan.search_action",
+      "text": "Search",
+      "role": "the inline search action each plan field carries"
+    },
+    {
+      "id": "plan.my_location_action",
+      "text": "My location",
+      "role": "the chip that fills a plan field from the device position"
+    },
+    {
+      "id": "plan.swap_action",
+      "text": "Swap origin and destination",
+      "role": "the action that exchanges the two plan fields and their resolved places"
+    },
+    {
+      "id": "plan.missing_origin",
+      "text": "Enter an origin to plan the route.",
+      "role": "the Plan route disabled reason while only the origin field is empty"
+    },
+    {
+      "id": "plan.missing_destination",
+      "text": "Enter a destination to plan the route.",
+      "role": "the Plan route disabled reason while only the destination field is empty"
+    },
+    {
+      "id": "plan.missing_both",
+      "text": "Enter an origin and a destination to plan the route.",
+      "role": "the Plan route disabled reason while both fields are empty"
+    },
+    {
+      "id": "plan.my_location_unavailable",
+      "text": "My location is unavailable: {reason}",
+      "role": "the plan field's line when the device position cannot fill it"
+    },
+    {
+      "id": "plan.trip_source_demo_plan",
+      "text": "Selected demo plan: {plan}",
+      "role": "the peek's line naming the demo plan Start will replay"
+    },
+    {
+      "id": "route.start_action",
+      "text": "Start simulated navigation",
+      "role": "the route summary's primary action"
+    },
+    {
+      "id": "route.edit_action",
+      "text": "Edit",
+      "role": "the route summary's return-to-search action"
+    },
+    {
+      "id": "navigation.exit_action",
+      "text": "Exit",
+      "role": "the navigation drawer's exit control"
+    },
+    {
+      "id": "navigation.phase_navigating",
+      "text": "Navigating",
+      "role": "the navigation drawer's navigating phase word"
+    },
+    {
+      "id": "navigation.phase_off_route",
+      "text": "Off route",
+      "role": "the navigation drawer's off-route phase word"
+    },
+    {
+      "id": "navigation.phase_arrived",
+      "text": "Arrived",
+      "role": "the navigation drawer's arrival phase word"
+    },
+    {
+      "id": "navigation.phase_not_started",
+      "text": "Not started",
+      "role": "the navigation drawer's phase before a trip begins"
+    },
+    {
+      "id": "navigation.eta_prefix",
+      "text": "ETA",
+      "role": "the drawer's ETA line prefix"
+    },
+    {
+      "id": "navigation.eta_distance_label",
+      "text": "Distance remaining",
+      "role": "the drawer's remaining-distance label"
+    },
+    {
+      "id": "navigation.eta_duration_label",
+      "text": "Duration remaining",
+      "role": "the drawer's remaining-duration label"
+    },
+    {
+      "id": "navigation.deviation_alert",
+      "text": "Off route — {offset} from the route line; guidance is frozen until a graded fix recovers or a reroute applies.",
+      "role": "the deviation alert sentence"
+    },
+    {
+      "id": "navigation.voice_toggle",
+      "text": "Voice guidance",
+      "role": "the navigation drawer's speech toggle"
+    },
+    {
+      "id": "navigation.speed_label",
+      "text": "Speed",
+      "role": "the label of the simulated trip's playback-speed row"
+    },
+    {
+      "id": "navigation.pause_action",
+      "text": "Pause",
+      "role": "the playback control while the simulated trip runs"
+    },
+    {
+      "id": "navigation.resume_action",
+      "text": "Resume",
+      "role": "the playback control while the simulated trip is paused"
+    },
+    {
+      "id": "navigation.speed_multiplier_label",
+      "text": "{multiplier}×",
+      "role": "one playback-speed chip's label"
+    },
+    {
+      "id": "navigation.seek_label",
+      "text": "Seek",
+      "role": "the label of the simulated trip's route-position seek control"
+    },
+    {
+      "id": "readiness.chip_ready",
+      "text": "Ready",
+      "role": "the readiness chip's ready state"
+    },
+    {
+      "id": "readiness.chip_loading",
+      "text": "Loading…",
+      "role": "the readiness chip's loading state"
+    },
+    {
+      "id": "readiness.chip_degraded_prefix",
+      "text": "Degraded: ",
+      "role": "the readiness chip's degraded-state prefix"
+    },
+    {
+      "id": "readiness.chip_failed_prefix",
+      "text": "Failed: ",
+      "role": "the readiness chip's failed-state prefix"
+    },
+    {
+      "id": "settings.open_accessibility",
+      "text": "Open settings",
+      "role": "the settings gear's accessibility label"
+    },
+    {
+      "id": "settings.close_action",
+      "text": "Close",
+      "role": "the settings surface's close control"
+    },
+    {
+      "id": "settings.credential_applied",
+      "text": "{provider} key applied",
+      "role": "a provider credential row's applied status"
+    },
+    {
+      "id": "settings.credential_not_applied",
+      "text": "{provider} key not applied",
+      "role": "a provider credential row's not-applied status"
+    },
+    {
+      "id": "settings.keyless_status",
+      "text": "Set a provider key to load live map data",
+      "role": "the keyless readiness line"
+    },
+    {
+      "id": "settings.provider_row",
+      "text": "{provider} · {state}",
+      "role": "one composed provider row: the display name and its credential state on one line"
+    },
+    {
+      "id": "settings.provider_state_ready",
+      "text": "Ready",
+      "role": "a provider row's state when the provider serves without another credential"
+    },
+    {
+      "id": "settings.provider_state_needs_credential",
+      "text": "Needs {credential}",
+      "role": "a provider row's state when the session lacks the declared credential"
+    },
+    {
+      "id": "settings.provider_state_not_configured",
+      "text": "Not configured",
+      "role": "a capability row's state when no provider is registered for it"
+    },
+    {
+      "id": "settings.routing_demo_endpoint",
+      "text": "Demo server: {url}",
+      "role": "the routing row's line naming the descriptor's public demo address"
+    },
+    {
+      "id": "settings.routing_unreachable_next_step",
+      "text": "The demo server did not answer. Retry, or enter your own deployment address.",
+      "role": "the routing row's next step after an unreachable public demo server"
+    },
+    {
+      "id": "overlays.clear_action",
+      "text": "Clear overlays",
+      "role": "the demo-scenes clear action"
+    },
+    {
+      "id": "scenes.heading",
+      "text": "Demo scenes",
+      "role": "the home sheet's demo-scenes group label"
+    },
+    {
+      "id": "plans.heading",
+      "text": "Demo plans",
+      "role": "the home sheet's demo-plans group label"
+    },
+    {
+      "id": "camera.presets_heading",
+      "text": "Camera presets",
+      "role": "the home sheet's camera-presets group label"
+    },
+    {
+      "id": "theme.heading",
+      "text": "Theme",
+      "role": "the home sheet's theme row label"
+    },
+    {
+      "id": "offline.heading",
+      "text": "Offline maps",
+      "role": "the home sheet's offline-maps group label"
+    },
+    {
+      "id": "offline.plan_route_action",
+      "text": "Plan offline route",
+      "role": "the offline card's route control: plans over the bundled recorded test graph"
+    },
+    {
+      "id": "offline.recorded_graph_route_title",
+      "text": "Offline demo route",
+      "role": "the route summary's title when the route came from the offline archive"
+    },
+    {
+      "id": "offline.recorded_graph_note",
+      "text": "Planned offline from a recorded test graph, not live data.",
+      "role": "the route summary's honesty note for an offline archive route"
+    },
+    {
+      "id": "offline.download_action",
+      "text": "Download offline region",
+      "role": "the offline card's region-download control while no download runs"
+    },
+    {
+      "id": "offline.downloading_status",
+      "text": "Downloading…",
+      "role": "the offline card's in-flight line; the tile counts and the network-versus-disk split follow it"
+    },
+    {
+      "id": "offline.cancel_action",
+      "text": "Cancel",
+      "role": "the offline card's control that stops the in-flight region download"
+    },
+    {
+      "id": "offline.completed_status",
+      "text": "Download complete",
+      "role": "the offline card's terminal line when every region tile is stored"
+    },
+    {
+      "id": "offline.failed_status",
+      "text": "Download failed",
+      "role": "the offline card's terminal line when the region download stops on an error"
+    },
+    {
+      "id": "offline.stored_tiles_label",
+      "text": "Stored tiles",
+      "role": "the offline card's stored-region tile-count label"
+    },
+    {
+      "id": "offline.stored_bytes_label",
+      "text": "Stored bytes",
+      "role": "the offline card's stored-region payload size label"
+    },
+    {
+      "id": "offline.delete_action",
+      "text": "Delete region",
+      "role": "the offline card's control that removes a stored region and its tiles"
+    },
+    {
+      "id": "offline.deleted_status",
+      "text": "Region deleted",
+      "role": "the offline card's line after the stored region is removed"
+    },
+    {
+      "id": "offline.browser_unavailable_status",
+      "text": "Offline region downloads are not available in the browser.",
+      "role": "the browser card's honest statement that the WebAssembly surface has no disk store for offline regions"
+    },
+    {
+      "id": "diagnostics.title",
+      "text": "Diagnostics",
+      "role": "the diagnostics surface's title"
+    },
+    {
+      "id": "diagnostics.show_debug_events",
+      "text": "Show debug events",
+      "role": "the diagnostics pane's switch while debug detail is off"
+    },
+    {
+      "id": "diagnostics.hide_debug_events",
+      "text": "Hide debug events",
+      "role": "the diagnostics pane's switch while debug detail is on"
+    },
+    {
+      "id": "diagnostics.clear_action",
+      "text": "Clear",
+      "role": "the diagnostics pane's control that empties its display list"
+    },
+    {
+      "id": "diagnostics.no_events",
+      "text": "No SDK events recorded yet.",
+      "role": "the diagnostics pane's empty state"
+    },
+    {
+      "id": "diagnostics.stream_scope_note",
+      "text": "Debug detail stays on until the app restarts.",
+      "role": "the diagnostics pane's note that the lowered severity gate is per-session"
+    }
+  ],
+  "strings": {
+    "rate_limit_exhausted_detail": "rate limit exhausted; retry after the next refill",
+    "provider_not_configured_detail_template": "no '{provider}' provider is configured"
+  }
+}

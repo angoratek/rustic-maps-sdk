@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- The UniFFI-generated bindings select java.lang.ref.Cleaner at run time
+         (java.lang.Class.forName) and instantiate it only when the platform
+         provides it; the analyzer cannot model that guard. The generated
+         sources are build artifacts, so the check is scoped to them only. -->
+    <issue id="NewApi">
+        <ignore path="**/uniffi/**" />
+    </issue>
+</lint>

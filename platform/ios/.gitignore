@@ -1,0 +1,10 @@
+# Everything under artifacts/ is produced by scripts/build-ios.sh: the
+# XCFramework slices (device + simulator) and their modulemaps.
+artifacts/
+.build/
+# The uniffi-generated Swift sources are regenerated from the frozen UDL;
+# the hand-written wrapper sources in the other targets are tracked.
+Sources/RusticMapsSDK/rustic_maps.swift
+# Installed from the committed platform/ios/PrivacyInfo.xcprivacy on every
+# build-ios.sh run, because the generated directory is replaced wholesale.
+Sources/RusticMapsSDK/PrivacyInfo.xcprivacy

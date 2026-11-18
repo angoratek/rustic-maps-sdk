@@ -1,0 +1,88 @@
+[package]
+name = "rustic-maps-web-bindings"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+geospatial-types.workspace = true
+geospatial-traits.workspace = true
+# The reference applications' shared behavior math (M64): the wasm surface
+# exports the same follow-camera, median, easing, scale-bar and trace-cursor
+# implementation the native reference applications consume.
+map-refapp-core = { path = "../map-refapp-core" }
+rustic-maps-rendering.workspace = true
+rustic-maps-core.workspace = true
+# The simulated-trip walker (M27) shared with the native contract surface:
+# the browser class interpolates along the planned route through the same
+# `rustic-maps-navigation` implementation.
+rustic-maps-navigation.workspace = true
+# The Rust positioning controller the browser source feeds (M33).
+rustic-maps-positioning.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+console_error_panic_hook.workspace = true
+js-sys.workspace = true
+web-sys = { workspace = true, features = ["Window", "Location", "HtmlCanvasElement", "Performance", "Response", "Event", "EventTarget"] }
+# The browser URL-template vector source declaration: the canvas and its
+# host-runnable tests share one validation and declaration builder, so these
+# crates compile on the host as well as wasm32.
+everymap-core.workspace = true
+everymap-providers-url-template-vector.workspace = true
+
+# The browser GPU canvas path compiles only on wasm32: wgpu there renders
+# through the WebGPU (or WebGL2) surface the page's canvas provides, and
+# `image` decodes the recorded PNG tile payloads to RGBA8.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+async-trait.workspace = true
+# The live provider path (M13): the MapQuest provider set now compiles on
+# wasm through the portable fetch transport, so the browser demo can take a
+# runtime credential and fetch real data.
+# The vector-tile seam (M9): the MVT decoder and the data-only styling both
+# compile on wasm, and `flate2` unwraps the gzip envelope tile services serve
+# (already in the wasm tree through the PNG decoder).
+rustic-maps-vector-tiles.workspace = true
+# The compiled style the vector seam names in its descriptor exports.
+rustic-maps-style.workspace = true
+# The glyph PBF reader and R8Unorm atlas packer the canvas' label layer
+# uploads (M9 slice S3); wasm-safe, CPU-only.
+rustic-maps-glyphs.workspace = true
+# The canvas-owned vector base (M31): the shared `VectorBaseScheduler` fetches
+# a `{z}/{x}/{y}` tileset through the registry's URL-template provider over
+# the browser fetch transport, decodes and styles it in Rust, and answers the
+# same overlay and label layers the native surface draws.
+everymap-providers-mapquest.workspace = true
+everymap-providers-photon.workspace = true
+everymap-providers-osrm.workspace = true
+everymap-providers-valhalla.workspace = true
+# The credentialed vendor providers the browser dispatch offers beside them.
+everymap-providers-here.workspace = true
+everymap-providers-google.workspace = true
+everymap-providers-tomtom.workspace = true
+everymap-providers-mapbox.workspace = true
+everymap-providers-radar.workspace = true
+# The contract's URL-template raster source: a page registers any `{z}/{x}/{y}`
+# tileset as the serving raster-tile provider, and the canvas' live fallback
+# fetches through the same validated provider the native targets use.
+everymap-providers-url-template-raster.workspace = true
+flate2 = "1.1"
+# Resolves a relative style-document reference against the page's own origin,
+# so the document's own resource references resolve against one absolute
+# address.
+url.workspace = true
+image = { workspace = true, default-features = false, features = ["png"] }
+wgpu.workspace = true
+# The diagnostics readout's ring subscriber (round 11): the SDK crates emit
+# plain `tracing` events the subscriber records into the bounded rings.
+tracing.workspace = true
+tracing-core.workspace = true
+rustic-maps-providers.workspace = true
+
+[dev-dependencies]
+# The browser source tests read the shared provider registry at test time, so
+# they follow the OpenFreeMap declaration instead of naming a provider URL.
+serde_json.workspace = true

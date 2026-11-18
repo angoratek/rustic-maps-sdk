@@ -1,0 +1,72 @@
+[package]
+name = "rustic-maps-rendering"
+description = "wgpu rendering engine: raster tiles first, vector MVT second"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+rustic-maps-vector-tiles.workspace = true
+# The version-8 style document, its typed expressions and the compiler that
+# turns them into render plans. Renderer-neutral, GPU-free and wasm-safe.
+rustic-maps-style.workspace = true
+# The glyph PBF reader and R8Unorm atlas packer the frame-level label pass
+# measures and rasterizes text with (M9 slice S3); wasm-safe, CPU-only.
+rustic-maps-glyphs.workspace = true
+async-trait.workspace = true
+geospatial-types.workspace = true
+geospatial-traits.workspace = true
+glam.workspace = true
+# The data-only vector style artifact parser (M9): a committed JSON artifact
+# replaces the style that used to be constructed in code; both crates are
+# wasm-safe.
+serde.workspace = true
+serde_json.workspace = true
+# The structured event facade the "tile_fetch"/"renderer" targets emit
+# through (round 10); wasm-safe (no runtime deps).
+tracing.workspace = true
+# The shared vector base scheduler unwraps the gzip envelope tile services
+# serve before decoding; `flate2` builds on wasm and native alike.
+flate2 = "1.1"
+# `join_all` drives one frame's missing vector-base tile fetches concurrently,
+# so the first frame waits for the slowest tile instead of their sum.
+futures.workspace = true
+# The cache-store contract the vector base's payload cache is expressed over.
+# The trait crate carries no storage backend, so it stays wasm-safe; the
+# native surfaces pass their SQLite store, the browser an in-memory one.
+rustic-maps-core.workspace = true
+# Portable monotonic clock: the time to the first drawn vector tile and the
+# in-memory payload cache's TTL (wasm32 has no OS clock).
+web-time.workspace = true
+# Origin comparison for a hosted style's glyph addresses: a template must stay
+# inside the origin its style document was loaded from.
+url.workspace = true
+# The PNG decoder that turns a hosted style's sprite sheet into an atlas. It
+# builds on wasm too, so the browser install decodes the sheet the same way
+# the native install does.
+image.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wgpu.workspace = true
+pollster = "0.4"
+
+[dev-dependencies]
+proptest.workspace = true
+criterion = "0.5"
+tokio.workspace = true
+# The fixture-recording examples fetch live tiles through the same provider
+# layer the SDK registers at runtime.
+everymap-providers-mapquest.workspace = true
+# The tile-pack scheduler seam test (M7 slice 4): pack tiles must reach the
+# scheduler through the same cached-provider slot as network-fetched tiles,
+# so the test needs the cache crate's store, cached wrapper and pack
+# manager, plus the store contract's crate for the lookup assertions.
+# Dev-only: the renderer itself stays store-agnostic.
+rustic-maps-cache = { path = "../rustic-maps-cache" }
+# The frame-sharing gate: clone, deep compare and content-revision comparison
+# over a 46k-overlay z7 frame. Run with `cargo bench -p rustic-maps-rendering
+# --bench frame_clone_compare`; it is not part of `cargo test`.
+[[bench]]
+name = "frame_clone_compare"
+harness = false

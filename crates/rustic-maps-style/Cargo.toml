@@ -1,0 +1,11 @@
+[package]
+name = "rustic-maps-style"
+description = "MapLibre style-specification version-8 document model, typed expressions, filters and CSS colours"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+serde_json.workspace = true

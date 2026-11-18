@@ -1,0 +1,40 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.5001, 38.5701] },
+      "properties": { "osm_id": 201, "osm_type": "N", "type": "house", "name": "Suggestion One" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.5002, 38.5702] },
+      "properties": { "osm_id": 202, "osm_type": "N", "type": "house", "name": "Suggestion Two" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.5003, 38.5703] },
+      "properties": { "osm_id": 203, "osm_type": "N", "type": "house", "name": "Suggestion Three" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.5004, 38.5704] },
+      "properties": { "osm_id": 204, "osm_type": "N", "type": "house", "name": "Suggestion Four" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.5005, 38.5705] },
+      "properties": { "osm_id": 205, "osm_type": "N", "type": "house", "name": "Suggestion Five" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.5006, 38.5706] },
+      "properties": { "osm_id": 206, "osm_type": "N", "type": "house", "name": "Suggestion Six" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.5007, 38.5707] },
+      "properties": { "osm_id": 207, "osm_type": "N", "type": "house", "name": "Suggestion Seven" }
+    }
+  ]
+}

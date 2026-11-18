@@ -1,0 +1,119 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/geospatial-types",
+    "crates/geospatial-traits",
+    "crates/map-refapp-core",
+    "crates/map-refapp-native",
+    "crates/rustic-maps-core",
+    "crates/rustic-maps-cache",
+    "crates/rustic-maps-rendering",
+    "crates/rustic-maps-vector-tiles",
+    "crates/rustic-maps-style",
+    "crates/rustic-maps-glyphs",
+    "crates/rustic-maps-navigation",
+    "crates/rustic-maps-positioning",
+    "crates/rustic-maps-offline-graph-archive",
+    "crates/rustic-maps-offline-graph-compiler",
+    "crates/rustic-maps-native-core",
+    "crates/rustic-maps-providers",
+    "crates/rustic-maps-web-bindings",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+geospatial-types = { path = "crates/geospatial-types" }
+geospatial-traits = { path = "crates/geospatial-traits" }
+# The provider layer (M66): vendor-neutral contracts, the transport seam and
+# the vendor provider crates. Published crates, not path dependencies, so the
+# SDK consumes exactly what a third party would.
+everymap-core = "0.4"
+everymap-providers-mapquest = "0.4"
+everymap-providers-photon = "0.4"
+everymap-providers-osrm = "0.4"
+everymap-providers-valhalla = "0.4"
+everymap-providers-here = "0.4"
+everymap-providers-google = "0.4"
+everymap-providers-tomtom = "0.4"
+everymap-providers-mapbox = "0.4"
+everymap-providers-radar = "0.4"
+everymap-providers-url-template-raster = "0.4"
+everymap-providers-url-template-vector = "0.4"
+rustic-maps-core = { path = "crates/rustic-maps-core" }
+rustic-maps-navigation = { path = "crates/rustic-maps-navigation" }
+rustic-maps-positioning = { path = "crates/rustic-maps-positioning" }
+rustic-maps-offline-graph-archive = { path = "crates/rustic-maps-offline-graph-archive" }
+rustic-maps-providers = { path = "crates/rustic-maps-providers" }
+rustic-maps-rendering = { path = "crates/rustic-maps-rendering" }
+# The MVT v2.1 decoder the vector rendering pipeline consumes.
+rustic-maps-vector-tiles = { path = "crates/rustic-maps-vector-tiles" }
+# The MapLibre style-specification document model: sources, layers, typed
+# expressions, filters and CSS colours. Renderer-free and wasm-safe.
+rustic-maps-style = { path = "crates/rustic-maps-style" }
+# The glyph PBF reader, range cache and atlas packer the label pass consumes.
+rustic-maps-glyphs = { path = "crates/rustic-maps-glyphs" }
+rustic-maps-offline-graph-compiler = { path = "crates/rustic-maps-offline-graph-compiler" }
+# The native, memory-mapped consumption seam for the compiled offline routing
+# graph archives (M7 slice 2): native-only. 0.9.11 is the first version fixing
+# RUSTSEC-2026-0186; osmpbf 0.3.8 still pins its own 0.5 line (see deny.toml).
+memmap2 = "0.9"
+thiserror = "2.0"
+async-trait = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+proptest = "1.6"
+tokio = { version = "1.47", features = ["macros", "rt-multi-thread", "sync", "time"] }
+wiremock = "0.6"
+r2d2 = "0.8"
+r2d2_sqlite = { version = "0.36", features = ["bundled"] }
+# The free-disk-space probe behind the cache quota; fs4 is the maintained
+# successor to fs2 (unmaintained since 2021) and exposes the same
+# `fs4::available_space(path)` free function.
+fs4 = "1.1"
+sha2 = "0.11"
+glam = "0.30"
+# PNG only: the raster path decodes the MapQuest PNG tile payloads, so the
+# default feature set would compile unneeded codecs (and their decoder
+# dependency trees). This is the same narrowing rustic-maps-web-bindings states
+# locally; that declaration stays valid and redundant.
+image = { version = "0.25", default-features = false, features = ["png"] }
+wgpu = { version = "30.0", features = ["webgpu", "webgl"] }
+wasm-bindgen = "0.2.129"
+wasm-bindgen-futures = "0.4"
+console_error_panic_hook = "0.1"
+web-sys = "0.3"
+js-sys = "0.3"
+# The native binding layer's UniFFI release; the `uniffi-bindgen` CLI and the
+# build-time scaffolding must be re-generated from the same version.
+uniffi = "0.31.2"
+# The structured event facade the diagnostics subscriber (round 10's
+# `SdkDiagnosticEventListener`) records from; wasm-safe (no runtime deps).
+tracing = "0.1.41"
+# The subscriber contract's span types (`span::Current`) that `tracing`
+# does not re-export.
+tracing-core = "0.1.36"
+# The OpenStreetMap PBF reader for the offline graph compiler; the compiler is
+# a maintainer/CI tool outside the wasm closure, so its mmap-based reader is
+# native-only.
+osmpbf = "0.3.8"
+# The provider HTTP transport seam (round 19): portable request/response records
+# and a browser-fetch implementation alongside the native reqwest one.
+url = "2"
+web-time = "1"
+futures = "0.3"
+gloo-net = { version = "0.6", features = ["http"] }
+gloo-timers = { version = "0.3", features = ["futures"] }
+
+[profile.release]
+strip = true
+lto = true
+# One codegen unit per crate (PLAN.md, M23's build item): the browser bundle is
+# the artifact where the last percent of inlining shows, and release builds of
+# this workspace are not on anyone's critical path. Measured on the wasm
+# package: 4,137,073 → 3,699,665 bytes (-10.6 %).
+codegen-units = 1

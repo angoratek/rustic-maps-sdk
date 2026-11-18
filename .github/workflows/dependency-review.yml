@@ -1,0 +1,27 @@
+name: dependency-review
+
+# Reviews the dependency changes a pull request introduces and reports known
+# vulnerabilities. The high-severity threshold is configured now; `warn-only`
+# keeps the check advisory until the repository's rulesets require it, then
+# removing that input makes the same threshold blocking.
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Review the dependency diff
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+          warn-only: true

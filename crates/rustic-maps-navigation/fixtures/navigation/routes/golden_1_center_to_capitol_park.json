@@ -1,0 +1,119 @@
+{
+  "origin_name": "Golden 1 Center",
+  "destination_name": "Capitol Park",
+  "route": {
+    "distance_meters": 640.6679122144667,
+    "duration_seconds": 655.0,
+    "bounding_box": {
+      "south_west": {
+        "latitude": 38.57693,
+        "longitude": -121.499841
+      },
+      "north_east": {
+        "latitude": 38.579569,
+        "longitude": -121.49439
+      }
+    },
+    "geometry": [],
+    "legs": [
+      {
+        "distance_meters": 640.6679122144667,
+        "duration_seconds": 655.0,
+        "steps": [
+          {
+            "distance_meters": 500.5512704160708,
+            "duration_seconds": 515.0,
+            "maneuver_type": "departure",
+            "instruction_display_text": "Turn right onto 10th St. Go for 140 m.",
+            "instruction_speech_text": "Turn right onto 10th St. Go for 140 m.",
+            "shape": [
+              {
+                "latitude": 38.579569,
+                "longitude": -121.499841
+              },
+              {
+                "latitude": 38.57954,
+                "longitude": -121.49973
+              },
+              {
+                "latitude": 38.57951,
+                "longitude": -121.49963
+              },
+              {
+                "latitude": 38.57937,
+                "longitude": -121.49908
+              },
+              {
+                "latitude": 38.57919,
+                "longitude": -121.4984
+              },
+              {
+                "latitude": 38.57909,
+                "longitude": -121.49802
+              },
+              {
+                "latitude": 38.57906,
+                "longitude": -121.49793
+              },
+              {
+                "latitude": 38.57895,
+                "longitude": -121.49751
+              },
+              {
+                "latitude": 38.57884,
+                "longitude": -121.49708
+              },
+              {
+                "latitude": 38.5788,
+                "longitude": -121.49694
+              },
+              {
+                "latitude": 38.57871,
+                "longitude": -121.49662
+              },
+              {
+                "latitude": 38.57857,
+                "longitude": -121.49613
+              },
+              {
+                "latitude": 38.57847,
+                "longitude": -121.49576
+              },
+              {
+                "latitude": 38.57836,
+                "longitude": -121.49532
+              },
+              {
+                "latitude": 38.57812,
+                "longitude": -121.49439
+              }
+            ],
+            "lane_guidances": []
+          },
+          {
+            "distance_meters": 140.11664179839585,
+            "duration_seconds": 140.0,
+            "maneuver_type": "turn-right",
+            "instruction_display_text": "Arrive at 10th St.",
+            "instruction_speech_text": "Arrive at 10th St.",
+            "shape": [
+              {
+                "latitude": 38.57812,
+                "longitude": -121.49439
+              },
+              {
+                "latitude": 38.57705,
+                "longitude": -121.49487
+              },
+              {
+                "latitude": 38.57693,
+                "longitude": -121.49492
+              }
+            ],
+            "lane_guidances": []
+          }
+        ]
+      }
+    ]
+  }
+}

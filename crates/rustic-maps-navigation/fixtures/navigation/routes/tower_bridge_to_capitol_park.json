@@ -1,0 +1,249 @@
+{
+  "origin_name": "Tower Bridge",
+  "destination_name": "Capitol Park",
+  "route": {
+    "distance_meters": 1436.0420881526836,
+    "duration_seconds": 1474.0,
+    "bounding_box": {
+      "south_west": {
+        "latitude": 38.57588,
+        "longitude": -121.5078
+      },
+      "north_east": {
+        "latitude": 38.578739,
+        "longitude": -121.49492
+      }
+    },
+    "geometry": [],
+    "legs": [
+      {
+        "distance_meters": 1436.0420881526836,
+        "duration_seconds": 1474.0,
+        "steps": [
+          {
+            "distance_meters": 93.00047241001847,
+            "duration_seconds": 102.0,
+            "maneuver_type": "departure",
+            "instruction_display_text": "Turn left onto O St. Go for 117 m.",
+            "instruction_speech_text": "Turn left onto O St. Go for 117 m.",
+            "shape": [
+              {
+                "latitude": 38.578739,
+                "longitude": -121.507447
+              },
+              {
+                "latitude": 38.57864,
+                "longitude": -121.50749
+              },
+              {
+                "latitude": 38.5782,
+                "longitude": -121.50767
+              },
+              {
+                "latitude": 38.57795,
+                "longitude": -121.5078
+              }
+            ],
+            "lane_guidances": []
+          },
+          {
+            "distance_meters": 116.34162057833619,
+            "duration_seconds": 126.0,
+            "maneuver_type": "turn-left",
+            "instruction_display_text": "Turn left onto 2nd St. Go for 139 m.",
+            "instruction_speech_text": "Turn left onto 2nd St. Go for 139 m.",
+            "shape": [
+              {
+                "latitude": 38.57795,
+                "longitude": -121.5078
+              },
+              {
+                "latitude": 38.5779,
+                "longitude": -121.50765
+              },
+              {
+                "latitude": 38.57785,
+                "longitude": -121.50746
+              },
+              {
+                "latitude": 38.57779,
+                "longitude": -121.50723
+              },
+              {
+                "latitude": 38.57774,
+                "longitude": -121.50706
+              },
+              {
+                "latitude": 38.57767,
+                "longitude": -121.50684
+              },
+              {
+                "latitude": 38.57765,
+                "longitude": -121.50674
+              },
+              {
+                "latitude": 38.5776,
+                "longitude": -121.50654
+              }
+            ],
+            "lane_guidances": []
+          },
+          {
+            "distance_meters": 138.7636429916798,
+            "duration_seconds": 142.0,
+            "maneuver_type": "turn-left",
+            "instruction_display_text": "Turn right onto N St. Go for 970 m.",
+            "instruction_speech_text": "Turn right onto N St. Go for 970 m.",
+            "shape": [
+              {
+                "latitude": 38.5776,
+                "longitude": -121.50654
+              },
+              {
+                "latitude": 38.5777,
+                "longitude": -121.5065
+              },
+              {
+                "latitude": 38.57859,
+                "longitude": -121.50609
+              },
+              {
+                "latitude": 38.57865,
+                "longitude": -121.50603
+              },
+              {
+                "latitude": 38.57868,
+                "longitude": -121.50588
+              }
+            ],
+            "lane_guidances": []
+          },
+          {
+            "distance_meters": 964.5173895146164,
+            "duration_seconds": 980.0,
+            "maneuver_type": "turn-right",
+            "instruction_display_text": "Turn left onto 10th St. Go for 124 m.",
+            "instruction_speech_text": "Turn left onto 10th St. Go for 124 m.",
+            "shape": [
+              {
+                "latitude": 38.57868,
+                "longitude": -121.50588
+              },
+              {
+                "latitude": 38.5784,
+                "longitude": -121.50484
+              },
+              {
+                "latitude": 38.57836,
+                "longitude": -121.5047
+              },
+              {
+                "latitude": 38.57826,
+                "longitude": -121.50432
+              },
+              {
+                "latitude": 38.57805,
+                "longitude": -121.50354
+              },
+              {
+                "latitude": 38.57801,
+                "longitude": -121.50337
+              },
+              {
+                "latitude": 38.57765,
+                "longitude": -121.50204
+              },
+              {
+                "latitude": 38.57755,
+                "longitude": -121.50168
+              },
+              {
+                "latitude": 38.5775,
+                "longitude": -121.50151
+              },
+              {
+                "latitude": 38.57746,
+                "longitude": -121.50134
+              },
+              {
+                "latitude": 38.57732,
+                "longitude": -121.50077
+              },
+              {
+                "latitude": 38.57723,
+                "longitude": -121.50049
+              },
+              {
+                "latitude": 38.57716,
+                "longitude": -121.50021
+              },
+              {
+                "latitude": 38.5771,
+                "longitude": -121.49998
+              },
+              {
+                "latitude": 38.57708,
+                "longitude": -121.49991
+              },
+              {
+                "latitude": 38.57694,
+                "longitude": -121.4994
+              },
+              {
+                "latitude": 38.57672,
+                "longitude": -121.49857
+              },
+              {
+                "latitude": 38.57658,
+                "longitude": -121.49807
+              },
+              {
+                "latitude": 38.5765,
+                "longitude": -121.49777
+              },
+              {
+                "latitude": 38.5764,
+                "longitude": -121.49737
+              },
+              {
+                "latitude": 38.57623,
+                "longitude": -121.49672
+              },
+              {
+                "latitude": 38.57588,
+                "longitude": -121.49538
+              }
+            ],
+            "lane_guidances": []
+          },
+          {
+            "distance_meters": 123.41896265803284,
+            "duration_seconds": 124.0,
+            "maneuver_type": "turn-left",
+            "instruction_display_text": "Arrive at 10th St.",
+            "instruction_speech_text": "Arrive at 10th St.",
+            "shape": [
+              {
+                "latitude": 38.57588,
+                "longitude": -121.49538
+              },
+              {
+                "latitude": 38.57605,
+                "longitude": -121.4953
+              },
+              {
+                "latitude": 38.57626,
+                "longitude": -121.49521
+              },
+              {
+                "latitude": 38.57693,
+                "longitude": -121.49492
+              }
+            ],
+            "lane_guidances": []
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+rootProject.name = 'MapsSdkRefappRn'
+include ':app'
+
+// The ubrn TurboModule library: the generated Kotlin + JSI glue module that
+// `scripts/build-rn.sh` regenerates over the frozen UDL contract (the ubrn
+// app-integration flow consumes the library's own `android` module).
+include ':maps-sdk-rn'
+project(':maps-sdk-rn').projectDir = file('../../android')
+
+// NOTE: the SDK is consumed as its one prebuilt AAR from
+// `platform/android/maps-sdk/build/outputs/aar` (app/build.gradle's flatDir)
+// rather than as a source module: the module's build file requests AGP
+// through the versioned plugins DSL, which Gradle rejects in a React Native
+// host build (the React Native gradle plugin's included build carries AGP on
+// the classpath with an unknown version). The AAR carries the generated
+// bindings, the per-ABI Rust libraries and the map widget; it is a build
+// output of `scripts/build-android.sh` — the same artifact the Compose
+// reference application consumes — so the shell must run that script (or
+// rely on the Compose app's build) before building.
+
+includeBuild('../node_modules/@react-native/gradle-plugin')

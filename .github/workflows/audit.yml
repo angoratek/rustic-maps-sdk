@@ -1,0 +1,51 @@
+name: audit
+
+# The advisory database moves independently of this lock file, so the scan
+# runs weekly as well as on every dependency change. `cargo deny check`
+# covers advisories too, but cargo-audit sees lock-only findings it does not
+# surface; the two gates are deliberately kept beside each other.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/audit.yml"
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/audit.yml"
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Install cargo-audit
+        # Pinned to the version the local gate runs; advisory parsing and the
+        # database format have drifted across releases.
+        run: cargo install --locked cargo-audit@0.22.2
+      - name: Advisory scan
+        # Plain `cargo audit`: a vulnerability fails the job, while the
+        # unmaintained/unsound warnings for the upstream-pinned dependencies
+        # documented in deny.toml stay visible in the log instead of being
+        # suppressed with --ignore.
+        run: cargo audit

@@ -1,0 +1,16 @@
+[package]
+name = "rustic-maps-offline-graph-compiler"
+description = "Binary tool compiling OpenStreetMap extracts into offline routing network graph archives"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+geospatial-types.workspace = true
+# The OpenStreetMap PBF reader; the compiler is a maintainer/CI tool outside
+# the wasm closure, so its mmap-based reader is native-only.
+osmpbf.workspace = true
+# The archive format this crate produces; the format's reader/writer home
+# is wasm-viable and also consumed by `rustic-maps-core` directly.
+rustic-maps-offline-graph-archive.workspace = true
