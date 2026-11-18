@@ -771,6 +771,18 @@ Owner rulings 2026-11-17: the public history is a rewritten mirror pushed to a *
 - [ ] Provider layer repository blockers: stale version and test-count claims, missing docs on the core and vendor surfaces the SDK consumes, the repository description, the yanked tarballs that still serve the retired session identifier (purge or a dated accepted-risk record), action pinning and the new advisory gate.
 - [x] Decide whether the Rust crates publish to crates.io and docs.rs at opening: they stay source-only until the first versioned release.
 
+### M83 — Generate the browser API from the frozen contract (owner ruling 2026-11-17; lands before the opening)
+
+> Verify: `ubrn build wasm2` runs on the real tree with no scratch copy, the staged module serves the generated contract and the canvas in one instance, the page's 240-spec browser suite and every platform build stay green on the generated surface, and the hand-written contract mirrors, type mirror, façade generator and contract-sync parser are retired with a single generation gate in their place. Design and evidence: `docs/design/WebFacadeGeneration.md`.
+
+- [ ] Generation input: commit a stripped `rustic_maps_wasm.udl` (the browser contract without `MapView`) and make both the wasm scaffolding and the bindgen read it, so the generated signatures match the module exactly; resolve the crate lookup (`ubrn` keys by library target name, the metadata names the package) by aligning the names or adding a generation shim.
+- [ ] Generation gate: a script and deterministic check that builds `wasm2` on the real tree and fails on drift between the committed UDL, the staged TypeScript and the module's `UNIFFI_META_*`; the existing hand-written façade generator stays until the migration completes.
+- [ ] Build pipeline: `scripts/build-wasm.sh` builds the contract crate with `ubrn` staging, ships `<stem>_bg.js`, pins `@ubjs/wasm` and `@ubjs/core` at the aligned version, runs `wasm-opt` over the staged module and records the new package size against the 8 MB budget.
+- [ ] Page compatibility façade: keep `window.mapTest` and `window.mapTestReady` over the generated API (37 members across 32 spec files), translate the generated error tags and `.inner.detail` to the current `{code, message}` shape, convert `bigint` where the page expects numbers, and keep the wasm-only `setProviderBaseUrl`/`clearProviderRegistrations` seams.
+- [ ] Canvas boundary: name the browser class distinctly (`BrowserMapView`) so the generated contract `MapView` never reaches the page, remove the obsolete compiled-version hand-off, and ship declarations for the untyped `_bg.js` glue.
+- [ ] Retirement: delete the hand-written contract mirrors (`exports.rs`, `navigation.rs`, `positioning.rs`, `camera_interaction.rs`, `diagnostics.rs`, the contract parts of `live_providers.rs` and `shared.rs`, `generated_contract_field_names.rs`), the generated TypeScript files and their generator, and reduce `contract_sync.mjs` to the one-module split assertion.
+- [ ] Proof: the full browser suite, the Android/iOS/RN builds and suites, the wasm package freshness check and the docs site build are green on the generated surface; the published guides state that the browser API is generated from the contract.
+
 ## 2. Backlog & cross-cutting
 
 - [ ] Gesture-cancel proof (M62 residual): a running camera animation cancelled by a gesture is implemented, but the JVM stub `android.jar` cannot drive `SurfaceView`/`Choreographer`/`MotionEvent`; pin it with a Robolectric or instrumentation test.
