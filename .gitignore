@@ -33,6 +33,16 @@ node_modules/
 .env.*
 !.env.example
 
+# Build-machine and signing material: SDK locations, keystores, provisioning
+# profiles and local Xcode overrides. A distributed demo keystore comes from a
+# repository secret on the build machine, never from the tree.
+local.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+Local.xcconfig
+
 # Test and profiling leftovers. A JVM heap dump is hundreds of megabytes and
 # can carry process memory, so it is never a source artifact.
 *.profraw
