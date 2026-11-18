@@ -9,12 +9,12 @@
 // WHAT IS CHECKED
 //   TypeScript/JavaScript, WebAssembly tabs
 //     `tsc --noEmit` with `strict`, `allowJs` and `checkJs`, against the
-//     generated wasm declarations `platform/web/pkg/rustic_maps_web_bindings.d.ts`
-//     (built by `cargo build --target wasm32-unknown-unknown` plus
-//     `wasm-bindgen`). When the package is not built, the harness falls back
-//     to the generated contract mirror `platform/web/types/
-//     rustic_maps.d.ts`, but that mirror declares only record shapes, so
-//     callable snippets are reported as unavailable and `--strict` fails.
+//     generated contract declarations
+//     `platform/web/generated/rustic_maps.d.ts` (emitted by
+//     `scripts/build-wasm2-package.sh`) plus the hand-written canvas
+//     declarations `platform/web/types/browser_canvas.d.ts`. When the
+//     generated package is not built, callable snippets are reported as
+//     unavailable and `--strict` fails.
 //   TypeScript/JavaScript, React Native tabs
 //     `tsc --noEmit` against the generated ubrn surface
 //     `platform/rn/src/generated/rustic_maps.ts`. Absent generation is a
@@ -126,11 +126,11 @@ const LANGUAGE_FAMILIES = new Map([
 /** Default fenced-block directory (mdBook source). */
 const DEFAULT_DOCS_DIR = 'site/book-src';
 
-/** Generated wasm declarations, produced by cargo + wasm-bindgen. */
-const DEFAULT_WASM_DTS = 'platform/web/pkg/rustic_maps_web_bindings.d.ts';
+/** Generated contract declarations shipped by the browser package. */
+const DEFAULT_WASM_DTS = 'platform/web/generated/rustic_maps.d.ts';
 
-/** Generated contract mirror used when the wasm package is not built. */
-const CONTRACT_MIRROR_DTS = 'platform/web/types/rustic_maps.d.ts';
+/** Hand-written declarations for the browser canvas glue. */
+const BROWSER_CANVAS_DTS = 'platform/web/types/browser_canvas.d.ts';
 
 /** Generated ubrn TypeScript surface for the React Native tabs. */
 const DEFAULT_RN_BINDINGS = 'platform/rn/src/generated/rustic_maps.ts';
@@ -376,7 +376,7 @@ function discoverEnvironment(options) {
     wasmDts: options.wasmDts
       ? existingPath(options.wasmDts)
       : existingPath(DEFAULT_WASM_DTS),
-    contractMirror: existingPath(CONTRACT_MIRROR_DTS),
+    browserCanvasDts: existingPath(BROWSER_CANVAS_DTS),
     rnBindings: options.rnBindings
       ? existingPath(options.rnBindings)
       : existingPath(DEFAULT_RN_BINDINGS),
@@ -566,7 +566,14 @@ function checkTypeScriptSurface(report, snippets, environment, surface) {
     mkdirSync(path.join(projectDir, 'web'), { recursive: true });
     const declarations = readFileSync(environment.wasmDts, 'utf8');
     const widened = widenRecordReturnTypes(declarations);
-    writeFileSync(path.join(projectDir, 'web', 'rustic_maps_web_bindings.d.ts'), widened);
+    writeFileSync(path.join(projectDir, 'web', 'rustic_maps.d.ts'), widened);
+    writeFileSync(path.join(projectDir, 'web', 'index.d.ts'), wasmIndexShim);
+    if (environment.browserCanvasDts) {
+      writeFileSync(
+        path.join(projectDir, 'web', 'rustic_maps_bg.d.ts'),
+        readFileSync(environment.browserCanvasDts, 'utf8'),
+      );
+    }
     writeFileSync(path.join(projectDir, 'ambient.d.ts'), wasmAmbientShim);
     report.surfaceNotes.push(
       `wasm TypeScript surface: ${path.relative(REPO_ROOT, environment.wasmDts)} ` +
@@ -667,12 +674,18 @@ function widenRecordReturnTypes(declarations) {
     .replace(/Promise<object>/g, 'Promise<any>');
 }
 
-const wasmAmbientShim = `
-import type * as wasm from './web/rustic_maps_web_bindings.js';
+const wasmIndexShim = `
+export * from './rustic_maps.js';
+export declare function uniffiInitAsync(source: any): Promise<void>;
+`;
 
-// The route records the wasm seam returns are typed as \`object\` by the
-// generated declarations; the tutorial reads exactly these fields through
-// \`route.legs\`, so the ambient context supplies the documented shape.
+const wasmAmbientShim = `
+import type * as wasm from './web/rustic_maps.js';
+import type * as wasmCanvas from './web/rustic_maps_bg.js';
+
+// The route records the generated declarations describe structurally; the
+// tutorial reads exactly these fields through \`route.legs\`, so the ambient
+// context supplies the documented shape.
 type DocsRouteStep = { shape: any[] };
 type DocsRouteLeg = { steps: DocsRouteStep[] };
 type DocsRoute = {
@@ -683,19 +696,29 @@ type DocsRoute = {
 };
 
 // Surrounding-page context for illustrative WebAssembly snippets. Names
-// declared inside a snippet shadow these global declarations; the binding
-// classes and functions are typed from the generated surface so snippets that
-// rely on an earlier tutorial step are still checked.
+// declared inside a snippet shadow these global declarations; the contract
+// classes come from the generated surface and the canvas classes from the
+// wasm-bindgen glue, so snippets that rely on an earlier tutorial step are
+// still checked.
 declare global {
-  const MapCamera: typeof wasm.MapCamera;
-  const MapView: typeof wasm.MapView;
-  const MapsSdk: typeof wasm.MapsSdk;
-  const TileResolution: typeof wasm.TileResolution;
-  const devicePixelRatioThreshold: typeof wasm.devicePixelRatioThreshold;
+  const MapCamera: typeof wasmCanvas.MapCamera;
+  const BrowserMapView: typeof wasmCanvas.BrowserMapView;
+  const TileResolution: typeof wasmCanvas.TileResolution;
+  const MapSdk: typeof wasm.MapSdk;
+  const Navigator: typeof wasm.Navigator;
+  const RouteSimulator: typeof wasm.RouteSimulator;
+  const PositionController: typeof wasm.PositionController;
+  const ProviderContract: typeof wasm.ProviderContract;
+  const UnitSystem: typeof wasm.UnitSystem;
+  const defaultStepAdvancePolicy: typeof wasm.defaultStepAdvancePolicy;
+  const defaultDeviationPolicy: typeof wasm.defaultDeviationPolicy;
+  const devicePixelRatioThreshold: typeof wasmCanvas.devicePixelRatioThreshold;
 
   const canvas: HTMLCanvasElement;
-  const camera: wasm.MapCamera;
-  const mapView: wasm.MapView;
+  const canvasElement: HTMLCanvasElement;
+  const camera: wasmCanvas.MapCamera;
+  const mapView: wasmCanvas.BrowserMapView;
+  const mapSdk: wasm.MapSdk;
   const fieldOfViewDegrees: number;
   const latitudeDegrees: number;
   const longitudeDegrees: number;
@@ -709,7 +732,7 @@ declare global {
   const startLongitude: number;
   const endLatitude: number;
   const endLongitude: number;
-  const route: DocsRoute;
+  const route: any;
   const fix: { latitude: number; longitude: number };
   const smoothedCourseHeadingDegrees: number;
 }
@@ -1472,7 +1495,7 @@ function runSelfTest(report, environment, options) {
       if (environment.wasmDts) {
         surfaces.push({
           name: 'wasm',
-          control: `import { MapCamera } from './web/rustic_maps_web_bindings.js';\nconst camera = new MapCamera(1, 2, 3, 4, 5);\n`,
+          control: `import { MapCamera } from './web/rustic_maps_bg.js';\nconst camera = new MapCamera(1, 2, 3, 4, 5);\n`,
           broken: `const broken: number = 'not a number';\n`,
           platform: 'wasm',
         });
@@ -1803,10 +1826,10 @@ function main() {
           snippet,
           'typescript-wasm',
           'unavailable',
-          environment.contractMirror
-            ? `generated wasm declarations absent; the contract mirror (${CONTRACT_MIRROR_DTS}) ` +
-                'declares record shapes only, so callable snippets cannot be checked'
-            : 'generated wasm declarations absent',
+          environment.browserCanvasDts
+            ? `generated contract declarations absent; the canvas declarations (${BROWSER_CANVAS_DTS}) ` +
+                'describe the canvas only, so callable contract snippets cannot be checked'
+            : 'generated contract declarations absent',
         );
       }
     }

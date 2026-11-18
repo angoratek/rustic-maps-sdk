@@ -1,26 +1,22 @@
 // Playwright global setup: builds the generated WebAssembly package when the
 // tree does not carry a current one, then runs the pure file-parsing gates
 // once before the browser suite starts — the contract-sync test (the frozen
-// UniFFI contract's TypeScript/wasm mirror, `tests/contract_sync.mjs`), the
-// provider-name guard (`tests/provider_name_guard.mjs`, the M15 allowlist),
-// the platform-parity floor (`tests/platform_parity_gate.mjs`, M31), the iOS
-// pod/SwiftPM source mirror (`scripts/sync-ios-pod-view.mjs`), the generated
-// package freshness gate (a package emitted from different sources can never
-// be tested) and the style layer coverage audit
-// (`scripts/check-style-layer-coverage.mjs`: every name/ref-bearing source
-// layer is painted or documented). It then asserts a WebGPU adapter in CI, so
-// a GPU-dependent test cannot pass by skipping on a runner that renders
-// nothing.
-//
-// The hand-written package's freshness and npm packaging checks run only when
-// that package is present: nothing on the page imports it any more, and a
-// clean checkout's `npm test` must not require a second wasm build.
+// UniFFI contract's stripped WebAssembly split and the generated package
+// identity, `tests/contract_sync.mjs`), the provider-name guard
+// (`tests/provider_name_guard.mjs`, the M15 allowlist), the platform-parity
+// floor (`tests/platform_parity_gate.mjs`, M31), the iOS pod/SwiftPM source
+// mirror (`scripts/sync-ios-pod-view.mjs`), the generated package freshness
+// gate (a package emitted from different sources can never be tested), the
+// npm packaging assertions (`tests/npm_package_manifest.mjs`) and the style
+// layer coverage audit (`scripts/check-style-layer-coverage.mjs`: every
+// name/ref-bearing source layer is painted or documented). It then asserts a
+// WebGPU adapter in CI, so a GPU-dependent test cannot pass by skipping on a
+// runner that renders nothing.
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyPodViewMirror } from '../../scripts/sync-ios-pod-view.mjs';
-import { verifyWasmPackageFreshness } from '../../scripts/check-wasm-package-freshness.mjs';
 import { verifyWasm2PackageFreshness } from '../../scripts/check-wasm2-package-freshness.mjs';
 import { run_reference_flow_checks } from '../../scripts/check-reference-flows.mjs';
 import { run_style_layer_coverage_checks } from '../../scripts/check-style-layer-coverage.mjs';
@@ -46,13 +42,6 @@ const GENERATED_BINDINGS_DIRECTORY = path.join(
   REPOSITORY_ROOT,
   'target',
   'wasm-bindings',
-);
-/** The retired hand-written package, kept only while a tree still builds it. */
-const LEGACY_PACKAGE_DIRECTORY = path.join(
-  REPOSITORY_ROOT,
-  'platform',
-  'web',
-  'pkg',
 );
 
 /** Whether the generated package is present and matches its current inputs. */
@@ -100,12 +89,8 @@ export default async function run_file_parsing_gates() {
   run_style_layer_coverage_checks();
   run_reference_flow_checks();
   verifyPodViewMirror();
-  // The generated package's path is the one the page loads; its freshness is
-  // asserted above. The hand-written package is a leftover of the migrated
-  // page, so its own gates run only when that build output exists.
-  if (existsSync(LEGACY_PACKAGE_DIRECTORY)) {
-    verifyWasmPackageFreshness();
-    run_npm_package_manifest_checks();
-  }
+  // The npm tarball stages the same generated package; assert it can be
+  // packed before any browser test trusts the published shape.
+  run_npm_package_manifest_checks();
   await assertGpuAdapterAvailable();
 }

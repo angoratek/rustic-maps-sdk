@@ -1,7 +1,7 @@
 {
   "name": "@angoratek/rustic-maps-sdk-web",
   "version": "0.1.0",
-  "description": "WebAssembly bindings for the Rustic Maps SDK (wasm-bindgen web target).",
+  "description": "Generated WebAssembly bindings for the Rustic Maps SDK (uniffi-bindgen-react-native wasm2 target).",
   "author": "angoratek",
   "license": "MIT OR Apache-2.0",
   "homepage": "https://github.com/angoratek/rustic-maps-sdk",
@@ -10,25 +10,38 @@
     "url": "git+https://github.com/angoratek/rustic-maps-sdk.git"
   },
   "type": "module",
-  "main": "./rustic_maps_web_bindings.js",
-  "types": "./rustic_maps_web_bindings.d.ts",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "dependencies": {
+    "@ubjs/core": "0.31.0-6",
+    "@ubjs/wasm": "0.31.0-6"
+  },
   "exports": {
     ".": {
-      "types": "./rustic_maps_web_bindings.d.ts",
-      "default": "./rustic_maps_web_bindings.js"
+      "types": "./index.d.ts",
+      "default": "./index.js"
     },
-    "./rustic_maps_web_bindings_bg.wasm": "./rustic_maps_web_bindings_bg.wasm",
-    "./package.json": "./package.json",
     "./rustic_maps": {
-      "types": "./rustic_maps.d.ts"
-    }
+      "types": "./rustic_maps.d.ts",
+      "default": "./rustic_maps.js"
+    },
+    "./rustic_maps_bg.js": {
+      "types": "./rustic_maps_bg.d.ts",
+      "default": "./rustic_maps_bg.js"
+    },
+    "./rustic_maps.wasm": "./rustic_maps.wasm",
+    "./package.json": "./package.json"
   },
   "files": [
-    "rustic_maps_web_bindings.js",
-    "rustic_maps_web_bindings.d.ts",
-    "rustic_maps_web_bindings_bg.wasm",
-    "rustic_maps_web_bindings_bg.wasm.d.ts",
+    "index.js",
+    "index.d.ts",
+    "rustic_maps.js",
     "rustic_maps.d.ts",
+    "rustic_maps-ffi.js",
+    "rustic_maps-ffi.d.ts",
+    "rustic_maps_bg.js",
+    "rustic_maps_bg.d.ts",
+    "rustic_maps.wasm",
     "README.md",
     "LICENSE-MIT",
     "LICENSE-APACHE",

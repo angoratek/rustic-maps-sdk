@@ -21,6 +21,7 @@
 #   scripts/build-wasm2-package.sh                  # generate, then package
 #   scripts/build-wasm2-package.sh --no-generate    # reuse target/wasm-bindings
 #   scripts/build-wasm2-package.sh --no-optimize    # skip wasm-opt
+#   scripts/build-wasm2-package.sh --require-optimize  # fail when wasm-opt is absent
 #
 # Prerequisites: `npm ci` in `platform/web` (TypeScript and the `@ubjs`
 # runtime packages) and, for the generation step, the conditions in
@@ -41,13 +42,20 @@ readonly WASM_OPT_FLAGS=(-Oz --enable-bulk-memory --enable-nontrapping-float-to-
 
 generate=true
 optimize=true
+require_optimize=false
 for argument in "$@"; do
     case "$argument" in
         --no-generate) generate=false ;;
         --no-optimize) optimize=false ;;
+        --require-optimize) require_optimize=true ;;
         *) printf 'build-wasm2-package: unknown argument %s\n' "$argument" >&2; exit 1 ;;
     esac
 done
+
+if [ "$require_optimize" = true ] && ! command -v wasm-opt >/dev/null 2>&1; then
+    printf 'build-wasm2-package: --require-optimize needs wasm-opt on PATH\n' >&2
+    exit 1
+fi
 
 if [ ! -x "$TYPESCRIPT_BINARY" ]; then
     printf 'build-wasm2-package: %s is missing; run npm ci in platform/web first\n' \
@@ -75,11 +83,13 @@ mkdir -p "$PACKAGE_DIRECTORY"
 
 # `--noCheck` keeps compilation fast and independent of the runtime packages'
 # type declarations: the generated sources carry `@ts-nocheck`, and this step
-# only needs the emit. `--moduleResolution bundler` matches the generator's
-# extensionless relative imports, which the rewrite below turns into browser
-# URLs.
+# only needs the emit. `--declaration` emits the `.d.ts` files the npm package
+# ships beside the ES modules. `--moduleResolution bundler` matches the
+# generator's extensionless relative imports, which the rewrite below turns
+# into browser URLs.
 "$TYPESCRIPT_BINARY" \
     --noCheck \
+    --declaration \
     --target ES2022 \
     --module ES2022 \
     --moduleResolution bundler \

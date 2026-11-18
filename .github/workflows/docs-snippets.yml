@@ -67,7 +67,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Compile the wasm bindings
-        run: cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
+        run: cargo build -p rustic-maps-native-core --release --target wasm32-unknown-unknown
 
       - name: Resolve the pinned wasm-bindgen version
         id: wasm_bindgen_version
@@ -84,22 +84,23 @@ jobs:
           path: ~/.cargo/bin/wasm-bindgen
           key: wasm-bindgen-cli-${{ runner.os }}-${{ steps.wasm_bindgen_version.outputs.version }}
 
-      - name: Bind the wasm module for the documentation check
-        run: |
-          wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wasm_bindgen_version.outputs.version }}" \
-            || cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
-          wasm-bindgen --target web --out-dir platform/web/pkg \
-            target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: platform/rn/package-lock.json
+          cache-dependency-path: |
+            platform/web/package-lock.json
+            platform/rn/package-lock.json
 
-      - name: Install the React Native generation toolchain
-        run: npm ci --no-audit --no-fund
-        working-directory: platform/rn
+      - name: Install the generated-package toolchains
+        run: |
+          wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wasm_bindgen_version.outputs.version }}" \
+            || cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
+          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/rn
+
+      - name: Generate the browser package
+        run: ./scripts/build-wasm2-package.sh
 
       - name: Generate the React Native TypeScript surface
         # Only the TypeScript binding is needed; no native build is performed.

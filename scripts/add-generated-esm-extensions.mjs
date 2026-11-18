@@ -39,7 +39,7 @@ if (packageDirectory === undefined) {
 }
 
 for (const fileName of readdirSync(packageDirectory)) {
-  if (!fileName.endsWith('.js')) continue;
+  if (!fileName.endsWith('.js') && !fileName.endsWith('.d.ts')) continue;
   const filePath = path.join(packageDirectory, fileName);
   const source = readFileSync(filePath, 'utf8');
   const rewritten = source

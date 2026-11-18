@@ -85,16 +85,20 @@ jobs:
         run: |
           wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wasm_bindgen_version.outputs.version }}" \
             || cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
-      - name: Generate the browser package
-        run: >-
-          wasm-bindgen --target web --out-dir platform/web/pkg
-          target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: platform/web/package-lock.json
+          cache-dependency-path: |
+            platform/web/package-lock.json
+            platform/rn/package-lock.json
+      - name: Install the generated-package toolchains
+        run: |
+          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/rn
+      - name: Generate the browser package
+        run: ./scripts/build-wasm2-package.sh
       - name: Cache the Playwright browser download
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:

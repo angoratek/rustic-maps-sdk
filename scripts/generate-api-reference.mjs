@@ -53,9 +53,9 @@ const SWIFT_BINDINGS_RELATIVE_PATH =
 const REACT_NATIVE_BINDINGS_RELATIVE_PATH =
   'platform/rn/src/generated/rustic_maps.ts';
 const WASM_PACKAGE_DECLARATIONS_RELATIVE_PATH =
-  'platform/web/pkg/rustic_maps_web_bindings.d.ts';
+  'platform/web/generated/rustic_maps.d.ts';
 const WASM_CONTRACT_MIRROR_RELATIVE_PATH =
-  'platform/web/types/rustic_maps.d.ts';
+  'platform/web/generated/rustic_maps.d.ts';
 const WASM_BINDINGS_SOURCE_DIRECTORY = 'crates/rustic-maps-web-bindings/src';
 
 /** The five pages this generator writes, in platform order. */
@@ -122,17 +122,19 @@ const WASM_FUNCTION_SECTION_NAMES = new Map([
 const WASM_SOURCE_FILE_ORDER = [
   'exports.rs',
   'live_providers.rs',
-  'diagnostics.rs',
+  'canvas.rs',
   'vector_layer.rs',
-  'camera_interaction.rs',
+  'refapp.rs',
+  'refapp_math.rs',
+  'web_camera.rs',
 ];
 
 /** Contract interfaces the WebAssembly surface exposes. */
 export const WASM_EXPOSED_UDL_INTERFACES = [
   'MapCamera',
-  'MapView',
   'Navigator',
   'RouteSimulator',
+  'PositionController',
 ];
 
 /** Platforms and their naming and prose configuration. */
@@ -2006,7 +2008,7 @@ function renderWasmPage(model, wasmSurface, declarations) {
     '',
     renderWasmHeader(),
     '',
-    'The WebAssembly package gives a browser page a WebGPU map canvas, camera math, search and routing calls, an offline routing seam, diagnostics and a turn-by-turn controller. There is no native view: you supply an `HTMLCanvasElement`, and the canvas owns the surface and the frame. Values cross the boundary as plain JavaScript objects in `camelCase`; failures are thrown as verbatim strings.',
+    'The WebAssembly package gives a browser page a WebGPU map canvas (`BrowserMapView` and the canvas `MapCamera`), generated from the frozen contract alongside the provider, search, routing, navigation, positioning and diagnostics classes. There is no native view: you supply an `HTMLCanvasElement`, and the canvas owns the surface and the frame. Contract calls exchange plain `camelCase` records and reject with a typed `SdkError`.',
     '',
     '## Before you start',
     '',
@@ -2015,7 +2017,7 @@ function renderWasmPage(model, wasmSurface, declarations) {
       [
         ['Browser', 'WebGPU: Chromium 113 or newer, Safari 26 or newer, Firefox 141 or newer'],
         ['Package', '`@angoratek/rustic-maps-sdk-web`'],
-        ['Module', '`rustic_maps_web_bindings.js` with its `.d.ts` and `.wasm`'],
+        ['Module', '`index.js` and `rustic_maps.js` with their `.d.ts` declarations and `rustic_maps.wasm`'],
         ['Serving', 'A static server over HTTPS or `localhost`'],
         ['Provider credential', 'Passed at runtime; never bundled'],
       ],
@@ -2038,17 +2040,26 @@ function renderWasmPage(model, wasmSurface, declarations) {
   }
   lines.push(...renderWasmFreeFunctions(wasmSurface.freeFunctions));
   lines.push(...renderWasmEnums(wasmSurface.enums));
+  lines.push(
+    '## Contract classes',
+    '',
+    'The generated contract classes carry their own members; the shipped `rustic_maps.d.ts` declares them.',
+    '',
+  );
+  for (const className of ['MapSdk', 'Navigator', 'RouteSimulator', 'PositionController']) {
+    lines.push(`### ${className}`, '', `The generated \`${className}\` class from the frozen contract.`, '');
+  }
   lines.push(...renderWasmRecordShapes(declarations));
   lines.push(...renderWasmTypeAliases(declarations));
   lines.push(...renderWasmErrors(model));
   lines.push(
     '## Async and threading',
     '',
-    '- The wasm runtime is module-global; create one root and one `MapView` per canvas.',
-    '- Asynchronous calls return a `Promise` and reject with a verbatim string.',
+    '- The wasm runtime is module-global; create one `MapSdk` root and one `BrowserMapView` per canvas.',
+    '- Asynchronous calls return a `Promise` and reject with a typed `SdkError`.',
     '- Frames are explicit and serialized. A second overlapping `renderFrame` is a borrow violation; keep a busy flag.',
-    '- `renderFrame` consumes its `MapCamera` by value; build a fresh camera for each changed pose.',
-    '- The navigation listener callback and diagnostics delivery are synchronous on the calling thread; do not block.',
+    '- `renderFrame` consumes its canvas `MapCamera` by value; build a fresh camera for each changed pose.',
+    '- The navigation subscriptions and diagnostics delivery are synchronous on the calling thread; do not block.',
     '',
     '## Next steps',
     '',

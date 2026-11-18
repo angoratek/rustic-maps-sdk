@@ -1,13 +1,13 @@
 // Packaging assertion (`docs/PackagingAndRelease.md` §2.4): the published
-// `@angoratek/rustic-maps-sdk-web` tarball must carry both the generated
-// wasm-bindgen declarations and the generated contract mirror
-// `rustic_maps.d.ts` behind the `./rustic_maps` type subpath. The manifest's
+// `@angoratek/rustic-maps-sdk-web` tarball must carry the generated `wasm2`
+// ESM set with its `.d.ts` declarations, the hand-written canvas declarations
+// published beside the glue, and the licenses and notices. The manifest's
 // `files` and `exports` are the contract; this check stages the package the
 // way `scripts/package-web-npm.sh` stages it, asks `npm pack --dry-run` for
 // the real member list, and fails when a named file is not in it.
 //
-// The check needs the emitted package (`scripts/build-wasm.sh`); the
-// Playwright `globalSetup` runs it after the freshness gate.
+// The check needs the generated package (`scripts/build-wasm2-package.sh`);
+// the Playwright `globalSetup` runs it after the freshness gate.
 //
 // Run directly (no server or browser involved):
 //   node --test platform/web/tests/npm_package_manifest.mjs
@@ -29,38 +29,41 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const TEST_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = path.resolve(TEST_DIRECTORY, '..', '..', '..');
 const WEB_ROOT = path.join(REPOSITORY_ROOT, 'platform', 'web');
-const GENERATED_PACKAGE_DIRECTORY = path.join(WEB_ROOT, 'pkg');
+const GENERATED_PACKAGE_DIRECTORY = path.join(WEB_ROOT, 'generated');
 const NPM_PACKAGE_DIRECTORY = path.join(WEB_ROOT, 'npm');
-const CURATED_TYPES_PATH = path.join(WEB_ROOT, 'types', 'rustic_maps.d.ts');
+const CANVAS_TYPES_PATH = path.join(WEB_ROOT, 'types', 'browser_canvas.d.ts');
 const PACKAGE_MANIFEST_PATH = path.join(NPM_PACKAGE_DIRECTORY, 'package.json');
 const README_PATH = path.join(NPM_PACKAGE_DIRECTORY, 'README.md');
 const MIT_LICENSE_PATH = path.join(REPOSITORY_ROOT, 'LICENSE-MIT');
 const APACHE_LICENSE_PATH = path.join(REPOSITORY_ROOT, 'LICENSE-APACHE');
 const NOTICES_PATH = path.join(REPOSITORY_ROOT, 'docs', 'THIRD_PARTY_NOTICES.md');
 
-/** The files wasm-bindgen emits for the `web` target. */
+/** The generated ESM set and declarations the packaging step emits. */
 const EMITTED_PACKAGE_FILE_NAMES = [
-  'rustic_maps_web_bindings.js',
-  'rustic_maps_web_bindings.d.ts',
-  'rustic_maps_web_bindings_bg.wasm',
-  'rustic_maps_web_bindings_bg.wasm.d.ts',
+  'index.js',
+  'index.d.ts',
+  'rustic_maps.js',
+  'rustic_maps.d.ts',
+  'rustic_maps-ffi.js',
+  'rustic_maps-ffi.d.ts',
+  'rustic_maps_bg.js',
+  'rustic_maps.wasm',
 ];
 
-/** The generated mirror's published name and its `exports` subpath. */
-const CURATED_TYPES_FILE_NAME = 'rustic_maps.d.ts';
-const CURATED_TYPES_EXPORT_PATH = `./${CURATED_TYPES_FILE_NAME}`;
-const CURATED_TYPES_SUBPATH = './rustic_maps';
+/** The hand-written canvas declarations publish under the glue's own name. */
+const CANVAS_TYPES_FILE_NAME = 'rustic_maps_bg.d.ts';
 
 /** The declarations a missing file in the tarball would break. */
 const REQUIRED_DECLARATION_FILE_NAMES = [
-  CURATED_TYPES_FILE_NAME,
-  'rustic_maps_web_bindings.d.ts',
+  'index.d.ts',
+  'rustic_maps.d.ts',
+  CANVAS_TYPES_FILE_NAME,
 ];
 
 /** Every file the manifest's `files` list commits to publishing. */
 const REQUIRED_PACKAGE_FILE_NAMES = [
   ...EMITTED_PACKAGE_FILE_NAMES,
-  CURATED_TYPES_FILE_NAME,
+  CANVAS_TYPES_FILE_NAME,
   'README.md',
   'LICENSE-MIT',
   'LICENSE-APACHE',
@@ -82,28 +85,33 @@ function assert_manifest_names_published_files(manifest) {
     );
   }
   assert.strictEqual(
-    manifest.exports?.[CURATED_TYPES_SUBPATH]?.types,
-    CURATED_TYPES_EXPORT_PATH,
-    `the npm manifest must expose "${CURATED_TYPES_FILE_NAME}" through`
-    + ` exports["${CURATED_TYPES_SUBPATH}"].types.`,
+    manifest.exports?.['.']?.types,
+    './index.d.ts',
+    'the npm manifest must type the package root with the generated entrypoint',
   );
   assert.strictEqual(
-    manifest.exports?.['.']?.types,
-    './rustic_maps_web_bindings.d.ts',
-    'the npm manifest must type the package root with the generated'
+    manifest.exports?.['./rustic_maps']?.types,
+    './rustic_maps.d.ts',
+    'the npm manifest must expose the contract declarations through'
+    + ' exports["./rustic_maps"].types.',
+  );
+  assert.strictEqual(
+    manifest.exports?.['./rustic_maps_bg.js']?.types,
+    `./${CANVAS_TYPES_FILE_NAME}`,
+    'the npm manifest must type the wasm-bindgen glue with the canvas'
     + ' declarations.',
   );
   assert.strictEqual(
     manifest.types,
-    './rustic_maps_web_bindings.d.ts',
+    './index.d.ts',
     'the npm manifest "types" entry must name the generated declarations.',
   );
 }
 
 /**
- * Builds the package tree `scripts/package-web-npm.sh` packs: the emitted
- * wasm-bindgen files, the committed manifest and README, the generated type
- * mirror, and the license and notice files.
+ * Builds the package tree `scripts/package-web-npm.sh` packs: the generated
+ * ESM set and declarations, the committed manifest and README, the canvas
+ * declarations, and the license and notice files.
  * @param {string} staging_directory The empty staging directory.
  */
 function stage_package(staging_directory) {
@@ -111,14 +119,14 @@ function stage_package(staging_directory) {
     const emitted_path = path.join(GENERATED_PACKAGE_DIRECTORY, emitted_file_name);
     assert(
       existsSync(emitted_path),
-      `the emitted package is missing "${emitted_file_name}"; run`
-      + ' scripts/build-wasm.sh before packaging.',
+      `the generated package is missing "${emitted_file_name}"; run`
+      + ' scripts/build-wasm2-package.sh before packaging.',
     );
     cpSync(emitted_path, path.join(staging_directory, emitted_file_name));
   }
   cpSync(PACKAGE_MANIFEST_PATH, path.join(staging_directory, 'package.json'));
   cpSync(README_PATH, path.join(staging_directory, 'README.md'));
-  cpSync(CURATED_TYPES_PATH, path.join(staging_directory, CURATED_TYPES_FILE_NAME));
+  cpSync(CANVAS_TYPES_PATH, path.join(staging_directory, CANVAS_TYPES_FILE_NAME));
   cpSync(MIT_LICENSE_PATH, path.join(staging_directory, 'LICENSE-MIT'));
   cpSync(APACHE_LICENSE_PATH, path.join(staging_directory, 'LICENSE-APACHE'));
   cpSync(NOTICES_PATH, path.join(staging_directory, 'THIRD_PARTY_NOTICES.md'));

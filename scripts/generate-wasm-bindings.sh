@@ -125,6 +125,10 @@ wasm2:
 YAML
     rm -rf "$destination"
     mkdir -p "$destination"
+    # A published module must not embed the build machine's absolute source or
+    # registry paths: the docs-site scrub refuses a home directory in any
+    # staged file, and a remapped build is reproducible across checkouts.
+    export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=${REPO_ROOT}=. --remap-path-prefix=${HOME}=."
     (
         cd "$RN_PROJECT_ROOT"
         # The empty array must not expand under `set -u` on bash 3.2.

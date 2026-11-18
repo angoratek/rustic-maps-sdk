@@ -87,22 +87,18 @@ const REQUIRED_CONTRACT_INTERFACES = [
   'SdkDiagnosticEventListener',
 ];
 
-/** The wasm capability floor the seam has reached (M31 slice 1). */
+/**
+ * The hand-written browser surface the wasm-bindings crate must keep. The
+ * generated contract package supplies the SDK root and every provider,
+ * navigation, positioning and diagnostics member; this floor guards only the
+ * canvas classes and the browser-only seams the contract cannot express, so a
+ * refactor cannot silently drop one.
+ */
 const REQUIRED_WASM_EXPORTS = [
-  // SDK root and namespace helpers.
-  'MapsSdk',
-  'getSdkCompiledVersion',
-  'coordinateToNormalizedWorld',
-  'tileKeyForCoordinate',
-  'tilesCovering',
-  'offlineRouteFromArchiveBytes',
-  // Camera, projection and gestures.
+  // Camera pose algebra and the canvas class.
   'MapCamera',
-  'panCameraByScreenPixels',
-  'zoomCameraByLevelsAroundScreenPoint',
-  'rotateCameraByDegreesAroundScreenPoint',
-  // Canvas surface and rendering.
-  'MapView',
+  'BrowserMapView',
+  // Canvas rendering and the vector base.
   'vectorTileGeographicBounds',
   'setVectorTileSource',
   'setProviderVectorTileSource',
@@ -110,33 +106,14 @@ const REQUIRED_WASM_EXPORTS = [
   'clearVectorTileSource',
   'vectorTileSourceStatus',
   'reloadTileSource',
-  // Device positioning on the browser seam (M33).
-  'PositionController',
-  // Live providers: the contract-shaped registration, readback and calls.
-  'configureProvider',
-  'configureProviderSet',
+  // Browser-only seams the contract has no member for: the fixture endpoint
+  // override, the Clear act and its shared-slot companion, and the keyless
+  // URL-template raster fallback.
   'setProviderBaseUrl',
   'clearProviderRegistrations',
-  'providerRegistrations',
-  'routeCapabilities',
-  'forwardGeocode',
-  'reverseGeocode',
-  'fetchElevationPoints',
-  'trafficFlowCacheStatistics',
+  'clearSharedProviderSlots',
   'registerUrlTemplateRasterTileSource',
   'clearUrlTemplateRasterTileSource',
-  'suggestPlaces',
-  'suggestPlacesInBoundary',
-  'searchPlaces',
-  'searchPlacesInBoundary',
-  'calculateRoute',
-  'fetchRasterTile',
-  // Navigation, diagnostics and readiness.
-  'Navigator',
-  'RouteSimulator',
-  'subscribeToDiagnosticEvents',
-  'flushRecentDiagnosticEvents',
-  'initializeSdk',
 ];
 
 /** The theme model every surface must implement (§3, owner ruling). */

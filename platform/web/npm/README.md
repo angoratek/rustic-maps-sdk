@@ -1,35 +1,53 @@
 # `@angoratek/rustic-maps-sdk-web`
 
-WebAssembly bindings for the Rustic Maps SDK, produced by `wasm-bindgen`
-from the frozen UniFFI contract. The package is distributed as a release
-asset (`rustic-maps-sdk-web-vX.Y.Z.tgz`) and installed from the downloaded
-file, not from the npm registry:
+WebAssembly bindings for the Rustic Maps SDK, generated from the frozen
+UniFFI contract by `uniffi-bindgen-react-native`'s `wasm2` target. The package
+is distributed as a release asset (`rustic-maps-sdk-web-vX.Y.Z.tgz`) and
+installed from the downloaded file, not from the npm registry:
 
 ```bash
 npm install ./rustic-maps-sdk-web-v0.1.0.tgz
 ```
 
-The module is the wasm-bindgen `web` target: serve `rustic_maps_web_bindings.js` and
-`rustic_maps_web_bindings_bg.wasm` from the same origin and import the shim with
-`await init()`:
+The package is a set of ES modules. Open the module and register the contract
+namespace with `uniffiInitAsync`, naming the module file:
 
 ```js
-import init, { getSdkCompiledVersion } from '@angoratek/rustic-maps-sdk-web';
+import { uniffiInitAsync, getSdkCompiledVersion, MapSdk } from '@angoratek/rustic-maps-sdk-web';
 
-await init();
+await uniffiInitAsync(new URL(
+  '@angoratek/rustic-maps-sdk-web/rustic_maps.wasm',
+  import.meta.url,
+));
 console.log(getSdkCompiledVersion());
+const mapSdk = new MapSdk();
+```
+
+The module loads its player runtime through the bare specifiers `@ubjs/wasm`
+and `@ubjs/core`; both are runtime dependencies of this package. A page
+without a bundler resolves them with an import map.
+
+## Canvas
+
+The contract cannot express a GPU canvas, so the package also ships the
+wasm-bindgen glue `rustic_maps_bg.js` with hand-written declarations in
+`rustic_maps_bg.d.ts`. Import the canvas class and camera from it:
+
+```js
+import { BrowserMapView, MapCamera, TileResolution } from '@angoratek/rustic-maps-sdk-web/rustic_maps_bg.js';
+
+const view = new BrowserMapView(canvas, TileResolution.Standard);
+await view.initialize();
 ```
 
 ## Typed records
 
-The generated declarations type record-shaped answers generically (`object`,
-`Array<any>`). The package also ships `rustic_maps.d.ts`, a generated mirror of
-the frozen contract's records, enums and error unions, which
-`scripts/generate-web-facade.mjs` writes from the UDL and the repository's
-contract-sync test drift-checks:
+The generated declarations (`index.d.ts`, `rustic_maps.d.ts`) type the
+contract's records, enums, errors, and the `MapSdk`, `Navigator` and
+`PositionController` classes:
 
 ```ts
-import type { PlaceRow, Route } from '@angoratek/rustic-maps-sdk-web/rustic_maps';
+import type { Place, Route } from '@angoratek/rustic-maps-sdk-web/rustic_maps';
 ```
 
 Use `import type`: the subpath carries declarations, not runtime code.

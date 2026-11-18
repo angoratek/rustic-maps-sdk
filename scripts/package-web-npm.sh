@@ -4,7 +4,7 @@
 # `rustic-maps-sdk-web-v<version>.tgz` (docs/PackagingAndRelease.md §2.4).
 #
 # Inputs:
-#   - platform/web/pkg/       the wasm-bindgen `web` emit (four files)
+#   - platform/web/generated/  the generated `wasm2` ESM set with declarations
 #   - platform/web/npm/       the committed npm manifest and README
 #   - LICENSE-MIT, LICENSE-APACHE, docs/THIRD_PARTY_NOTICES.md
 #
@@ -20,10 +20,8 @@
 # Usage:
 #   scripts/package-web-npm.sh [--output-dir <directory>]
 #
-# The wasm package must already be built:
-#   cargo build -p rustic-maps-web-bindings --release --target wasm32-unknown-unknown
-#   wasm-bindgen --target web --out-dir platform/web/pkg \
-#     target/wasm32-unknown-unknown/release/rustic_maps_web_bindings.wasm
+# The generated package must already be built:
+#   scripts/build-wasm2-package.sh
 #
 # Idempotent: the staging tree is fresh on every run and the tarball is
 # overwritten.
@@ -31,34 +29,43 @@ set -euo pipefail
 
 readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly WEB_ROOT="${REPO_ROOT}/platform/web"
-readonly GENERATED_PACKAGE_DIR="${WEB_ROOT}/pkg"
+readonly GENERATED_PACKAGE_DIR="${WEB_ROOT}/generated"
 readonly NPM_PACKAGE_SOURCE_DIR="${WEB_ROOT}/npm"
-readonly CURATED_TYPES_PATH="${WEB_ROOT}/types/rustic_maps.d.ts"
+readonly CANVAS_TYPES_PATH="${WEB_ROOT}/types/browser_canvas.d.ts"
 readonly NPM_PACKAGE_NAME="angoratek-rustic-maps-sdk-web"
 readonly RELEASE_ASSET_PREFIX="rustic-maps-sdk-web-v"
 readonly VERSION_GUARD="${REPO_ROOT}/scripts/check-workspace-version.sh"
 readonly NOTICES_PATH="${REPO_ROOT}/docs/THIRD_PARTY_NOTICES.md"
 readonly MIT_LICENSE_PATH="${REPO_ROOT}/LICENSE-MIT"
 readonly APACHE_LICENSE_PATH="${REPO_ROOT}/LICENSE-APACHE"
-readonly EMITTED_MODULE_NAME="rustic_maps_web_bindings"
 readonly EMITTED_PACKAGE_FILES=(
-    "${EMITTED_MODULE_NAME}.js"
-    "${EMITTED_MODULE_NAME}.d.ts"
-    "${EMITTED_MODULE_NAME}_bg.wasm"
-    "${EMITTED_MODULE_NAME}_bg.wasm.d.ts"
+    "index.js"
+    "index.d.ts"
+    "rustic_maps.js"
+    "rustic_maps.d.ts"
+    "rustic_maps-ffi.js"
+    "rustic_maps-ffi.d.ts"
+    "rustic_maps_bg.js"
+    "rustic_maps.wasm"
 )
+# The glue's hand-written declarations publish beside it under its own name.
+readonly CANVAS_TYPES_FILE_NAME="rustic_maps_bg.d.ts"
 # The exact npm tarball member set, sorted (tar order is not relied upon).
 readonly EXPECTED_TARBALL_MEMBERS=(
     "package/LICENSE-APACHE"
     "package/LICENSE-MIT"
     "package/README.md"
-    "package/rustic_maps.d.ts"
     "package/THIRD_PARTY_NOTICES.md"
-    "package/rustic_maps_web_bindings.d.ts"
-    "package/rustic_maps_web_bindings.js"
-    "package/rustic_maps_web_bindings_bg.wasm"
-    "package/rustic_maps_web_bindings_bg.wasm.d.ts"
+    "package/index.d.ts"
+    "package/index.js"
     "package/package.json"
+    "package/rustic_maps-ffi.d.ts"
+    "package/rustic_maps-ffi.js"
+    "package/rustic_maps.d.ts"
+    "package/rustic_maps.js"
+    "package/rustic_maps.wasm"
+    "package/rustic_maps_bg.d.ts"
+    "package/rustic_maps_bg.js"
 )
 # Fail-closed name guards; the exact-list assertion above already rejects
 # these, but naming them yields an actionable message when one appears.
@@ -138,14 +145,12 @@ stage_package() {
         cp "${GENERATED_PACKAGE_DIR}/${emitted_file}" "${staging_dir}/"
     done
     # The committed manifest is authoritative, so a package.json emitted by a
-    # future wasm-bindgen version can never overwrite the published identity.
+    # future generator can never overwrite the published identity.
     rm -f "${staging_dir}/package.json"
     cp "${NPM_PACKAGE_SOURCE_DIR}/package.json" "${staging_dir}/package.json"
     cp "${NPM_PACKAGE_SOURCE_DIR}/README.md" "${staging_dir}/README.md"
-    # The curated, contract-checked record declarations ride with the generated
-    # ones: the generated declarations type record answers generically, and a
-    # consumer imports these named interfaces instead.
-    cp "${CURATED_TYPES_PATH}" "${staging_dir}/rustic_maps.d.ts"
+    # The hand-written canvas declarations type the wasm-bindgen glue beside it.
+    cp "${CANVAS_TYPES_PATH}" "${staging_dir}/${CANVAS_TYPES_FILE_NAME}"
     cp "${MIT_LICENSE_PATH}" "${APACHE_LICENSE_PATH}" "${staging_dir}/"
     cp "${NOTICES_PATH}" "${staging_dir}/THIRD_PARTY_NOTICES.md"
 }
@@ -178,8 +183,8 @@ main() {
     assert_generated_package_present
     # The emitted module must have come from the current sources and carry the
     # npm manifest's version; a stale package is never packed.
-    node "${REPO_ROOT}/scripts/check-wasm-package-freshness.mjs" \
-        || fail "the WebAssembly package is stale or misversioned; run scripts/build-wasm.sh"
+    node "${REPO_ROOT}/scripts/check-wasm2-package-freshness.mjs" \
+        || fail "the generated WebAssembly package is stale or misversioned; run scripts/build-wasm2-package.sh"
 
     local workspace_version manifest_version
     workspace_version="$("${VERSION_GUARD}" --print-version)"

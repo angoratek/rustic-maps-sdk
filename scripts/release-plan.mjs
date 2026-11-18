@@ -133,10 +133,11 @@ export const PLATFORM_INPUT_GROUPS = Object.freeze({
   wasm: Object.freeze({
     paths: Object.freeze([
       'platform/web',
-      'scripts/build-wasm.sh',
+      'scripts/build-wasm2-package.sh',
+      'scripts/generate-wasm-bindings.sh',
+      'scripts/add-generated-esm-extensions.mjs',
       'scripts/package-web-npm.sh',
-      'scripts/check-wasm-package-freshness.mjs',
-      'scripts/generate-web-facade.mjs',
+      'scripts/check-wasm2-package-freshness.mjs',
       'scripts/check-workspace-version.sh',
       ...SHARED_RUST_CLOSURE_PATHS,
       ...SHARED_PACKAGE_PATHS,

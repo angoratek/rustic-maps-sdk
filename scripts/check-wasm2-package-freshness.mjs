@@ -37,8 +37,11 @@ export const SOURCE_FINGERPRINT_FILE_NAME = 'SOURCE_FINGERPRINT';
 /** The files the packaging step emits, in the order it writes them. */
 const EMITTED_PACKAGE_FILE_NAMES = [
   'index.js',
+  'index.d.ts',
   'rustic_maps.js',
+  'rustic_maps.d.ts',
   'rustic_maps-ffi.js',
+  'rustic_maps-ffi.d.ts',
   'rustic_maps_bg.js',
   'rustic_maps.wasm',
 ];
