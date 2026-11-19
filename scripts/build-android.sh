@@ -7,8 +7,10 @@
 # the frozen UDL metadata embedded in the built cdylib -> the Kotlin sources
 # and the per-ABI `librustic_maps.so` files land in the internal source-holder
 # module (platform/android/map-sdk-native) -> `gradle :maps-sdk:assembleRelease`
-# compiles them into the one published AAR, and `gradle :smoke-jvm:smokeRun`
-# exercises the generated Kotlin against the host dylib.
+# compiles them into the one published AAR, `gradle :smoke-jvm:smokeRun`
+# exercises the generated Kotlin against the host dylib, and
+# `gradle :maps-sdk:testDebugUnitTest` runs the wrapper's unit suite over the
+# same host dylib.
 #
 # Toolchain prerequisites (validated matrix):
 #   - Rust 1.99.0 / cargo 1.99.0 with the `rust-std` components for the three
@@ -444,6 +446,12 @@ main() {
 
     echo "==> running the JVM smoke against the Apple-host cdylib"
     (cd "${GRADLE_ROOT}" && ./gradlew --no-daemon :smoke-jvm:smokeRun)
+
+    # The published wrapper's unit suite resolves the contract-owned provider
+    # registry-name mapping through the generated bindings, whose JNA calls
+    # load the host cdylib staged above for the smoke runner.
+    echo "==> running the Android wrapper unit suite"
+    (cd "${GRADLE_ROOT}" && ./gradlew --no-daemon :maps-sdk:testDebugUnitTest)
 
     echo "==> asserting refapp-only content is absent from the AAR"
     require_tool unzip

@@ -1,7 +1,7 @@
 package com.rusticmaps.sdk
 
-/** The registry's contract name for a provider's vector tileset. */
-private const val VECTOR_TILES_CONTRACT_NAME: String = "vector_tiles"
+import uniffi.rustic_maps.ProviderContract
+import uniffi.rustic_maps.registryNameForProviderContract
 
 /**
  * One vector style a registry descriptor offers: the committed style id the
@@ -129,7 +129,9 @@ data class ProviderCredentialDescriptor(
      * `Needs <credential label>` and cannot be selected.
      */
     val offersHostedVectorBase: Boolean
-        get() = servedContracts.contains(VECTOR_TILES_CONTRACT_NAME) &&
+        get() = servedContracts.contains(
+            registryNameForProviderContract(ProviderContract.VECTOR_TILES),
+        ) &&
             vectorStyles.isNotEmpty() &&
             isRegistrationAvailableOnAndroid
 }

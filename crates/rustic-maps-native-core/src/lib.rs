@@ -91,6 +91,7 @@ pub mod positioning;
 pub mod projection;
 pub mod provider;
 pub mod provider_catalog;
+pub mod provider_contract_names;
 pub mod provider_diagnostics;
 pub mod records;
 pub mod runtime;
@@ -120,6 +121,9 @@ pub use crate::projection::{
     coordinate_to_normalized_world, tile_key_for_coordinate, tiles_covering,
 };
 pub use crate::provider::MapSdk;
+pub use crate::provider_contract_names::{
+    provider_contract_from_registry_name, registry_name_for_provider_contract,
+};
 pub use crate::records::{
     ActiveManeuverInstruction, AvoidOptions, BoundingBox, DeviationGradeKind, DeviationInfo,
     DeviationPolicy, DeviationPolicyKind, DeviationStatusChange, DeviationStatusChangeKind,

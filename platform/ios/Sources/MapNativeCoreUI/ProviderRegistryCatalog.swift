@@ -9,6 +9,7 @@
 //! the other reference applications consume.
 
 import Foundation
+import RusticMapsSDK
 
 /// Which reference applications register a provider today.
 public struct ProviderRegistrationAvailability: Decodable, Sendable, Equatable {
@@ -178,7 +179,9 @@ public struct ProviderDescriptor: Decodable, Identifiable, Sendable, Equatable {
     /// whether or not the credential is applied; without it they state
     /// `Needs <credential label>` and cannot be selected.
     public var offersHostedVectorBase: Bool {
-        servedContracts.contains("vector_tiles")
+        servedContracts.contains(
+            registryNameForProviderContract(contract: .vectorTiles)
+        )
             && !vectorStyles.isEmpty
             && registrationAvailable.ios
     }

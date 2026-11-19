@@ -14,6 +14,7 @@ import type { ProviderRegistration } from 'maps-sdk-rn/MapsSdk';
 import {
   applyCapabilityProviderSelection,
   buildCapabilityProviderRows,
+  capabilityContractForRegistryName,
   capabilityDisplayName,
   capabilityRegistryName,
   capabilityServingStatusText,
@@ -163,6 +164,36 @@ test('capability names derive from the contract enum, not a hardcoded table', ()
   expect(capabilityDisplayName(ProviderContract.TrafficFlow)).toBe(
     'Traffic flow',
   );
+});
+
+test('every capability the shared registry declares maps to a contract and back', () => {
+  // The real registry artifact: a capability added there alone must resolve
+  // without a per-surface table.
+  const registryNames = new Set(
+    providerDescriptors.flatMap(
+      descriptor => descriptor.served_contracts ?? [],
+    ),
+  );
+  expect(registryNames.size).toBeGreaterThan(0);
+  for (const registryName of registryNames) {
+    const contract = capabilityContractForRegistryName(registryName);
+    expect(contract).not.toBeNull();
+    if (contract === null) {
+      continue;
+    }
+    expect(capabilityRegistryName(contract)).toBe(registryName);
+  }
+});
+
+test('every contract round-trips through its registry name', () => {
+  for (const contract of Object.values(ProviderContract)) {
+    if (typeof contract !== 'number') {
+      continue;
+    }
+    expect(
+      capabilityContractForRegistryName(capabilityRegistryName(contract)),
+    ).toBe(contract);
+  }
 });
 
 test('the shared registry composes the descriptor name with its credential state', () => {
