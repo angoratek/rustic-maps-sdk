@@ -22,6 +22,7 @@ on:
       - "fixtures/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
       - ".github/workflows/wasm-e2e.yml"
   pull_request:
     paths:
@@ -39,6 +40,7 @@ on:
       - "fixtures/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
       - ".github/workflows/wasm-e2e.yml"
 
 concurrency:

@@ -6,6 +6,9 @@ name: actionlint
 
 on:
   push:
+    # A merge to main is linted once; a pull request is linted by its own
+    # pull_request run, so pushing its branch must not start a second one.
+    branches: [main]
     paths:
       - ".github/workflows/**"
       - ".github/actionlint.yaml"

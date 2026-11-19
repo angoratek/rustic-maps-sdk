@@ -15,6 +15,7 @@ on:
       - "crates/rustic-maps-native-core/src/rustic_maps.udl"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
       - ".github/workflows/rn-app-shell.yml"
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - "crates/rustic-maps-native-core/src/rustic_maps.udl"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
       - ".github/workflows/rn-app-shell.yml"
 
 concurrency:

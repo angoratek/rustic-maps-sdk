@@ -16,12 +16,14 @@ on:
       - "crates/rustic-maps-core/**"
       - "crates/rustic-maps-offline-graph-archive/**"
       - "crates/rustic-maps-offline-graph-compiler/**"
+      - "rust-toolchain.toml"
       - ".github/workflows/benchmark.yml"
   pull_request:
     paths:
       - "crates/rustic-maps-core/**"
       - "crates/rustic-maps-offline-graph-archive/**"
       - "crates/rustic-maps-offline-graph-compiler/**"
+      - "rust-toolchain.toml"
       - ".github/workflows/benchmark.yml"
 
 concurrency:

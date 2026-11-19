@@ -20,6 +20,7 @@ on:
       - "crates/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
       - "platform/android/**"
       - "scripts/build-android.sh"
       - "scripts/build-refapp-core.sh"
