@@ -95,8 +95,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         // The SDK cdylibs (including the shipped surface-pointer JNI shim)
-        // come from the `:map-sdk-native` AAR; the app builds no native code
-        // of its own (M17).
+        // come from the `:maps-sdk` AAR; the app builds no native code of its
+        // own.
     }
 
     buildFeatures {

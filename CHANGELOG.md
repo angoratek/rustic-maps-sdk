@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the reference application packages with the heap it needs)
+
+- The Android reference application's debug APK now builds with a four-gigabyte Gradle heap. Packaging the AAR's three ABIs, JNA, Compose and the generated bindings exhausted the default heap, and AGP's splitter failed with a bare `java.lang.OutOfMemoryError` after the bindings, the AAR and the unit suite had all passed.
+
 ### Changed (2026-11-19 — CI runs only what a push can change)
 
 - A pull-request branch is no longer linted twice: `actionlint` keeps its `pull_request` trigger and runs on `push` for `main` only. The wasm, React Native, benchmark, Android and iOS workflows now also run when `rust-toolchain.toml` changes, so a toolchain edit that affects a build is tested by that build; the pinned-toolchain target that broke the wasm jobs had been invisible to them. `rn-app-shell` also watches `scripts/generate-rn-bindings.sh` and `wasm-e2e` watches `scripts/build-wasm2-package.sh`, the scripts those jobs run: a change to the binding generator used to leave both jobs unstarted. Dependabot's pull requests are exempt from the sign-off check, because the bot cannot sign a commit and the dependency review is their gate.
@@ -26,6 +30,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 ### Changed (2026-11-19 — the README opens with the project's live status)
 
 - The README's first line carries the badges for the format-and-lint, WebAssembly end-to-end, Android, iOS and secret-scan workflows plus the OpenSSF Scorecard and the license, each linked to its run history, so a reader sees the state of `main` before the prose.
+
+### Fixed (2026-11-18 — the packaging notes match the build)
+
+- The README and three Gradle comments described two published AARs and a `:map-sdk-native` AAR; the build publishes one AAR, from `:maps-sdk`, which compiles the generated bindings and Rust libraries that `:map-sdk-native` holds. A public KDoc no longer names an internal milestone, and the Compose `listener` parameter documents the lifetime the view actually keeps.
 
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
 
