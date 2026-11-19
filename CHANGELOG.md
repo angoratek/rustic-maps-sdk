@@ -8,6 +8,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 - The README's first line carries the badges for the format-and-lint, WebAssembly end-to-end, Android, iOS and secret-scan workflows plus the OpenSSF Scorecard and the license, each linked to its run history, so a reader sees the state of `main` before the prose.
 
+### Fixed (2026-11-18 — the packaging notes match the build)
+
+- The README and three Gradle comments described two published AARs and a `:map-sdk-native` AAR; the build publishes one AAR, from `:maps-sdk`, which compiles the generated bindings and Rust libraries that `:map-sdk-native` holds. A public KDoc no longer names an internal milestone, and the Compose `listener` parameter documents the lifetime the view actually keeps.
+
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
 
 - `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.

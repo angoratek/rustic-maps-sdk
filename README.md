@@ -170,10 +170,11 @@ recorders follow the same credential rule.
 
 ## Packaging
 
-- **Android**: two Gradle modules — `:map-sdk-native` (the generated Kotlin
-  bindings and the per-ABI Rust libraries, published as Maven
-  `com.angoratek:rustic-maps-sdk`) and `:maps-sdk` (the Kotlin wrapper and
-  `MapView`). Both AARs are assembled by `scripts/build-android.sh`.
+- **Android**: one published AAR, `com.angoratek:rustic-maps-sdk`, assembled by
+  `scripts/build-android.sh` from `:maps-sdk`, the Kotlin wrapper and `MapView`.
+  The generated bindings and the per-ABI Rust libraries live in
+  `:map-sdk-native`, an internal source holder that compiles into that one
+  artifact.
 - **iOS**: `platform/ios/Package.swift` builds `RusticMapsSDK` (the generated
   bindings over the `rustic_mapsFFI` XCFramework binary target) and
   `MapNativeCoreUI` (the `MapView`); a release consumes a generated

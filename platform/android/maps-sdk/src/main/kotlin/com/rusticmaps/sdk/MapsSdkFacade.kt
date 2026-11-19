@@ -124,7 +124,7 @@ class MapsSdkFacade(
         appliedProviderCredentials[providerKey]
 
     /**
-     * Registers a provider-neutral base map (M9's native base-map switch): a
+     * Registers a provider-neutral base map: a
      * raster tileset the shared provider registry declares as a `{z}/{x}/{y}`
      * URL template, served by the SDK itself with no vendor code involved.
      * The registration replaces the raster-tile slot only, so the
