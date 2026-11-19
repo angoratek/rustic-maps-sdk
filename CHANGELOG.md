@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the eight open product questions are ruled)
+
+- `PRD.md` decisions 71 to 78 record the owner's rulings: the navigation runtime keeps its seven implemented policies, the traffic-flow cache keeps its defaults, a configured provider wins over the keyless raster fallback, the offline pack manager keeps its six policies, the reference applications keep their four demo policies, an empty credential for a deployment-addressed provider keeps the crate's local default, per-schema fallback styles ship without goldens until a licensable tile exists, and no desktop position source is required for the first release. No behaviour changed, so no code moved.
+- `SECURITY.md` records the accepted `activesupport` risk in the React Native build toolchain, and the Dependabot alert is dismissed with that reason and a review date.
+
 ### Changed (2026-11-19 — the playground screenshot script is gone)
 
 - `platform/web/check-playground.mjs` was a one-off screenshot helper with no caller in the package scripts, the CI workflows, the tests or the documentation. It is deleted; the browser suite's own capture spec is the screenshot path that runs.

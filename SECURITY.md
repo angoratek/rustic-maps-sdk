@@ -52,6 +52,10 @@ Out of scope:
   sample imagery created for tests and contain no live personal data
 - findings that require a credential the reporter does not own
 
+## Accepted risks
+
+- **`activesupport` below 8.0.5.2 in the React Native build toolchain (GHSA-8474-xrp6-wh69), accepted 2026-11-19, review 2027-02-19.** Every `cocoapods-core` release declares `activesupport >= 5.0, < 8`, so the Gemfile cannot resolve a fixed release while CocoaPods remains the iOS dependency manager; the Gemfile already holds the newest release below 8. The advisory affects a build-time tool, never a shipped artefact, and the Dependabot alert is dismissed with this reason. It is revisited when a CocoaPods release accepts activesupport 8 or the React Native build moves off CocoaPods.
+
 ## Credentials
 
 Provider credentials are runtime-only. The SDK never commits, embeds, logs, or
