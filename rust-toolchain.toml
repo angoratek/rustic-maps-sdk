@@ -9,3 +9,7 @@
 channel = "1.99.0"
 profile = "minimal"
 components = ["clippy", "rustfmt"]
+# Declared here so the pinned toolchain installs it on a fresh runner; the wasm
+# jobs otherwise fail with "can't find crate for `core`" because the directory
+# override selects this toolchain rather than the one the workflow installed.
+targets = ["wasm32-unknown-unknown"]
