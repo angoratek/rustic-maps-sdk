@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — one contract-owned registry-name mapping)
+
+- The frozen contract gains `provider_contract_from_registry_name` and `registry_name_for_provider_contract`, both additive. `ProviderContract::registry_name` is now the single table behind them, and the parser returns null for a name this build does not define, so a registry newer than the SDK stays readable.
+- The Android registration plan and credential descriptor, the iOS registry catalog, capability state and reference model, and the React Native capability state derive their names from the contract instead of five hand tables. The Android wrapper's unit suite loads the host cdylib and now runs as part of `scripts/build-android.sh`, with a per-surface test that iterates the registry's declared capabilities.
+- React Native's capability state derives the name mechanically from the generated enum because the jest environment has no JSI runtime; its test still proves a registry-only capability resolves. Two Android reference-application names remain mechanically derived: routing them through the contract pulled the native library into that module's JVM suite.
+
 ### Changed (2026-11-19 — one MapView surface on all four targets)
 
 - Android gains `rotateByDegrees`, `hasDrawnFirstFrame`, `viewportPixelExtent` and `displayScale`; iOS gains `viewportWidthPixels`, `viewportHeightPixels` and `MapViewFailurePhase.listener`; the React Native handle and the WebAssembly `BrowserMapView` expose the same rotation and readbacks, so every target carries one verb set. The browser has no platform listener to isolate, so its coded errors are documented instead of inventing a parallel phase taxonomy.
