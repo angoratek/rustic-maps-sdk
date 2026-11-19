@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the React Native shell's lockfile carries no known vulnerability)
+
+- The app shell's lockfile resolved `fast-xml-parser` 5.11.2 and the 8.72 line of the `typescript-eslint` packages, both inside advisory ranges; Dependabot's security update could not resolve a fix and failed on every scheduled run. A lockfile-only audit update moves them to `fast-xml-parser` 5.12.1 and `typescript-eslint` 8.73.0, after which `npm audit` reports no vulnerability. No manifest range changed.
+- The app shell's Gemfile held `activesupport` at the 6.1/7.2 line and `concurrent-ruby` below 1.3.4, which put the CocoaPods toolchain inside five advisory ranges. The constraints now resolve `activesupport` 7.2.4 and `concurrent-ruby` 1.3.8, and CocoaPods runs with them. One `activesupport` advisory is only fixed in 8.x, which no `cocoapods-core` release accepts; it stays open and is tracked separately.
+
 ### Fixed (2026-11-19 — the React Native and wasm jobs install on Linux again)
 
 - `scripts/generate-rn-bindings.sh` edited the generated iOS module header with `sed -i ''`, the BSD form; GNU sed on the Linux runner reads the empty backup suffix as the script and the expression as a file name, so `rn-app-shell` failed on every push with `sed: can't read s|#import "MapsSdkRn.h"|…`. The edit now writes a temporary file and renames it, which both sed implementations accept.
