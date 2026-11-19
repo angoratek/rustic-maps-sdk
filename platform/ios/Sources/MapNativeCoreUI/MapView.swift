@@ -165,69 +165,6 @@ enum MapViewLifecyclePolicy {
     }
 }
 
-/// The vector base source the wrapper keeps across native-view rebuilds,
-/// including the rollback target for a change queued behind a frame draw.
-struct VectorTileSourceInstallRecord {
-    /// The source the wrapper re-applies after a native-view rebuild; nil
-    /// means the base is cleared.
-    private(set) var recordedSource: UrlTemplateVectorTileSource?
-    /// Whether a change waits for the next pump tick.
-    private(set) var isInstallPending = false
-    /// The source the native view served before the first queued change.
-    private var queuedRollbackSource: UrlTemplateVectorTileSource?
-    private var hasQueuedRollbackSource = false
-
-    /// Records a new base-map intent and answers the source recorded before
-    /// it, which a refused immediate install restores.
-    mutating func recordSelection(
-        _ source: UrlTemplateVectorTileSource?
-    ) -> UrlTemplateVectorTileSource? {
-        let previousSource = recordedSource
-        recordedSource = source
-        return previousSource
-    }
-
-    /// Queues the recorded change behind an in-flight draw. The rollback
-    /// target is captured for the first queued change only, so a second
-    /// queued change keeps the source the native view actually serves.
-    mutating func queueInstall(
-        rollbackSource: UrlTemplateVectorTileSource?
-    ) {
-        if !isInstallPending {
-            queuedRollbackSource = rollbackSource
-            hasQueuedRollbackSource = true
-        }
-        isInstallPending = true
-    }
-
-    /// Settles a queued install: success keeps the recorded selection; a
-    /// refusal restores the rollback target the native view still serves.
-    mutating func settleQueuedInstall(succeeded: Bool) {
-        if !succeeded, hasQueuedRollbackSource {
-            recordedSource = queuedRollbackSource
-        }
-        queuedRollbackSource = nil
-        hasQueuedRollbackSource = false
-        isInstallPending = false
-    }
-
-    /// Clears a queued install that an immediate selection supersedes and
-    /// answers the source the native view actually serves.
-    mutating func discardQueuedInstall() -> UrlTemplateVectorTileSource? {
-        let servedSource =
-            hasQueuedRollbackSource ? queuedRollbackSource : recordedSource
-        queuedRollbackSource = nil
-        hasQueuedRollbackSource = false
-        isInstallPending = false
-        return servedSource
-    }
-
-    /// Restores the source recorded before a refused immediate install.
-    mutating func restore(_ source: UrlTemplateVectorTileSource?) {
-        recordedSource = source
-    }
-}
-
 /// The callbacks a `MapView` delivers on the main thread.
 ///
 /// Every member has an empty default in the protocol extension: an
@@ -419,7 +356,11 @@ public final class MapView: UIView {
     /// source across detach/attach, so the wrapper re-applies it like the
     /// overlay list. The record also carries the rollback target for a change
     /// queued behind a frame draw.
-    private var vectorTileSourceInstall = VectorTileSourceInstallRecord()
+    /// The vector base source last asked for. The contract keeps the source
+    /// across detach and attach, so this value is only re-applied after a
+    /// native-view rebuild; a change made while a frame draws is applied by
+    /// the SDK when that frame finishes, which is why no queue is needed.
+    private var requestedVectorTileSource: UrlTemplateVectorTileSource?
     private var requiresAttach = false
     private var isAttached = false
     private var attachedWidthPixels = 0
@@ -752,34 +693,14 @@ public final class MapView: UIView {
     public func setVectorTileSource(
         _ source: UrlTemplateVectorTileSource
     ) -> Bool {
-        // The stored source survives a native-view rebuild (an SDK swap), so
-        // it is recorded before the push and rolled back by a refusal.
-        let previousVectorTileSource = vectorTileSourceInstall.recordSelection(source)
+        // The stored source survives a native-view rebuild (an SDK swap).
+        requestedVectorTileSource = source
         guard let nativeMapView else { return true }
-        // A frame draw owns the tile scheduler while it runs, and the SDK
-        // refuses to move the base under it. That window is reachable from
-        // every launch now that the apps open on a keyless base map, so the
-        // install is queued for the next pump tick instead of failing the
-        // caller's tap — the Android view's same deferral.
-        if isDrawInFlight {
-            vectorTileSourceInstall.queueInstall(
-                rollbackSource: previousVectorTileSource
-            )
-            resumePump(resetBackoff: false)
-            return true
-        }
-        // An immediate change after a finished draw supersedes any queued
-        // install; the source the native view actually serves is the queued
-        // rollback target, not the unserved selection that overwrote it.
-        let servedSource = vectorTileSourceInstall.isInstallPending
-            ? vectorTileSourceInstall.discardQueuedInstall()
-            : previousVectorTileSource
         do {
             try nativeMapView.setVectorTileSource(source: source)
             resumePump(resetBackoff: true)
             return true
         } catch {
-            vectorTileSourceInstall.restore(servedSource)
             reportFailure(phase: .baseMap, cause: error)
             return false
         }
@@ -815,44 +736,15 @@ public final class MapView: UIView {
     /// clear.
     @discardableResult
     public func clearVectorTileSource() -> Bool {
-        let previousVectorTileSource = vectorTileSourceInstall.recordSelection(nil)
+        requestedVectorTileSource = nil
         guard let nativeMapView else { return true }
-        if isDrawInFlight {
-            vectorTileSourceInstall.queueInstall(
-                rollbackSource: previousVectorTileSource
-            )
-            resumePump(resetBackoff: false)
-            return true
-        }
         do {
             try nativeMapView.clearVectorTileSource()
             resumePump(resetBackoff: true)
             return true
         } catch {
-            vectorTileSourceInstall.restore(previousVectorTileSource)
             reportFailure(phase: .baseMap, cause: error)
             return false
-        }
-    }
-
-    /// Applies a base-map change that arrived while a frame draw was in
-    /// flight. The recorded source is the whole intent: a source applies an
-    /// install, `nil` applies a clear. A refusal restores the source the
-    /// native view still serves, so a later SDK swap does not re-apply a
-    /// source the SDK rejected.
-    private func applyPendingVectorTileSourceInstall(nativeMapView: RusticMapsSDK.MapView) {
-        guard vectorTileSourceInstall.isInstallPending else { return }
-        let source = vectorTileSourceInstall.recordedSource
-        do {
-            if let source {
-                try nativeMapView.setVectorTileSource(source: source)
-            } else {
-                try nativeMapView.clearVectorTileSource()
-            }
-            vectorTileSourceInstall.settleQueuedInstall(succeeded: true)
-        } catch {
-            vectorTileSourceInstall.settleQueuedInstall(succeeded: false)
-            reportFailure(phase: .baseMap, cause: error)
         }
     }
 
@@ -1113,7 +1005,6 @@ public final class MapView: UIView {
         }
         // A base-map change queued by a tap that landed mid-frame applies
         // here, before this tick's frame resolves against the scheduler.
-        applyPendingVectorTileSourceInstall(nativeMapView: nativeMapView)
         advanceCameraAnimation()
         guard let camera = currentCameraOrNil() else { return }
         let isSettledNow: Bool
@@ -1354,7 +1245,7 @@ public final class MapView: UIView {
                 reportFailure(phase: .locationIndicator, cause: error)
             }
         }
-        if let vectorTileSource = vectorTileSourceInstall.recordedSource {
+        if let vectorTileSource = requestedVectorTileSource {
             do {
                 try nativeMapView.setVectorTileSource(source: vectorTileSource)
             } catch {

@@ -8,6 +8,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 - A pull-request branch is no longer linted twice: `actionlint` keeps its `pull_request` trigger and runs on `push` for `main` only. The wasm, React Native, benchmark, Android and iOS workflows now also run when `rust-toolchain.toml` changes, so a toolchain edit that affects a build is tested by that build; the pinned-toolchain target that broke the wasm jobs had been invisible to them. `rn-app-shell` also watches `scripts/generate-rn-bindings.sh` and `wasm-e2e` watches `scripts/build-wasm2-package.sh`, the scripts those jobs run: a change to the binding generator used to leave both jobs unstarted. Dependabot's pull requests are exempt from the sign-off check, because the bot cannot sign a commit and the dependency review is their gate.
 
+### Fixed (2026-11-19 — the React Native shell's lockfile carries no known vulnerability)
+
+- The app shell's lockfile resolved `fast-xml-parser` 5.11.2 and the 8.72 line of the `typescript-eslint` packages, both inside advisory ranges; Dependabot's security update could not resolve a fix and failed on every scheduled run. A lockfile-only audit update moves them to `fast-xml-parser` 5.12.1 and `typescript-eslint` 8.73.0, after which `npm audit` reports no vulnerability. No manifest range changed.
+- The app shell's Gemfile held `activesupport` at the 6.1/7.2 line and `concurrent-ruby` below 1.3.4, which put the CocoaPods toolchain inside five advisory ranges. The constraints now resolve `activesupport` 7.2.4 and `concurrent-ruby` 1.3.8, and CocoaPods runs with them. One `activesupport` advisory is only fixed in 8.x, which no `cocoapods-core` release accepts; it stays open and is tracked separately.
+
 ### Fixed (2026-11-19 — the React Native and wasm jobs install on Linux again)
 
 - `scripts/generate-rn-bindings.sh` edited the generated iOS module header with `sed -i ''`, the BSD form; GNU sed on the Linux runner reads the empty backup suffix as the script and the expression as a file name, so `rn-app-shell` failed on every push with `sed: can't read s|#import "MapsSdkRn.h"|…`. The edit now writes a temporary file and renames it, which both sed implementations accept.
@@ -27,6 +32,9 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 - `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.
 - `rust-toolchain.toml` declares the `wasm32-unknown-unknown` target, so the pinned toolchain installs it on a fresh runner. The wasm jobs had failed with "can't find crate for `core`" because the directory override selected the pinned toolchain, which lacked the target.
 
+### Changed (2026-11-18 — the vector-base install queues are gone)
+
+- Both wrappers carried a pending-install queue with a rollback record for a base-map change that arrived while a frame drew. The contract already applies such a change when that frame finishes, so the queue could only fire on a malformed source and its rollback path never ran in practice. Android drops `VectorBaseSourceQueue` with its test, iOS drops `VectorTileSourceInstallRecord` with its four tests, and the React Native pod copy is regenerated from the SwiftPM source. A source selected before the surface exists is still re-applied after a native-view rebuild. The slice removes 406 lines and adds 31.
 ### Changed (2026-11-18 — the working plan retires into the issue tracker)
 
 - `PLAN.md` is gone. Every open item is one issue with a milestone and a label, each milestone description carries its done-when line, and the eight open question groups moved to issues #124 to #131. `PRD.md` fell from 306 to 190 lines with all 70 decisions intact, `CLAUDE.md` from 302 to 144 lines, and the changelog's stale identifiers, paths and ordering were corrected. The DCO check applies to outside contributions only.
