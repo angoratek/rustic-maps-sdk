@@ -30,12 +30,12 @@ use crate::canvas::{
     OVERLAY_KIND_FILLED_POLYGON, OVERLAY_KIND_POINT_MARKERS, OVERLAY_KIND_POINT_PINS,
     OVERLAY_KIND_ROUTE_POLYLINE,
 };
+use crate::contract_field_names::*;
 use crate::exports::{
     ERROR_CODE_INVALID_COORDINATE_INPUT, ERROR_CODE_RESPONSE_PARSING_FAILURE,
     ERROR_CODE_UNSUPPORTED_CAPABILITY, failure, failure_with_code, geographic_coordinate_object,
     object_from_fields,
 };
-use crate::generated_contract_field_names::*;
 use geospatial_types::{GeographicCoordinate, VectorTileData, VectorTileEncoding};
 use js_sys::{Array, Object};
 use rustic_maps_rendering::MapOverlay;

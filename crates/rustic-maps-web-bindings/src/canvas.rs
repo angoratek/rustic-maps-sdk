@@ -53,6 +53,7 @@
 //! across their futures; the page must never overlap two `render_frame`
 //! futures, so it serializes its render queue behind a busy flag.
 
+use crate::contract_field_names::*;
 use crate::exports::{
     ERROR_CODE_INVALID_ARGUMENT, ERROR_CODE_INVALID_COORDINATE_INPUT,
     ERROR_CODE_INVALID_RENDER_INPUT, ERROR_CODE_NETWORK_REQUEST_FAILED,
@@ -60,7 +61,6 @@ use crate::exports::{
     ERROR_CODE_RESPONSE_PARSING_FAILURE, ERROR_CODE_UNSUPPORTED_CAPABILITY, MapCamera,
     failure_with_code, object_from_fields, sdk_error_failure,
 };
-use crate::generated_contract_field_names::*;
 use crate::live_providers::{
     registered_raster_tile_provider, registered_vector_style_resource_hosts,
     registered_vector_style_resources, registered_vector_tile_provider, selected_provider_key,

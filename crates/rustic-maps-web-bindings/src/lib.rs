@@ -25,10 +25,10 @@ pub(crate) mod refapp_math;
 
 #[cfg(target_arch = "wasm32")]
 pub mod canvas;
+#[cfg(any(target_arch = "wasm32", test))]
+pub(crate) mod contract_field_names;
 #[cfg(target_arch = "wasm32")]
 pub mod exports;
-#[cfg(any(target_arch = "wasm32", test))]
-pub(crate) mod generated_contract_field_names;
 #[cfg(target_arch = "wasm32")]
 pub mod live_providers;
 #[cfg(target_arch = "wasm32")]

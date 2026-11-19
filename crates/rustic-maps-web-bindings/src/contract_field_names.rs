@@ -3,7 +3,10 @@
 //!
 //! The frozen contract generates the browser API; these constants name the
 //! lower-camel fields the canvas, the vector layer and their plain-object
-//! builders read. They are hand-maintained beside those readers.
+//! builders read. They are hand-maintained beside those readers, so the host
+//! test in `tests/contract_field_names.rs` checks every value against the
+//! frozen UDL: a renamed or removed contract field fails that test instead of
+//! leaving the canvas reading a missing JavaScript property.
 
 // The constants sit in a skipped block so their values stay byte stable under
 // `cargo fmt`; the values are the formatted contract field names, not

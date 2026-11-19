@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the canvas field names are checked against the frozen contract)
+
+- `crates/rustic-maps-web-bindings/src/generated_contract_field_names.rs` is now `contract_field_names.rs`: nothing generates it, and the name said otherwise. Its documentation points at the new host test.
+- `crates/rustic-maps-web-bindings/tests/contract_field_names.rs` parses the frozen UDL and asserts, for every constant, that the documented record and field exist and that the value is the field's lower-camel spelling. A contract field renamed or removed without updating the constants now fails a host test instead of leaving the canvas reading a missing JavaScript property.
+
 ### Fixed (2026-11-19 — the published canvas declarations name exactly what the glue exports)
 
 - `platform/web/tests/canvas_declaration_sync.mjs` parses the classes, functions, constants, methods and accessors of the generated `rustic_maps_bg.js` and of the published `types/browser_canvas.d.ts`, and fails on any difference in either direction. It runs under `node --test` and in Playwright's `globalSetup`, so a canvas member added or removed without its declaration fails the browser gate.

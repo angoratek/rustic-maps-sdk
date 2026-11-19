@@ -15,7 +15,7 @@
 use everymap_core::domains::tiling::{VectorTileEncoding, VectorTileSourceDescriptor};
 use everymap_providers_url_template_vector::{TileSourcePacing, UrlTemplateVectorTileSource};
 
-use crate::generated_contract_field_names::{
+use crate::contract_field_names::{
     SOURCE_HEADER_FIELD_NAME, SOURCE_HEADER_FIELD_VALUE, VECTOR_SOURCE_FIELD_HEADERS,
     VECTOR_SOURCE_FIELD_STYLE_HINTS, VECTOR_SOURCE_FIELD_SUBDOMAINS,
     VECTOR_SOURCE_FIELD_TERMS_TEXT,
@@ -233,7 +233,7 @@ mod tests {
         SourceFieldValue, VectorSourceDeclarationFields, url_template_vector_source,
         vector_source_extras,
     };
-    use crate::generated_contract_field_names::{
+    use crate::contract_field_names::{
         SOURCE_HEADER_FIELD_NAME, SOURCE_HEADER_FIELD_VALUE, VECTOR_SOURCE_FIELD_HEADERS,
         VECTOR_SOURCE_FIELD_STYLE_HINTS, VECTOR_SOURCE_FIELD_SUBDOMAINS,
         VECTOR_SOURCE_FIELD_TERMS_TEXT,
