@@ -145,13 +145,16 @@ fn assert_reverse_place(
     let first = places
         .first()
         .unwrap_or_else(|| panic!("{provider_key} answers one place"));
+    // The failure message names the provider only: the coordinate is the
+    // position data CodeQL's cleartext-logging rule keeps out of logs, and the
+    // expected values live in the fixture the test reads.
+    let latitude_matches =
+        (first.coordinate.latitude - expected_latitude).abs() < COORDINATE_TOLERANCE_DEGREES;
+    let longitude_matches =
+        (first.coordinate.longitude - expected_longitude).abs() < COORDINATE_TOLERANCE_DEGREES;
     assert!(
-        (first.coordinate.latitude - expected_latitude).abs() < COORDINATE_TOLERANCE_DEGREES
-            && (first.coordinate.longitude - expected_longitude).abs()
-                < COORDINATE_TOLERANCE_DEGREES,
-        "{provider_key} reports the reverse fixture coordinate, got {}, {}",
-        first.coordinate.latitude,
-        first.coordinate.longitude
+        latitude_matches && longitude_matches,
+        "{provider_key} reports the reverse fixture coordinate",
     );
     assert!(
         first
