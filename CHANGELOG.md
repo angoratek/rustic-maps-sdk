@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — one Mercator latitude limit)
+
+- `MAXIMUM_MERCATOR_LATITUDE_DEGREES` now lives in `geospatial-types` and is re-exported by the five former copies: the projection, the GeoJSON source, the vector style, the legacy vector style and the traffic-flow cache. The projection copy carried a shorter literal (`85.051_128_78`); every layer now clamps at the correctly rounded `85.051_128_779_806_6`. A test pins the value against `atan(sinh(pi))`, and the existing corner, clamp and traffic-box tests cover the call sites.
+
 ### Changed (2026-11-18 — one camera geographic-bounds helper)
 
 - `camera_geographic_bounds` and the `METERS_PER_DEGREE_LATITUDE` and `MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT` constants now live in `rustic-maps-rendering::camera`. The browser binding delegates to it and the native surface view calls it through the wrapped renderer camera, so the two copies of the corner unprojection, the steep-pitch fallback and its constants are gone. Two tests in the rendering crate pin the top-down corners and the 70° fallback; the existing browser and native bounds tests still pass.
