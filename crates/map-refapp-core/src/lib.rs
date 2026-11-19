@@ -19,6 +19,7 @@ pub mod course;
 pub mod easing;
 pub mod flow;
 pub mod follow_camera;
+pub mod instruction;
 pub mod location_animation;
 pub mod scale_bar;
 pub mod trace;
@@ -38,6 +39,10 @@ pub use follow_camera::{
     FollowBearingMode, FollowCamera, FollowPhase, NAVIGATION_FOLLOW_PITCH_3D_DEGREES,
     NAVIGATION_FOLLOW_ZOOM, NAVIGATION_FOLLOW_ZOOM_MAXIMUM, PreTripCamera,
     follow_zoom_toward_trip_end,
+};
+pub use instruction::{
+    UNAVAILABLE_INSTRUCTION_TEXT, instruction_banner_text, instruction_display_text,
+    instruction_speech_text, roundabout_exit_suffix,
 };
 pub use location_animation::{
     LOCATION_ANIMATION_MAXIMUM_MILLISECONDS, LOCATION_ANIMATION_MINIMUM_MILLISECONDS, LocationFix,

@@ -132,6 +132,72 @@ namespace rustic_maps {
     /// The default reroute-recalculation policy: a 5 second cooldown and a
     /// 50 meter movement threshold.
     ReroutePolicy default_reroute_policy();
+
+    /// The display text of one maneuver instruction.
+    ///
+    /// The composed display text wins; when it is absent the
+    /// provider-authored display text renders verbatim; when neither exists
+    /// the honest `No instruction text provided` line renders. The
+    /// `Unavailable` instruction-text kind carries null text fields, so it
+    /// renders the same honest line rather than an invented instruction. Use
+    /// this for the then-line; use `instruction_banner_text` for the turn
+    /// banner.
+    ///
+    /// # Parameters
+    /// - `composed_display_text` — the banner variant composed by the
+    ///   contract, when present.
+    /// - `provider_display_text` — the provider-authored display text,
+    ///   verbatim, when present.
+    ///
+    /// # Returns
+    /// The display line, never empty for absent provider text.
+    string instruction_display_text(
+        string? composed_display_text,
+        string? provider_display_text
+    );
+
+    /// The speech text of one maneuver instruction.
+    ///
+    /// The composed speech text wins; when it is absent the provider-authored
+    /// speech text is returned verbatim. When neither exists the maneuver is
+    /// never spoken, so the result is null.
+    ///
+    /// # Parameters
+    /// - `composed_speech_text` — the text-to-speech variant composed by the
+    ///   contract, when present.
+    /// - `provider_speech_text` — the provider-authored speech text,
+    ///   verbatim, when present.
+    ///
+    /// # Returns
+    /// The line to speak verbatim, or null when the provider authored none.
+    string? instruction_speech_text(
+        string? composed_speech_text,
+        string? provider_speech_text
+    );
+
+    /// The turn banner's full instruction line.
+    ///
+    /// The line is the display text (`instruction_display_text`) followed by
+    /// the roundabout exit suffix: ` (exit <index>)` for a roundabout
+    /// maneuver and nothing for every other maneuver. The then-line renders
+    /// the display text alone.
+    ///
+    /// # Parameters
+    /// - `composed_display_text` — the banner variant composed by the
+    ///   contract, when present.
+    /// - `provider_display_text` — the provider-authored display text,
+    ///   verbatim, when present.
+    /// - `roundabout_exit_index` — the structured exit index of a roundabout
+    ///   maneuver, when the contract carries one.
+    ///
+    /// # Returns
+    /// The banner line, including the honest unavailable line when the
+    /// provider authored no display text.
+    string instruction_banner_text(
+        string? composed_display_text,
+        string? provider_display_text,
+        u8? roundabout_exit_index
+    );
 };
 
 /// A position on the WGS 84 ellipsoid in decimal degrees.

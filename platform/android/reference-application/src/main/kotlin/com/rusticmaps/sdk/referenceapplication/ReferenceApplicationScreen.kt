@@ -89,12 +89,11 @@ import uniffi.rustic_maps.DeviationStatusChangeKind
 import uniffi.rustic_maps.DistancePhrase
 import uniffi.rustic_maps.DistancePhraseKind
 import uniffi.rustic_maps.DistanceUnit
-import uniffi.rustic_maps.ManeuverInstructionText
-import uniffi.rustic_maps.ManeuverInstructionTextKind
 import uniffi.rustic_maps.NavigationPhase
 import uniffi.rustic_maps.NavigationPhaseChange
 import uniffi.rustic_maps.Place
 import uniffi.rustic_maps.ProviderContract
+import uniffi.rustic_maps.instructionBannerText
 import kotlin.math.floor
 
 /**
@@ -1669,8 +1668,9 @@ private fun TurnBannerCard(
     BannerCard(
         modifier = modifier,
         headlineText = formatDistancePhrase(activeManeuver.distancePhrase),
-        bodyText = displayInstructionText(
-            instructionText = activeManeuver.instruction,
+        bodyText = instructionBannerText(
+            composedDisplayText = activeManeuver.instruction.composedDisplayText,
+            providerDisplayText = activeManeuver.instruction.providerDisplayText,
             roundaboutExitIndex = activeManeuver.roundaboutExitIndex,
         ),
         warnState = instruction.isReroutingRequired,
@@ -1679,7 +1679,11 @@ private fun TurnBannerCard(
     if (upcoming != null) {
         PanelSurface(contentPadding = ReferenceAppUXDimensions.StackTight, modifier = modifier) {
             Text(
-                text = "Then: ${displayInstructionText(upcoming.instruction, upcoming.roundaboutExitIndex)}",
+                text = "Then: " + instructionBannerText(
+                    composedDisplayText = upcoming.instruction.composedDisplayText,
+                    providerDisplayText = upcoming.instruction.providerDisplayText,
+                    roundaboutExitIndex = upcoming.roundaboutExitIndex,
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalReferenceAppUXExtendedColors.current.textSecondary,
             )
@@ -3003,22 +3007,4 @@ private fun distanceUnitSymbol(distanceUnit: DistanceUnit): String = when (dista
     DistanceUnit.KILOMETERS -> "km"
     DistanceUnit.FEET -> "ft"
     DistanceUnit.MILES -> "mi"
-}
-
-/**
- * The banner display text of one maneuver (§7.1): the composed variant first,
- * then the provider's own text, and — on the unavailable form — the honest
- * no-text line, never an invented instruction.
- */
-internal fun displayInstructionText(
-    instructionText: ManeuverInstructionText,
-    roundaboutExitIndex: UByte?,
-): String {
-    val bannerText = when (instructionText.textKind) {
-        ManeuverInstructionTextKind.COMPOSED ->
-            instructionText.composedDisplayText ?: instructionText.providerDisplayText
-        ManeuverInstructionTextKind.UNAVAILABLE -> null
-    } ?: "No instruction text provided"
-    val exitSuffix = roundaboutExitIndex?.let { exitIndex -> " (exit $exitIndex)" } ?: ""
-    return bannerText + exitSuffix
 }

@@ -40,7 +40,7 @@ import uniffi.rustic_maps.DeviationStatusChange
 import uniffi.rustic_maps.DeviationStatusChangeKind
 import uniffi.rustic_maps.DistancePhraseKind
 import uniffi.rustic_maps.DistanceUnit
-import uniffi.rustic_maps.ManeuverInstructionTextKind
+import uniffi.rustic_maps.instructionBannerText
 import uniffi.rustic_maps.Place
 import uniffi.rustic_maps.Route
 import uniffi.rustic_maps.RouteOptions
@@ -1955,30 +1955,6 @@ class RefappDemoSession private constructor() : MapsSdkMapViewObserver {
         emitEvent("RefappPlaybackState", arguments)
     }
 
-    /**
-     * The banner display text of one maneuver (§7.1): the composed variant
-     * first, then the provider's own text, and — on the unavailable form — the
-     * honest no-text line, never an invented instruction. A roundabout appends
-     * "exit <index>".
-     */
-    private fun displayInstructionText(
-        instructionText: uniffi.rustic_maps.ManeuverInstructionText,
-        roundaboutExitIndex: UByte?,
-    ): String {
-        val bannerText = when (instructionText.textKind) {
-            ManeuverInstructionTextKind.COMPOSED ->
-                instructionText.composedDisplayText
-                    ?: instructionText.providerDisplayText
-                    ?: RefappConstants.NO_INSTRUCTION_TEXT
-            ManeuverInstructionTextKind.UNAVAILABLE -> RefappConstants.NO_INSTRUCTION_TEXT
-            else -> RefappConstants.NO_INSTRUCTION_TEXT
-        }
-        val roundaboutSuffix = roundaboutExitIndex?.let { exitIndex ->
-            RefappConstants.ROUNDABOUT_SUFFIX_TEMPLATE.format(exitIndex.toLong())
-        } ?: ""
-        return bannerText + roundaboutSuffix
-    }
-
     /** Formats the distance phrase of the active maneuver (§7.1 live prefix). */
     private fun formatDistancePhrase(phrase: uniffi.rustic_maps.DistancePhrase): String =
         when (phrase.phraseKind) {
@@ -2017,14 +1993,19 @@ class RefappDemoSession private constructor() : MapsSdkMapViewObserver {
         )
         arguments.putString(
             "bannerDisplayText",
-            displayInstructionText(activeManeuver.instruction, activeManeuver.roundaboutExitIndex),
+            instructionBannerText(
+                composedDisplayText = activeManeuver.instruction.composedDisplayText,
+                providerDisplayText = activeManeuver.instruction.providerDisplayText,
+                roundaboutExitIndex = activeManeuver.roundaboutExitIndex,
+            ),
         )
         arguments.putString(
             "upcomingDisplayText",
             instruction.upcomingManeuver?.let { upcoming ->
-                RefappConstants.THEN_LINE_PREFIX + displayInstructionText(
-                    upcoming.instruction,
-                    upcoming.roundaboutExitIndex,
+                RefappConstants.THEN_LINE_PREFIX + instructionBannerText(
+                    composedDisplayText = upcoming.instruction.composedDisplayText,
+                    providerDisplayText = upcoming.instruction.providerDisplayText,
+                    roundaboutExitIndex = upcoming.roundaboutExitIndex,
                 )
             },
         )

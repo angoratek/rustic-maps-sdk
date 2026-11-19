@@ -2662,6 +2662,7 @@ dependencies = [
  "geospatial-traits",
  "geospatial-types",
  "jni 0.21.1",
+ "map-refapp-core",
  "ndk-sys",
  "raw-window-handle",
  "rustic-maps-cache",

@@ -45,6 +45,7 @@ import uniffi.rustic_maps.TrafficFlowCongestionLevel
 import uniffi.rustic_maps.TrafficFlowData
 import uniffi.rustic_maps.TransportationMode
 import uniffi.rustic_maps.UnitSystem
+import uniffi.rustic_maps.instructionBannerText
 
 /**
  * The connected UI-automation suite of the Compose reference application
@@ -328,8 +329,9 @@ class ReferenceApplicationAndroidTest {
             "the banner's provider step text must be the recording's text, was '$providerStepText'",
             providerStepText in recordedStepDisplayTexts,
         )
-        val renderedBannerText = displayInstructionText(
-            instructionText = deliveredInstruction.activeManeuver.instruction,
+        val renderedBannerText = instructionBannerText(
+            composedDisplayText = deliveredInstruction.activeManeuver.instruction.composedDisplayText,
+            providerDisplayText = deliveredInstruction.activeManeuver.instruction.providerDisplayText,
             roundaboutExitIndex = deliveredInstruction.activeManeuver.roundaboutExitIndex,
         )
         assertTrue(

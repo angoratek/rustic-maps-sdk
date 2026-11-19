@@ -1828,33 +1828,19 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
     // The banner and drawer presentation (§7.1/§7.2)
     // ------------------------------------------------------------------
 
-    /// The banner display text of one maneuver (§7.1): the composed variant
-    /// first, then the provider's own text, and — on the unavailable form —
-    /// the honest no-text line, never an invented instruction. A roundabout
-    /// appends "exit <index>".
-    private func displayInstructionText(
+    /// The banner display text of one maneuver (§7.1), composed by the
+    /// contract's shared rule: the composed variant first, then the provider's
+    /// own text, the honest no-text line on the unavailable form, and the
+    /// roundabout exit suffix.
+    private func bannerDisplayText(
         _ instructionText: ManeuverInstructionText,
         _ roundaboutExitIndex: UInt8?
     ) -> String {
-        let bannerText: String
-        switch instructionText.textKind {
-        case .composed:
-            bannerText = instructionText.composedDisplayText
-                ?? instructionText.providerDisplayText
-                ?? RefappConstants.noInstructionText
-        case .unavailable:
-            bannerText = RefappConstants.noInstructionText
-        }
-        let roundaboutSuffix: String
-        if let roundaboutExitIndex = roundaboutExitIndex {
-            roundaboutSuffix = String(
-                format: RefappConstants.roundaboutSuffixTemplate,
-                Int(roundaboutExitIndex)
-            )
-        } else {
-            roundaboutSuffix = ""
-        }
-        return bannerText + roundaboutSuffix
+        instructionBannerText(
+            composedDisplayText: instructionText.composedDisplayText,
+            providerDisplayText: instructionText.providerDisplayText,
+            roundaboutExitIndex: roundaboutExitIndex
+        )
     }
 
     /// Formats the distance phrase of the active maneuver (§7.1 live prefix).
@@ -1897,14 +1883,14 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
             "isArrival": instruction.isArrival,
             "isReroutingRequired": instruction.isReroutingRequired,
             "bannerHeadlineText": formatDistancePhrase(instruction.activeManeuver.distancePhrase),
-            "bannerDisplayText": displayInstructionText(
+            "bannerDisplayText": bannerDisplayText(
                 instruction.activeManeuver.instruction,
                 instruction.activeManeuver.roundaboutExitIndex
             ),
         ]
         if let upcoming = instruction.upcomingManeuver {
             arguments["upcomingDisplayText"] = RefappConstants.thenLinePrefix
-                + displayInstructionText(upcoming.instruction, upcoming.roundaboutExitIndex)
+                + bannerDisplayText(upcoming.instruction, upcoming.roundaboutExitIndex)
         }
         if let progress = traceDriver.latestTripState?.progress {
             arguments["progressLineText"] = "Distance remaining "

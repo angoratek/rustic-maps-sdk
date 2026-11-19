@@ -80,6 +80,7 @@ pub mod diagnostics;
 pub mod engines;
 pub mod error;
 pub mod foreign_providers;
+pub mod instruction;
 pub mod navigation;
 pub mod offline_routing;
 pub mod panic_boundary;
@@ -110,6 +111,9 @@ pub use crate::foreign_providers::{
     DistanceMatrixProvider, ElevationProvider, GeocodingProvider, RasterTileProvider,
     RoutingProvider, SearchPlaceProvider, TrafficFlowProvider, TrafficIncidentProvider,
     VectorTileProvider,
+};
+pub use crate::instruction::{
+    instruction_banner_text, instruction_display_text, instruction_speech_text,
 };
 pub use crate::navigation::{
     NavigationListener, Navigator, Subscription, default_deviation_policy, default_reroute_policy,

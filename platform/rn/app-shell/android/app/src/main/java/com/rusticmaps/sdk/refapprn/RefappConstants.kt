@@ -96,16 +96,12 @@ object RefappConstants {
     const val NAVIGATION_EXIT_BUTTON_TEXT: String = "Exit"
 
     // --- Turn-banner and progress composition (§7.1) ---
-    /** The banner's honest no-text line on the `Unavailable` instruction form. */
-    const val NO_INSTRUCTION_TEXT: String = "No instruction text provided"
     /** The "then" line's prefix (§7.1). */
     const val THEN_LINE_PREFIX: String = "Then: "
     /** The arrival card's positive-stated word (§7.1). */
     const val ARRIVED_TEXT: String = "Arrived"
     /** Distance phrase word of the `Immediate` form (§7.1: `Immediate` renders no number). */
     const val DISTANCE_PHRASE_IMMEDIATE_TEXT: String = "Now"
-    /** Roundabout suffix appended to the banner text when an exit index is live. */
-    const val ROUNDABOUT_SUFFIX_TEMPLATE: String = " (exit %d)"
     /** Deviation strip text (§7.5), warning-styled. */
     const val DEVIATION_TEXT_TEMPLATE: String =
         "Off route — %s from the route line; " +

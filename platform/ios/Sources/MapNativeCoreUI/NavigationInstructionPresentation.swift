@@ -61,7 +61,10 @@ public enum DistancePhraseFormatting {
 }
 
 /// The display-text priority and suffix rules of the banner and then-line
-/// (§7.1), shared by every native card consumer.
+/// (§7.1), shared by every native card consumer. The rule itself is the
+/// contract's `instruction_display_text` / `instruction_banner_text` /
+/// `instruction_speech_text` composition, one implementation for every
+/// target; this facade keeps the Swift-facing names.
 public enum ManeuverInstructionPresentation {
     /// The honest line an `Unavailable` instruction text kind renders.
     public static let unavailableText: String = "No instruction text provided"
@@ -72,11 +75,15 @@ public enum ManeuverInstructionPresentation {
     public static func text(ofInstructionText instructionText: ManeuverInstructionText) -> String {
         switch instructionText.textKind {
         case .composed:
-            return instructionText.composedDisplayText
-                ?? instructionText.providerDisplayText
-                ?? unavailableText
+            return instructionDisplayText(
+                composedDisplayText: instructionText.composedDisplayText,
+                providerDisplayText: instructionText.providerDisplayText
+            )
         case .unavailable:
-            return unavailableText
+            return instructionDisplayText(
+                composedDisplayText: nil,
+                providerDisplayText: nil
+            )
         }
     }
 
@@ -94,11 +101,20 @@ public enum ManeuverInstructionPresentation {
     public static func bannerText(
         ofActiveManeuver activeManeuver: ActiveManeuverInstruction
     ) -> String {
-        let maneuverText = text(ofInstructionText: activeManeuver.instruction)
-        guard let roundaboutExitIndex = activeManeuver.roundaboutExitIndex else {
-            return maneuverText
+        switch activeManeuver.instruction.textKind {
+        case .composed:
+            return instructionBannerText(
+                composedDisplayText: activeManeuver.instruction.composedDisplayText,
+                providerDisplayText: activeManeuver.instruction.providerDisplayText,
+                roundaboutExitIndex: activeManeuver.roundaboutExitIndex
+            )
+        case .unavailable:
+            return instructionBannerText(
+                composedDisplayText: nil,
+                providerDisplayText: nil,
+                roundaboutExitIndex: activeManeuver.roundaboutExitIndex
+            )
         }
-        return "\(maneuverText) (exit \(roundaboutExitIndex))"
     }
 
     /// The then-line's text for an upcoming maneuver (the display channel,
@@ -122,8 +138,10 @@ public enum ManeuverInstructionPresentation {
     public static func speechText(ofInstructionText instructionText: ManeuverInstructionText) -> String? {
         switch instructionText.textKind {
         case .composed:
-            return instructionText.composedSpeechText
-                ?? instructionText.providerSpeechText
+            return instructionSpeechText(
+                composedSpeechText: instructionText.composedSpeechText,
+                providerSpeechText: instructionText.providerSpeechText
+            )
         case .unavailable:
             return nil
         }
