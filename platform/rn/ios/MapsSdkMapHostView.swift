@@ -208,6 +208,10 @@ public final class MapsSdkMapHostView: UIView, MapsSdkMapViewDelegate {
         rusticMapView.zoomByLevels(deltaZoomLevels: deltaZoomLevels)
     }
 
+    @objc public func rotateByDegrees(clockwiseDegrees: Double) {
+        rusticMapView.rotateByDegrees(clockwiseDegrees: clockwiseDegrees)
+    }
+
     @discardableResult
     public func addOverlay(
         overlayIdentifier: String,
@@ -491,6 +495,16 @@ public final class MapsSdkMapHostView: UIView, MapsSdkMapViewDelegate {
     /// The render viewport height in pixels (zero before attach).
     @objc public var viewportHeightPixels: Int {
         Int(rusticMapView.viewportSize?.heightPixels ?? 0)
+    }
+
+    /// The capped drawable extent in pixels (zero before the first frame).
+    @objc public var viewportPixelExtentPixels: CGSize {
+        rusticMapView.viewportPixelExtent ?? .zero
+    }
+
+    /// The effective drawable scale (points to rendered pixels).
+    @objc public var displayScale: CGFloat {
+        rusticMapView.displayScale
     }
 
     /// Releases the display link, the surface and the native objects. The

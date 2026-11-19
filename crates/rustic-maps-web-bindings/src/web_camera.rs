@@ -10,7 +10,7 @@ use std::cell::Cell;
 
 use geospatial_types::{BoundingBox, GeographicCoordinate};
 use rustic_maps_rendering::{
-    EdgeInsetsPixels, MapCamera, ViewportPixels, fit_bounds, interpolate_camera,
+    CameraInteraction, EdgeInsetsPixels, MapCamera, ViewportPixels, fit_bounds, interpolate_camera,
 };
 
 /// Latitude of the view's camera before any host intent, in decimal degrees:
@@ -101,6 +101,33 @@ pub(crate) fn fit_camera(
     fit_bounds(bounding_box, viewport, edge_insets, maximum_zoom_level)
 }
 
+/// The focal point of a programmatic camera turn: the viewport center, the
+/// anchor the native wrapper's `rotateByDegrees` uses.
+pub(crate) fn viewport_center_pixels(viewport: &ViewportPixels) -> [f64; 2] {
+    [viewport.width_pixels / 2.0, viewport.height_pixels / 2.0]
+}
+
+/// Rotates the content clockwise by `clockwise_degrees` around the viewport
+/// center, the browser shape of the wrapper's `rotateByDegrees`.
+///
+/// The content-follows-fingers convention makes a clockwise content turn
+/// lower the camera bearing, so the contract's clockwise-positive bearing
+/// delta receives the negated value — the same sign every native wrapper
+/// applies.
+pub(crate) fn rotate_camera_clockwise(
+    camera: &MapCamera,
+    clockwise_degrees: f64,
+    viewport: &ViewportPixels,
+    field_of_view_degrees: f64,
+) -> MapCamera {
+    camera.rotate_by_degrees_around_screen_point(
+        -clockwise_degrees,
+        viewport_center_pixels(viewport),
+        viewport,
+        field_of_view_degrees,
+    )
+}
+
 /// The geographic bounds of `viewport` at `camera`'s pose, delegating to the
 /// renderer's one bounds helper.
 pub(crate) fn camera_geographic_bounds(
@@ -116,7 +143,7 @@ mod tests {
     use super::{
         CameraStore, DEFAULT_CAMERA_LATITUDE_DEGREES, DEFAULT_CAMERA_LONGITUDE_DEGREES,
         DEFAULT_CAMERA_ZOOM_LEVEL, camera_geographic_bounds, fit_camera, interpolate_cameras,
-        neutral_camera,
+        neutral_camera, rotate_camera_clockwise, viewport_center_pixels,
     };
     use geospatial_types::GeographicCoordinate;
     use rustic_maps_rendering::{EdgeInsetsPixels, MapCamera, ViewportPixels};
@@ -292,5 +319,32 @@ mod tests {
         assert!(bounds.north_east.longitude > bounds.south_west.longitude);
         assert!(bounds.south_west.latitude.is_finite());
         assert!(bounds.north_east.longitude.is_finite());
+    }
+
+    #[test]
+    fn a_clockwise_content_turn_lowers_the_bearing() {
+        let camera = MapCamera::new(coordinate(38.0, -121.0), 12.0, 0.0, 0.0);
+        let rotated = rotate_camera_clockwise(&camera, 30.0, &viewport(), 60.0);
+        assert!(
+            (rotated.bearing_degrees - 330.0).abs() < 1.0e-9,
+            "a clockwise turn must lower the bearing, was {}",
+            rotated.bearing_degrees
+        );
+    }
+
+    #[test]
+    fn a_counter_clockwise_content_turn_raises_the_bearing() {
+        let camera = MapCamera::new(coordinate(38.0, -121.0), 12.0, 10.0, 0.0);
+        let rotated = rotate_camera_clockwise(&camera, -25.0, &viewport(), 60.0);
+        assert!(
+            (rotated.bearing_degrees - 35.0).abs() < 1.0e-9,
+            "a counter-clockwise turn must raise the bearing, was {}",
+            rotated.bearing_degrees
+        );
+    }
+
+    #[test]
+    fn the_rotation_focal_point_is_the_viewport_center() {
+        assert_eq!(viewport_center_pixels(&viewport()), [400.0, 300.0]);
     }
 }

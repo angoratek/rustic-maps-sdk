@@ -845,6 +845,46 @@ class MapsSdkNativeModule(
     }
 
     @ReactMethod
+    fun rotateByDegrees(viewIdentifier: String, clockwiseDegrees: Double) {
+        withHostView(viewIdentifier, CAMERA_FAILURE_PHASE) { hostView ->
+            hostView.rotateByDegrees(clockwiseDegrees)
+        }
+    }
+
+    @ReactMethod
+    fun viewportWidthPixels(viewIdentifier: String, promise: Promise) {
+        withHostViewPromise(viewIdentifier, promise) { hostView ->
+            hostView.viewportWidthPixels
+        }
+    }
+
+    @ReactMethod
+    fun viewportHeightPixels(viewIdentifier: String, promise: Promise) {
+        withHostViewPromise(viewIdentifier, promise) { hostView ->
+            hostView.viewportHeightPixels
+        }
+    }
+
+    @ReactMethod
+    fun viewportPixelExtent(viewIdentifier: String, promise: Promise) {
+        withHostViewPromise(viewIdentifier, promise) { hostView ->
+            hostView.viewportPixelExtent()?.let { extent ->
+                Arguments.createMap().apply {
+                    putDouble("widthPixels", extent.widthPixels)
+                    putDouble("heightPixels", extent.heightPixels)
+                }
+            }
+        }
+    }
+
+    @ReactMethod
+    fun displayScale(viewIdentifier: String, promise: Promise) {
+        withHostViewPromise(viewIdentifier, promise) { hostView ->
+            hostView.displayScale
+        }
+    }
+
+    @ReactMethod
     fun addOverlay(
         viewIdentifier: String,
         overlayIdentifier: String,
