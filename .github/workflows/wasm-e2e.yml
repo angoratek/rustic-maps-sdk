@@ -5,6 +5,7 @@ name: wasm-e2e
 # the same way the Rust core does.
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:

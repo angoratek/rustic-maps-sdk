@@ -11,6 +11,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 - The browser suite can now render WebGPU on a GPU-less runner: `RUSTIC_MAPS_WEBGPU_SOFTWARE=1` selects ANGLE on Vulkan with an explicitly named software adapter and no Vulkan surface, `wasm-e2e` installs the Vulkan loader and a Mesa ICD, and the preflight retries a null adapter for ten seconds. A cold GPU process can answer the first request with null even when it succeeds moments later, and without the ICD it never succeeds.
 - The `docs-snippets` job built `rustic-maps-native-core` with a bare `-p` for wasm, which tries to compile the `uniffi-bindgen` binary; its `uniffi` `cli` seam exists only under the non-wasm target, so the job failed with "cannot find function `uniffi_bindgen_main`". It now builds the library only.
 - `scripts/build-android.sh` now fails at the generator, with the directory listing, when it exits successfully but writes no Kotlin file. Gradle used to assert "the generated Android bindings are missing" minutes later, naming no cause.
+- `wasm-e2e` also accepts a manual dispatch, which the other platform jobs already did; a browser failure can be retried on its branch without an empty commit.
 - The disk-space probe test wrote a fixed name under the system temp directory. One gate run removed the file while a second, in another worktree, read it, which failed the second gate with `StoreUnavailable` on an otherwise green tree. The name now carries the test process's id.
 
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
