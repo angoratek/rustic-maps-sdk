@@ -289,13 +289,12 @@ class MapView @JvmOverloads constructor(
 
     private var nativeMapView: NativeMapView? = null
     /**
-     * The vector base source installed before the native view existed; the
-     * native view is rebuilt on every SDK swap, and the contract keeps the
-     * source across detach/attach, so the wrapper re-applies it like the
-     * overlay list. The queue also owns the rollback of a refused queued
-     * install.
+     * The vector base source last asked for. The contract keeps the source
+     * across detach and attach, so this value is only re-applied after a
+     * native-view rebuild; a change made while a frame draws is applied by
+     * the SDK when that frame finishes, which is why no queue is needed.
      */
-    private val vectorBaseSourceQueue: VectorBaseSourceQueue = VectorBaseSourceQueue()
+    private var requestedVectorTileSource: UrlTemplateVectorTileSource? = null
     private var availableSurface: Surface? = null
     private var surfaceWidthPixels: Int = 0
     private var surfaceHeightPixels: Int = 0
@@ -697,21 +696,11 @@ class MapView @JvmOverloads constructor(
      * force.
      */
     fun setVectorTileSource(source: UrlTemplateVectorTileSource): Boolean {
-        // The stored source survives a native-view rebuild (an SDK swap), so
-        // it is recorded before the push and rolled back by a refusal.
-        val nativeView = nativeMapView
-        if (nativeView == null) {
-            vectorBaseSourceQueue.record(source)
-            return true
-        }
+        // The stored source survives a native-view rebuild (an SDK swap).
+        requestedVectorTileSource = source
+        val nativeView = nativeMapView ?: return true
         return try {
-            vectorBaseSourceQueue.select(source, isDrawInFlight) { nextSource ->
-                if (nextSource == null) {
-                    nativeView.clearVectorTileSource()
-                } else {
-                    nativeView.setVectorTileSource(nextSource)
-                }
-            }
+            nativeView.setVectorTileSource(source)
             resumePump(resetBackoff = true)
             true
         } catch (failure: Throwable) {
@@ -752,19 +741,10 @@ class MapView @JvmOverloads constructor(
 
     /** Removes the vector base map; answers whether the SDK accepted the clear. */
     fun clearVectorTileSource(): Boolean {
-        val nativeView = nativeMapView
-        if (nativeView == null) {
-            vectorBaseSourceQueue.record(null)
-            return true
-        }
+        requestedVectorTileSource = null
+        val nativeView = nativeMapView ?: return true
         return try {
-            vectorBaseSourceQueue.select(null, isDrawInFlight) { nextSource ->
-                if (nextSource == null) {
-                    nativeView.clearVectorTileSource()
-                } else {
-                    nativeView.setVectorTileSource(nextSource)
-                }
-            }
+            nativeView.clearVectorTileSource()
             resumePump(resetBackoff = true)
             true
         } catch (failure: Throwable) {
@@ -1406,7 +1386,7 @@ class MapView @JvmOverloads constructor(
                 reportFailure(MapViewFailurePhase.LOCATION_INDICATOR, failure)
             }
         }
-        val vectorTileSource = vectorBaseSourceQueue.source
+        val vectorTileSource = requestedVectorTileSource
         if (vectorTileSource != null) {
             try {
                 nativeView.setVectorTileSource(vectorTileSource)
@@ -1499,7 +1479,6 @@ class MapView @JvmOverloads constructor(
             tryResize(nativeView, renderWidthPixels, renderHeightPixels)
             return
         }
-        applyPendingVectorTileSourceInstall(nativeView)
         advanceCameraAnimation(frameTimeNanos)
         val camera = currentCameraOrNull() ?: return
         val isSettledNow = try {
@@ -1536,37 +1515,6 @@ class MapView @JvmOverloads constructor(
             pauseForRetry()
         } finally {
             isDrawInFlight = false
-        }
-    }
-
-    /**
-     * Hands the queued vector base source to the native view once no frame is
-     * in flight, then keeps the pump awake so the change is drawn.
-     *
-     * A source the SDK still refuses is reported through the listener and the
-     * queue is dropped: retrying a refusal forever would spin the pump.
-     */
-    private fun applyPendingVectorTileSourceInstall(nativeView: NativeMapView?) {
-        val targetView = nativeView ?: return
-        try {
-            val applied = vectorBaseSourceQueue.applyPending(isDrawInFlight) { nextSource ->
-                if (nextSource == null) {
-                    targetView.clearVectorTileSource()
-                } else {
-                    targetView.setVectorTileSource(nextSource)
-                }
-            }
-            if (applied) {
-                resumePump(resetBackoff = true)
-            }
-        } catch (failure: Throwable) {
-            if (failure is CancellationException) {
-                throw failure
-            }
-            // The native view still serves its previous source, and the queue
-            // rolled its record back to it rather than keeping a value the
-            // SDK refused (a later selection must not inherit it).
-            reportFailure(MapViewFailurePhase.BASE_MAP, failure)
         }
     }
 
