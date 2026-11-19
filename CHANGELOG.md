@@ -14,6 +14,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 - `wasm-e2e` also accepts a manual dispatch, which the other platform jobs already did; a browser failure can be retried on its branch without an empty commit.
 - The disk-space probe test wrote a fixed name under the system temp directory. One gate run removed the file while a second, in another worktree, read it, which failed the second gate with `StoreUnavailable` on an otherwise green tree. The name now carries the test process's id.
 
+### Changed (2026-11-19 — the README opens with the project's live status)
+
+- The README's first line carries the badges for the format-and-lint, WebAssembly end-to-end, Android, iOS and secret-scan workflows plus the OpenSSF Scorecard and the license, each linked to its run history, so a reader sees the state of `main` before the prose.
+
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
 
 - `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.
