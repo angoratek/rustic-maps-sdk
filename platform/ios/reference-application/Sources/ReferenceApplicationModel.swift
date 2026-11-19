@@ -1742,21 +1742,6 @@ extension ReferenceApplicationModel {
         mapView?.sdk = surfaceSdk
     }
 
-    /// Every contract the shared registry can name, in the contract's stable
-    /// order, paired with the enum the SDK call takes.
-    private static let providerContractsByRegistryName: [(String, ProviderContract)] = [
-        ("geocoding", .geocoding),
-        ("routing", .routing),
-        ("distance_matrix", .distanceMatrix),
-        ("place_search", .placeSearch),
-        ("traffic_incidents", .trafficIncidents),
-        ("traffic_flow", .trafficFlow),
-        ("elevation", .elevation),
-        ("raster_tiles", .rasterTiles),
-        ("vector_tiles", .vectorTiles),
-        ("offline_routing", .offlineRouting),
-    ]
-
     /// The per-provider registration dispatch arm (§9: the applier is the
     /// only provider-specific switch).
     private func registerProviders(
@@ -1779,8 +1764,15 @@ extension ReferenceApplicationModel {
                 )
             }
             var registeredContract = false
-            for (registryName, contract) in Self.providerContractsByRegistryName
-            where descriptor.servedContracts.contains(registryName) {
+            for registryName in descriptor.servedContracts {
+                // The frozen contract owns the registry-name mapping. A
+                // registry newer than this build may name a capability this
+                // build does not define; it is skipped, never guessed.
+                guard let contract = providerContractFromRegistryName(
+                    registryName: registryName
+                ) else {
+                    continue
+                }
                 try sdk.configureProvider(
                     contract: contract,
                     providerKey: providerKey,

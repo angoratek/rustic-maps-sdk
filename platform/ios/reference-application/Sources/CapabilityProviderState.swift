@@ -39,30 +39,10 @@ extension MapSdk: CapabilityProviderConfiguring {}
 
 extension ProviderContract {
     /// The name the shared registry's `served_contracts` list uses for this
-    /// capability (`routing`, `distance_matrix`, …).
+    /// capability (`routing`, `distance_matrix`, …), read from the frozen
+    /// contract's one name mapping.
     var registryCapabilityName: String {
-        switch self {
-        case .geocoding:
-            return "geocoding"
-        case .routing:
-            return "routing"
-        case .distanceMatrix:
-            return "distance_matrix"
-        case .placeSearch:
-            return "place_search"
-        case .trafficIncidents:
-            return "traffic_incidents"
-        case .trafficFlow:
-            return "traffic_flow"
-        case .elevation:
-            return "elevation"
-        case .rasterTiles:
-            return "raster_tiles"
-        case .vectorTiles:
-            return "vector_tiles"
-        case .offlineRouting:
-            return "offline_routing"
-        }
+        registryNameForProviderContract(contract: self)
     }
 
     /// The capability's stable name in the remembered record (`Routing`,

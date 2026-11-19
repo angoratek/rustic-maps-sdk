@@ -540,8 +540,10 @@ pub enum ProviderContract {
 }
 
 impl ProviderContract {
-    /// The capability's name in the shared registry's `served_contracts` list.
-    #[cfg_attr(not(test), allow(dead_code))]
+    /// The capability's name in the shared registry's `served_contracts`
+    /// list. This match is the one place the registry spelling lives; the
+    /// contract's parser and accessor (`crate::provider_contract_names`)
+    /// derive from it.
     pub(crate) fn registry_name(self) -> &'static str {
         match self {
             Self::Geocoding => "geocoding",

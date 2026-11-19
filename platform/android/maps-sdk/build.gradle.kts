@@ -72,12 +72,18 @@ kotlin {
 
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.01")
-    // The descriptor-driven registration rules are pure Kotlin and run as
-    // plain JVM unit tests, without loading the native library. The Compose
-    // compiler plugin still checks the unit-test compile classpath for a
-    // Compose runtime, so the test source set carries one (it does not affect
-    // the published POM).
+    // The descriptor-driven registration rules resolve their capability names
+    // through the frozen contract, so the unit suite loads the host cdylib
+    // that `scripts/build-android.sh` stages for `:smoke-jvm` (the generated
+    // bindings drive every call through JNA). The Compose compiler plugin
+    // still checks the unit-test compile classpath for a Compose runtime, so
+    // the test source set carries one (it does not affect the published POM).
     testImplementation("junit:junit:4.13.2")
+    testImplementation("net.java.dev.jna:jna:5.18.1")
+    // The real org.json implementation for reading the shared provider
+    // registry in the unit suite: the stub android.jar answers JSON calls as
+    // "not mocked".
+    testImplementation("org.json:json:20180813")
     testImplementation(composeBom)
     testImplementation("androidx.compose.runtime:runtime")
 
@@ -93,6 +99,15 @@ dependencies {
     // The Compose `MapView` wrapper drives the view's onStart/onStop from the
     // host lifecycle (`LocalLifecycleOwner`).
     compileOnly("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+}
+
+// The JVM unit suite resolves the generated contract functions through the
+// host cdylib `scripts/build-android.sh` builds and stages beside the JVM
+// smoke runner. `repository.root` lets the suite read the shared provider
+// registry from its single committed source.
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    systemProperty("jna.library.path", file("../smoke-jvm/jni").absolutePath)
+    systemProperty("repository.root", rootDir.parentFile.parentFile.absolutePath)
 }
 
 // The generated bindings and per-ABI libraries are produced by

@@ -106,7 +106,9 @@ export interface CapabilityProviderSelectionOutcome {
 /**
  * The capability's registry name (`routing`, `distance_matrix`), matching the
  * spelling `platform/providers.json` uses in `served_contracts`. It derives
- * from the contract's own enum name, so a new contract needs no table here.
+ * from the contract's own enum name, so a new contract needs no table here;
+ * the generated bindings' native registry-name accessor is not reachable in
+ * the jest suite, which runs without the JSI native module.
  */
 export function capabilityRegistryName(contract: ProviderContract): string {
   return contractEnumName(contract)

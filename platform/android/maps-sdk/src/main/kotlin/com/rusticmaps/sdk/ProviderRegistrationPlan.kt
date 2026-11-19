@@ -1,46 +1,31 @@
 package com.rusticmaps.sdk
 
 import uniffi.rustic_maps.ProviderContract
+import uniffi.rustic_maps.providerContractFromRegistryName
 
 /**
  * The descriptor-driven registration rules [MapsSdkFacade] applies.
  *
  * The shared provider registry names the capabilities a provider serves with
- * the frozen contract's snake_case storage names. This object maps those names
- * onto [ProviderContract] values and answers the two questions the facade
- * asks: every capability one credential installs, and which applied credential
- * owns the SDK's disk
+ * the frozen contract's snake_case storage names. The frozen contract owns the
+ * one mapping from those names onto [ProviderContract] values; this object
+ * asks it and answers the two questions the facade asks: every capability one
+ * credential installs, and which applied credential owns the SDK's disk
  * raster-tile cache.
  *
- * The rules live apart from the generated SDK object so they can be tested
- * without loading the native library.
+ * The rules live apart from the generated SDK object so a unit test exercises
+ * them without constructing it; the name mapping itself is a contract call.
  */
 internal object ProviderRegistrationPlan {
-    /**
-     * The registry's storage name for each capability the frozen contract
-     * defines, in the registry's declared order. A name the contract does not
-     * define is absent, so a newer artifact never breaks an older wrapper.
-     */
-    private val CONTRACT_NAMES: Map<String, ProviderContract> = linkedMapOf(
-        "geocoding" to ProviderContract.GEOCODING,
-        "routing" to ProviderContract.ROUTING,
-        "distance_matrix" to ProviderContract.DISTANCE_MATRIX,
-        "place_search" to ProviderContract.PLACE_SEARCH,
-        "traffic_incidents" to ProviderContract.TRAFFIC_INCIDENTS,
-        "traffic_flow" to ProviderContract.TRAFFIC_FLOW,
-        "elevation" to ProviderContract.ELEVATION,
-        "raster_tiles" to ProviderContract.RASTER_TILES,
-        "vector_tiles" to ProviderContract.VECTOR_TILES,
-        "offline_routing" to ProviderContract.OFFLINE_ROUTING,
-    )
-
     /**
      * The capability contracts `descriptor` declares, in registry order.
      * Names the frozen contract does not define are skipped, so a registry
      * that gains a capability after this wrapper ships stays readable.
      */
     fun contractsFor(descriptor: ProviderCredentialDescriptor): List<ProviderContract> =
-        descriptor.servedContracts.mapNotNull { contractName -> CONTRACT_NAMES[contractName] }
+        descriptor.servedContracts.mapNotNull { contractName ->
+            providerContractFromRegistryName(contractName)
+        }
 
     /**
      * Whether `descriptor` declares the capability [contract], judged by the
@@ -50,7 +35,7 @@ internal object ProviderRegistrationPlan {
         descriptor: ProviderCredentialDescriptor,
         contract: ProviderContract,
     ): Boolean = descriptor.servedContracts.any { contractName ->
-        CONTRACT_NAMES[contractName] == contract
+        providerContractFromRegistryName(contractName) == contract
     }
 
     /**

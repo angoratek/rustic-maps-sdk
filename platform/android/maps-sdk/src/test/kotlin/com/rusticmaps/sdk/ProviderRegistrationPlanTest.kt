@@ -1,19 +1,65 @@
 package com.rusticmaps.sdk
 
 import com.rusticmaps.sdk.ProviderCredentialDescriptor
+import java.io.File
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uniffi.rustic_maps.ProviderContract
+import uniffi.rustic_maps.providerContractFromRegistryName
+import uniffi.rustic_maps.registryNameForProviderContract
 
 /**
  * Unit tests of the descriptor-driven registration rules. They exercise the
- * pure Kotlin planner, so they never construct the native SDK object.
+ * planner over the contract-owned registry-name mapping without constructing
+ * the SDK object; the generated mapping calls load the host cdylib
+ * `scripts/build-android.sh` stages for the JVM suite.
  */
 class ProviderRegistrationPlanTest {
+    @Test
+    fun everyRegistryDeclaredCapabilityMapsToAContract() {
+        val registryNames = sharedRegistryServedContractNames()
+
+        assertTrue("the shared registry must declare capabilities", registryNames.isNotEmpty())
+        for (registryName in registryNames) {
+            val contract = providerContractFromRegistryName(registryName)
+            assertNotNull(
+                "the registry declares '$registryName' but no contract maps it",
+                contract,
+            )
+            assertEquals(
+                listOf(contract),
+                ProviderRegistrationPlan.contractsFor(descriptor(servedContracts = listOf(registryName))),
+            )
+        }
+    }
+
+    @Test
+    fun everyContractRoundTripsThroughItsRegistryName() {
+        for (contract in ProviderContract.values()) {
+            val registryName = registryNameForProviderContract(contract)
+            assertEquals(
+                contract,
+                providerContractFromRegistryName(registryName),
+            )
+        }
+    }
+
+    @Test
+    fun aRegistryNameTheContractDoesNotDefineMapsToNothing() {
+        assertNull(providerContractFromRegistryName("a-future-capability"))
+        assertTrue(
+            ProviderRegistrationPlan
+                .contractsFor(descriptor(servedContracts = listOf("a-future-capability")))
+                .isEmpty(),
+        )
+    }
+
     @Test
     fun declaredCapabilitiesMapToContractValuesInRegistryOrder() {
         val descriptor = descriptor(
@@ -165,4 +211,29 @@ class ProviderRegistrationPlanTest {
         vectorStyles = emptyList(),
         servedContracts = servedContracts,
     )
+
+    /**
+     * Every capability name the shared provider registry declares across its
+     * descriptors, read from the artifact's single committed source (the
+     * `repository.root` system property names the checkout).
+     */
+    private fun sharedRegistryServedContractNames(): Set<String> {
+        val repositoryRoot = requireNotNull(System.getProperty("repository.root")) {
+            "the unit suite needs the repository.root system property"
+        }
+        val registry = JSONObject(
+            File(repositoryRoot, "platform/providers.json").readText(),
+        )
+        val providers = registry.getJSONArray("providers")
+        val registryNames = linkedSetOf<String>()
+        for (providerIndex in 0 until providers.length()) {
+            val servedContracts = providers
+                .getJSONObject(providerIndex)
+                .optJSONArray("served_contracts") ?: continue
+            for (contractIndex in 0 until servedContracts.length()) {
+                registryNames += servedContracts.getString(contractIndex)
+            }
+        }
+        return registryNames
+    }
 }
