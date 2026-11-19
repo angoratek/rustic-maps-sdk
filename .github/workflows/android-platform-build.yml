@@ -88,7 +88,11 @@ jobs:
         working-directory: platform/android
 
       - name: Assemble the Compose reference application (debug APK)
-        run: ./gradlew --no-daemon :reference-application:assembleDebug
+        # `--stacktrace` because the packaging task reports only its executor
+        # class when it fails, which names no cause.
+        run: |
+          df -h . || true
+          ./gradlew --no-daemon --stacktrace :reference-application:assembleDebug
         working-directory: platform/android
 
       - name: Upload the reference application APK

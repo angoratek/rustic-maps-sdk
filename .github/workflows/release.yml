@@ -144,7 +144,7 @@ jobs:
 
       - name: Install the generated-package toolchains
         run: |
-          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/web
           npm ci --no-audit --no-fund --prefix platform/rn
 
       - name: Generate the optimized browser package
@@ -522,7 +522,7 @@ jobs:
       - name: Install the wasm optimizer and generated-package toolchains
         run: |
           sudo apt-get update && sudo apt-get install --yes binaryen
-          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/web
           npm ci --no-audit --no-fund --prefix platform/rn
 
       - name: Resolve the pinned wasm-bindgen version
