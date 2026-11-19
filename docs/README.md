@@ -18,6 +18,7 @@ are not indexed here.
 | `doc-snippets.json` | Which reference-application roots the snippet generator scans and which chapters it rewrites. |
 | `browser-map.png`, `playground.png`, `rendered-map.png` | The README's screenshots. |
 
-The project record lives at the repository root: `PRD.md` holds the locked
-product decisions, `PLAN.md` the milestones and open work, `CHANGELOG.md` the
-dated changes, and `CLAUDE.md` the working conventions.
+The project record lives at the repository root and in the issue tracker:
+`PRD.md` holds the locked product decisions, the issue tracker the milestones
+and open work, `CHANGELOG.md` the dated changes, and `CLAUDE.md` the working
+conventions.

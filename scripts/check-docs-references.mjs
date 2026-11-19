@@ -31,7 +31,6 @@ const DOCS_INDEX_PATH = path.join(DOCS_DIRECTORY, "README.md");
 const REFERENCE_SOURCES = [
   "README.md",
   "CLAUDE.md",
-  "PLAN.md",
   "PRD.md",
   "site/book-src",
   "scripts",

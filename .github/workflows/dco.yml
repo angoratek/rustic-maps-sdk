@@ -16,6 +16,9 @@ permissions:
 
 jobs:
   sign-off:
+    # Maintainer pull requests carry the maintainer's own commits and need no
+    # sign-off; the requirement applies to contributions from anyone else.
+    if: github.event.pull_request.author_association != 'OWNER'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
