@@ -1,5 +1,11 @@
 # Rustic Maps SDK
 
+[![format and lint](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/format-and-lint.yml/badge.svg?branch=main)](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/format-and-lint.yml)
+[![WebAssembly end-to-end](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/wasm-e2e.yml/badge.svg?branch=main)](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/wasm-e2e.yml)
+[![Android build](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/android-platform-build.yml/badge.svg?branch=main)](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/android-platform-build.yml)
+[![iOS build](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/ios-platform-build.yml/badge.svg?branch=main)](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/ios-platform-build.yml)
+[![secret scan](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/secret-scan.yml/badge.svg?branch=main)](https://github.com/angoratek/rustic-maps-sdk/actions/workflows/secret-scan.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/angoratek/rustic-maps-sdk/badge)](https://securityscorecards.dev/viewer/?uri=github.com/angoratek/rustic-maps-sdk)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 Rustic Maps SDK renders maps, resolves places, plans routes, follows a
