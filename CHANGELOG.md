@@ -9,6 +9,9 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 - `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.
 - `rust-toolchain.toml` declares the `wasm32-unknown-unknown` target, so the pinned toolchain installs it on a fresh runner. The wasm jobs had failed with "can't find crate for `core`" because the directory override selected the pinned toolchain, which lacked the target.
 
+### Changed (2026-11-18 — the vector-base install queues are gone)
+
+- Both wrappers carried a pending-install queue with a rollback record for a base-map change that arrived while a frame drew. The contract already applies such a change when that frame finishes, so the queue could only fire on a malformed source and its rollback path never ran in practice. Android drops `VectorBaseSourceQueue` with its test, iOS drops `VectorTileSourceInstallRecord` with its four tests, and the React Native pod copy is regenerated from the SwiftPM source. A source selected before the surface exists is still re-applied after a native-view rebuild. The slice removes 406 lines and adds 31.
 ### Changed (2026-11-18 — the working plan retires into the issue tracker)
 
 - `PLAN.md` is gone. Every open item is one issue with a milestone and a label, each milestone description carries its done-when line, and the eight open question groups moved to issues #124 to #131. `PRD.md` fell from 306 to 190 lines with all 70 decisions intact, `CLAUDE.md` from 302 to 144 lines, and the changelog's stale identifiers, paths and ordering were corrected. The DCO check applies to outside contributions only.
