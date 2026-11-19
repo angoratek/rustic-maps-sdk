@@ -27,6 +27,15 @@ pub const MAXIMUM_PITCH_DEGREES: f64 = 75.0;
 pub const MINIMUM_ZOOM_LEVEL: f64 = 0.0;
 pub const MAXIMUM_ZOOM_LEVEL: f64 = 24.0;
 
+/// Least number of viewport corners that must unproject for a usable
+/// geographic-bounds box; below it the ground-scale fallback answers instead.
+pub const MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT: usize = 3;
+
+/// Meters covered by one degree of latitude on the WGS 84 mean sphere; the
+/// steep-pitch geographic-bounds fallback converts the camera's ground scale
+/// with it.
+pub const METERS_PER_DEGREE_LATITUDE: f64 = 111_320.0;
+
 /// Near clip plane distance as a fraction of the far plane. The ground plane
 /// needs only enough near depth to stay numerically sane at high zoom, where
 /// world coordinates reach ~1e9 pixels.
@@ -162,6 +171,7 @@ impl MapCamera {
             EARTH_EQUATORIAL_CIRCUMFERENCE_METERS / world_pixels_per_edge;
         equatorial_meters_per_pixel * self.center.latitude.to_radians().cos()
     }
+
     /// Builds a camera, clamping zoom and pitch and wrapping the bearing into
     /// `[0, 360)`.
     ///
@@ -512,6 +522,67 @@ impl MapCamera {
         }
         polygon
     }
+}
+
+/// The geographic bounds of `viewport` at the camera's pose.
+///
+/// The four viewport corners are unprojected first; a steep pitch can put the
+/// far corner below the horizon, so when fewer than
+/// [`MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT`] corners reach the ground the
+/// camera's own ground scale bounds a box around its center instead.
+///
+/// # Parameters
+/// - `camera` — the pose whose visible ground is measured.
+/// - `viewport` — the viewport the camera renders into, in physical pixels.
+/// - `field_of_view_degrees` — vertical field of view of the projection.
+///
+/// # Returns
+/// The smallest box containing every unprojected corner, or the ground-scale
+/// fallback box; `None` only when fewer than
+/// [`MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT`] corners reach the ground.
+pub fn camera_geographic_bounds(
+    camera: &MapCamera,
+    viewport: &ViewportPixels,
+    field_of_view_degrees: f64,
+) -> Option<BoundingBox> {
+    let corner_screen_points = [
+        [0.0, 0.0],
+        [viewport.width_pixels, 0.0],
+        [viewport.width_pixels, viewport.height_pixels],
+        [0.0, viewport.height_pixels],
+    ];
+    let corner_coordinates: Vec<GeographicCoordinate> = corner_screen_points
+        .iter()
+        .filter_map(|screen_point| {
+            camera.screen_to_ground_coordinate(*screen_point, viewport, field_of_view_degrees)
+        })
+        .collect();
+    if corner_coordinates.len() >= MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT {
+        return BoundingBox::from_coordinates(corner_coordinates);
+    }
+    // The camera always answers its flat-centered ground scale, so the
+    // fallback is available whenever the corners missed the ground.
+    let meters_per_pixel = camera.ground_meters_per_screen_pixel();
+    let half_height_meters = meters_per_pixel * viewport.height_pixels / 2.0;
+    let half_width_meters = meters_per_pixel * viewport.width_pixels / 2.0;
+    let latitude_delta_degrees = half_height_meters / METERS_PER_DEGREE_LATITUDE;
+    let center = camera.center;
+    let longitude_scale = METERS_PER_DEGREE_LATITUDE * center.latitude.to_radians().cos();
+    let longitude_delta_degrees = if longitude_scale == 0.0 {
+        latitude_delta_degrees
+    } else {
+        half_width_meters / longitude_scale
+    };
+    Some(BoundingBox {
+        south_west: GeographicCoordinate {
+            latitude: center.latitude - latitude_delta_degrees,
+            longitude: center.longitude - longitude_delta_degrees,
+        },
+        north_east: GeographicCoordinate {
+            latitude: center.latitude + latitude_delta_degrees,
+            longitude: center.longitude + longitude_delta_degrees,
+        },
+    })
 }
 
 /// Camera interpolation over progress `0.0..=1.0` (values outside clamp).
@@ -1075,8 +1146,8 @@ pub fn fit_bounds(
 mod tests {
     use super::{
         CameraAnimation, DEFAULT_FIELD_OF_VIEW_DEGREES, EdgeInsetsPixels, FlyToOptions,
-        MAXIMUM_PITCH_DEGREES, MAXIMUM_ZOOM_LEVEL, MapCamera, ViewportPixels, fit_bounds,
-        fly_to_animation, interpolate_camera,
+        MAXIMUM_PITCH_DEGREES, MAXIMUM_ZOOM_LEVEL, MapCamera, ViewportPixels,
+        camera_geographic_bounds, fit_bounds, fly_to_animation, interpolate_camera,
     };
     use crate::projection::{
         coordinate_to_normalized_world, normalized_world_to_coordinate, zoom_scale_pixels,
@@ -1090,6 +1161,40 @@ mod tests {
 
     fn viewport() -> ViewportPixels {
         ViewportPixels::new(1024.0, 768.0).unwrap()
+    }
+
+    /// A pitch steep enough that at least one viewport corner misses the
+    /// ground and the ground-scale fallback answers.
+    const STEEP_BOUNDS_PITCH_DEGREES: f64 = 70.0;
+
+    #[test]
+    fn geographic_bounds_frame_every_unprojected_corner_top_down() {
+        let camera = MapCamera::new(coordinate(47.5, 8.5), 12.0, 0.0, 0.0);
+        let view = viewport();
+        let bounds = camera_geographic_bounds(&camera, &view, DEFAULT_FIELD_OF_VIEW_DEGREES)
+            .expect("a top-down pose unprojects every corner");
+        for screen_point in [
+            [0.0, 0.0],
+            [view.width_pixels, 0.0],
+            [view.width_pixels, view.height_pixels],
+            [0.0, view.height_pixels],
+        ] {
+            let corner = camera
+                .screen_to_ground_coordinate(screen_point, &view, DEFAULT_FIELD_OF_VIEW_DEGREES)
+                .expect("a top-down corner reaches the ground");
+            assert!(bounds.contains_coordinate(&corner));
+        }
+    }
+
+    #[test]
+    fn geographic_bounds_answer_under_a_steep_pitch() {
+        let camera = MapCamera::new(coordinate(47.5, 8.5), 14.0, 0.0, STEEP_BOUNDS_PITCH_DEGREES);
+        let view = viewport();
+        let bounds = camera_geographic_bounds(&camera, &view, DEFAULT_FIELD_OF_VIEW_DEGREES)
+            .expect("the ground-scale fallback answers when corners miss");
+        assert!(bounds.contains_coordinate(&camera.center));
+        assert!(bounds.south_west.latitude < bounds.north_east.latitude);
+        assert!(bounds.south_west.longitude < bounds.north_east.longitude);
     }
 
     const CENTER_PIXEL_TOLERANCE: f64 = 1e-2;

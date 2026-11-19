@@ -4,6 +4,14 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — one camera geographic-bounds helper)
+
+- `camera_geographic_bounds` and the `METERS_PER_DEGREE_LATITUDE` and `MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT` constants now live in `rustic-maps-rendering::camera`. The browser binding delegates to it and the native surface view calls it through the wrapped renderer camera, so the two copies of the corner unprojection, the steep-pitch fallback and its constants are gone. Two tests in the rendering crate pin the top-down corners and the 70° fallback; the existing browser and native bounds tests still pass.
+
+### Fixed (2026-11-18 — the host build allows the wasm-only field names)
+
+- Removing the `#[allow(dead_code)]` from `generated_contract_field_names` made every constant that only the wasm-only canvas and vector-layer modules read dead on the host test build, and the workspace clippy gate failed on 53 of them. The allow is scoped to non-wasm32 builds; under wasm32 an unused constant still fails.
+
 ### Changed (2026-11-18 — one bounding-box aggregation)
 
 - `BoundingBox::from_coordinates` builds the smallest box around an iterator of coordinates and returns `None` for an empty one. The everymap bridge, offline routing and traffic-flow cache now call it instead of four hand-rolled min/max loops. The two camera bounds copies are folded into the shared camera helper tracked separately.
@@ -14,7 +22,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ### Removed (2026-11-18 — dead contract field names)
 
-- Twelve `generated_contract_field_names` constants had no reader outside their own module: the two bounding-box fields and the ten route fields. They are deleted, and the module's `#[allow(dead_code)]` is gone, so the next unused name fails the build instead of drifting. The remaining constants are imported by the canvas, vector-layer and vector-source readers.
+- Twelve `generated_contract_field_names` constants had no reader outside their own module: the two bounding-box fields and the ten route fields. They are deleted, and the module's blanket `#[allow(dead_code)]` is gone, so the next unused name fails the wasm32 build instead of drifting. The remaining constants are imported by the canvas, vector-layer and vector-source readers; the host test build keeps a scoped allow because those wasm-only readers do not exist there.
 
 ### Changed (2026-11-18 — documentation cut by content, not line wrapping)
 

@@ -49,7 +49,7 @@ pub mod zoom_transition;
 pub use camera::{
     CameraAnimation, DEFAULT_FIELD_OF_VIEW_DEGREES, EdgeInsetsPixels, FlyToOptions,
     MAXIMUM_PITCH_DEGREES, MAXIMUM_ZOOM_LEVEL, MINIMUM_ZOOM_LEVEL, MapCamera, ViewportPixels,
-    fit_bounds, fly_to_animation, interpolate_camera,
+    camera_geographic_bounds, fit_bounds, fly_to_animation, interpolate_camera,
 };
 pub use camera_interaction::CameraInteraction;
 pub use geojson_source::{

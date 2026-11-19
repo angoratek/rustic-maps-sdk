@@ -140,6 +140,18 @@ addition, a new platform seam, or a provider integration. Describe:
 Wait for a maintainer response before investing in a large implementation. Small
 fixes and documentation corrections can go straight to a pull request.
 
+## Issues and milestones
+
+`PLAN.md` is the maintainer's working record. Each open plan item is mirrored by
+one issue in this repository, grouped under the milestone named in the plan (for
+example `M60` or `Backlog`) and carrying the plan item as its acceptance
+criteria. Pick an issue, branch from `main` as described above, and open a pull
+request that links the issue with `Closes #123`.
+
+Issues labelled `good first issue` need no prior context beyond the documents
+they name. Issues labelled `owner-action` are for the maintainer and depend on
+an account, credential or deployment that contributors cannot reach.
+
 ## License of contributions
 
 Inbound contributions are dual-licensed under MIT OR Apache-2.0, the same terms

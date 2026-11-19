@@ -8,7 +8,10 @@
 // The constants sit in a skipped block so their values stay byte stable under
 // `cargo fmt`; the values are the formatted contract field names, not
 // hand-wrapped text. Every constant is imported by the canvas or the vector
-// layer, so an unused one fails the build instead of drifting.
+// layer, so on the wasm32 build an unused one fails instead of drifting. The
+// host build compiles this file only for the shared plumbing and its tests,
+// where those wasm-only consumers do not exist.
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 #[rustfmt::skip]
 mod field_names {
     /// JavaScript field name of the contract's `TileKey.tile_x`.

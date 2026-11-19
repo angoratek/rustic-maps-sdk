@@ -49,12 +49,13 @@ use rustic_maps_rendering::{SpriteAtlas, fetch_hosted_sprite_atlas};
 use crate::camera::MapCamera;
 use crate::error::SdkError;
 use crate::platform_surface;
+use crate::projection::validated_viewport_pixels;
 use crate::provider::MapSdk;
 use crate::records::{
     BoundingBox, EdgeInsets, FrameStatistics, GeographicCoordinate, LocationIndicatorState,
     LocationIndicatorStyle, MapOverlay, ProviderVectorTileSource, RasterImageFormat,
-    RasterTileResolution, ScreenPoint, SurfaceHandle, UrlTemplateVectorTileSource,
-    VectorTileSourceLayerCount, VectorTileSourceStatus, ViewportSize,
+    RasterTileResolution, SurfaceHandle, UrlTemplateVectorTileSource, VectorTileSourceLayerCount,
+    VectorTileSourceStatus, ViewportSize,
 };
 use crate::runtime::{drive, spawn_detached};
 
@@ -113,14 +114,6 @@ const DEFAULT_CAMERA_LONGITUDE_DEGREES: f64 = 0.0;
 /// framing the platform wrappers start at.
 const DEFAULT_CAMERA_ZOOM_LEVEL: f64 = 2.0;
 
-/// Least number of viewport corners that must unproject for a usable
-/// geographic-bounds box; below it the ground-scale fallback answers instead.
-const MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT: usize = 3;
-
-/// Meters covered by one degree of latitude on the WGS 84 mean sphere; the
-/// steep-pitch bounds fallback converts the camera's ground scale with it.
-const METERS_PER_DEGREE_LATITUDE: f64 = 111_320.0;
-
 /// The view's camera pose together with the attached viewport it frames.
 /// The viewport travels beside the pose because it must stay readable while
 /// a draw owns the surface slot, and clears with detach exactly like the
@@ -155,82 +148,17 @@ impl ViewCameraState {
     }
 }
 
-/// The geographic bounds of `viewport` at `camera`'s pose. The four viewport
-/// corners are unprojected first; a steep pitch can put the far corner below
-/// the horizon, so when fewer than [`MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT`]
-/// corners reach the ground the camera's own ground scale bounds a box
-/// around its center instead. Answers `None` only when even that scale is
-/// unavailable.
+/// The geographic bounds of `viewport` at `camera`'s pose, delegating to the
+/// renderer's one bounds helper and rebuilding the mirror record the contract
+/// hands out by value.
 fn geographic_bounds_of_camera(camera: &MapCamera, viewport: ViewportSize) -> Option<BoundingBox> {
-    let corner_screen_points = [
-        ScreenPoint { x: 0.0, y: 0.0 },
-        ScreenPoint {
-            x: viewport.width_pixels,
-            y: 0.0,
-        },
-        ScreenPoint {
-            x: viewport.width_pixels,
-            y: viewport.height_pixels,
-        },
-        ScreenPoint {
-            x: 0.0,
-            y: viewport.height_pixels,
-        },
-    ];
-    let corner_coordinates: Vec<GeographicCoordinate> = corner_screen_points
-        .iter()
-        .filter_map(|screen_point| {
-            camera
-                .screen_to_ground_coordinate(*screen_point, viewport, DEFAULT_FIELD_OF_VIEW_DEGREES)
-                .ok()
-                .flatten()
-        })
-        .collect();
-    if corner_coordinates.len() >= MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT {
-        let mut south_west_latitude = f64::INFINITY;
-        let mut south_west_longitude = f64::INFINITY;
-        let mut north_east_latitude = f64::NEG_INFINITY;
-        let mut north_east_longitude = f64::NEG_INFINITY;
-        for corner_coordinate in &corner_coordinates {
-            south_west_latitude = south_west_latitude.min(corner_coordinate.latitude);
-            south_west_longitude = south_west_longitude.min(corner_coordinate.longitude);
-            north_east_latitude = north_east_latitude.max(corner_coordinate.latitude);
-            north_east_longitude = north_east_longitude.max(corner_coordinate.longitude);
-        }
-        return Some(BoundingBox {
-            south_west: GeographicCoordinate {
-                latitude: south_west_latitude,
-                longitude: south_west_longitude,
-            },
-            north_east: GeographicCoordinate {
-                latitude: north_east_latitude,
-                longitude: north_east_longitude,
-            },
-        });
-    }
-    let meters_per_pixel = camera
-        .ground_meters_per_screen_pixel(viewport, DEFAULT_FIELD_OF_VIEW_DEGREES)
-        .ok()?;
-    let half_height_meters = meters_per_pixel * viewport.height_pixels / 2.0;
-    let half_width_meters = meters_per_pixel * viewport.width_pixels / 2.0;
-    let latitude_delta_degrees = half_height_meters / METERS_PER_DEGREE_LATITUDE;
-    let center = camera.center();
-    let longitude_scale = METERS_PER_DEGREE_LATITUDE * center.latitude.to_radians().cos();
-    let longitude_delta_degrees = if longitude_scale == 0.0 {
-        latitude_delta_degrees
-    } else {
-        half_width_meters / longitude_scale
-    };
-    Some(BoundingBox {
-        south_west: GeographicCoordinate {
-            latitude: center.latitude - latitude_delta_degrees,
-            longitude: center.longitude - longitude_delta_degrees,
-        },
-        north_east: GeographicCoordinate {
-            latitude: center.latitude + latitude_delta_degrees,
-            longitude: center.longitude + longitude_delta_degrees,
-        },
-    })
+    let viewport_pixels = validated_viewport_pixels(viewport).ok()?;
+    rustic_maps_rendering::camera_geographic_bounds(
+        camera.native_camera(),
+        &viewport_pixels,
+        DEFAULT_FIELD_OF_VIEW_DEGREES,
+    )
+    .map(|bounding_box| BoundingBox::from_native_bounding_box(&bounding_box))
 }
 
 /// The presented state one settled-check compares against: the camera the
