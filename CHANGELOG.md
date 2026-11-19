@@ -6,7 +6,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ### Changed (2026-11-19 — CI runs only what a push can change)
 
-- A pull-request branch is no longer linted twice: `actionlint` keeps its `pull_request` trigger and runs on `push` for `main` only. The wasm, React Native, benchmark, Android and iOS workflows now also run when `rust-toolchain.toml` changes, so a toolchain edit that affects a build is tested by that build; the pinned-toolchain target that broke the wasm jobs had been invisible to them. Dependabot's pull requests are exempt from the sign-off check, because the bot cannot sign a commit and the dependency review is their gate.
+- A pull-request branch is no longer linted twice: `actionlint` keeps its `pull_request` trigger and runs on `push` for `main` only. The wasm, React Native, benchmark, Android and iOS workflows now also run when `rust-toolchain.toml` changes, so a toolchain edit that affects a build is tested by that build; the pinned-toolchain target that broke the wasm jobs had been invisible to them. `rn-app-shell` also watches `scripts/generate-rn-bindings.sh` and `wasm-e2e` watches `scripts/build-wasm2-package.sh`, the scripts those jobs run: a change to the binding generator used to leave both jobs unstarted. Dependabot's pull requests are exempt from the sign-off check, because the bot cannot sign a commit and the dependency review is their gate.
 
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
 

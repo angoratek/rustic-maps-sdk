@@ -16,6 +16,7 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
+      - "scripts/generate-rn-bindings.sh"
       - ".github/workflows/rn-app-shell.yml"
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
+      - "scripts/generate-rn-bindings.sh"
       - ".github/workflows/rn-app-shell.yml"
 
 concurrency:

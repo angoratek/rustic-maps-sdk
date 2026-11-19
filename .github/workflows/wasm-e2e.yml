@@ -23,6 +23,7 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
+      - "scripts/build-wasm2-package.sh"
       - ".github/workflows/wasm-e2e.yml"
   pull_request:
     paths:
@@ -41,6 +42,7 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
+      - "scripts/build-wasm2-package.sh"
       - ".github/workflows/wasm-e2e.yml"
 
 concurrency:
