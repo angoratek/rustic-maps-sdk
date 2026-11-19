@@ -22,6 +22,7 @@ on:
       - "crates/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
       - "platform/ios/**"
       - "scripts/build-ios.sh"
       - "scripts/build-refapp-core.sh"

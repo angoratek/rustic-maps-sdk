@@ -12,6 +12,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 - The Android reference application's debug APK now builds with a four-gigabyte Gradle heap. Packaging the AAR's three ABIs, JNA, Compose and the generated bindings exhausted the default heap, and AGP's splitter failed with a bare `java.lang.OutOfMemoryError` after the bindings, the AAR and the unit suite had all passed.
 
+### Changed (2026-11-19 — CI runs only what a push can change)
+
+- A pull-request branch is no longer linted twice: `actionlint` keeps its `pull_request` trigger and runs on `push` for `main` only. The wasm, React Native, benchmark, Android and iOS workflows now also run when `rust-toolchain.toml` changes, so a toolchain edit that affects a build is tested by that build; the pinned-toolchain target that broke the wasm jobs had been invisible to them. `rn-app-shell` also watches `scripts/generate-rn-bindings.sh` and `wasm-e2e` watches `scripts/build-wasm2-package.sh`, the scripts those jobs run: a change to the binding generator used to leave both jobs unstarted. Dependabot's pull requests are exempt from the sign-off check, because the bot cannot sign a commit and the dependency review is their gate. The software WebGPU install retries the archive hosts and ends in a warning rather than a failure: a refused connection there failed an otherwise green run, and the suite already runs its degradation path on this runner.
+
 ### Fixed (2026-11-19 — the React Native shell's lockfile carries no known vulnerability)
 
 - The app shell's lockfile resolved `fast-xml-parser` 5.11.2 and the 8.72 line of the `typescript-eslint` packages, both inside advisory ranges; Dependabot's security update could not resolve a fix and failed on every scheduled run. A lockfile-only audit update moves them to `fast-xml-parser` 5.12.1 and `typescript-eslint` 8.73.0, after which `npm audit` reports no vulnerability. No manifest range changed.

@@ -23,6 +23,8 @@ on:
       - "fixtures/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "scripts/build-wasm2-package.sh"
       - ".github/workflows/wasm-e2e.yml"
   pull_request:
     paths:
@@ -40,6 +42,8 @@ on:
       - "fixtures/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "scripts/build-wasm2-package.sh"
       - ".github/workflows/wasm-e2e.yml"
 
 concurrency:
@@ -111,8 +115,18 @@ jobs:
       - name: Install the software WebGPU stack
         # The runner has no GPU, so Chromium renders WebGPU on SwiftShader's
         # Vulkan implementation; the loader and a Mesa ICD are what keep
-        # `requestAdapter()` from resolving to null.
-        run: sudo apt-get update && sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
+        # `requestAdapter()` from resolving to null. The archive hosts have
+        # refused connections on otherwise green runs, so the install retries
+        # and a failure degrades to a warning: the suite already runs its
+        # degradation path here (see the issue that asks for a GPU runner).
+        run: |
+          for _ in 1 2 3; do
+            if sudo apt-get update && sudo apt-get install -y libvulkan1 mesa-vulkan-drivers; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::the Vulkan loader and Mesa ICD could not be installed; the browser suite runs its degradation path"
       - name: Install the Playwright browser
         # The suite's dependencies came with the toolchain step above; only the
         # browser binary is missing here.
