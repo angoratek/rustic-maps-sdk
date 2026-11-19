@@ -81,9 +81,10 @@ guard, and the platform-parity floor gate.
 
 ## Developer Certificate of Origin
 
-Every commit must be signed off under the [Developer Certificate of
-Origin](https://developercertificate.org/). There is no contributor license
-agreement.
+Every commit in a contribution must be signed off under the [Developer
+Certificate of Origin](https://developercertificate.org/). Maintainer pull
+requests, whose commits are the maintainer's own, need no sign-off. There is no
+contributor license agreement.
 
 Create the sign-off automatically:
 
@@ -142,11 +143,11 @@ fixes and documentation corrections can go straight to a pull request.
 
 ## Issues and milestones
 
-`PLAN.md` is the maintainer's working record. Each open plan item is mirrored by
-one issue in this repository, grouped under the milestone named in the plan (for
-example `M60` or `Backlog`) and carrying the plan item as its acceptance
-criteria. Pick an issue, branch from `main` as described above, and open a pull
-request that links the issue with `Closes #123`.
+The issue tracker is the project record: every open work item is one issue,
+grouped under a milestone such as `M57` or `Backlog`, whose description states
+when the milestone is done. An issue carries its acceptance criteria. Pick an
+issue, branch from `main` as described above, and open a pull request that links
+it with `Closes #123`.
 
 Issues labelled `good first issue` need no prior context beyond the documents
 they name. Issues labelled `owner-action` are for the maintainer and depend on

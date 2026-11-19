@@ -185,7 +185,7 @@ A page is ready when each answer is yes:
    "here" or "see below".
 2. Relative links between site chapters stay relative and are verified by the
    mdBook build (`create-missing = false` catches renamed chapters).
-3. Private paths (`PLAN.md`, `PRD.md`, `tmp/` research notes) never appear in
+3. Private paths (`PRD.md`, `CLAUDE.md`, `tmp/` research notes) never appear in
    site chapters. The publish scrub refuses the build when they do. The
    published package identities are the one allowed exception to the
    `com.angoratek` content denial: the scrub permits the Maven coordinate form
