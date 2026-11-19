@@ -575,11 +575,11 @@ browser suite asserts the mapping for every provider serving type-ahead.
 | Provider | Geocoding | Routing | Traffic | Tiles |
 |---|---|---|---|---|
 | MapQuest | forward, reverse | directions, distance matrix | incidents, flow | raster (the shared rendered-tile set) |
-| HERE | forward | route | incidents, flow | vector (a recorded tile shared with the other vector sources) |
-| Google | forward | route | — | — |
-| TomTom | forward | route | incidents, flow | raster (a recorded Map Display tile) |
-| Mapbox | forward | route | — | vector (a recorded tile shared with the other vector sources) |
-| Radar | forward | route | — | — |
+| HERE | forward, reverse | route | incidents, flow | vector (a recorded tile shared with the other vector sources) |
+| Google | forward, reverse | route | — | — |
+| TomTom | forward, reverse | route | incidents, flow | raster (a recorded Map Display tile) |
+| Mapbox | forward, reverse | route | — | vector (a recorded tile shared with the other vector sources) |
+| Radar | forward, reverse | route | — | — |
 | Photon | search, reverse | — | — | — |
 | OSRM | — | route | — | — |
 | Valhalla | — | route | — | — |
@@ -588,8 +588,8 @@ browser suite asserts the mapping for every provider serving type-ahead.
 ### Native bridge tests
 
 `crates/rustic-maps-native-core/tests/vendor_provider_*.rs` drive an exported payload
-through the vendor provider and the SDK bridge on a loopback server: geocoding for the
-credentialed vendors, routing for the full-service and credentialed vendors, traffic for
+through the vendor provider and the SDK bridge on a loopback server: forward and reverse
+geocoding for the credentialed vendors, routing for the full-service and credentialed
 vendors, traffic for the three traffic-serving providers, and tiles for TomTom's raster
 fetch and HERE's and Mapbox's vector fetches. Keyless routing payloads run through the
 browser harness.

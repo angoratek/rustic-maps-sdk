@@ -122,6 +122,13 @@
           "fixture": "fixtures/here/geocode_brandenburg_gate.json"
         },
         {
+          "purpose": "reverse_geocoding",
+          "contract": "geocoding",
+          "method": "GET",
+          "path_pattern": "^revgeocode$",
+          "fixture": "fixtures/here/geocode_reverse_berlin.json"
+        },
+        {
           "purpose": "routing",
           "contract": "routing",
           "method": "POST",
@@ -237,6 +244,14 @@
           "fixture": "fixtures/google/geocode_brandenburg_gate.json"
         },
         {
+          "purpose": "reverse_geocoding",
+          "contract": "geocoding",
+          "method": "GET",
+          "path_pattern": "^maps/api/geocode/json$",
+          "fixture": "fixtures/google/geocode_reverse_berlin.json",
+          "note": "The reverse call shares the forward endpoint and differs only by the latlng query parameter; the native bridge case serves this payload directly."
+        },
+        {
           "purpose": "routing",
           "contract": "routing",
           "method": "POST",
@@ -270,6 +285,13 @@
           "method": "GET",
           "path_pattern": "^search/2/geocode/.*\\.json$",
           "fixture": "fixtures/tomtom/geocode_brandenburg_gate.json"
+        },
+        {
+          "purpose": "reverse_geocoding",
+          "contract": "geocoding",
+          "method": "GET",
+          "path_pattern": "^search/2/reverseGeocode/-?[0-9.]+,-?[0-9.]+\\.json$",
+          "fixture": "fixtures/tomtom/geocode_reverse_berlin.json"
         },
         {
           "purpose": "routing",
@@ -338,6 +360,13 @@
           "method": "GET",
           "path_pattern": "^search/geocode/v6/forward$",
           "fixture": "fixtures/mapbox/geocode_berlin.json"
+        },
+        {
+          "purpose": "reverse_geocoding",
+          "contract": "geocoding",
+          "method": "GET",
+          "path_pattern": "^search/geocode/v6/reverse$",
+          "fixture": "fixtures/mapbox/geocode_reverse_berlin.json"
         },
         {
           "purpose": "routing",
@@ -436,6 +465,13 @@
           "method": "GET",
           "path_pattern": "^v1/geocode/forward$",
           "fixture": "fixtures/radar/geocode_brandenburg_gate.json"
+        },
+        {
+          "purpose": "reverse_geocoding",
+          "contract": "geocoding",
+          "method": "GET",
+          "path_pattern": "^v1/geocode/reverse$",
+          "fixture": "fixtures/radar/geocode_reverse_berlin.json"
         },
         {
           "purpose": "routing",

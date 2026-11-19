@@ -1,0 +1,20 @@
+{
+  "results": [
+    {
+      "formatted_address": "Pariser Platz, 10117 Berlin, Germany",
+      "geometry": {
+        "location": { "lat": 52.5163, "lng": 13.3777 },
+        "location_type": "ROOFTOP"
+      },
+      "place_id": "ChIJw0kFYBROqEcQtnV3RDRRGk",
+      "types": ["route"],
+      "address_components": [
+        { "long_name": "Pariser Platz", "short_name": "Pariser Platz", "types": ["route"] },
+        { "long_name": "Mitte", "short_name": "Mitte", "types": ["sublocality", "political"] },
+        { "long_name": "Berlin", "short_name": "Berlin", "types": ["locality", "political"] },
+        { "long_name": "DE", "short_name": "DE", "types": ["country", "political"] }
+      ]
+    }
+  ],
+  "status": "OK"
+}
