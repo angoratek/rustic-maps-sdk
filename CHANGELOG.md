@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — one instruction-text composition for banner, then-line and speech)
+
+- `map-refapp-core` now owns the composition rule — composed text, then provider text, then the honest unavailable line on the display channel, with the roundabout exit suffix on the banner only — and the frozen contract exposes it as three additive functions. The iOS presentation, the Android Compose screen and both React Native demo sessions call them, and the three hand-written copies with their orphaned constants are gone. No user-visible string changed: the then-line stays suffix-free on iOS and keeps its suffix on Android and React Native, as before.
+- The functions live in the main contract because React Native has no `map-refapp-core` binding and `MapNativeCoreUI` depends only on `RusticMapsSDK`; the published crate gains a dependency on the dependency-free `map-refapp-core`, which the web bindings already carried. The build's refapp-content assertion still passes.
+
 ### Changed (2026-11-19 — one contract-owned registry-name mapping)
 
 - The frozen contract gains `provider_contract_from_registry_name` and `registry_name_for_provider_contract`, both additive. `ProviderContract::registry_name` is now the single table behind them, and the parser returns null for a name this build does not define, so a registry newer than the SDK stays readable.

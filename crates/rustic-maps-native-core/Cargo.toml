@@ -7,6 +7,10 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+# The shared reference-application math: the instruction-text composition
+# bound in the contract is the same implementation the reference applications
+# present on every target.
+map-refapp-core = { path = "../map-refapp-core" }
 # The uniffi-generated foreign-callback adapters implement the exported
 # callback traits through the `async_trait` desugaring, so the exported
 # provider contracts below use the same de-facto standard.

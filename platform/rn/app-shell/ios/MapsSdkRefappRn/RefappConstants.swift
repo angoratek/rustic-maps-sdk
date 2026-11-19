@@ -84,15 +84,11 @@ enum RefappConstants {
     static let navigationPhaseLabelArrived = "Arrived"
 
     // --- Turn-banner and progress composition (§7.1) ---
-    /// The banner's honest no-text line on the `Unavailable` instruction form.
-    static let noInstructionText = "No instruction text provided"
     /// The "then" line's prefix (§7.1).
     static let thenLinePrefix = "Then: "
     /// Distance phrase word of the `Immediate` form (§7.1: `Immediate`
     /// renders no number).
     static let distancePhraseImmediateText = "Now"
-    /// Roundabout suffix appended to the banner text when an exit index is live.
-    static let roundaboutSuffixTemplate = " (exit %d)"
     /// Deviation strip text (§7.5).
     static let deviationTextTemplate =
         "Off route — %@ from the route line; " +
