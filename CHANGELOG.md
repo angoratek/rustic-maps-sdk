@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — the gate stamps the tree it checked)
+
+- `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.
+- `rust-toolchain.toml` declares the `wasm32-unknown-unknown` target, so the pinned toolchain installs it on a fresh runner. The wasm jobs had failed with "can't find crate for `core`" because the directory override selected the pinned toolchain, which lacked the target.
+
 ### Changed (2026-11-18 — one Mercator latitude limit)
 
 - `MAXIMUM_MERCATOR_LATITUDE_DEGREES` now lives in `geospatial-types` and is re-exported by the five former copies: the projection, the GeoJSON source, the vector style, the legacy vector style and the traffic-flow cache. The projection copy carried a shorter literal (`85.051_128_78`); every layer now clamps at the correctly rounded `85.051_128_779_806_6`. A test pins the value against `atan(sinh(pi))`, and the existing corner, clamp and traffic-box tests cover the call sites.

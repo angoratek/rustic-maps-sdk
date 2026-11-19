@@ -68,6 +68,7 @@ The SDK must be provider-agnostic at **every** layer, not only in the Rust core:
 
 Every commit must compile standalone; docs commits come last in a slice. Run on the exact tree before asking the owner to commit:
 
+- `scripts/run-gate.sh` runs the first three items below and stamps the tree it checked; the pre-push hook accepts that stamp, so the gate never runs inside a push.
 - `cargo fmt --check`.
 - `cargo clippy --workspace --all-targets -- -D warnings`.
 - wasm32 lib-only clippy over the closure enforced in `.github/workflows/wasm-e2e.yml` (the wasm-reachable workspace crates plus the everymap provider crates; native-only crates stay out).
