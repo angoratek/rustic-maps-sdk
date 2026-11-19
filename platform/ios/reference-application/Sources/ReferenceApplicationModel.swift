@@ -2616,6 +2616,7 @@ extension ReferenceApplicationModel: MapViewDelegate {
         case .locationIndicator: return "location indicator"
         case .baseMap: return "vector base map"
         case .tap: return "map tap"
+        case .listener: return "map listener"
         }
     }
 }

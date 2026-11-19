@@ -95,6 +95,11 @@ public enum MapViewFailurePhase: Sendable {
     case baseMap
     /// Unprojecting a tap.
     case tap
+    /// An application delegate callback failed. The Swift delegate protocol
+    /// cannot throw, so the shipped wrapper never produces this phase; it is
+    /// declared so every native target carries the same phase set and a
+    /// consumer that switches over the phases compiles against one contract.
+    case listener
 }
 
 /// One refused `MapView` operation carrying its verbatim SDK or platform
@@ -307,7 +312,15 @@ public final class MapView: UIView {
         }
     }
 
-    /// The callbacks; held weakly so the view never keeps an owner alive.
+    /// The callbacks, held weakly.
+    ///
+    /// Liveness policy (the same on Android): a delegate commonly captures
+    /// the host that owns the view, so a strong reference here would close a
+    /// retain cycle and keep both alive after the host released them. The
+    /// weak reference breaks that cycle; the host keeps its delegate alive
+    /// for as long as it wants callbacks, and a delegate no longer referenced
+    /// elsewhere is deallocated and its callbacks stop. `teardown()` clears
+    /// the reference regardless.
     public weak var delegate: MapViewDelegate?
 
     /// Whether touch gestures pan, pinch, rotate and tap the map.
@@ -337,6 +350,12 @@ public final class MapView: UIView {
             heightPixels: Double(attachedHeightPixels)
         )
     }
+
+    /// The render viewport width in pixels (zero before attach).
+    public var viewportWidthPixels: Int { attachedWidthPixels }
+
+    /// The render viewport height in pixels (zero before attach).
+    public var viewportHeightPixels: Int { attachedHeightPixels }
 
     /// The capped physical-pixel extent the drawable is configured to, or
     /// nil before the first laid-out pump tick.

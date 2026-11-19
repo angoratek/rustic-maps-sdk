@@ -635,6 +635,7 @@ public final class MapsSdkMapHostView: UIView, MapsSdkMapViewDelegate {
         case .locationIndicator: return "locationIndicator"
         case .baseMap: return "baseMap"
         case .tap: return "tap"
+        case .listener: return "listener"
         }
     }
 }

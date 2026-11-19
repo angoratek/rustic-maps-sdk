@@ -14,6 +14,7 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
+import java.lang.ref.WeakReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -222,22 +223,27 @@ class MapView @JvmOverloads constructor(
         }
 
     /**
-     * The listener.
+     * The listener, held weakly.
      *
-     * Liveness policy: the view holds an ordinary strong reference until the
-     * host replaces it or the view is destroyed ([onDestroy]). A weak
-     * reference would let a listener the host still owns be collected
-     * silently, leaving the map alive with no callbacks and no diagnostic;
-     * a strong reference is safe because the view itself lives in the host's
-     * view hierarchy, so the listener cannot outlive the host that owns both.
-     * The counterpart of that guarantee is the documented lifecycle contract:
-     * the host always calls [onDestroy] when it releases the view (the Compose
-     * wrapper does so on release and on the host's destroy), and that call
-     * clears the reference. A host that detaches the view without destroying
-     * it keeps its listener by design, ready for reattachment; one that never
-     * destroys the view retains it until it sets [listener] to null.
+     * Liveness policy (the same on iOS): a listener commonly captures the
+     * host that owns the view, so a strong reference here would close a
+     * retain cycle and keep both alive after the host released them. The weak
+     * reference breaks that cycle; the host keeps its listener alive for as
+     * long as it wants callbacks, and a listener no longer referenced
+     * elsewhere is collected and its callbacks stop. [onDestroy] clears the
+     * reference regardless, so a destroyed view never delivers into a
+     * torn-down host.
      */
-    var listener: MapViewListener? = null
+    var listener: MapViewListener?
+        get() = listenerReference?.get()
+        set(value) {
+            listenerReference = value?.let { referenceTarget ->
+                WeakReference(referenceTarget)
+            }
+        }
+
+    /** The weak slot behind [listener]; the dispatcher resolves it per call. */
+    private var listenerReference: WeakReference<MapViewListener>? = null
 
     /**
      * The one path every listener callback takes; a throwing callback is
@@ -282,6 +288,31 @@ class MapView @JvmOverloads constructor(
     /** The render viewport height in pixels (zero before attach). */
     val viewportHeightPixels: Int
         get() = attachedHeightPixels
+
+    /**
+     * The capped physical-pixel extent the surface is configured to, or null
+     * before attach. This is the extent frames render at, not the raw surface
+     * extent; gestures and taps scale between the two.
+     */
+    val viewportPixelExtent: ViewportSize?
+        get() = viewportSize
+
+    /**
+     * The display's device pixels per dp — the scale the SDK receives through
+     * `set_device_pixel_ratio`, so labels and overlays declared in dp render
+     * at the host's density.
+     */
+    val displayScale: Double
+        get() = displayDensity()
+
+    /**
+     * Whether the view has drawn and presented its first frame since the
+     * current native surface attached. [MapViewListener.onMapReady] fires at
+     * the same moment, so a host that subscribes after the callback can read
+     * this state instead of waiting for a second event.
+     */
+    val hasDrawnFirstFrame: Boolean
+        get() = hasReportedMapReady
 
     // ------------------------------------------------------------------
     // Surface and native view state
@@ -581,6 +612,25 @@ class MapView @JvmOverloads constructor(
                 y = viewport.heightPixels / 2.0,
             ),
             isGestureDriven = false,
+        )
+    }
+
+    /**
+     * Rotates the content clockwise by [clockwiseDegrees] around the viewport
+     * center (the content-follows-fingers convention: a clockwise finger turn
+     * turns the content clockwise, which lowers the bearing).
+     */
+    fun rotateByDegrees(clockwiseDegrees: Double) {
+        val viewport = viewportSize ?: return
+        transformCamera(
+            // The contract's bearing delta adds clockwise to the camera
+            // bearing, so the content-follows-fingers sign flips here.
+            rotateDegrees = -clockwiseDegrees,
+            focalPoint = ScreenPoint(
+                x = viewport.widthPixels / 2.0,
+                y = viewport.heightPixels / 2.0,
+            ),
+            isGestureDriven = true,
         )
     }
 
