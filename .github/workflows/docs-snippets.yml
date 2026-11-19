@@ -67,7 +67,10 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Compile the wasm bindings
-        run: cargo build -p rustic-maps-native-core --release --target wasm32-unknown-unknown
+        # Library only: the crate's `uniffi-bindgen` binary is a native tool
+        # whose `uniffi` `cli` seam exists solely under the non-wasm target, so
+        # a bare `-p` build tries to compile a bin that cannot exist there.
+        run: cargo build -p rustic-maps-native-core --lib --release --target wasm32-unknown-unknown
 
       - name: Resolve the pinned wasm-bindgen version
         id: wasm_bindgen_version
@@ -96,7 +99,7 @@ jobs:
         run: |
           wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wasm_bindgen_version.outputs.version }}" \
             || cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
-          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/web
           npm ci --no-audit --no-fund --prefix platform/rn
 
       - name: Generate the browser package

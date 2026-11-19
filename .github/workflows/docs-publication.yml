@@ -58,7 +58,7 @@ jobs:
 
       - name: Install the generated-package toolchains
         run: |
-          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/web
           npm ci --no-audit --no-fund --prefix platform/rn
 
       - name: Build the WebAssembly package
