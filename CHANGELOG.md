@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the React Native and wasm jobs install on Linux again)
+
+- `scripts/generate-rn-bindings.sh` edited the generated iOS module header with `sed -i ''`, the BSD form; GNU sed on the Linux runner reads the empty backup suffix as the script and the expression as a file name, so `rn-app-shell` failed on every push with `sed: can't read s|#import "MapsSdkRn.h"|…`. The edit now writes a temporary file and renames it, which both sed implementations accept.
+- The `wasm-e2e` install step ran `npm ci` at the repository root, which has no manifest, so the job never reached its build. It now installs `platform/web` and `platform/rn` from their committed lockfiles, and the later step installs only the Playwright browser instead of repeating the web install.
+
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
 
 - `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.

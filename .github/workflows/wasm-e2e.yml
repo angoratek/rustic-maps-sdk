@@ -94,8 +94,11 @@ jobs:
             platform/web/package-lock.json
             platform/rn/package-lock.json
       - name: Install the generated-package toolchains
+        # Both trees install from their committed lockfile: `platform/web` holds
+        # the TypeScript and `@ubjs` runtime the package build reads, and
+        # `platform/rn` holds the generator the same build runs.
         run: |
-          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/web
           npm ci --no-audit --no-fund --prefix platform/rn
       - name: Generate the browser package
         run: ./scripts/build-wasm2-package.sh
@@ -104,8 +107,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('platform/web/package-lock.json') }}
-      - name: Install the Playwright suite and browser
-        run: npm ci && npx playwright install chromium --with-deps
+      - name: Install the Playwright browser
+        # The suite's dependencies came with the toolchain step above; only the
+        # browser binary is missing here.
+        run: npx playwright install chromium --with-deps
         working-directory: platform/web
       - name: Browser e2e against the served harness
         run: npx playwright test
