@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — the gate stamps the tree it checked)
+
+- `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.
+- `rust-toolchain.toml` declares the `wasm32-unknown-unknown` target, so the pinned toolchain installs it on a fresh runner. The wasm jobs had failed with "can't find crate for `core`" because the directory override selected the pinned toolchain, which lacked the target.
+
 ### Changed (2026-11-18 — the working plan retires into the issue tracker)
 
 - `PLAN.md` is gone. Every open item is one issue with a milestone and a label, each milestone description carries its done-when line, and the eight open question groups moved to issues #124 to #131. `PRD.md` fell from 306 to 190 lines with all 70 decisions intact, `CLAUDE.md` from 302 to 144 lines, and the changelog's stale identifiers, paths and ordering were corrected. The DCO check applies to outside contributions only.
