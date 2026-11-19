@@ -107,6 +107,11 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('platform/web/package-lock.json') }}
+      - name: Install the software WebGPU stack
+        # The runner has no GPU, so Chromium renders WebGPU on SwiftShader's
+        # Vulkan implementation; the loader and a Mesa ICD are what keep
+        # `requestAdapter()` from resolving to null.
+        run: sudo apt-get update && sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
       - name: Install the Playwright browser
         # The suite's dependencies came with the toolchain step above; only the
         # browser binary is missing here.
@@ -115,6 +120,10 @@ jobs:
       - name: Browser e2e against the served harness
         run: npx playwright test
         working-directory: platform/web
+        env:
+          # Selects the software-rendering launch flags in
+          # platform/web/browser_launch_options.mjs.
+          RUSTIC_MAPS_WEBGPU_SOFTWARE: "1"
 
   # The local pre-commit gate ran this closure by hand; running it here makes
   # the wasm32 compile contract enforced rather than a matter of discipline.

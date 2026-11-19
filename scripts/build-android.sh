@@ -198,6 +198,18 @@ generate_kotlin_bindings() {
         --language kotlin \
         --out-dir "${KOTLIN_GENERATED_SOURCES_DIR}" \
         --no-format
+    # The generator can exit successfully without writing a file (an unusable
+    # library, for example); without this check the failure surfaces minutes
+    # later as Gradle's "generated bindings are missing" with no cause named.
+    local generated_kotlin_file_count
+    generated_kotlin_file_count=$(find "${KOTLIN_GENERATED_SOURCES_DIR}" -name '*.kt' | wc -l | tr -d ' ')
+    if [ "${generated_kotlin_file_count}" -eq 0 ]; then
+        printf 'error: the generator produced no Kotlin sources under %s\n' \
+            "${KOTLIN_GENERATED_SOURCES_DIR}" >&2
+        find "${KOTLIN_GENERATED_SOURCES_DIR}" -maxdepth 3 -print >&2 || true
+        exit 1
+    fi
+    printf '==> generated %s Kotlin file(s)\n' "${generated_kotlin_file_count}"
 }
 
 stage_ffi_libraries_into_jni_libs() {
