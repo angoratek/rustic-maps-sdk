@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the reference application packages with the heap it needs)
+
+- The Android reference application's debug APK now builds with a four-gigabyte Gradle heap. Packaging the AAR's three ABIs, JNA, Compose and the generated bindings exhausted the default heap, and AGP's splitter failed with a bare `java.lang.OutOfMemoryError` after the bindings, the AAR and the unit suite had all passed.
+
 ### Fixed (2026-11-19 — the React Native and wasm jobs install on Linux again)
 
 - `scripts/generate-rn-bindings.sh` edited the generated iOS module header with `sed -i ''`, the BSD form; GNU sed on the Linux runner reads the empty backup suffix as the script and the expression as a file name, so `rn-app-shell` failed on every push with `sed: can't read s|#import "MapsSdkRn.h"|…`. The edit now writes a temporary file and renames it, which both sed implementations accept.
