@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "dXJuOm1ieHBsYzpBY1E2",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [13.39969, 52.520264]
+      },
+      "properties": {
+        "mapbox_id": "dXJuOm1ieHBsYzpBY1E2",
+        "feature_type": "address",
+        "full_address": "Bodestraße 1, 10178 Berlin, Germany",
+        "name": "Bodestraße 1",
+        "coordinates": { "longitude": 13.39969, "latitude": 52.520264 },
+        "place_formatted": "Berlin, Germany",
+        "context": {
+          "street": { "name": "Bodestraße" },
+          "region": { "name": "Berlin", "region_code": "BE" },
+          "country": { "name": "Germany", "country_code": "DE" },
+          "place": { "name": "Berlin" },
+          "postcode": { "name": "10178" }
+        },
+        "address": "1"
+      }
+    }
+  ]
+}

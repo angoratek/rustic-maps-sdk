@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the registry declares what each fixture route serves)
+
+- Every `fixture_routes` entry in `platform/providers.json` now names the served contract it answers, and the OpenStreetMap Standard base map records a reviewed `fixtureless_contracts` entry instead of an empty route list: its tiles are live-only and a recorded tile would misstate the source. The browser fallback test serves a generated placeholder rather than another provider's tile.
+- `platform/web/tests/platform_parity_gate.mjs` fails when a declared contract has neither a route nor a fixtureless record, when a route names a contract the descriptor does not declare, and when one contract appears in both lists.
+- HERE, Google, TomTom, Mapbox and Radar each gain a committed reverse-geocoding payload and route, and the native bridge tests assert a parsed reverse result for every one. Google's reverse call shares its forward path and differs only by query parameter, so the browser fixture server reaches it through the native case; the route carries that note. The reverse assertion names the provider only, keeping position data out of a failure message, which the code-scanning gate treats as logging.
+
 ### Fixed (2026-11-19 — the browser façade is statically checked)
 
 - `scripts/build-wasm2-package.sh` compiles with `--baseUrl platform/web/node_modules`, so the `@ubjs/core` runtime types resolve during declaration emit. The generated `rustic_maps.d.ts` now imports `UniffiGcObject`, `UniffiHandle`, `UniffiByteArray` and the converters it names instead of referencing them unbound. The script also stages the committed `browser_canvas.d.ts` as `generated/rustic_maps_bg.d.ts` so a local package mirrors the published one.

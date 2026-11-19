@@ -1,0 +1,16 @@
+{
+  "meta": { "code": 200 },
+  "addresses": [
+    {
+      "latitude": 52.5163,
+      "longitude": 13.3777,
+      "country": "Germany",
+      "countryCode": "DE",
+      "confidence": "exact",
+      "city": "Berlin",
+      "street": "Pariser Platz",
+      "formattedAddress": "Pariser Platz, 10117 Berlin, Germany",
+      "distance": 5.2
+    }
+  ]
+}

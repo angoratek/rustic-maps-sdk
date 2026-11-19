@@ -455,6 +455,37 @@ function assert_registry_and_fixtures_are_committed() {
           + `"${served_contract}".`,
       );
     }
+    // A contract with no committed fixture is recorded here with its reviewed
+    // reason, so a live-only source stays explicit instead of silently
+    // uncovered.
+    const fixtureless_contracts = descriptor.fixtureless_contracts ?? [];
+    assert(
+      Array.isArray(fixtureless_contracts),
+      `The provider "${descriptor.provider_key}" declares fixtureless_contracts `
+        + 'that are not an array.',
+    );
+    const fixtureless_contract_names = new Set();
+    for (const fixtureless_contract of fixtureless_contracts) {
+      const contract_name = fixtureless_contract.contract;
+      assert(
+        typeof contract_name === 'string'
+          && descriptor.served_contracts.includes(contract_name),
+        `The provider "${descriptor.provider_key}" records a fixtureless `
+          + `contract "${contract_name}" it does not declare in served_contracts.`,
+      );
+      assert(
+        typeof fixtureless_contract.reason === 'string'
+          && fixtureless_contract.reason.trim() !== '',
+        `The provider "${descriptor.provider_key}" records the fixtureless `
+          + `contract "${contract_name}" without a reason.`,
+      );
+      assert(
+        !fixtureless_contract_names.has(contract_name),
+        `The provider "${descriptor.provider_key}" records the fixtureless `
+          + `contract "${contract_name}" more than once.`,
+      );
+      fixtureless_contract_names.add(contract_name);
+    }
     for (const vector_style of descriptor.vector_styles ?? []) {
       if (typeof vector_style.document_url === 'string') {
         assert(
@@ -471,7 +502,21 @@ function assert_registry_and_fixtures_are_committed() {
         );
       }
     }
+    const route_contract_names = new Set();
     for (const fixture_route of descriptor.fixture_routes ?? []) {
+      assert(
+        typeof fixture_route.contract === 'string'
+          && descriptor.served_contracts.includes(fixture_route.contract),
+        `The registry route "${fixture_route.purpose}" on `
+          + `"${descriptor.provider_key}" must name a served contract the `
+          + 'descriptor declares.',
+      );
+      assert(
+        !fixtureless_contract_names.has(fixture_route.contract),
+        `The provider "${descriptor.provider_key}" declares both a fixture route `
+          + `and a fixtureless record for "${fixture_route.contract}".`,
+      );
+      route_contract_names.add(fixture_route.contract);
       if (typeof fixture_route.fixture === 'string') {
         assert(
           existsSync(path.join(REPOSITORY_ROOT, fixture_route.fixture)),
@@ -490,6 +535,15 @@ function assert_registry_and_fixtures_are_committed() {
             + `directory "${fixture_route.fixture_directory}".`,
         );
       }
+    }
+    for (const served_contract of descriptor.served_contracts) {
+      assert(
+        route_contract_names.has(served_contract)
+          || fixtureless_contract_names.has(served_contract),
+        `The provider "${descriptor.provider_key}" declares the served contract `
+          + `"${served_contract}" with neither a fixture route nor an explicit `
+          + 'fixtureless record.',
+      );
     }
   }
 }

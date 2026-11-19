@@ -21,6 +21,10 @@ use std::thread;
 const BRANDENBURG_GATE_LATITUDE: f64 = 52.5163;
 const COORDINATE_TOLERANCE_DEGREES: f64 = 0.05;
 
+/// The coordinate every vendor's recorded reverse payload was recorded for.
+const REVERSE_GEOCODE_LATITUDE: f64 = 52.52;
+const REVERSE_GEOCODE_LONGITUDE: f64 = 13.405;
+
 /// HTTP status the scripted server returns for a payload.
 const HTTP_OK_STATUS: u16 = 200;
 
@@ -118,6 +122,50 @@ fn assert_brandenburg_gate(places: &[geospatial_types::PlaceResult], provider_ke
     );
 }
 
+async fn reverse_geocode(
+    provider: Arc<dyn GeocodingProvider>,
+    latitude: f64,
+    longitude: f64,
+) -> Vec<geospatial_types::PlaceResult> {
+    let coordinate = geospatial_types::GeographicCoordinate::from_degrees(latitude, longitude)
+        .expect("the reverse-geocode coordinate is valid");
+    provider
+        .reverse_geocode(&coordinate)
+        .await
+        .unwrap_or_else(|error| panic!("the vendor provider answers: {error:?}"))
+}
+
+fn assert_reverse_place(
+    places: &[geospatial_types::PlaceResult],
+    provider_key: &str,
+    expected_latitude: f64,
+    expected_longitude: f64,
+    expected_address_fragment: &str,
+) {
+    let first = places
+        .first()
+        .unwrap_or_else(|| panic!("{provider_key} answers one place"));
+    // The failure message names the provider only: the coordinate is the
+    // position data CodeQL's cleartext-logging rule keeps out of logs, and the
+    // expected values live in the fixture the test reads.
+    let latitude_matches =
+        (first.coordinate.latitude - expected_latitude).abs() < COORDINATE_TOLERANCE_DEGREES;
+    let longitude_matches =
+        (first.coordinate.longitude - expected_longitude).abs() < COORDINATE_TOLERANCE_DEGREES;
+    assert!(
+        latitude_matches && longitude_matches,
+        "{provider_key} reports the reverse fixture coordinate",
+    );
+    assert!(
+        first
+            .structured_address_text
+            .contains(expected_address_fragment),
+        "{provider_key} reports the reverse fixture address {:?}, which does not contain {:?}",
+        first.structured_address_text,
+        expected_address_fragment
+    );
+}
+
 #[tokio::test]
 async fn here_geocoding_crosses_the_bridge() {
     let server = FixtureServer::start(fixture_bytes("here", "geocode_brandenburg_gate.json"));
@@ -197,5 +245,112 @@ async fn radar_geocoding_crosses_the_bridge() {
     let provider = Arc::new(EveryMapGeocoder::new(Arc::new(geocoder)));
     let places = forward_geocode(provider, "Brandenburg Gate, Berlin").await;
     assert_brandenburg_gate(&places, "Radar");
+    assert_eq!(server.request_count(), 1);
+}
+
+#[tokio::test]
+async fn here_reverse_geocoding_crosses_the_bridge() {
+    let server = FixtureServer::start(fixture_bytes("here", "geocode_reverse_berlin.json"));
+    let client = Arc::new(everymap_providers_here::HereClient::new(api_key_auth(
+        "placeholder-key",
+        "apiKey",
+    )));
+    let geocoder =
+        everymap_providers_here::HereGeocoder::with_base_url(client, server.base_url().to_string());
+    let provider = Arc::new(EveryMapGeocoder::new(Arc::new(geocoder)));
+    let places = reverse_geocode(
+        provider,
+        REVERSE_GEOCODE_LATITUDE,
+        REVERSE_GEOCODE_LONGITUDE,
+    )
+    .await;
+    assert_reverse_place(&places, "HERE", 52.52, 13.405, "Berlin, Germany");
+    assert_eq!(server.request_count(), 1);
+}
+
+#[tokio::test]
+async fn google_reverse_geocoding_crosses_the_bridge() {
+    let server = FixtureServer::start(fixture_bytes("google", "geocode_reverse_berlin.json"));
+    let client = Arc::new(everymap_providers_google::GoogleClient::new(api_key_auth(
+        "placeholder-key",
+        "key",
+    )));
+    let geocoder = everymap_providers_google::GoogleGeocoder::with_base_url(
+        client,
+        server.base_url().to_string(),
+    );
+    let provider = Arc::new(EveryMapGeocoder::new(Arc::new(geocoder)));
+    let places = reverse_geocode(
+        provider,
+        REVERSE_GEOCODE_LATITUDE,
+        REVERSE_GEOCODE_LONGITUDE,
+    )
+    .await;
+    assert_reverse_place(&places, "Google Maps", 52.5163, 13.3777, "Pariser Platz");
+    assert_eq!(server.request_count(), 1);
+}
+
+#[tokio::test]
+async fn tomtom_reverse_geocoding_crosses_the_bridge() {
+    let server = FixtureServer::start(fixture_bytes("tomtom", "geocode_reverse_berlin.json"));
+    let client = Arc::new(everymap_providers_tomtom::TomTomClient::new(api_key_auth(
+        "placeholder-key",
+        "key",
+    )));
+    let geocoder = everymap_providers_tomtom::TomTomGeocoder::with_base_url(
+        client,
+        server.base_url().to_string(),
+    );
+    let provider = Arc::new(EveryMapGeocoder::new(Arc::new(geocoder)));
+    let places = reverse_geocode(
+        provider,
+        REVERSE_GEOCODE_LATITUDE,
+        REVERSE_GEOCODE_LONGITUDE,
+    )
+    .await;
+    assert_reverse_place(&places, "TomTom", 52.520264, 13.399690, "Bodestraße");
+    assert_eq!(server.request_count(), 1);
+}
+
+#[tokio::test]
+async fn mapbox_reverse_geocoding_crosses_the_bridge() {
+    let server = FixtureServer::start(fixture_bytes("mapbox", "geocode_reverse_berlin.json"));
+    let client = Arc::new(everymap_providers_mapbox::MapBoxClient::new(api_key_auth(
+        "placeholder-key",
+        "access_token",
+    )));
+    let geocoder = everymap_providers_mapbox::MapBoxGeocoder::with_base_url(
+        client,
+        server.base_url().to_string(),
+    );
+    let provider = Arc::new(EveryMapGeocoder::new(Arc::new(geocoder)));
+    let places = reverse_geocode(
+        provider,
+        REVERSE_GEOCODE_LATITUDE,
+        REVERSE_GEOCODE_LONGITUDE,
+    )
+    .await;
+    assert_reverse_place(&places, "MapBox", 52.520264, 13.399690, "Bodestraße 1");
+    assert_eq!(server.request_count(), 1);
+}
+
+#[tokio::test]
+async fn radar_reverse_geocoding_crosses_the_bridge() {
+    let server = FixtureServer::start(fixture_bytes("radar", "geocode_reverse_berlin.json"));
+    let auth: Arc<dyn AuthProvider> =
+        Arc::new(HeaderAuthProvider::new("placeholder-key".to_string()));
+    let client = Arc::new(everymap_providers_radar::RadarClient::new(auth));
+    let geocoder = everymap_providers_radar::RadarGeocoder::with_base_url(
+        client,
+        server.base_url().to_string(),
+    );
+    let provider = Arc::new(EveryMapGeocoder::new(Arc::new(geocoder)));
+    let places = reverse_geocode(
+        provider,
+        REVERSE_GEOCODE_LATITUDE,
+        REVERSE_GEOCODE_LONGITUDE,
+    )
+    .await;
+    assert_reverse_place(&places, "Radar", 52.5163, 13.3777, "Pariser Platz");
     assert_eq!(server.request_count(), 1);
 }

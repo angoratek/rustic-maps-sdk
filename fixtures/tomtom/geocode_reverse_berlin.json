@@ -1,0 +1,23 @@
+{
+  "addresses": [
+    {
+      "address": {
+        "streetName": "Bodestraße",
+        "countryCode": "DE",
+        "countrySubdivision": "Berlin",
+        "municipality": "Berlin",
+        "postalCode": "10178",
+        "neighbourhood": "Museumsinsel",
+        "country": "Deutschland",
+        "freeformAddress": "Bodestraße, 10178 Berlin",
+        "localName": "Berlin"
+      },
+      "position": "52.520264,13.399690",
+      "id": "N2etwGOTOIfZi68KYi2JQQ"
+    }
+  ],
+  "summary": {
+    "numResults": 1,
+    "queryType": "ReverseGeometry"
+  }
+}

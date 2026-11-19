@@ -30,16 +30,17 @@ const RASTER_TILE_HOST = new URL(
     .replace('{x}', '0')
     .replace('{y}', '0'),
 ).host;
-/** A recorded tile the intercepted live route answers with. */
-const RECORDED_TILE_BYTES = readFileSync(path.join(
-  REPOSITORY_ROOT,
-  'crates',
-  'rustic-maps-rendering',
-  'fixtures',
-  'render',
-  'tiles',
-  '14_2662_6286.png',
-));
+/** A synthetic one-pixel PNG the intercepted live route answers with. */
+const SYNTHETIC_TILE_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGA'
+  + 'hKmMIQAAAABJRU5ErkJggg==';
+/**
+ * The stand-in tile for the live host is generated here, not taken from
+ * another provider's recorded imagery: the registry's live-only raster
+ * descriptor commits no tile, so its fallback case must not serve a vendor's
+ * recorded bytes under its key.
+ */
+const SYNTHETIC_TILE_BYTES = Buffer.from(SYNTHETIC_TILE_BASE64, 'base64');
 // A zoom level whose whole world fits in a handful of tiles, so the demo's
 // launch camera is outside the recorded fixture area at every address.
 const WORLD_ZOOM_LEVEL = 3;
@@ -94,7 +95,7 @@ test('the live fallback draws tiles anywhere when a local page opts in', async (
     return route.fulfill({
       status: 200,
       contentType: 'image/png',
-      body: RECORDED_TILE_BYTES,
+      body: SYNTHETIC_TILE_BYTES,
     });
   });
   await page.goto('/?advanced&liveTiles');
