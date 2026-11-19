@@ -35,8 +35,11 @@ The fields a settings surface renders, the dispatch reads and the harness serves
 }
 ```
 
-It also declares `served_contracts` and `fixture_routes` (method, path pattern and
-committed fixture per served contract). Optional: `maximum_zoom_level`, `vector_styles`,
+It also declares `served_contracts` and `fixture_routes` (method, path pattern, the
+served `contract` the route answers and the committed fixture). A declared contract with
+no committed payload is recorded in `fixtureless_contracts` with its `contract` and a
+reviewed `reason`, so a live-only source stays explicit instead of silently uncovered.
+Optional: `maximum_zoom_level`, `vector_styles`,
 `style_resource_hosts`, `url_template`, `glyphs_url_template`, `raster_url_template`,
 `vector_style`, `raster_tile_cache_ceiling_days`, `demo_base_url`, `demo_base_url_note`.
 No credential value is stored; `platform/reference-scenes.json` carries no descriptor.
@@ -281,6 +284,13 @@ a crate does not make it selectable.
 into it; a URL-template source registers over any `{z}/{x}/{y}` template. HERE raster is
 a provider-crate addition, not an SDK concept, and that upstream is not yet carried. A
 registered raster provider wins over a page's live URL-template fallback.
+
+OpenStreetMap Standard is a live-only base map: its tiles are served by
+`tile.openstreetmap.org` under the OpenStreetMap tile usage policy, and the registry
+commits no tile for it. Its descriptor records `raster_tiles` in `fixtureless_contracts`
+with that reason. No test serves another provider's recorded tile under its key: the
+browser fallback case answers the intercepted live host with a generated placeholder
+image.
 
 ### Vector
 
@@ -555,6 +565,9 @@ recorded live:
 4. Point a native integration test at a loopback server carrying the same bytes; every
    vendor domain type exposes `with_base_url`.
 
+A served contract with no committed payload is declared in `fixtureless_contracts`
+instead of a route, as the live-only OpenStreetMap Standard raster base does.
+
 The browser harness and native tests read the same bytes, so drift is one failing route.
 A place-search route also pins the first suggestion, line and quality class, so the
 browser suite asserts the mapping for every provider serving type-ahead.
@@ -570,14 +583,16 @@ browser suite asserts the mapping for every provider serving type-ahead.
 | Photon | search, reverse | — | — | — |
 | OSRM | — | route | — | — |
 | Valhalla | — | route | — | — |
+| OpenStreetMap Standard | — | — | — | live only, no committed fixture |
 
 ### Native bridge tests
 
 `crates/rustic-maps-native-core/tests/vendor_provider_*.rs` drive an exported payload
 through the vendor provider and the SDK bridge on a loopback server: geocoding for the
 credentialed vendors, routing for the full-service and credentialed vendors, traffic for
-the three traffic-serving providers, and tiles for TomTom's raster fetch and HERE's and
-Mapbox's vector fetches. Keyless routing payloads run through the browser harness.
+vendors, traffic for the three traffic-serving providers, and tiles for TomTom's raster
+fetch and HERE's and Mapbox's vector fetches. Keyless routing payloads run through the
+browser harness.
 
 The provider layer's suites prove each vendor requests the right URL and parses its
 payload. The SDK tests only what this repository owns: bridge conversion and its added

@@ -211,6 +211,11 @@ live tiles; `clearSharedProviderSlots` does the same for the mirrors;
 (`platform/web/main.mjs`) carries the clear call; `contract_sync.mjs` and the platform
 parity gate see it as an addition. The frozen UDL is unchanged.
 
+The registry's OpenStreetMap Standard raster base is live-only and commits no tile, so
+its descriptor records the served contract as fixtureless. The fallback case answers the
+intercepted live host with a generated placeholder image rather than another provider's
+recorded imagery, keeping the test network-free without misstating tile provenance.
+
 The browser transport drops the Fetch-forbidden headers it declares: `user-agent`,
 `cookie`, `host`, `origin`, `referer` and `connection`. The native transport still sends
 the declared user agent, which OpenStreetMap's tile policy expects from a server. A 404
