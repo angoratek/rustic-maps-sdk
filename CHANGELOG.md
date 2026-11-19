@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the browser façade is statically checked)
+
+- `scripts/build-wasm2-package.sh` compiles with `--baseUrl platform/web/node_modules`, so the `@ubjs/core` runtime types resolve during declaration emit. The generated `rustic_maps.d.ts` now imports `UniffiGcObject`, `UniffiHandle`, `UniffiByteArray` and the converters it names instead of referencing them unbound. The script also stages the committed `browser_canvas.d.ts` as `generated/rustic_maps_bg.d.ts` so a local package mirrors the published one.
+- `platform/web/main.mjs` starts with `// @ts-check` and its adapters carry JSDoc types from the generated declarations. `platform/web/check-facade-types.mjs` typechecks the façade against the built package (also `npm run typecheck` in `platform/web`), runs in Playwright's global setup and as a `wasm-e2e` step, and `CLAUDE.md` names it. A renamed generated field now fails statically: probing `place.structuredAddress` produced TS2551 instead of a browser-only failure.
+
 ### Fixed (2026-11-19 — the canvas field names are checked against the frozen contract)
 
 - `crates/rustic-maps-web-bindings/src/generated_contract_field_names.rs` is now `contract_field_names.rs`: nothing generates it, and the name said otherwise. Its documentation points at the new host test.

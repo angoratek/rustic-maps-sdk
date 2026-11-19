@@ -33,6 +33,15 @@ readonly GENERATED_SOURCE_DIRECTORY="${REPOSITORY_ROOT}/target/wasm-bindings"
 readonly PACKAGE_DIRECTORY="${REPOSITORY_ROOT}/platform/web/generated"
 readonly TYPESCRIPT_BINARY="${REPOSITORY_ROOT}/platform/web/node_modules/.bin/tsc"
 readonly RUNTIME_PACKAGE_DIRECTORY="${REPOSITORY_ROOT}/platform/web/node_modules/@ubjs"
+# The generated sources live in `target/wasm-bindings`, outside the directory
+# that carries the installed runtime packages, so the compiler's up-directory
+# `node_modules` lookup never reaches `@ubjs/core` or `@ubjs/wasm`. `--noCheck`
+# hides the failed resolution, and declaration emit then drops every imported
+# type it could not bind (`UniffiGcObject`, `UniffiHandle`, …), producing a
+# `.d.ts` that references them without importing them. Resolving the bare
+# specifiers from the installed packages makes the emitted declarations
+# complete.
+readonly RUNTIME_PACKAGE_BASE_URL="${REPOSITORY_ROOT}/platform/web/node_modules"
 readonly MODULE_PATH="${PACKAGE_DIRECTORY}/rustic_maps.wasm"
 # `-Oz` favors size; the flag set enables the features Rust's wasm targets
 # emit (bulk memory, non-trapping float conversions, sign extension) and
@@ -94,6 +103,7 @@ mkdir -p "$PACKAGE_DIRECTORY"
     --module ES2022 \
     --moduleResolution bundler \
     --skipLibCheck \
+    --baseUrl "$RUNTIME_PACKAGE_BASE_URL" \
     --rootDir "$GENERATED_SOURCE_DIRECTORY" \
     --outDir "$PACKAGE_DIRECTORY" \
     "${GENERATED_SOURCE_DIRECTORY}/index.ts"
@@ -104,6 +114,14 @@ node "${REPOSITORY_ROOT}/scripts/add-generated-esm-extensions.mjs" "$PACKAGE_DIR
 # compiled modules; the module itself is the one `uniffiInitAsync` opens.
 cp "${GENERATED_SOURCE_DIRECTORY}/rustic_maps_bg.js" "$PACKAGE_DIRECTORY/"
 cp "${GENERATED_SOURCE_DIRECTORY}/rustic_maps.wasm" "$PACKAGE_DIRECTORY/"
+
+# The glue ships no usable declarations; the committed
+# `platform/web/types/browser_canvas.d.ts` declares it, and the npm package
+# publishes that file beside the glue under the glue's name. Staging it here
+# keeps the local package shaped like the published one, so the facade
+# typecheck reads the same declarations a consumer does.
+cp "${REPOSITORY_ROOT}/platform/web/types/browser_canvas.d.ts" \
+    "${PACKAGE_DIRECTORY}/rustic_maps_bg.d.ts"
 
 if [ "$optimize" = true ] && command -v wasm-opt >/dev/null 2>&1; then
     local_before_bytes="$(wc -c < "$MODULE_PATH" | tr -d ' ')"

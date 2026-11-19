@@ -74,7 +74,8 @@ Every commit must compile standalone; docs commits come last in a slice. Run on 
 - wasm32 lib-only clippy over the closure enforced in `.github/workflows/wasm-e2e.yml` (the wasm-reachable workspace crates plus the everymap provider crates; native-only crates stay out).
 - `cargo test --workspace`; the run prints the current count.
 - The Playwright suite in `platform/web` (restart `serve.mjs` first; new fixtures and routes need a fresh server).
-- `node --test platform/web/tests/contract_sync.mjs`, `node --test platform/web/tests/canvas_declaration_sync.mjs`, the provider-name guard, `platform/web/tests/platform_parity_gate.mjs` and `node scripts/check_ux_parity.mjs`; the first four also run in Playwright's `globalSetup`.
+- `node platform/web/check-facade-types.mjs` after the wasm package build; it typechecks the browser facade against the generated declarations.
+- `node --test platform/web/tests/contract_sync.mjs`, `node --test platform/web/tests/canvas_declaration_sync.mjs`, the provider-name guard, `platform/web/tests/platform_parity_gate.mjs` and `node scripts/check_ux_parity.mjs`; the first four run in Playwright's `globalSetup`, as does the facade typecheck.
 - `node scripts/check-doc-snippets.mjs` when a chapter or reference app changed; `scripts/build-docs-site.sh` when a site source changed.
 - `scripts/build-{android,ios,rn}.sh` when their seams changed.
 

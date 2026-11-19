@@ -1,3 +1,4 @@
+// @ts-check
 // Browser entry point: opens the generated WebAssembly module, starts the
 // SDK, and exposes the compatibility surface on `window.mapTest` for the
 // Playwright harness. The `window.mapTestReady` promise resolves only after
@@ -62,6 +63,48 @@ import {
   setProviderBaseUrl,
 } from './generated/rustic_maps_bg.js';
 
+/**
+ * A generated `SdkError` variant: the tagged failure the SDK throws and this
+ * façade adapts back to the page's `{ code, message }` shape.
+ * @typedef {import('./generated/index.js').SdkError} GeneratedSdkError
+ */
+// The generated contract record and enum types this façade reads, imported
+// from the generated declarations so a renamed or removed field fails the
+// static check instead of only a browser test.
+/** @typedef {import('./generated/index.js').Place} GeneratedPlace */
+/** @typedef {import('./generated/index.js').GeographicCoordinate} GeneratedCoordinate */
+/** @typedef {import('./generated/index.js').BoundingBox} GeneratedBoundingBox */
+/** @typedef {import('./generated/index.js').Route} GeneratedRoute */
+/** @typedef {import('./generated/index.js').RouteOptions} GeneratedRouteOptions */
+/** @typedef {import('./generated/index.js').NavigationLocationUpdate} GeneratedLocationUpdate */
+/** @typedef {import('./generated/index.js').ManeuverInstructionText} GeneratedManeuverInstructionText */
+/** @typedef {import('./generated/index.js').DistancePhrase} GeneratedDistancePhrase */
+/** @typedef {import('./generated/index.js').TrafficIncident} GeneratedTrafficIncident */
+/** @typedef {import('./generated/index.js').TrafficFlowData} GeneratedTrafficFlowData */
+/** @typedef {import('./generated/index.js').TrafficFlowCacheStatistics} GeneratedTrafficFlowCacheStatistics */
+/** @typedef {import('./generated/index.js').LogEvent} GeneratedLogEvent */
+/**
+ * The page's legacy failure shape: an `Error` carrying the lower-camel code
+ * every harness assertion reads.
+ * @typedef {Error & { code?: string }} PageFailure
+ */
+/**
+ * The page window with the two members this module installs. The members are
+ * assigned before any harness reads them; the map surface is typed only where
+ * the façade itself touches it, because its values are the deliberately plain
+ * legacy rows the browser tests assert on.
+ * @typedef {Window & {
+ *   mapTestReady: Promise<string>,
+ *   mapTest: { mapSdk: GeneratedMapSdk } & Record<string, any>,
+ * }} PageWindow
+ */
+/**
+ * The page window typed with the compatibility surface this module installs.
+ * The members are asserted here because the browser does not declare them;
+ * this module assigns both before any harness reads them.
+ */
+const page_window = /** @type {PageWindow} */ (/** @type {unknown} */ (window));
+
 /** The module the generated entrypoint opens, staged beside it. */
 const GENERATED_MODULE_URL = new URL('./generated/rustic_maps.wasm', import.meta.url);
 
@@ -74,6 +117,7 @@ const GENERATED_SDK_ERROR_TAGS = new Set(Object.values(SdkError_Tags));
  * generated record stores only the variant's payload (the detail text, or the
  * contract name), so the prefix is restored here; the two offline-routing
  * assertions read the core's `offline graph invalid:` prefix.
+ * @type {Map<SdkError_Tags, (inner: { detail?: string, contractName?: string }) => string>}
  */
 const GENERATED_ERROR_MESSAGE_BUILDERS = new Map([
   [
@@ -124,13 +168,14 @@ const GENERATED_ERROR_MESSAGE_BUILDERS = new Map([
  * value is not a generated SDK failure. The generated error is a tagged class
  * union; `tag` is its variant name.
  * @param {unknown} error
- * @returns {string | null}
+ * @returns {SdkError_Tags | null}
  */
 function generated_sdk_error_tag(error) {
   if (error === null || typeof error !== 'object') {
     return null;
   }
-  const tag = error.tag;
+  const generated_error = /** @type {GeneratedSdkError} */ (error);
+  const tag = generated_error.tag;
   return typeof tag === 'string' && GENERATED_SDK_ERROR_TAGS.has(tag) ? tag : null;
 }
 
@@ -138,12 +183,17 @@ function generated_sdk_error_tag(error) {
  * The message of a generated `SdkError`: the core display text for its
  * variant, built from the variant's own payload. A generated variant the
  * table does not know falls back to its payload verbatim.
- * @param {object} error
- * @param {string} tag
+ * @param {GeneratedSdkError} error
+ * @param {SdkError_Tags} tag
  * @returns {string}
  */
 function generated_sdk_error_message(error, tag) {
-  const inner = error.inner ?? {};
+  // The generated payload differs per variant (`detail` or `contractName`),
+  // and `RateLimitExhausted` carries none; the builder table reads whichever
+  // field the variant carries.
+  const inner = /** @type {{ detail?: string, contractName?: string }} */ (
+    /** @type {{ inner?: unknown }} */ (error).inner ?? {}
+  );
   const message_builder = GENERATED_ERROR_MESSAGE_BUILDERS.get(tag);
   if (message_builder !== undefined) {
     return message_builder(inner);
@@ -170,7 +220,11 @@ function adapted_failure(error) {
   if (tag === null) {
     return error;
   }
-  const adapted_error = new Error(generated_sdk_error_message(error, tag));
+  const adapted_error = /** @type {PageFailure} */ (
+    new Error(
+      generated_sdk_error_message(/** @type {GeneratedSdkError} */ (error), tag),
+    )
+  );
   // An empty `name` keeps `Error.prototype.toString` at the message alone, so
   // `String(error)` stays the verbatim detail every surface reported.
   adapted_error.name = '';
@@ -207,7 +261,12 @@ function with_adapted_sync_failure(call) {
   }
 }
 
-/** Builds a contract `GeographicCoordinate` from the page's positional degrees. */
+/**
+ * Builds a contract `GeographicCoordinate` from the page's positional degrees.
+ * @param {number} latitude
+ * @param {number} longitude
+ * @returns {GeneratedCoordinate}
+ */
 function geographic_coordinate(latitude, longitude) {
   return { latitude, longitude };
 }
@@ -229,7 +288,7 @@ function legacy_failure_code(tag) {
  * registry's `…Provider` form, or the lowercase capability name; every form
  * reaches the same generated `ProviderContract` member.
  * @param {string} contract_name_text
- * @returns {number}
+ * @returns {ProviderContract}
  */
 function provider_contract_from_name(contract_name_text) {
   const normalized = String(contract_name_text)
@@ -269,7 +328,7 @@ function provider_contract_from_name(contract_name_text) {
 /**
  * The contract name a generated numeric enum member carries (`Geocoding`),
  * the text every readback the page consumes has always reported.
- * @param {object} enum_type
+ * @param {Record<number, string>} enum_type
  * @param {number} value
  * @returns {string}
  */
@@ -278,7 +337,10 @@ function enum_member_name(enum_type, value) {
   return typeof member_name === 'string' ? member_name : String(value);
 }
 
-/** One generated `Place` as the flat row the page and its specs read. */
+/**
+ * One generated `Place` as the flat row the page and its specs read.
+ * @param {GeneratedPlace} place
+ */
 function place_row_from_generated(place) {
   return {
     structuredAddressText: place.structuredAddressText,
@@ -288,7 +350,10 @@ function place_row_from_generated(place) {
   };
 }
 
-/** The generated place list as the flat rows every geocoding/search call answers. */
+/**
+ * The generated place list as the flat rows every geocoding/search call answers.
+ * @param {Array<GeneratedPlace>} places
+ */
 function place_rows_from_generated(places) {
   return places.map(place_row_from_generated);
 }
@@ -320,6 +385,11 @@ function coordinate_pairs_from_flat(flat_values, label) {
 /**
  * Builds a contract `BoundingBox` from the page's four corners, refusing an
  * inverted box with the core's own wording before the SDK is asked.
+ * @param {number} south_west_latitude
+ * @param {number} south_west_longitude
+ * @param {number} north_east_latitude
+ * @param {number} north_east_longitude
+ * @returns {GeneratedBoundingBox}
  */
 function bounding_box_from_corners(
   south_west_latitude,
@@ -338,7 +408,11 @@ function bounding_box_from_corners(
   return { southWest: south_west, northEast: north_east };
 }
 
-/** The contract's transportation mode for the page's name spelling. */
+/**
+ * The contract's transportation mode for the page's name spelling.
+ * @param {unknown} transportation_mode_name
+ * @returns {TransportationMode}
+ */
 function transportation_mode_from_name(transportation_mode_name) {
   switch (String(transportation_mode_name).trim().toLowerCase()) {
     case 'automobile':
@@ -354,7 +428,13 @@ function transportation_mode_from_name(transportation_mode_name) {
   }
 }
 
-/** Reads one optional route-option text field, refusing a non-string value. */
+/**
+ * Reads one optional route-option text field, refusing a non-string value.
+ * @param {Record<string, unknown>} options
+ * @param {string} field_name
+ * @param {string} default_text
+ * @returns {string}
+ */
 function route_option_text(options, field_name, default_text) {
   const field_value = options[field_name];
   if (field_value === undefined || field_value === null) {
@@ -366,7 +446,12 @@ function route_option_text(options, field_name, default_text) {
   return field_value;
 }
 
-/** Reads one optional route-option boolean field, defaulting to false. */
+/**
+ * Reads one optional route-option boolean field, defaulting to false.
+ * @param {Record<string, unknown>} options
+ * @param {string} field_name
+ * @returns {boolean}
+ */
 function route_option_boolean(options, field_name) {
   const field_value = options[field_name];
   if (field_value === undefined || field_value === null) {
@@ -381,6 +466,7 @@ function route_option_boolean(options, field_name) {
 /**
  * The contract route options the SDK defaults to: automobile, fastest,
  * metric, no avoids, departing now.
+ * @returns {GeneratedRouteOptions}
  */
 function default_route_options() {
   return {
@@ -407,16 +493,20 @@ const MAXIMUM_DEPARTURE_TIMESTAMP_SECONDS = Number.MAX_SAFE_INTEGER;
  * refusing unknown enum names and malformed fields before a provider is
  * asked, with the same details the browser seam always answered.
  * @param {unknown} options
+ * @returns {GeneratedRouteOptions}
  */
 function route_options_from_object(options) {
   if (options === null || typeof options !== 'object' || Array.isArray(options)) {
     throw new Error('the route options argument must be an object');
   }
+  // The page argument is untyped input; it is validated below, so the reads
+  // go through a plain string-keyed record.
+  const page_options = /** @type {Record<string, unknown>} */ (options);
   const transportationMode = transportation_mode_from_name(
-    route_option_text(options, 'transportationMode', 'automobile'),
+    route_option_text(page_options, 'transportationMode', 'automobile'),
   );
   const route_strategy_text = route_option_text(
-    options,
+    page_options,
     'routeStrategy',
     'fastest',
   ).trim().toLowerCase();
@@ -429,7 +519,7 @@ function route_options_from_object(options) {
     throw new Error('the route strategy must be fastest or shortest');
   }
   const unit_system_text = route_option_text(
-    options,
+    page_options,
     'unitSystem',
     'metric',
   ).trim().toLowerCase();
@@ -441,7 +531,7 @@ function route_options_from_object(options) {
   } else {
     throw new Error('the unit system must be metric or imperial');
   }
-  const avoid_field = options.avoidOptions;
+  const avoid_field = page_options.avoidOptions;
   let avoidOptions = {
     tollRoads: false,
     limitedAccessHighways: false,
@@ -452,14 +542,15 @@ function route_options_from_object(options) {
     if (typeof avoid_field !== 'object' || Array.isArray(avoid_field)) {
       throw new Error('the avoidOptions field must be an object');
     }
+    const avoid_options = /** @type {Record<string, unknown>} */ (avoid_field);
     avoidOptions = {
-      tollRoads: route_option_boolean(avoid_field, 'tollRoads'),
-      limitedAccessHighways: route_option_boolean(avoid_field, 'limitedAccessHighways'),
-      ferries: route_option_boolean(avoid_field, 'ferries'),
-      unpavedRoads: route_option_boolean(avoid_field, 'unpavedRoads'),
+      tollRoads: route_option_boolean(avoid_options, 'tollRoads'),
+      limitedAccessHighways: route_option_boolean(avoid_options, 'limitedAccessHighways'),
+      ferries: route_option_boolean(avoid_options, 'ferries'),
+      unpavedRoads: route_option_boolean(avoid_options, 'unpavedRoads'),
     };
   }
-  const departure_field = options.departureTimestampSeconds;
+  const departure_field = page_options.departureTimestampSeconds;
   let departureTimestampSeconds;
   if (departure_field !== undefined && departure_field !== null) {
     if (typeof departure_field !== 'number') {
@@ -485,7 +576,10 @@ function route_options_from_object(options) {
   };
 }
 
-/** One generated `TrafficIncident` in the page's plain row shape. */
+/**
+ * One generated `TrafficIncident` in the page's plain row shape.
+ * @param {GeneratedTrafficIncident} incident
+ */
 function traffic_incident_row_from_generated(incident) {
   return {
     identifier: incident.identifier,
@@ -497,7 +591,10 @@ function traffic_incident_row_from_generated(incident) {
   };
 }
 
-/** One generated `TrafficFlowData` in the page's plain row shape. */
+/**
+ * One generated `TrafficFlowData` in the page's plain row shape.
+ * @param {GeneratedTrafficFlowData} flow_row
+ */
 function traffic_flow_row_from_generated(flow_row) {
   return {
     shapeCoordinates: flow_row.shapeCoordinates,
@@ -514,6 +611,7 @@ function traffic_flow_row_from_generated(flow_row) {
  * The generated traffic-flow counters as the plain numbers the page compares
  * against: the contract carries them as 64-bit integers, which reach
  * JavaScript as `bigint`.
+ * @param {GeneratedTrafficFlowCacheStatistics | undefined} statistics
  */
 function traffic_flow_cache_statistics_from_generated(statistics) {
   if (statistics === undefined || statistics === null) {
@@ -535,6 +633,7 @@ function traffic_flow_cache_statistics_from_generated(statistics) {
  * One generated `LogEvent` in the shape the console and its specs read: the
  * severity as its contract name, the timestamp as a number, and the provider
  * request under `providerRequest` with its 64-bit counters converted.
+ * @param {GeneratedLogEvent} event
  */
 function diagnostic_event_from_generated(event) {
   const provider_request_trace = event.providerRequestTrace;
@@ -582,17 +681,21 @@ const PAGE_DIAGNOSTIC_LISTENER = {
  * enum cannot take).
  * @param {string} code
  * @param {string} message
- * @returns {Error}
+ * @returns {PageFailure}
  */
 function legacy_named_failure(code, message) {
-  const failure = new Error(message);
+  const failure = /** @type {PageFailure} */ (new Error(message));
   // An empty `name` keeps `Error.prototype.toString` at the message alone.
   failure.name = '';
   failure.code = code;
   return failure;
 }
 
-/** The generated `UnitSystem` member for the page's `"metric"`/`"imperial"`. */
+/**
+ * The generated `UnitSystem` member for the page's `"metric"`/`"imperial"`.
+ * @param {string} unit_system_name
+ * @returns {UnitSystem}
+ */
 function unit_system_from_page_name(unit_system_name) {
   switch (unit_system_name) {
     case 'metric':
@@ -607,7 +710,11 @@ function unit_system_from_page_name(unit_system_name) {
   }
 }
 
-/** The page's `phase` spelling for a generated `NavigationPhase` member. */
+/**
+ * The page's `phase` spelling for a generated `NavigationPhase` member.
+ * @param {NavigationPhase} navigation_phase
+ * @returns {string}
+ */
 function navigation_phase_text(navigation_phase) {
   switch (navigation_phase) {
     case NavigationPhase.Navigating:
@@ -621,7 +728,11 @@ function navigation_phase_text(navigation_phase) {
   }
 }
 
-/** The page's `phaseChange` spelling for a generated `NavigationPhaseChange`. */
+/**
+ * The page's `phaseChange` spelling for a generated `NavigationPhaseChange`.
+ * @param {NavigationPhaseChange} navigation_phase_change
+ * @returns {string}
+ */
 function navigation_phase_change_text(navigation_phase_change) {
   switch (navigation_phase_change) {
     case NavigationPhaseChange.OffRouteEntered:
@@ -641,6 +752,8 @@ function navigation_phase_change_text(navigation_phase_change) {
  * The canonical distance phrase text the page's banner line shows (`"now"`,
  * `"130 meters"`, …), reproduced from the contract's phrase record with the
  * same increments the SDK rounds it to.
+ * @param {GeneratedDistancePhrase} distance_phrase
+ * @returns {string}
  */
 function distance_phrase_text(distance_phrase) {
   switch (distance_phrase.phraseKind) {
@@ -672,6 +785,8 @@ function distance_phrase_text(distance_phrase) {
  * sentence when the provider wrote one. An unavailable variant answers the
  * empty strings and a null provider sentence, exactly as the browser seam
  * always did (nothing is invented).
+ * @param {GeneratedManeuverInstructionText} maneuver_instruction_text
+ * @returns {{ displayText: string, speechText: string, providerDisplayText: string | null }}
  */
 function maneuver_text_fields(maneuver_instruction_text) {
   if (maneuver_instruction_text.textKind === ManeuverInstructionTextKind.Unavailable) {
@@ -760,6 +875,9 @@ function navigation_snapshot_from_generated(generated_navigator) {
  * contract requires is present, and the `geometry` field an assembled route
  * may omit becomes the empty polyline its steps carry, exactly as the browser
  * seam defaulted it.
+ * @param {Record<string, any>} route The page's legacy assembled route; its
+ *   fields are the SDK's own route record, and the return type checks them.
+ * @returns {GeneratedRoute}
  */
 function generated_route_from_page(route) {
   return {
@@ -775,6 +893,9 @@ function generated_route_from_page(route) {
  * The page's fix object as the generated `NavigationLocationUpdate`. The
  * page's null optionals become the generated record's undefined optionals:
  * the generated converter distinguishes the two.
+ * @param {Record<string, any>} update The page's legacy fix shape; the return
+ *   type checks every field against the generated record.
+ * @returns {GeneratedLocationUpdate}
  */
 function generated_location_update_from_page(update) {
   return {
@@ -897,7 +1018,7 @@ class PageNavigator {
    * active trip. The trip-start stream is the initial instruction payload,
    * the phase topic (which names no transition at start) and the speech line
    * when the composition carries one.
-   * @param {object} route
+   * @param {Record<string, any>} route
    * @param {string} unit_system_name
    */
   startNavigation(route, unit_system_name) {
@@ -929,7 +1050,7 @@ class PageNavigator {
   /**
    * Delivers one position fix to the active trip and answers the resulting
    * snapshot, or null without an active trip (the fix is then dropped).
-   * @param {object} update
+   * @param {Record<string, any>} update
    * @returns {object | null}
    */
   updateLocation(update) {
@@ -949,7 +1070,7 @@ class PageNavigator {
    * Replaces the active trip's route (a reroute); without an active trip the
    * route is dropped. The replacement uses the SDK default step-advance
    * policy, as the browser seam always did.
-   * @param {object} route
+   * @param {Record<string, any>} route
    */
   applyReroute(route) {
     this.pending_events = [];
@@ -1080,7 +1201,7 @@ class PagePositionController {
   }
 }
 
-window.mapTestReady = (async () => {
+page_window.mapTestReady = (async () => {
   await uniffiInitAsync(GENERATED_MODULE_URL);
   // The contract SDK every provider, search, plan and diagnostics call
   // resolves through. It is created before the canvas root because its
@@ -1090,7 +1211,7 @@ window.mapTestReady = (async () => {
   // The compiled version the readiness status reports; the generated contract
   // and the canvas are one module, so the namespace helper is the one source.
   const compiled_version = getSdkCompiledVersion();
-  window.mapTest = {
+  page_window.mapTest = {
     // The canvas surface is the generated glue's `BrowserMapView`. The
     // generated contract `MapView` is stripped from the browser contract and
     // must never reach the page; the alias names the one canvas class the
@@ -1177,7 +1298,7 @@ window.mapTestReady = (async () => {
       canvas_clear_provider_registrations();
       clearSharedProviderSlots();
       generated_map_sdk = new GeneratedMapSdk();
-      window.mapTest.mapSdk = generated_map_sdk;
+      page_window.mapTest.mapSdk = generated_map_sdk;
     },
     providerRegistrations: () =>
       generated_map_sdk.providerRegistrations().map((registration) => ({
