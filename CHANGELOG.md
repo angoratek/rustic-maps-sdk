@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — the working plan retires into the issue tracker)
+
+- `PLAN.md` is gone. Every open item is one issue with a milestone and a label, each milestone description carries its done-when line, and the eight open question groups moved to issues #124 to #131. `PRD.md` fell from 306 to 190 lines with all 70 decisions intact, `CLAUDE.md` from 302 to 144 lines, and the changelog's stale identifiers, paths and ordering were corrected. The DCO check applies to outside contributions only.
+
 ### Changed (2026-11-18 — the public repository is the working repository)
 
 - `angoratek/rustic-maps-sdk` carries the curated opening history plus every commit made after it, and it owns the issues, branches and pull requests from now on. The earlier private repository is archived read-only after the later commits were replayed onto the public tip with identical trees. No SDK code or published documentation changed.
