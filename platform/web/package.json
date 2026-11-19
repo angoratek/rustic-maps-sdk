@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
+    "typecheck": "node check-facade-types.mjs",
     "perf": "node perf/run-frame-budget.mjs"
   },
   "devDependencies": {
