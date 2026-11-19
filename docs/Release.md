@@ -753,12 +753,12 @@ sign-off. The pre-opening development history stays in the archived private
 repository, and the public history is the curated sequence plus the work that
 followed it, so no public commit depends on a private object.
 
-Every open item in `PLAN.md` is mirrored by one issue in the public
-repository, grouped under a milestone named for its plan section (`M60`, `M82`,
-`Backlog`). An issue carries the plan item as its acceptance criteria; a pull
-request closes the issue and the plan item together. Labels separate ordinary
-work (`plan`, `enhancement`, `documentation`, `bug`) from `owner-action`
-items that need the maintainer's account, credentials or deployment.
+Every open work item is one issue in the public repository, grouped under a
+milestone (`M60`, `M82`, `Backlog`) whose description states when it is done. An
+issue carries its acceptance criteria, and a pull request closes it. Labels
+separate ordinary work (`plan`, `enhancement`, `documentation`, `bug`) from
+`owner-action` items that need the maintainer's account, credentials or
+deployment.
 
 The documentation site and both demos build from the public history. No
 workflow reads a secret that exists only in the private repository.
@@ -781,8 +781,9 @@ license, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1),
 forms, a pull-request template, `CODEOWNERS`, Dependabot and a labeler. The public
 reader must see product documentation, not process: retire implemented design notes
 after moving every decision into `PRD.md` §6 or the changelog; fix contradictions,
-including the screenshot rules and the stale downloads-page release claim; compress
-`PLAN.md` and `CHANGELOG.md` while preserving every decision, verdict and open question;
+including the screenshot rules and the stale downloads-page release claim; retire the
+working plan once every open item lived in the issue tracker, and keep `CHANGELOG.md`
+free of stale identifiers while preserving every decision;
 rewrite public pages in product vocabulary, with no process, billing or
 credential-operation language and no absolute paths; and replace pinned commit
 references.

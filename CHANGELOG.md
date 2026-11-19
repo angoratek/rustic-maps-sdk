@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-18 — the public repository is the working repository)
+
+- `angoratek/rustic-maps-sdk` carries the curated opening history plus every commit made after it, and it owns the issues, branches and pull requests from now on. The earlier private repository is archived read-only after the later commits were replayed onto the public tip with identical trees. No SDK code or published documentation changed.
+
 ### Changed (2026-11-18 — one camera geographic-bounds helper)
 
 - `camera_geographic_bounds` and the `METERS_PER_DEGREE_LATITUDE` and `MINIMUM_UNPROJECTED_BOUNDS_CORNER_COUNT` constants now live in `rustic-maps-rendering::camera`. The browser binding delegates to it and the native surface view calls it through the wrapped renderer camera, so the two copies of the corner unprojection, the steep-pitch fallback and its constants are gone. Two tests in the rendering crate pin the top-down corners and the 70° fallback; the existing browser and native bounds tests still pass.
@@ -26,7 +30,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ### Changed (2026-11-18 — documentation cut by content, not line wrapping)
 
-- The six contributor guides fell from 50,342 to 40,262 words: `Architecture` 9,851 → 7,331, `Browser` 6,355 → 4,246, `Providers` 6,764 → 4,792, `StyleSupport` 9,348 → 6,605, `Release` 5,873 → 5,626 and `ReferenceAppUX` 12,151 → 11,659. Process narrative, the everymap release diary, the style implementation order and residual backlog, and the spent history-rewrite runbook are gone; the substantive style backlog and open questions moved to `PLAN.md`. Every constant, path, command, contract name, capability row and failure mode stayed.
+- The six contributor guides fell from 50,342 to 40,262 words: `Architecture` 9,851 → 7,331, `Browser` 6,355 → 4,246, `Providers` 6,764 → 4,792, `StyleSupport` 9,348 → 6,605, `Release` 5,873 → 5,626 and `ReferenceAppUX` 12,151 → 11,659. Process narrative, the everymap release diary, the style implementation order and residual backlog, and the spent history-rewrite runbook are gone; the substantive style backlog and open questions moved to the issue tracker. Every constant, path, command, contract name, capability row and failure mode stayed.
 - The tutorial chapters lost 44–46% of their words: `first-map` 2,383 → 1,330 and `navigation-simulation` 1,866 → 1,017. Shared rules now sit above the four platform tabs, and per-tab prose that restated them, along with duplicated listener and gesture code, is gone.
 - The style guides were the largest prose wins; `ReferenceAppUX` keeps 96% of its words because the consumer-copy table, token tables and component inventory are the design contract itself. The remaining book volume is fenced code (1,630 lines), provider rows and reference tables, not narrative.
 
@@ -74,8 +78,8 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   region-download members that are on the contract, and `style_schema` as
   planned rather than shipped. Duplicated process narrative and migration
   history are removed; every table, constant, path and test name survives.
-- Dated entries in `PLAN.md` and `CHANGELOG.md` keep the document names in use
-  at the time; `docs/README.md` and this section name the current set.
+- Dated entries keep the document names in use at the time; `docs/README.md`
+  and this section name the current set.
 - Gate on the merged tree: formatting, workspace clippy, the workspace tests,
   the wasm closure, generation drift, the rebuilt browser package and its
   freshness gate, contract sync, the provider guard and parity floor, snippets,
@@ -91,14 +95,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   is a rewritten mirror whose commit ids differ; no backticked commit id
   remains in any Markdown file, and the tree carries no absolute local path
   outside the docs-site scrubber and its test.
-- Process vocabulary (owner, round, milestone, plan numbers) is replaced by the
-  decision it records, with dates and `PRD.md` §6 item numbers where they
-  exist, across fourteen repository documents. The published site pages were
+- Decision vocabulary replaces process vocabulary, recording the decision with dates and `PRD.md` §6 item numbers where they exist, across fourteen repository documents. The published site pages were
   already clean; `docs/DocsStyleGuide.md` keeps the banned-word list because it
   defines the rule, and vendor billing sentences stay as terms text.
 - The history rewrite and publication runbook is `docs/Release.md`.
 
-### Changed (2026-11-17 — internal documentation trimmed to the live guides)
+### Changed (2026-11-17 — repository documentation trimmed to the live guides)
 
 - The implemented design notes are retired: `Autocomplete.md`,
   `DirectionsModesAndStrategy.md`, `LocationInterpolation.md`,
@@ -110,12 +112,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   documents and `docs/README.md` indexes every one. The decisions they recorded
   nowhere else are `PRD.md` §6 items 66–69 (puck interpolation with dead
   reckoning opt-in, the versioned preferences record, the per-surface
-  directions reason text, and the five platform-owned surface concerns), with
-  the Rust-desktop positioning question in `PLAN.md` §5 item 29.
+  directions reason text, and the five platform-owned surface concerns); the
+  Rust-desktop positioning question is tracked in the issue tracker.
 - Every reference from source comments, tests, scripts and the root documents
   now points at a surviving home: `PRD.md` §6 items, `docs/ReferenceAppUX.md`
   §2.5/§4.1/§4.2/§5.5, `platform/providers.json`, `platform/reference-flows.json`,
-  `docs/Browser.md`, `docs/Browser.md`,
+  `docs/Browser.md`,
   `docs/Providers.md`, `docs/Architecture.md` and the
   code that implements the design. No behaviour, assertion, workflow or site
   page changed.
@@ -300,7 +302,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   explains every field.
 - The browser canvas draws a shield badge and reports it through `labelBadgeTriangles`.
 
-### Fixed (2026-11-16 — platform hardening and the round's audit repairs)
+### Fixed (2026-11-16 — platform hardening and the audit repairs)
 
 - Android: every listener and frame failure is isolated (a throwing callback or a JNI
   `LinkageError` no longer stops the pump or reaches the main thread), refused overlay and queued
@@ -341,6 +343,31 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   scope the credential obeys, the degradations that keep a base usable, and the member each target calls.
 
 
+### Changed (2026-11-14 — a credentialed vector family stays listed until its key is applied)
+
+- The Android, iOS and React Native map-layers controls list a provider-published vector family before its
+  credential is applied, disabled with `Needs <credential label>`, instead of hiding the family. The rows
+  match the web demo and the reference UX, and a keyless or credentialed family is distinguishable from an
+  absent one.
+- React Native's map failure renders the shared `no '<provider>' provider is configured` sentence when the
+  SDK refused because nothing serves the capability, instead of the generated binding's representation.
+
+### Fixed (2026-11-14 — stale diagnostic-feed test helpers and an ambiguous view type)
+
+- The Android and iOS diagnostics-feed tests construct the contract's `LogEvent` without its
+  `providerRequestTrace` member and no longer compiled; both pass it as absent.
+- The iOS reference application failed to build on `MapView` ambiguity between the generated class and the
+  shipped `MapNativeCoreUI` wrapper; the one bare annotation is qualified.
+
+### Changed (2026-11-14 — the base reports the style's own source policy)
+
+- `VectorBaseScheduler` binds its style's `base` source through the existing `VectorSourceBinding` policy,
+  so a style's declared `minzoom`, `maxzoom` and `attribution` reach the base and the tileset descriptor
+  fills whatever the style leaves out. Replacing the style rebinds, and the native and browser status
+  readbacks report the style's line rather than the descriptor's.
+- The reference application still passes the registry's style attribution into its URL-template source,
+  because the committed styles declare no source attribution of their own.
+
 ### Added (2026-11-13 — the style's own glyphs reach the label pass)
 
 - A provider-published style document now draws its own place names: the install fetches the style's
@@ -370,31 +397,6 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 - The sprite addresses are held to the style document's origin: an off-origin base refuses the install
   before any request, and a base the SDK cannot fetch as `http`/`https` degrades to drawing text without
   icons. `SpriteSource` host injection is unchanged for tests and applications.
-
-### Changed (2026-11-14 — a credentialed vector family stays listed until its key is applied)
-
-- The Android, iOS and React Native map-layers controls list a provider-published vector family before its
-  credential is applied, disabled with `Needs <credential label>`, instead of hiding the family. The rows
-  match the web demo and the reference UX, and a keyless or credentialed family is distinguishable from an
-  absent one.
-- React Native's map failure renders the shared `no '<provider>' provider is configured` sentence when the
-  SDK refused because nothing serves the capability, instead of the generated binding's representation.
-
-### Fixed (2026-11-14 — stale diagnostic-feed test helpers and an ambiguous view type)
-
-- The Android and iOS diagnostics-feed tests construct the contract's `LogEvent` without its
-  `providerRequestTrace` member and no longer compiled; both pass it as absent.
-- The iOS reference application failed to build on `MapView` ambiguity between the generated class and the
-  shipped `MapNativeCoreUI` wrapper; the one bare annotation is qualified.
-
-### Changed (2026-11-14 — the base reports the style's own source policy)
-
-- `VectorBaseScheduler` binds its style's `base` source through the existing `VectorSourceBinding` policy,
-  so a style's declared `minzoom`, `maxzoom` and `attribution` reach the base and the tileset descriptor
-  fills whatever the style leaves out. Replacing the style rebinds, and the native and browser status
-  readbacks report the style's line rather than the descriptor's.
-- The reference application still passes the registry's style attribution into its URL-template source,
-  because the committed styles declare no source attribution of their own.
 
 ### Added (2026-11-13 — a provider's style resources survive a restart)
 
@@ -670,7 +672,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 - The recorded MapQuest session id is gone from the history and the release tags of the provider layer, and its crates.io tarballs are recorded as the remaining residual.
 - The recorded MapQuest route fixture no longer carries the session id from the original capture; it holds a synthetic placeholder, and the same value was removed from the provider layer's history and release tags.
 
-### Changed (2026-11-04 — the provider layer takes over, the renderer completes and six owner rulings land)
+### Changed (2026-11-04 — the provider layer takes over, the renderer completes and six decisions land)
 
 - MapQuest, OSRM, Valhalla and the URL-template sources run on everymap-rs 0.3.0 and the SDK consumes the published crates; the type-ahead's empty and failure copy is shared; every provider request reaches the diagnostics ring; the wasm contract mirror is generated from the UDL; `MapView.reload_tile_source()` replaces four per-platform reloads; the unused wasm label seam and the second label pipeline are gone; shipped packages carry only SDK code; release re-runs skip unchanged platforms; capture-free `snapshot()` lands.
 - Cartography and labels: road names keep eight of the frame's label slots, POI labels and the style-layer coverage audit land, labels collide per glyph and rank by class, style sort keys and transitions land, gestures draw from cache and settle exactly, the browser and native renderers agree on the regional scene, ferry crossings honour the mode/strategy contract, and icons draw from a sprite atlas.
@@ -688,62 +690,58 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 - The MapLibre style adoption lands in four slices (documents and expressions, compiled render plans, provider-bound sources, line/fill/circle paint, symbol text and placement); label anchors, rotation, wrapping and radial offsets follow; the Android release becomes one AAR and the WebAssembly release one npm tarball; the keyless raster fallback no longer outranks a configured provider; the first platform-hardening batch and the browser surface hardening land; the demotiles style renders end to end; and the site and demo are republished from the current tree.
 
-### Earlier rounds (round 8 → round 129)
+### Earlier releases
 
-- **Rounds 121–129** — Cartography and provider convergence: regional road hierarchy and longer-name drawing, remembered choices, a provider per capability and the on-map layer control, the browser contract-parity gate, one truth about provider availability, the navigable internal docs set, and the bounded traffic cache.
-- **Rounds 99–120** — Platform and product: device-driven navigation on every app, GPU upload buffers, browser goldens per vector style, generated API references and downloads, the product identity rename, the UniFFI 0.31.2 alignment, the browser canvas folded into one wasm module, wasm-safe clocks, and the Rust crates renamed `rustic-maps-*`.
-- **Rounds 60–98** — The wasm seam and the documentation set: live guidance, offline routing, search and route options on the wasm seam; device positioning on the browser and native targets; the tutorial worked example; the documentation overhaul and its snippet gate; downloads rendered from the release manifest; the wasm optimization pass; and the vector base's concurrent fetch work.
-- **Rounds 35–59** — Parity and presentation: provider-neutral base maps, trip-planning parity and canvas interaction, vector cartography and the shared native base, the three-way theme, the accessible web demo and the four-platform capability audit, the hosted mobile demo and frame-budget harness, token-styled control sizes, and the tutorial/snippet pipeline.
-- **Rounds 18–34** — Bindings and providers: runtime credentials, the React Native reference application, live browser providers, the MVT decoder and vector provider seam, provider genericity on web/wasm and on native, the tag-driven release pipeline, the API v2 naming slices (the breaking renames are recorded verbatim below), `MapView` in the Android AAR and the Swift package, and the vendor-neutral URL-template vector source.
-- **Rounds 8–17** — Foundations: the MVT decoder, the React Native iOS shell, the product docs site, packaging and release design, the vector provider seam, simulated trips and speech, the M7 offline-routing slices, and the M3/M4 renderer and binding slices.
+- **Cartography and provider convergence** — Regional road hierarchy and longer-name drawing, remembered choices, a provider per capability and the on-map layer control, the browser contract-parity gate, one truth about provider availability, the navigable internal docs set, and the bounded traffic cache.
+- **Platform and product** — Device-driven navigation on every app, GPU upload buffers, browser goldens per vector style, generated API references and downloads, the product identity rename, the UniFFI 0.31.2 alignment, the browser canvas folded into one wasm module, wasm-safe clocks, and the Rust crates renamed `rustic-maps-*`.
+- **The wasm seam and the documentation set** — Live guidance, offline routing, search and route options on the wasm seam; device positioning on the browser and native targets; the tutorial worked example; the documentation overhaul and its snippet gate; downloads rendered from the release manifest; the wasm optimization pass; and the vector base's concurrent fetch work.
+- **Parity and presentation** — Provider-neutral base maps, trip-planning parity and canvas interaction, vector cartography and the shared native base, the three-way theme, the accessible web demo and the four-platform capability audit, the hosted mobile demo and frame-budget harness, token-styled control sizes, and the tutorial/snippet pipeline.
+- **Bindings and providers** — Runtime credentials, the React Native reference application, live browser providers, the MVT decoder and vector provider seam, provider genericity on web/wasm and on native, the tag-driven release pipeline, the API v2 naming slices (the breaking renames are recorded verbatim below), `MapView` in the Android AAR and the Swift package, and the vendor-neutral URL-template vector source.
+- **Foundations** — The MVT decoder, the React Native iOS shell, the product docs site, packaging and release design, the vector provider seam, simulated trips and speech, the offline-routing slices, and the renderer and binding slices.
 - The Sacramento re-anchor moved every demo and test anchor to Capitol Park; its 216 live-recorded raster tiles, goldens, screenshots and three MapQuest payload fixtures were re-recorded with the rotated key and carry `mapUrl` credentials redacted as `key=REDACTED`.
 
-### Recorded rulings and security notes (kept verbatim)
+### Recorded decisions and security notes
 
 - The Android and iOS reference applications ship as `com.rusticmaps.sdk.referenceapplication`, the React Native shell as `com.rusticmaps.sdk.refapprn`, and the shipped Kotlin wrapper package is `com.rusticmaps.sdk` (breaking for Android integrators of the wrapper, with the JNI symbols, R8 rule and tutorial imports moved atomically). The frozen package identities, the credential storage key and the Appetize build ids are unchanged; the display name stays *Rustic Maps SDK Ref App*.
 
-- A four-platform capability and UX audit (`docs/history/FourPlatformParityAudit.md`) inventories the frozen contract (15 interfaces, 4 foreign traits, 47 dictionaries, 23 enums, 82 interface members, 12 errors) and scores every capability area per platform with file:line evidence. Android and iOS are at binding parity; React Native has generated-binding parity but a narrower curated API; the hand-written wasm façade reaches about 34 of 90 callable members and none of the `MapSdk` provider surface. It also records the owner rulings that followed: parity closes through the synced wasm façade (no wasm2 migration), the web reference app reaches the v2 flow, labels stay renderer-internal, and React Native JavaScript gets the curated provider/navigation surface (PRD §6 items 19–22).
+- A four-platform capability and UX audit inventoried the frozen contract (15 interfaces, 4 foreign traits, 47 dictionaries, 23 enums, 82 interface members, 12 errors) and scored every capability area per platform with file:line evidence. Android and iOS were at binding parity; React Native had generated-binding parity but a narrower curated API; the browser surface was narrower at the time. The decisions that followed: parity closes through one synced surface, the web reference app reaches the v2 flow, labels stay renderer-internal, and React Native JavaScript gets the curated provider/navigation surface (PRD §6 items 19–22).
 
-- The Android, iOS and React Native reference apps now open keylessly on **OpenFreeMap Bright**, the registry's declared styled vector base, instead of the plain OpenStreetMap raster (owner ruling 2026-10-31, PRD §6 item 18). `platform/providers.json` gained a top-level `keyless_base_map` (`provider_key` plus committed `style_id`); each shell resolves it against the descriptors and installs the style over the credential-less raster source, which stays registered so the shipped surface can attach (the surface contract still requires a raster provider). A registry that omits the field keeps the raster default, an explicit base-map choice or the demo launch argument always wins, and an applied credential is never hidden under the default. The React Native shell gained its missing keyless start registration as part of the same change.
+- The Android, iOS and React Native reference apps now open keylessly on **OpenFreeMap Bright**, the registry's declared styled vector base, instead of the plain OpenStreetMap raster (PRD §6 item 18). `platform/providers.json` gained a top-level `keyless_base_map` (`provider_key` plus committed `style_id`); each shell resolves it against the descriptors and installs the style over the credential-less raster source, which stays registered so the shipped surface can attach (the surface contract still requires a raster provider). A registry that omits the field keeps the raster default, an explicit base-map choice or the demo launch argument always wins, and an applied credential is never hidden under the default. The React Native shell gained its missing keyless start registration as part of the same change.
 
 - A hosted-demo build can carry its own provider credential. `scripts/inject-hosted-demo-credential.sh` writes it into the Android app's assets (and the React Native shell's) on the build machine from a repository secret; the iOS app reads it from `Info.plist` expanded from the build setting. It is applied through the same runtime registration path as the settings surface — never persisted, never logged — and every build made without it stays keyless. `docs/Providers.md` (the hosted-demo exception) records the bounded exception to the "no key in a build" rule.
 
-- The Android SDK, both Android applications, the JVM smoke module and the RN
-  Android module moved from `com.angoratek.mapsdk` to
-  `com.angoratek.rusticmaps` (owner ruling, finishing the product rename on
-  the platform), together with the Gradle namespaces and application ids, the
-  JNI binding the native window bridge is bound by
-  (`Java_com_angoratek_rusticmaps_NativeWindowBridge_*` in
-  `map-native-core`), the CI path filters, the RN shell's iOS bundle id and
-  the tutorial's Kotlin import.
+- The Android SDK uses the `com.rusticmaps.sdk` Kotlin package. The reference
+  application ships as `com.rusticmaps.sdk.referenceapplication`, the React
+  Native shell as `com.rusticmaps.sdk.refapprn`, and the native window bridge
+  binds `Java_com_rusticmaps_sdk_NativeWindowBridge_*` in `map-native-core`;
+  the Gradle namespaces, CI path filters, the RN shell's iOS bundle id and the
+  tutorial's Kotlin import follow the same package.
 
 - **Stale key seam removed**: a gitignored `Local.xcconfig` and the
   `MAPQUEST_API_KEY` line in `platform/android/local.properties` from the old
   build-time path were deleted. **The removed key should be rotated.**
 
-- **Runtime provider credentials design** (`docs/Providers.md`,
-  M13): the owner-directed model for removing build-time provider keys from
-  every refapp — a descriptor-driven settings surface, masked entry, explicit
-  apply/clear, opt-in secure persistence (Keychain /
-  `EncryptedSharedPreferences`), honest keyless states, and future
-  HERE/Google/TomTom/Mapbox/Radar rows.
+- **Runtime provider credentials design** (`docs/Providers.md`): the model for
+  removing build-time provider keys from every refapp — a descriptor-driven
+  settings surface, masked entry, explicit apply/clear, opt-in secure
+  persistence (Keychain / `EncryptedSharedPreferences`), honest keyless
+  states, and future HERE/Google/TomTom/Mapbox/Radar rows.
 
-- **Runtime credential injection for automation** (round 20 amendment): local
-  and CI UI automation can supply a key at launch without a build-time seam —
-  the Android/RN launch-intent extra `mapquestApiKey` and the iOS/RN
-  `MAPQUEST_API_KEY` launch environment are applied through the public
-  registration path, never persisted by the injection and never logged. The
-  Compose and XCUITest suites are keyless-aware: they assert the neutral prompt
-  and skip provider-dependent cases when no key is supplied, and run keyed when
-  the variable is present.
+- **Runtime credential injection for automation**: local and CI UI automation
+  can supply a key at launch without a build-time seam — the Android/RN
+  launch-intent extra `providerApiKey` and the iOS/RN `PROVIDER_API_KEY` launch
+  environment are applied through the public registration path, never persisted
+  by the injection and never logged. The Compose and XCUITest suites are
+  keyless-aware: they assert the neutral prompt and skip provider-dependent
+  cases when no key is supplied, and run keyed when the variable is present.
 
 - The hosted-demo upload script and `platform/demo-builds.json` keep public
   build ids stable, with the session limits and the docs-site referrer
   restriction applied at upload time, and a public manifest holding no secret.
 
-- **Packaging & release design** (`docs/Release.md`, M10
-  opening): the four owner rulings (GitHub Releases only; angoratek
-  namespace; docs-site `/demo` hosting; tag-driven release workflow) turned
+- **Packaging & release design** (`docs/Release.md`): the four decisions
+  (GitHub Releases only; angoratek namespace; docs-site `/demo` hosting;
+  tag-driven release workflow) turned
   into a concrete artifact matrix from measured tree sizes, a release.yml
   design (gates-first on the tagged ref, keyless cosign, SHA-256 sidecars,
   changelog-derived release notes), the SPM `binaryTarget` release
@@ -751,14 +749,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   and copy plan, and the single-workspace-version policy; cited public
   reference: MapLibre and Ferrostar release practices.
 
-- Tile imagery caches heavily by default per the owner ruling (2026-10-28,
-  PRD §6.7/FR-C): `map-cache`'s tiles category default retention moves
+- Tile imagery caches heavily by default (2026-10-28,
+  PRD §6.7/FR-C): `rustic-maps-cache`'s tiles category default retention moves
   7 → **30 calendar days** (the common maximum under imagery-provider
-  terms), `mapquest-provider` declares its own terms as the documented
+  terms), the MapQuest catalog declares its own terms as the documented
   `MAPQUEST_RASTER_TILE_CACHE_CEILING_SECONDS` ceiling, and a lockstep test
   keeps the cache default exactly equal to the MapQuest terms ceiling.
-
-### Changed (API v2 — the breaking renames, kept verbatim)
 
 ### Changed (API v2, first slice — WebAssembly naming)
 
@@ -834,10 +830,6 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
   `setProviderCredential`; the TypeScript mirror uses the renamed record
   interfaces.
 
-## [0.1.0] — 2026-10-27
-
-- The founding records and the first workspace: PRD 0.2 and the milestone plan locking UniFFI UDL-first bindings, the own `wgpu` raster renderer, the flatdata offline graph and WebAssembly as a first-class target; the nine-crate Cargo workspace; the typed provider registry and cache-then-network seam; nine vendor-neutral contracts with mocks; and the format, clippy, nextest and cargo-deny gates.
-
 ## [0.1.2] — 2026-10-27
 
 - The disk cache: SQLite with pooled WAL connections, order-independent SHA-256 request fingerprints, per-category TTLs and overrides, an absolute/free-disk byte quota, and least-recently-used eviction behind the cache-then-network wrappers for all seven implemented contracts.
@@ -845,3 +837,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 ## [0.1.1] — 2026-10-27
 
 - The MapQuest provider: seven documented APIs behind a shared rate-limited client, fixtures recorded from the live platform with wiremock end-to-end tests, the retired-elevation and flow-shape notes, retina tile resolution, the fly-to arc and fit-bounds contract surface, overlay rendering with goldens, the Android, iOS and React Native packaging pipelines, navigation instruction composition and per-topic observers, the navigation UDL wiring, the wasm overlay canvas, recorded GPS traces driving end-to-end navigation, the native-device parity fixes, the Swift UI wrapper and SwiftUI reference app, the Kotlin and Compose reference apps, the native surface renderer contract, and the reference-UX language with its shared demo artifact.
+
+## [0.1.0] — 2026-10-27
+
+- The founding records and the first workspace: PRD 0.2 and the execution plan locking UniFFI UDL-first bindings, the own `wgpu` raster renderer, the flatdata offline graph and WebAssembly as a first-class target; the nine-crate Cargo workspace; the typed provider registry and cache-then-network seam; nine vendor-neutral contracts with mocks; and the format, clippy, nextest and cargo-deny gates.
