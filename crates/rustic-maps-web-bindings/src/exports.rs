@@ -6,7 +6,7 @@
 //! carries only the camera class and the plain-object builders the canvas and
 //! the recorded-tile vector layer still read.
 
-use crate::generated_contract_field_names::*;
+use crate::contract_field_names::*;
 use crate::shared::{validated_bounding_box, validated_coordinate, validated_viewport_pixels};
 use geospatial_types::{GeographicCoordinate, SDKError};
 use js_sys::{Array, Object, Reflect};
