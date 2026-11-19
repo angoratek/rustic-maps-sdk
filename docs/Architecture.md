@@ -177,7 +177,8 @@ Android and iOS views hold their callback listener weakly, so a listener that ca
 host that owns the view cannot retain a cycle; the host keeps the listener alive for as
 long as it wants callbacks. The failure-phase set is the same nine cases on every native
 target: surface, resize, draw, camera, overlay, locationIndicator, baseMap, tap and
-listener.
+listener. The browser canvas has no platform listener to isolate; it reports the
+contract's coded errors instead.
 
 ### Choosing a provider
 
@@ -205,10 +206,13 @@ The camera verbs are `mapView.camera`, `setCamera(camera)`,
 `animateCamera(camera, durationMs)`, `fitBounds(bounds, edgeInsets, maximumZoom)`,
 `panByScreenPixels(deltaXPixels, deltaYPixels)`, `zoomByLevels(deltaZoomLevels)`,
 `rotateByDegrees(clockwiseDegrees)` and `cameraGeographicBounds()`; a gesture cancel
-stops an animation. The Android and iOS views expose the same readbacks:
-`hasDrawnFirstFrame`, `viewportSize`, `viewportPixelExtent`, `viewportWidthPixels`,
-`viewportHeightPixels` and `displayScale`. The native views hold the contract `MapCamera`
-as their only camera state, and every animation frame is one
+stops an animation. The browser keeps the pan, zoom and rotate algebra on `MapCamera`'s
+screen-point members and exposes `rotateByDegrees` beside them on the canvas view. The
+Android, iOS, React Native and WebAssembly views expose the same readbacks:
+`hasDrawnFirstFrame`, `viewportPixelExtent`, `viewportWidthPixels`,
+`viewportHeightPixels` and `displayScale`; the native Android and iOS views also expose
+the contract `ViewportSize` record through `viewportSize`. The native views hold the
+contract `MapCamera` as their only camera state, and every animation frame is one
 `MapCamera.interpolate` call; the wrapper's camera value is a projection of the
 readback, not a second store. Camera changes stay a callback (`onCameraChanged` on
 Android and React Native, `mapView(_:didChangeCamera:isGestureDriven:)` on iOS).

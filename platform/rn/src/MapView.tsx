@@ -9,9 +9,9 @@
  *
  * - props: the four safe-area inset props (physical pixels), gesture and
  *   render-pause switches, and one callback per native listener method;
- * - imperative calls on the forwarded ref: the camera verbs, the pan/zoom
- *   gesture members, the id-addressed overlay calls, the location layer, the
- *   attach retry and the readbacks;
+ * - imperative calls on the forwarded ref: the camera verbs, the pan, zoom and
+ *   rotate gesture members, the id-addressed overlay calls, the location
+ *   layer, the attach retry and the readbacks;
  * - the callbacks the native listener delivers: map ready, camera changed,
  *   map click, failure, frame statistics, deferred and settled frames.
  *
