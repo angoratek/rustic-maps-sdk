@@ -9,9 +9,9 @@
  *
  * - props: the four safe-area inset props (physical pixels), gesture and
  *   render-pause switches, and one callback per native listener method;
- * - imperative calls on the forwarded ref: the camera verbs, the pan/zoom
- *   gesture members, the id-addressed overlay calls, the location layer, the
- *   attach retry and the readbacks;
+ * - imperative calls on the forwarded ref: the camera verbs, the pan, zoom and
+ *   rotate gesture members, the id-addressed overlay calls, the location
+ *   layer, the attach retry and the readbacks;
  * - the callbacks the native listener delivers: map ready, camera changed,
  *   map click, failure, frame statistics, deferred and settled frames.
  *
@@ -48,6 +48,7 @@ import type {
   LocationIndicatorStyle,
   MapOverlay,
   ProviderVectorTileSource,
+  ViewportSize,
 } from './generated/rustic_maps';
 import type {
   UrlTemplateVectorTileSource,
@@ -69,6 +70,7 @@ export type {
   LocationIndicatorVisualKind,
   OverlayColor,
   ProviderVectorTileSource,
+  ViewportSize,
 } from './generated/rustic_maps';
 
 /** The camera value the native `MapView` adopts and reads back. */
@@ -166,6 +168,28 @@ export interface MapViewHandle {
   ): void;
   /** Zooms by levels around the viewport center through the contract member. */
   zoomByLevels(deltaZoomLevels: number): void;
+  /**
+   * Rotates the content clockwise by `clockwiseDegrees` around the viewport
+   * center (the content-follows-fingers convention, the same sign every
+   * native view uses).
+   */
+  rotateByDegrees(clockwiseDegrees: number): void;
+  /**
+   * Whether the native view has drawn and presented its first frame. It
+   * forwards the same readiness the `mapReady` event reports.
+   */
+  hasDrawnFirstFrame(): Promise<boolean>;
+  /** The render viewport width in pixels (zero before attach). */
+  viewportWidthPixels(): Promise<number>;
+  /** The render viewport height in pixels (zero before attach). */
+  viewportHeightPixels(): Promise<number>;
+  /**
+   * The capped physical-pixel extent the surface is configured to, or null
+   * before the first frame.
+   */
+  viewportPixelExtent(): Promise<ViewportSize | null>;
+  /** The display's device pixels per dp (the SDK's drawing-buffer scale). */
+  displayScale(): Promise<number>;
   /** Adds or replaces the overlay held under `overlayIdentifier`. */
   addOverlay(overlayIdentifier: string, overlay: MapOverlay): Promise<boolean>;
   /** Replaces the overlay held under `overlayIdentifier`. */
@@ -256,6 +280,13 @@ interface MapsSdkNativeModule {
     isGestureDriven: boolean,
   ): void;
   zoomByLevels(viewIdentifier: string, deltaZoomLevels: number): void;
+  rotateByDegrees(viewIdentifier: string, clockwiseDegrees: number): void;
+  viewportWidthPixels(viewIdentifier: string): Promise<number>;
+  viewportHeightPixels(viewIdentifier: string): Promise<number>;
+  viewportPixelExtent(
+    viewIdentifier: string,
+  ): Promise<ViewportSize | null>;
+  displayScale(viewIdentifier: string): Promise<number>;
   addOverlay(
     viewIdentifier: string,
     overlayIdentifier: string,
@@ -531,6 +562,28 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
         },
         zoomByLevels(deltaZoomLevels) {
           requireNativeModule().zoomByLevels(viewIdentifier, deltaZoomLevels);
+        },
+        rotateByDegrees(clockwiseDegrees) {
+          requireNativeModule().rotateByDegrees(
+            viewIdentifier,
+            clockwiseDegrees,
+          );
+        },
+        hasDrawnFirstFrame() {
+          // The same first-frame readback the readiness replay uses.
+          return requireNativeModule().isMapReady(viewIdentifier);
+        },
+        viewportWidthPixels() {
+          return requireNativeModule().viewportWidthPixels(viewIdentifier);
+        },
+        viewportHeightPixels() {
+          return requireNativeModule().viewportHeightPixels(viewIdentifier);
+        },
+        viewportPixelExtent() {
+          return requireNativeModule().viewportPixelExtent(viewIdentifier);
+        },
+        displayScale() {
+          return requireNativeModule().displayScale(viewIdentifier);
         },
         addOverlay(overlayIdentifier, overlay) {
           return requireNativeModule().addOverlay(

@@ -643,6 +643,73 @@ RCT_EXPORT_METHOD(zoomByLevels
       zoomByLevelsWithDeltaZoomLevels:deltaZoomLevels];
 }
 
+RCT_EXPORT_METHOD(rotateByDegrees
+                  : (NSString *)viewIdentifier clockwiseDegrees
+                  : (double)clockwiseDegrees) {
+  [[self hostViewForIdentifier:viewIdentifier]
+      rotateByDegreesWithClockwiseDegrees:clockwiseDegrees];
+}
+
+RCT_EXPORT_METHOD(viewportWidthPixels
+                  : (NSString *)viewIdentifier resolve
+                  : (RCTPromiseResolveBlock)resolve reject
+                  : (RCTPromiseRejectBlock)reject) {
+  MapsSdkMapHostView *hostView =
+      [self hostViewForIdentifier:viewIdentifier];
+  if (hostView == nil) {
+    reject(MapsSdkNativeFailureCode, MapsSdkNativeViewNotFoundText, nil);
+    return;
+  }
+  resolve(@(hostView.viewportWidthPixels));
+}
+
+RCT_EXPORT_METHOD(viewportHeightPixels
+                  : (NSString *)viewIdentifier resolve
+                  : (RCTPromiseResolveBlock)resolve reject
+                  : (RCTPromiseRejectBlock)reject) {
+  MapsSdkMapHostView *hostView =
+      [self hostViewForIdentifier:viewIdentifier];
+  if (hostView == nil) {
+    reject(MapsSdkNativeFailureCode, MapsSdkNativeViewNotFoundText, nil);
+    return;
+  }
+  resolve(@(hostView.viewportHeightPixels));
+}
+
+RCT_EXPORT_METHOD(viewportPixelExtent
+                  : (NSString *)viewIdentifier resolve
+                  : (RCTPromiseResolveBlock)resolve reject
+                  : (RCTPromiseRejectBlock)reject) {
+  MapsSdkMapHostView *hostView =
+      [self hostViewForIdentifier:viewIdentifier];
+  if (hostView == nil) {
+    reject(MapsSdkNativeFailureCode, MapsSdkNativeViewNotFoundText, nil);
+    return;
+  }
+  CGSize extent = hostView.viewportPixelExtentPixels;
+  if (extent.width <= 0 || extent.height <= 0) {
+    resolve([NSNull null]);
+    return;
+  }
+  resolve(@{
+    @"widthPixels": @(extent.width),
+    @"heightPixels": @(extent.height),
+  });
+}
+
+RCT_EXPORT_METHOD(displayScale
+                  : (NSString *)viewIdentifier resolve
+                  : (RCTPromiseResolveBlock)resolve reject
+                  : (RCTPromiseRejectBlock)reject) {
+  MapsSdkMapHostView *hostView =
+      [self hostViewForIdentifier:viewIdentifier];
+  if (hostView == nil) {
+    reject(MapsSdkNativeFailureCode, MapsSdkNativeViewNotFoundText, nil);
+    return;
+  }
+  resolve(@(hostView.displayScale));
+}
+
 RCT_EXPORT_METHOD(addOverlay
                   : (NSString *)viewIdentifier overlayIdentifier
                   : (NSString *)overlayIdentifier overlayJson

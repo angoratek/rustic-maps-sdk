@@ -28,6 +28,18 @@ export class BrowserMapView {
   setCamera(camera: MapCamera): void;
   /** Reads the view's stored camera pose. */
   camera(): any;
+  /** Rotates the content clockwise around the viewport center. */
+  rotateByDegrees(clockwiseDegrees: number): void;
+  /** Reports whether a frame has drawn and presented successfully. */
+  hasDrawnFirstFrame(): boolean;
+  /** The render viewport width in pixels (zero before the first frame). */
+  viewportWidthPixels(): number;
+  /** The render viewport height in pixels (zero before the first frame). */
+  viewportHeightPixels(): number;
+  /** The capped surface extent, or null before the first frame. */
+  viewportPixelExtent(): { widthPixels: number; heightPixels: number } | null;
+  /** The device pixels one CSS pixel covers on this canvas. */
+  displayScale(): number;
   /** Fits the camera to a box with pixel insets. */
   fitBounds(
     southWestLatitude: number,

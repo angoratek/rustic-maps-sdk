@@ -208,6 +208,10 @@ public final class MapsSdkMapHostView: UIView, MapsSdkMapViewDelegate {
         rusticMapView.zoomByLevels(deltaZoomLevels: deltaZoomLevels)
     }
 
+    @objc public func rotateByDegrees(clockwiseDegrees: Double) {
+        rusticMapView.rotateByDegrees(clockwiseDegrees: clockwiseDegrees)
+    }
+
     @discardableResult
     public func addOverlay(
         overlayIdentifier: String,
@@ -493,6 +497,16 @@ public final class MapsSdkMapHostView: UIView, MapsSdkMapViewDelegate {
         Int(rusticMapView.viewportSize?.heightPixels ?? 0)
     }
 
+    /// The capped drawable extent in pixels (zero before the first frame).
+    @objc public var viewportPixelExtentPixels: CGSize {
+        rusticMapView.viewportPixelExtent ?? .zero
+    }
+
+    /// The effective drawable scale (points to rendered pixels).
+    @objc public var displayScale: CGFloat {
+        rusticMapView.displayScale
+    }
+
     /// Releases the display link, the surface and the native objects. The
     /// window lifecycle calls it when React Native unmounts the view, and the
     /// view manager may call it through its dismantle hook.
@@ -635,6 +649,7 @@ public final class MapsSdkMapHostView: UIView, MapsSdkMapViewDelegate {
         case .locationIndicator: return "locationIndicator"
         case .baseMap: return "baseMap"
         case .tap: return "tap"
+        case .listener: return "listener"
         }
     }
 }

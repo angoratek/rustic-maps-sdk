@@ -25,6 +25,7 @@ import type {
   MapViewProps,
   LocationIndicatorVisualKind,
   ProviderVectorTileSource,
+  ViewportSize,
 } from 'maps-sdk-rn/MapView';
 import type {
   UrlTemplateVectorTileSource,
@@ -97,6 +98,12 @@ test('the MapView handle mirrors the native camera, overlay and location calls',
       void isGestureDriven;
     },
     zoomByLevels: (deltaZoomLevels: number) => { void deltaZoomLevels; },
+    rotateByDegrees: (clockwiseDegrees: number) => { void clockwiseDegrees; },
+    hasDrawnFirstFrame: async (): Promise<boolean> => false,
+    viewportWidthPixels: async (): Promise<number> => 0,
+    viewportHeightPixels: async (): Promise<number> => 0,
+    viewportPixelExtent: async (): Promise<ViewportSize | null> => null,
+    displayScale: async (): Promise<number> => 2,
     addOverlay: async (
       overlayIdentifier: string,
       nextOverlay: MapOverlay,
@@ -159,6 +166,12 @@ test('the MapView handle mirrors the native camera, overlay and location calls',
   handle.fitBounds(boundingBox, edgeInsets, 17);
   handle.panByScreenPixels(10, -10, true);
   handle.zoomByLevels(0.5);
+  handle.rotateByDegrees(15);
+  await expect(handle.hasDrawnFirstFrame()).resolves.toBe(false);
+  await expect(handle.viewportWidthPixels()).resolves.toBe(0);
+  await expect(handle.viewportHeightPixels()).resolves.toBe(0);
+  await expect(handle.viewportPixelExtent()).resolves.toBeNull();
+  await expect(handle.displayScale()).resolves.toBe(2);
   await expect(handle.addOverlay('route', overlay)).resolves.toBe(true);
   await expect(handle.updateOverlay('route', overlay)).resolves.toBe(true);
   await expect(handle.removeOverlay('route')).resolves.toBe(true);

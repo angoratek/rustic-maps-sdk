@@ -20,6 +20,7 @@ import uniffi.rustic_maps.MapSdk
 import uniffi.rustic_maps.ProviderVectorTileSource
 import uniffi.rustic_maps.UrlTemplateVectorTileSource
 import uniffi.rustic_maps.VectorTileSourceStatus
+import uniffi.rustic_maps.ViewportSize
 import java.lang.ref.WeakReference
 
 /**
@@ -193,6 +194,10 @@ class MapsSdkMapHostView(context: Context) : FrameLayout(context), MapViewListen
         mapView.zoomByLevels(deltaZoomLevels)
     }
 
+    fun rotateByDegrees(clockwiseDegrees: Double) {
+        mapView.rotateByDegrees(clockwiseDegrees)
+    }
+
     fun addOverlay(overlayIdentifier: String, overlay: MapOverlay): Boolean =
         mapView.addOverlay(overlayIdentifier, overlay)
 
@@ -261,6 +266,13 @@ class MapsSdkMapHostView(context: Context) : FrameLayout(context), MapViewListen
     /** The render viewport height in pixels (zero before attach). */
     val viewportHeightPixels: Int
         get() = mapView.viewportHeightPixels
+
+    /** The capped physical-pixel extent the surface is configured to, or null before attach. */
+    fun viewportPixelExtent(): ViewportSize? = mapView.viewportPixelExtent
+
+    /** The display's device pixels per dp (the SDK's drawing-buffer scale). */
+    val displayScale: Double
+        get() = mapView.displayScale
 
     /** Releases the surface and the native objects (the manager's drop hook). */
     fun onDestroy() {

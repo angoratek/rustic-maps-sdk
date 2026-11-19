@@ -73,7 +73,7 @@ use crate::vector_source_fields::{
     SourceFieldValue, VectorSourceDeclarationFields, url_template_vector_source,
     vector_source_extras,
 };
-use crate::web_camera::{self, CameraStore};
+use crate::web_camera::{self, CameraStore, rotate_camera_clockwise};
 use everymap_providers_url_template_vector::UrlTemplateVectorTileProvider;
 use geospatial_traits::{RasterTileProvider, VectorTileSourceDescriptor};
 use geospatial_types::{
@@ -132,6 +132,16 @@ const SURFACE_FORMAT_PREFERENCE: [TextureFormat; 2] =
 
 /// Bytes in one RGBA8 texel, of both tile pixels and surface pixels.
 const PIXEL_BYTES: u32 = 4;
+
+/// The vertical field of view the programmatic canvas camera verbs use: the
+/// same perspective the native wrappers hand the contract's camera members.
+const DEFAULT_FIELD_OF_VIEW_DEGREES: f64 = 60.0;
+
+/// The `widthPixels` field of the viewport extent readback.
+const VIEWPORT_SIZE_FIELD_WIDTH_PIXELS: &str = "widthPixels";
+
+/// The `heightPixels` field of the viewport extent readback.
+const VIEWPORT_SIZE_FIELD_HEIGHT_PIXELS: &str = "heightPixels";
 
 /// Filter mode of the tile sampler: linear, giving smooth minification and
 /// smoothly-upscaled recorded texels, mirroring the native headless renderer.
@@ -2355,6 +2365,10 @@ pub struct BrowserMapView {
     /// `camera`/`set_camera` pair. A rendered frame is authoritative and
     /// refreshes it from the frame's own camera argument.
     camera_store: CameraStore,
+    /// Whether a frame has drawn and presented successfully since this view
+    /// was built. The first `renderFrame` resolution is the readiness
+    /// signal; a page that asks after it reads the same state here.
+    has_drawn_first_frame: Cell<bool>,
 }
 
 impl Drop for BrowserMapView {
@@ -2431,6 +2445,7 @@ impl BrowserMapView {
             vector_base_document_installs_in_flight: Cell::new(0),
             location_indicator: RefCell::new(None),
             camera_store: CameraStore::new(),
+            has_drawn_first_frame: Cell::new(false),
         })
     }
 
@@ -2463,6 +2478,119 @@ impl BrowserMapView {
     #[wasm_bindgen(js_name = setCamera)]
     pub fn set_camera(&self, camera: &MapCamera) {
         self.camera_store.set_camera(*camera.native_camera());
+    }
+
+    /// Rotates the content clockwise by `clockwise_degrees` around the
+    /// viewport center, the browser shape of the wrapper's
+    /// `rotateByDegrees`.
+    ///
+    /// The content-follows-fingers convention makes a clockwise content turn
+    /// lower the camera bearing, so the contract's clockwise-positive bearing
+    /// delta receives the negated value — the same sign the native wrappers
+    /// apply. Before the first frame has configured the surface there is no
+    /// viewport to rotate around, so the call changes nothing.
+    ///
+    /// # Parameters
+    /// - `clockwise_degrees` — content rotation in degrees.
+    #[wasm_bindgen(js_name = rotateByDegrees)]
+    pub fn rotate_by_degrees(&self, clockwise_degrees: f64) -> Result<(), JsValue> {
+        let Some((width_pixels, height_pixels)) = self.configured_viewport_extent() else {
+            return Ok(());
+        };
+        let viewport = validated_viewport_pixels(f64::from(width_pixels), f64::from(height_pixels))
+            .map_err(|failure_message| {
+                failure_with_code(ERROR_CODE_INVALID_COORDINATE_INPUT, &failure_message)
+            })?;
+        let rotated = rotate_camera_clockwise(
+            &self.camera_store.camera(),
+            clockwise_degrees,
+            &viewport,
+            DEFAULT_FIELD_OF_VIEW_DEGREES,
+        );
+        self.camera_store.set_camera(rotated);
+        Ok(())
+    }
+
+    /// Reports whether a frame has drawn and presented successfully since
+    /// this view was built — the browser shape of the wrapper's
+    /// `hasDrawnFirstFrame`.
+    ///
+    /// # Returns
+    /// True after the first successful `renderFrame` presentation.
+    #[wasm_bindgen(js_name = hasDrawnFirstFrame)]
+    pub fn has_drawn_first_frame(&self) -> bool {
+        self.has_drawn_first_frame.get()
+    }
+
+    /// The render viewport width in pixels, the browser shape of the
+    /// wrapper's `viewportWidthPixels` readback.
+    ///
+    /// # Returns
+    /// The surface extent the last frame configured, or zero before the
+    /// first frame.
+    #[wasm_bindgen(js_name = viewportWidthPixels)]
+    pub fn viewport_width_pixels(&self) -> u32 {
+        self.configured_viewport_extent()
+            .map(|(width_pixels, _height_pixels)| width_pixels)
+            .unwrap_or(0)
+    }
+
+    /// The render viewport height in pixels, the browser shape of the
+    /// wrapper's `viewportHeightPixels` readback.
+    ///
+    /// # Returns
+    /// The surface extent the last frame configured, or zero before the
+    /// first frame.
+    #[wasm_bindgen(js_name = viewportHeightPixels)]
+    pub fn viewport_height_pixels(&self) -> u32 {
+        self.configured_viewport_extent()
+            .map(|(_width_pixels, height_pixels)| height_pixels)
+            .unwrap_or(0)
+    }
+
+    /// The capped physical-pixel extent the surface is configured to, the
+    /// browser shape of the wrapper's `viewportPixelExtent` readback.
+    ///
+    /// # Returns
+    /// `{widthPixels, heightPixels}`, or null before the first frame.
+    #[wasm_bindgen(js_name = viewportPixelExtent)]
+    pub fn viewport_pixel_extent(&self) -> Result<JsValue, JsValue> {
+        let Some((width_pixels, height_pixels)) = self.configured_viewport_extent() else {
+            return Ok(JsValue::NULL);
+        };
+        Ok(object_from_fields(&[
+            (
+                VIEWPORT_SIZE_FIELD_WIDTH_PIXELS,
+                JsValue::from(width_pixels),
+            ),
+            (
+                VIEWPORT_SIZE_FIELD_HEIGHT_PIXELS,
+                JsValue::from(height_pixels),
+            ),
+        ])?
+        .into())
+    }
+
+    /// The device pixels one CSS pixel covers on this canvas — the browser
+    /// shape of the wrapper's `displayScale` readback.
+    ///
+    /// # Returns
+    /// The drawing-buffer-to-layout ratio, or one before the page lays the
+    /// canvas out.
+    #[wasm_bindgen(js_name = displayScale)]
+    pub fn display_scale(&self) -> f64 {
+        screen_pixel_ratio(&self.canvas)
+    }
+
+    /// The surface extent the last frame configured, or null before a frame
+    /// has sized the surface.
+    fn configured_viewport_extent(&self) -> Option<(u32, u32)> {
+        let extent = self
+            .draw_state
+            .borrow()
+            .as_ref()
+            .map(|draw_state| draw_state.configured_extent);
+        extent.filter(|(width_pixels, height_pixels)| *width_pixels > 0 && *height_pixels > 0)
     }
 
     /// Frames a bounding box in the caller's viewport and adopts the fitted
@@ -3648,6 +3776,9 @@ impl BrowserMapView {
         }
         draw_state.queue.submit([command_encoder.finish()]);
         draw_state.queue.present(surface_texture);
+        // The first presented frame is the readiness state the page's
+        // `hasDrawnFirstFrame` readback reports.
+        self.has_drawn_first_frame.set(true);
         // The presented frame is now the one `snapshot` replays.
         draw_state.last_frame_draw = Some(frame_draw_record);
         // Mapping is a request, never a wait: the callback only records that

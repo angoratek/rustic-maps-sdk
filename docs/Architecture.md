@@ -150,7 +150,7 @@ the UDL keeps snake_case because UniFFI camelCases it.
 - **R1 — Noun-first types.** `MapView`, `MapCamera`, `MapStyle`, `SearchEngine`, `RoutingEngine`, `Navigator`, `OfflineManager`; never `MapViewHost`, `MapSurfaceHost`, `CanvasManager`.
 - **R2 — One concept, one word.** *view*, *camera*, *marker*, *polyline*, *polygon*, *route*, *navigation*, *navigator*, *region*, *provider*, *credential*, *listener*; never *surface*, *scene*, *puck*, *trip*, *subscription*.
 - **R3 — Engine = noun + verb methods.** `SearchEngine.search`, `RoutingEngine.calculateRoute`, `Navigator.startNavigation`, `OfflineManager.downloadRegion`.
-- **R4 — Approved verbs.** `search`, `suggest`, `reverseGeocode`, `calculateRoute`, `calculateDistanceMatrix`, `startNavigation`, `stopNavigation`, `updateLocation`, `setCamera`, `animateCamera`, `fitBounds`, `addOverlay`, `removeOverlay`, `clearOverlays`, `configureProviderSet`, `configureProvider`, `providerRegistrations`, `register`, `downloadRegion`, `deleteRegion`, `addListener`, `removeListener`, `cancel`.
+- **R4 — Approved verbs.** `search`, `suggest`, `reverseGeocode`, `calculateRoute`, `calculateDistanceMatrix`, `startNavigation`, `stopNavigation`, `updateLocation`, `setCamera`, `animateCamera`, `fitBounds`, `panByScreenPixels`, `zoomByLevels`, `rotateByDegrees`, `addOverlay`, `removeOverlay`, `clearOverlays`, `configureProviderSet`, `configureProvider`, `providerRegistrations`, `register`, `downloadRegion`, `deleteRegion`, `addListener`, `removeListener`, `cancel`.
 - **R5 — Booleans read as questions.** `isFrameSettled`, `isNavigationActive`, `isOffline`; never `frame_settled` on a foreign surface.
 - **R6 — Events are `on<PastParticiple>`.** `onMapReady`, `onCameraChanged`, `onInstruction`, `onSpeechInstruction`, `onDeviationChanged`, `onPhaseChanged`, `onArrival`, `onError`.
 - **R7 — Units live in the name.** `_meters`, `_seconds`, `_pixels`, `_degrees`, `_bytes`; `distanceRemainingMeters`, `durationRemainingSeconds`; never `ms`, `px`, `deg` in identifiers.
@@ -172,7 +172,13 @@ Kotlin builds `MapView(context, maps)` as a `FrameLayout` and forwards `onStart`
 forwarding; React Native constructs `new MapView(maps)` and binds the native host view;
 wasm constructs `new MapView(canvas, maps)` and awaits `mapView.ready`. Readiness is
 `MapView.OnReadyListener.onMapReady(mapView)` everywhere, and
-`configureProviderSet("mapquest", credential)` throws `SdkException` verbatim.
+`configureProviderSet("mapquest", credential)` throws `SdkException` verbatim. The
+Android and iOS views hold their callback listener weakly, so a listener that captures the
+host that owns the view cannot retain a cycle; the host keeps the listener alive for as
+long as it wants callbacks. The failure-phase set is the same nine cases on every native
+target: surface, resize, draw, camera, overlay, locationIndicator, baseMap, tap and
+listener. The browser canvas has no platform listener to isolate; it reports the
+contract's coded errors instead.
 
 ### Choosing a provider
 
@@ -197,9 +203,16 @@ readiness alias.
 ### Camera
 
 The camera verbs are `mapView.camera`, `setCamera(camera)`,
-`animateCamera(camera, durationMs)`, `fitBounds(bounds, edgeInsets, maximumZoom)` and
-`cameraGeographicBounds()`; a gesture cancel stops an animation. The native views hold
-the contract `MapCamera` as their only camera state, and every animation frame is one
+`animateCamera(camera, durationMs)`, `fitBounds(bounds, edgeInsets, maximumZoom)`,
+`panByScreenPixels(deltaXPixels, deltaYPixels)`, `zoomByLevels(deltaZoomLevels)`,
+`rotateByDegrees(clockwiseDegrees)` and `cameraGeographicBounds()`; a gesture cancel
+stops an animation. The browser keeps the pan, zoom and rotate algebra on `MapCamera`'s
+screen-point members and exposes `rotateByDegrees` beside them on the canvas view. The
+Android, iOS, React Native and WebAssembly views expose the same readbacks:
+`hasDrawnFirstFrame`, `viewportPixelExtent`, `viewportWidthPixels`,
+`viewportHeightPixels` and `displayScale`; the native Android and iOS views also expose
+the contract `ViewportSize` record through `viewportSize`. The native views hold the
+contract `MapCamera` as their only camera state, and every animation frame is one
 `MapCamera.interpolate` call; the wrapper's camera value is a projection of the
 readback, not a second store. Camera changes stay a callback (`onCameraChanged` on
 Android and React Native, `mapView(_:didChangeCamera:isGestureDriven:)` on iOS).
