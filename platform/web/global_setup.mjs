@@ -2,7 +2,9 @@
 // tree does not carry a current one, then runs the pure file-parsing gates
 // once before the browser suite starts — the contract-sync test (the frozen
 // UniFFI contract's stripped WebAssembly split and the generated package
-// identity, `tests/contract_sync.mjs`), the provider-name guard
+// identity, `tests/contract_sync.mjs`), the canvas declaration mirror
+// (`tests/canvas_declaration_sync.mjs`: the published types name exactly what
+// the glue exports), the provider-name guard
 // (`tests/provider_name_guard.mjs`, the M15 allowlist), the platform-parity
 // floor (`tests/platform_parity_gate.mjs`, M31), the iOS pod/SwiftPM source
 // mirror (`scripts/sync-ios-pod-view.mjs`), the generated package freshness
@@ -20,6 +22,7 @@ import { verifyPodViewMirror } from '../../scripts/sync-ios-pod-view.mjs';
 import { verifyWasm2PackageFreshness } from '../../scripts/check-wasm2-package-freshness.mjs';
 import { run_reference_flow_checks } from '../../scripts/check-reference-flows.mjs';
 import { run_style_layer_coverage_checks } from '../../scripts/check-style-layer-coverage.mjs';
+import { run_canvas_declaration_sync_checks } from './tests/canvas_declaration_sync.mjs';
 import { run_contract_sync_checks } from './tests/contract_sync.mjs';
 import { assertGpuAdapterAvailable } from './tests/gpu_preflight.mjs';
 import { run_npm_package_manifest_checks } from './tests/npm_package_manifest.mjs';
@@ -84,6 +87,7 @@ function ensure_generated_package() {
 export default async function run_file_parsing_gates() {
   ensure_generated_package();
   run_contract_sync_checks();
+  run_canvas_declaration_sync_checks();
   run_provider_name_guard_checks();
   run_platform_parity_checks();
   run_style_layer_coverage_checks();

@@ -263,6 +263,18 @@ export class FollowCamera {
   northUp(): void;
   courseUp(): void;
   isNorthUp(): boolean;
+  /** The current follow phase. */
+  get phase(): string;
+  /** The captured pre-trip camera, or null outside a trip. */
+  get preTripCamera(): any;
+  /** The target bearing in degrees, or null until a fix reports a course. */
+  get targetBearingDegrees(): any;
+  /** The target centre latitude in degrees. */
+  get targetCenterLatitudeDegrees(): number;
+  /** The target centre longitude in degrees. */
+  get targetCenterLongitudeDegrees(): number;
+  /** The target zoom level. */
+  get targetZoomLevel(): number;
   breakOnGesture(): void;
   free(): void;
 }
@@ -270,8 +282,6 @@ export class LocationPoseAnimator {
   constructor();
   pushFix(...args: any[]): void;
   poseAt(nowMilliseconds: number): any;
-  center(): any;
-  bearingDegrees(): number;
   reset(): void;
   free(): void;
 }
@@ -284,7 +294,10 @@ export class SmoothstepTimedEase {
     durationMilliseconds: number,
   ): void;
   advance(nowMilliseconds: number): number;
-  isFinished(): boolean;
+  /** Whether an ease is in flight. */
+  get is_running(): boolean;
+  /** The ease's target value. */
+  get target_value(): number;
   reset(): void;
   free(): void;
 }
@@ -295,6 +308,8 @@ export class TraceCursor {
   nextSampleIndex(): number;
   remainingSampleCount(): number;
   seekToSampleIndex(sampleIndex: number): void;
+  /** The trace's sample count. */
+  get sampleCount(): number;
   isFinished(): boolean;
   reset(): void;
   free(): void;
