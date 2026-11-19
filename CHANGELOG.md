@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the published canvas declarations name exactly what the glue exports)
+
+- `platform/web/tests/canvas_declaration_sync.mjs` parses the classes, functions, constants, methods and accessors of the generated `rustic_maps_bg.js` and of the published `types/browser_canvas.d.ts`, and fails on any difference in either direction. It runs under `node --test` and in Playwright's `globalSetup`, so a canvas member added or removed without its declaration fails the browser gate.
+- The drift it found is corrected: `LocationPoseAnimator.center()` and `bearingDegrees()`, and `SmoothstepTimedEase.isFinished()`, named members the glue does not export; `FollowCamera.phase`, `preTripCamera`, `targetBearingDegrees`, `targetCenterLatitudeDegrees`, `targetCenterLongitudeDegrees` and `targetZoomLevel`, `SmoothstepTimedEase.is_running` and `target_value`, and `TraceCursor.sampleCount` were exported but undeclared.
+
 ### Changed (2026-11-19 — the eight open product questions are ruled)
 
 - `PRD.md` decisions 71 to 78 record the owner's rulings: the navigation runtime keeps its seven implemented policies, the traffic-flow cache keeps its defaults, a configured provider wins over the keyless raster fallback, the offline pack manager keeps its six policies, the reference applications keep their four demo policies, an empty credential for a deployment-addressed provider keeps the crate's local default, per-schema fallback styles ship without goldens until a licensable tile exists, and no desktop position source is required for the first release. No behaviour changed, so no code moved.
