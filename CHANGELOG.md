@@ -8,6 +8,7 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 - `scripts/generate-rn-bindings.sh` edited the generated iOS module header with `sed -i ''`, the BSD form; GNU sed on the Linux runner reads the empty backup suffix as the script and the expression as a file name, so `rn-app-shell` failed on every push with `sed: can't read s|#import "MapsSdkRn.h"|…`. The edit now writes a temporary file and renames it, which both sed implementations accept.
 - The `wasm-e2e` install step ran `npm ci` at the repository root, which has no manifest, so the job never reached its build. It now installs `platform/web` and `platform/rn` from their committed lockfiles, and the later step installs only the Playwright browser instead of repeating the web install.
+- The browser suite's launch flags now name Chromium's software WebGPU adapter (`--use-webgpu-adapter=swiftshader`). Without it Dawn asks for a hardware adapter, `requestAdapter()` resolves to null on the GPU-less CI runner, and the suite's preflight fails before a single test runs.
 - The disk-space probe test wrote a fixed name under the system temp directory. One gate run removed the file while a second, in another worktree, read it, which failed the second gate with `StoreUnavailable` on an otherwise green tree. The name now carries the test process's id.
 
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
