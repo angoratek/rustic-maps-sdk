@@ -744,6 +744,25 @@ release pipeline is trusted, but not the product surface.
 8. **AI assistance is disclosed, never banned.** `CONTRIBUTING.md` states the
    responsibility rule and the pull-request template carries a checkbox.
 
+### Working in the public repository
+
+The public repository is the working repository. `main` there is the only
+integration branch: changes arrive through `feat/…`, `fix/…` or `docs/…`
+branches in pull requests that pass the aggregate gate and carry a DCO
+sign-off. The pre-opening development history stays in the archived private
+repository, and the public history is the curated sequence plus the work that
+followed it, so no public commit depends on a private object.
+
+Every open item in `PLAN.md` is mirrored by one issue in the public
+repository, grouped under a milestone named for its plan section (`M60`, `M82`,
+`Backlog`). An issue carries the plan item as its acceptance criteria; a pull
+request closes the issue and the plan item together. Labels separate ordinary
+work (`plan`, `enhancement`, `documentation`, `bug`) from `owner-action`
+items that need the maintainer's account, credentials or deployment.
+
+The documentation site and both demos build from the public history. No
+workflow reads a secret that exists only in the private repository.
+
 ### Before opening
 
 **Credential history.** An early recorded route fixture carried a provider consumer key.
