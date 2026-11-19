@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — one MapView surface on all four targets)
+
+- Android gains `rotateByDegrees`, `hasDrawnFirstFrame`, `viewportPixelExtent` and `displayScale`; iOS gains `viewportWidthPixels`, `viewportHeightPixels` and `MapViewFailurePhase.listener`; the React Native handle and the WebAssembly `BrowserMapView` expose the same rotation and readbacks, so every target carries one verb set. The browser has no platform listener to isolate, so its coded errors are documented instead of inventing a parallel phase taxonomy.
+- Both native wrappers now hold their listener weakly. A listener commonly captures the view's owner, so a strong reference closed a retain cycle; the Compose wrapper's public comment already documented weak holding.
+- `docs/Architecture.md` records the approved verbs, the shared readbacks and the liveness policy, and new Android, iOS and React Native tests pin the members and the native nine-phase failure set.
+
 ### Changed (2026-11-19 — the registry declares what each fixture route serves)
 
 - Every `fixture_routes` entry in `platform/providers.json` now names the served contract it answers, and the OpenStreetMap Standard base map records a reviewed `fixtureless_contracts` entry instead of an empty route list: its tiles are live-only and a recorded tile would misstate the source. The browser fallback test serves a generated placeholder rather than another provider's tile.
