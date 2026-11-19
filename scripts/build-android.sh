@@ -180,7 +180,13 @@ generate_kotlin_bindings() {
     # The library file name on disk is the crate's declared `[lib] name`
     # (`rustic_maps`), which the contract-bound Kotlin loader also loads.
     local host_cdylib="${REPO_ROOT}/target/${METADATA_CARGO_TARGET_TRIPLE}/release/librustic_maps.${HOST_CDYLIB_SUFFIX}"
-    cargo build --quiet --release -p "${BINDING_CRATE_NAME}" --target "${METADATA_CARGO_TARGET_TRIPLE}"
+    # The release profile strips symbols, and uniffi reads its metadata from an
+    # exported symbol of the library it is pointed at; a stripped library left
+    # the generator with nothing to read, exiting successfully without writing
+    # a file. This build exists only to feed the generator, so it stays
+    # unstripped.
+    CARGO_PROFILE_RELEASE_STRIP=false \
+        cargo build --quiet --release -p "${BINDING_CRATE_NAME}" --target "${METADATA_CARGO_TARGET_TRIPLE}"
     if [ ! -f "${host_cdylib}" ]; then
         echo "error: host cdylib was not produced at ${host_cdylib}" >&2
         exit 1
@@ -209,9 +215,10 @@ generate_kotlin_bindings() {
     if [ "${generated_kotlin_file_count}" -eq 0 ]; then
         printf 'error: the generator produced no Kotlin sources under %s\n' \
             "${KOTLIN_GENERATED_SOURCES_DIR}" >&2
-        printf 'generator: %s\nlibrary: %s (%s bytes)\noutput:\n' \
+        printf 'generator: %s\nlibrary: %s (%s bytes, %s metadata symbol(s))\noutput:\n' \
             "${REPO_ROOT}/target/debug/uniffi-bindgen" \
-            "${host_cdylib}" "$(wc -c < "${host_cdylib}" | tr -d ' ')" >&2
+            "${host_cdylib}" "$(wc -c < "${host_cdylib}" | tr -d ' ')" \
+            "$(grep -a -o 'UNIFFI_META[A-Za-z0-9_]*' "${host_cdylib}" | wc -l | tr -d ' ')" >&2
         find "${KOTLIN_GENERATED_SOURCES_DIR}" -maxdepth 3 -print >&2 || true
         cat "${generation_log}" >&2 || true
         exit 1
