@@ -4,6 +4,15 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the reference application packages with the heap it needs)
+
+- The Android reference application's debug APK now builds with a four-gigabyte Gradle heap. Packaging the AAR's three ABIs, JNA, Compose and the generated bindings exhausted the default heap, and AGP's splitter failed with a bare `java.lang.OutOfMemoryError` after the bindings, the AAR and the unit suite had all passed.
+
+### Fixed (2026-11-19 — the React Native shell's lockfile carries no known vulnerability)
+
+- The app shell's lockfile resolved `fast-xml-parser` 5.11.2 and the 8.72 line of the `typescript-eslint` packages, both inside advisory ranges; Dependabot's security update could not resolve a fix and failed on every scheduled run. A lockfile-only audit update moves them to `fast-xml-parser` 5.12.1 and `typescript-eslint` 8.73.0, after which `npm audit` reports no vulnerability. No manifest range changed.
+- The app shell's Gemfile held `activesupport` at the 6.1/7.2 line and `concurrent-ruby` below 1.3.4, which put the CocoaPods toolchain inside five advisory ranges. The constraints now resolve `activesupport` 7.2.4 and `concurrent-ruby` 1.3.8, and CocoaPods runs with them. One `activesupport` advisory is only fixed in 8.x, which no `cocoapods-core` release accepts; it stays open and is tracked separately.
+
 ### Fixed (2026-11-19 — the React Native and wasm jobs install on Linux again)
 
 - `scripts/generate-rn-bindings.sh` edited the generated iOS module header with `sed -i ''`, the BSD form; GNU sed on the Linux runner reads the empty backup suffix as the script and the expression as a file name, so `rn-app-shell` failed on every push with `sed: can't read s|#import "MapsSdkRn.h"|…`. The edit now writes a temporary file and renames it, which both sed implementations accept.
@@ -18,15 +27,22 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 - The README's first line carries the badges for the format-and-lint, WebAssembly end-to-end, Android, iOS and secret-scan workflows plus the OpenSSF Scorecard and the license, each linked to its run history, so a reader sees the state of `main` before the prose.
 
+### Fixed (2026-11-18 — the packaging notes match the build)
+
+- The README and three Gradle comments described two published AARs and a `:map-sdk-native` AAR; the build publishes one AAR, from `:maps-sdk`, which compiles the generated bindings and Rust libraries that `:map-sdk-native` holds. A public KDoc no longer names an internal milestone, and the Compose `listener` parameter documents the lifetime the view actually keeps.
+
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
 
 - `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.
 - `rust-toolchain.toml` declares the `wasm32-unknown-unknown` target, so the pinned toolchain installs it on a fresh runner. The wasm jobs had failed with "can't find crate for `core`" because the directory override selected the pinned toolchain, which lacked the target.
 
+### Changed (2026-11-18 — the vector-base install queues are gone)
+
+- Both wrappers carried a pending-install queue with a rollback record for a base-map change that arrived while a frame drew. The contract already applies such a change when that frame finishes, so the queue could only fire on a malformed source and its rollback path never ran in practice. Android drops `VectorBaseSourceQueue` with its test, iOS drops `VectorTileSourceInstallRecord` with its four tests, and the React Native pod copy is regenerated from the SwiftPM source. A source selected before the surface exists is still re-applied after a native-view rebuild. The slice removes 406 lines and adds 31.
+
 ### Changed (2026-11-18 — one Mercator latitude limit)
 
 - `MAXIMUM_MERCATOR_LATITUDE_DEGREES` now lives in `geospatial-types` and is re-exported by the five former copies: the projection, the GeoJSON source, the vector style, the legacy vector style and the traffic-flow cache. The projection copy carried a shorter literal (`85.051_128_78`); every layer now clamps at the correctly rounded `85.051_128_779_806_6`. A test pins the value against `atan(sinh(pi))`, and the existing corner, clamp and traffic-box tests cover the call sites.
-
 ### Changed (2026-11-18 — the working plan retires into the issue tracker)
 
 - `PLAN.md` is gone. Every open item is one issue with a milestone and a label, each milestone description carries its done-when line, and the eight open question groups moved to issues #124 to #131. `PRD.md` fell from 306 to 190 lines with all 70 decisions intact, `CLAUDE.md` from 302 to 144 lines, and the changelog's stale identifiers, paths and ordering were corrected. The DCO check applies to outside contributions only.

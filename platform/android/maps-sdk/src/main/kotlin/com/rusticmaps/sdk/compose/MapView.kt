@@ -27,7 +27,7 @@ import uniffi.rustic_maps.MapSdk
  *
  * @param sdk the SDK state the view draws from.
  * @param modifier the layout modifier.
- * @param listener the map callbacks (weakly held).
+ * @param listener the map callbacks, held for the view's lifetime.
  * @param initialCamera the camera applied once when the view is created.
  * @param isGestureEnabled whether drag, pinch and rotate reach the camera.
  * @param onViewCreated receives the created view for imperative camera,

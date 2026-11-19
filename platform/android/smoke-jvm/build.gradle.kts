@@ -12,8 +12,8 @@ kotlin {
 
 sourceSets {
     main {
-        // Reuse the uniffi-generated Kotlin bindings shipped by the AAR
-        // module so the smoke test exercises exactly the committed surface.
+        // Reuse the uniffi-generated Kotlin bindings that the published AAR
+        // carries so the smoke test exercises exactly the shipped surface.
         kotlin.srcDirs("../map-sdk-native/src/main/kotlin")
     }
 }
