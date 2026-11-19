@@ -11,6 +11,7 @@ pub mod bounding_box;
 pub mod coordinate;
 pub mod elevation;
 pub mod error;
+pub mod mercator;
 pub mod place;
 pub mod raster;
 pub mod route;
@@ -21,6 +22,7 @@ pub use bounding_box::BoundingBox;
 pub use coordinate::GeographicCoordinate;
 pub use elevation::{ElevationPoint, ElevationProfile};
 pub use error::{CacheOperationFailureReason, OfflineGraphInvalidReason, SDKError};
+pub use mercator::MAXIMUM_MERCATOR_LATITUDE_DEGREES;
 pub use place::{GeocodeQuality, PlaceResult};
 pub use raster::{RasterImageFormat, RasterTileData, RasterTileResolution};
 pub use route::{

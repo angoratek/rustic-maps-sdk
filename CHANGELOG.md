@@ -39,6 +39,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 ### Changed (2026-11-18 — the vector-base install queues are gone)
 
 - Both wrappers carried a pending-install queue with a rollback record for a base-map change that arrived while a frame drew. The contract already applies such a change when that frame finishes, so the queue could only fire on a malformed source and its rollback path never ran in practice. Android drops `VectorBaseSourceQueue` with its test, iOS drops `VectorTileSourceInstallRecord` with its four tests, and the React Native pod copy is regenerated from the SwiftPM source. A source selected before the surface exists is still re-applied after a native-view rebuild. The slice removes 406 lines and adds 31.
+
+### Changed (2026-11-18 — one Mercator latitude limit)
+
+- `MAXIMUM_MERCATOR_LATITUDE_DEGREES` now lives in `geospatial-types` and is re-exported by the five former copies: the projection, the GeoJSON source, the vector style, the legacy vector style and the traffic-flow cache. The projection copy carried a shorter literal (`85.051_128_78`); every layer now clamps at the correctly rounded `85.051_128_779_806_6`. A test pins the value against `atan(sinh(pi))`, and the existing corner, clamp and traffic-box tests cover the call sites.
 ### Changed (2026-11-18 — the working plan retires into the issue tracker)
 
 - `PLAN.md` is gone. Every open item is one issue with a milestone and a label, each milestone description carries its done-when line, and the eight open question groups moved to issues #124 to #131. `PRD.md` fell from 306 to 190 lines with all 70 decisions intact, `CLAUDE.md` from 302 to 144 lines, and the changelog's stale identifiers, paths and ordering were corrected. The DCO check applies to outside contributions only.

@@ -14,8 +14,9 @@ use std::f64::consts::PI;
 /// Pixel size of one tile edge at zoom 0; two of these tile the whole world.
 pub const MERCATOR_TILE_SIZE_PIXELS: f64 = 512.0;
 
-/// Latitude cutoff of the Mercator projection, where the map square closes.
-pub const MAXIMUM_MERCATOR_LATITUDE_DEGREES: f64 = 85.051_128_78;
+/// Latitude cutoff of the Mercator projection, where the map square closes;
+/// re-exported from `geospatial-types` so every layer shares one value.
+pub use geospatial_types::MAXIMUM_MERCATOR_LATITUDE_DEGREES;
 
 /// Guard so a right-hand range boundary landing exactly on a tile edge maps
 /// to the tile on the far side of that edge, mirroring `floor` semantics.

@@ -39,8 +39,9 @@ use std::f64::consts::PI;
 const WORLD_LONGITUDE_SPAN_DEGREES: f64 = 360.0;
 /// The longitude at the world's western edge, in degrees.
 const WORLD_WEST_LONGITUDE_DEGREES: f64 = -180.0;
-/// The latitude the mercator projection approaches at the world's edges.
-pub const MERCATOR_MAXIMUM_LATITUDE_DEGREES: f64 = 85.051_128_779_806_59;
+/// The latitude the mercator projection approaches at the world's edges;
+/// re-exported from `geospatial-types` so every layer shares one value.
+pub use geospatial_types::MAXIMUM_MERCATOR_LATITUDE_DEGREES as MERCATOR_MAXIMUM_LATITUDE_DEGREES;
 
 /// The tile address a decoded tile belongs to (its web-mercator position).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

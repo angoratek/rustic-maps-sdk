@@ -58,8 +58,9 @@ pub const DEFAULT_GEOJSON_BUFFER_PIXELS: f64 = 0.0;
 /// simplification.
 pub const DEFAULT_GEOJSON_SIMPLIFICATION_TOLERANCE: f64 = 0.0;
 
-/// The latitude beyond which web mercator is not finite.
-pub const GEOJSON_MAXIMUM_MERCATOR_LATITUDE_DEGREES: f64 = 85.051_128_779_806_59;
+/// The latitude beyond which web mercator is not finite; re-exported from
+/// `geospatial-types` so every layer shares one value.
+pub use geospatial_types::MAXIMUM_MERCATOR_LATITUDE_DEGREES as GEOJSON_MAXIMUM_MERCATOR_LATITUDE_DEGREES;
 
 /// The FNV-1a 64-bit offset basis a generated feature id starts from.
 const FNV_OFFSET_BASIS: u64 = 0xcbf2_9ce4_8422_2325;

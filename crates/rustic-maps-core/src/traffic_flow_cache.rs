@@ -59,7 +59,8 @@ const LONGITUDE_DEGREES_PER_TURN: f64 = 360.0;
 
 /// The latitude limit of the web-mercator projection in degrees; a request
 /// whose box reaches beyond it is clamped, exactly as a tile server clamps.
-const MERCATOR_MAXIMUM_LATITUDE_DEGREES: f64 = 85.051_128_779_806_6;
+/// The one value lives in `geospatial-types`.
+use geospatial_types::MAXIMUM_MERCATOR_LATITUDE_DEGREES as MERCATOR_MAXIMUM_LATITUDE_DEGREES;
 
 /// Supplies "now" in whole seconds to the cache.
 ///
