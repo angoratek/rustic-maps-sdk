@@ -192,12 +192,15 @@ generate_kotlin_bindings() {
     rm -rf "${KOTLIN_GENERATED_SOURCES_DIR}/uniffi"
     # Run the built generator directly: on some hosts `cargo run` stalls at
     # process start with no CPU use, and the binary is produced by the same
-    # workspace build that produced the host cdylib above.
+    # workspace build that produced the host cdylib above. Its output is kept
+    # beside the build so a silent run can still be explained.
+    local generation_log="${REPO_ROOT}/target/uniffi-bindgen-kotlin.log"
+    mkdir -p "$(dirname "${generation_log}")"
     run_pinned_uniffi_bindgen generate \
         --library "${host_cdylib}" \
         --language kotlin \
         --out-dir "${KOTLIN_GENERATED_SOURCES_DIR}" \
-        --no-format
+        --no-format 2>&1 | tee "${generation_log}"
     # The generator can exit successfully without writing a file (an unusable
     # library, for example); without this check the failure surfaces minutes
     # later as Gradle's "generated bindings are missing" with no cause named.
@@ -206,7 +209,11 @@ generate_kotlin_bindings() {
     if [ "${generated_kotlin_file_count}" -eq 0 ]; then
         printf 'error: the generator produced no Kotlin sources under %s\n' \
             "${KOTLIN_GENERATED_SOURCES_DIR}" >&2
+        printf 'generator: %s\nlibrary: %s (%s bytes)\noutput:\n' \
+            "${REPO_ROOT}/target/debug/uniffi-bindgen" \
+            "${host_cdylib}" "$(wc -c < "${host_cdylib}" | tr -d ' ')" >&2
         find "${KOTLIN_GENERATED_SOURCES_DIR}" -maxdepth 3 -print >&2 || true
+        cat "${generation_log}" >&2 || true
         exit 1
     fi
     printf '==> generated %s Kotlin file(s)\n' "${generated_kotlin_file_count}"

@@ -99,7 +99,7 @@ jobs:
         run: |
           wasm-bindgen --version 2>/dev/null | grep -q "${{ steps.wasm_bindgen_version.outputs.version }}" \
             || cargo install wasm-bindgen-cli --version "${{ steps.wasm_bindgen_version.outputs.version }}" --locked
-          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix platform/web
           npm ci --no-audit --no-fund --prefix platform/rn
 
       - name: Generate the browser package

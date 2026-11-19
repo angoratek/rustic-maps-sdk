@@ -125,6 +125,11 @@ jobs:
           # Selects the software-rendering launch flags in
           # platform/web/browser_launch_options.mjs.
           RUSTIC_MAPS_WEBGPU_SOFTWARE: "1"
+          # The hosted runner still reports no WebGPU adapter with the software
+          # stack in place, so the suite asserts the documented degradation path
+          # here; rendering coverage runs on a machine with a GPU. Tracked in
+          # the issue that asks for a runner with one.
+          ALLOW_MISSING_GPU: "1"
 
   # The local pre-commit gate ran this closure by hand; running it here makes
   # the wasm32 compile contract enforced rather than a matter of discipline.
