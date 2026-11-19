@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — the React Native shell's lockfile carries no known vulnerability)
+
+- The app shell's lockfile resolved `fast-xml-parser` 5.11.2 and the 8.72 line of the `typescript-eslint` packages, both inside advisory ranges; Dependabot's security update could not resolve a fix and failed on every scheduled run. A lockfile-only audit update moves them to `fast-xml-parser` 5.12.1 and `typescript-eslint` 8.73.0, after which `npm audit` reports no vulnerability. No manifest range changed.
+
 ### Changed (2026-11-18 — the gate stamps the tree it checked)
 
 - `scripts/run-gate.sh` runs the format, workspace clippy and workspace test gates once and records a stamp keyed on the tree it checked. The pre-push hook accepts that stamp and returns at once, so a push no longer holds the transport open for the gate's duration; a tree without a stamp still runs the whole gate.
