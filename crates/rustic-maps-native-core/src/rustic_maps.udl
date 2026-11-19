@@ -3690,6 +3690,9 @@ interface PositionController {
     /// course.
     double? smoothed_course_degrees();
 
+    /// The age after which the controller considers a fix stale, in seconds.
+    double stale_after_seconds();
+
     /// Whether the latest fix is older than the staleness threshold at
     /// `now_seconds`. A fix without a timestamp is never stale.
     boolean is_stale(double now_seconds);

@@ -476,7 +476,8 @@ The contract carries one positioning controller. `PositionFix` holds a
 `course_heading_degrees` and `timestamp_seconds`; `PositionSourceError` has four values
 (`PermissionDenied`, `ServiceDisabled`, `Unavailable`, `Timeout`); `PositionController`
 exposes `feed_fix(fix)` (throwing `SdkError`), `source_failed(error)`, `latest_fix()`,
-`smoothed_course_degrees()`, `is_stale(now_seconds)` and `source_status()`.
+`smoothed_course_degrees()`, `stale_after_seconds()`, `is_stale(now_seconds)` and
+`source_status()`.
 
 The host owns the OS location API and permission prompt and pushes fixes and failures
 into the controller, which validates each fix, ignores stationary repeats when averaging
@@ -484,8 +485,8 @@ course, smooths the course around the circle, tracks staleness and records sourc
 failures. A controller built before any fix answers `latest_fix` as null; an invalid fix
 throws `SdkError::InvalidCoordinateInput` with the validator's detail and leaves the
 previous state. The wasm seam exposes the same class (`feedFix`, `sourceFailed`,
-`latestFix`, `smoothedCourseDegrees`, `isStale`, `sourceStatus`); the browser demo's
-Location settings use it with `navigator.geolocation`.
+`latestFix`, `smoothedCourseDegrees`, `staleAfterSeconds`, `isStale`, `sourceStatus`);
+the browser demo's Location settings use it with `navigator.geolocation`.
 
 ## 5. The provider layer
 

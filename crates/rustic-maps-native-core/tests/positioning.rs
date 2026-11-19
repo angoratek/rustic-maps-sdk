@@ -22,6 +22,7 @@ fn a_new_controller_has_no_fix() {
     let controller = PositionController::new();
     assert!(controller.latest_fix().is_none());
     assert!(controller.smoothed_course_degrees().is_none());
+    assert_eq!(controller.stale_after_seconds(), 10.0);
     assert_eq!(controller.source_status(), None);
 }
 

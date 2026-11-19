@@ -21,10 +21,16 @@ import uniffi.rustic_maps.SdkException
  * The application owns the runtime permission prompt (the manifest declares
  * `ACCESS_FINE_LOCATION` or `ACCESS_COARSE_LOCATION`) and calls [start] after
  * the user grants it. The source listens to the enabled `LocationManager`
- * providers on the main looper, converts every fix to the contract record and
- * pushes it into the controller; [stop] removes the updates. Permission and
- * service failures are reported to the controller as well as the application,
- * so the controller's state and the UI agree.
+ * providers on the main looper, converts the accepted fixes to the contract
+ * record and pushes them into the controller; [stop] removes the updates.
+ * Permission and service failures are reported to the controller as well as
+ * the application, so the controller's state and the UI agree.
+ *
+ * The source accepts every fix whose horizontal accuracy is non-negative and
+ * whose age is at or below the controller's staleness bound. A fix with a
+ * negative horizontal accuracy, or one older than that bound, is dropped
+ * before it reaches the controller; every other fix is forwarded, and a
+ * controller refusal is reported through the failure callback.
  *
  * The controller is passed in rather than created here: one controller per map
  * session, shared by the location indicator, the follow camera and the
@@ -112,13 +118,14 @@ class DeviceLocationSource(
         locationListener = null
     }
 
-    /** Pushes one platform fix into the controller. */
+    /** Converts one platform fix and hands it to the shared acceptance rule. */
     private fun deliver(location: Location) {
-        val positionFix = PositionFix(
-            coordinate = GeographicCoordinate(
-                latitude = location.latitude,
-                longitude = location.longitude,
-            ),
+        deliverPositionFix(
+            positionController = positionController,
+            onPositioningFailure = onPositioningFailure,
+            onFix = onFix,
+            latitude = location.latitude,
+            longitude = location.longitude,
             horizontalAccuracyMeters = if (location.hasAccuracy()) {
                 location.accuracy.toDouble()
             } else {
@@ -130,13 +137,8 @@ class DeviceLocationSource(
                 null
             },
             timestampSeconds = location.time / MILLISECONDS_PER_SECOND,
+            nowSeconds = System.currentTimeMillis() / MILLISECONDS_PER_SECOND,
         )
-        try {
-            positionController.feedFix(positionFix)
-            onFix?.invoke(positionFix)
-        } catch (sdkException: SdkException) {
-            onPositioningFailure?.invoke(sdkException.message ?: "the position fix was refused")
-        }
     }
 
     private companion object {
@@ -154,5 +156,50 @@ class DeviceLocationSource(
 
         /** Milliseconds in one second (the controller's timestamp unit). */
         const val MILLISECONDS_PER_SECOND: Double = 1_000.0
+    }
+}
+
+/**
+ * Forwards one platform fix to [positionController] under the acceptance rule
+ * both platform location sources apply: a fix whose horizontal accuracy is
+ * negative, or whose age is beyond the controller's staleness bound, is
+ * dropped; every other fix is fed, and a controller refusal is reported
+ * through [onPositioningFailure].
+ *
+ * The scalars are the platform fix's already-converted values, so the rule is
+ * unit-testable without an Android [Location] instance. [nowSeconds] is
+ * passed in for the same reason.
+ */
+internal fun deliverPositionFix(
+    positionController: PositionController,
+    onPositioningFailure: ((String) -> Unit)?,
+    onFix: ((PositionFix) -> Unit)?,
+    latitude: Double,
+    longitude: Double,
+    horizontalAccuracyMeters: Double?,
+    courseHeadingDegrees: Double?,
+    timestampSeconds: Double,
+    nowSeconds: Double,
+) {
+    if (horizontalAccuracyMeters != null && horizontalAccuracyMeters < 0.0) {
+        return
+    }
+    if (nowSeconds - timestampSeconds > positionController.staleAfterSeconds()) {
+        return
+    }
+    val positionFix = PositionFix(
+        coordinate = GeographicCoordinate(
+            latitude = latitude,
+            longitude = longitude,
+        ),
+        horizontalAccuracyMeters = horizontalAccuracyMeters,
+        courseHeadingDegrees = courseHeadingDegrees,
+        timestampSeconds = timestampSeconds,
+    )
+    try {
+        positionController.feedFix(positionFix)
+        onFix?.invoke(positionFix)
+    } catch (sdkException: SdkException) {
+        onPositioningFailure?.invoke(sdkException.message ?: "the position fix was refused")
     }
 }

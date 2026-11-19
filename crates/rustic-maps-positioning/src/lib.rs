@@ -162,6 +162,15 @@ impl PositionController {
         }
     }
 
+    /// The age after which [`Self::is_stale`] reports a fix as stale, in
+    /// seconds.
+    ///
+    /// # Returns
+    /// The threshold in force, ten seconds unless a caller replaced it.
+    pub fn stale_after_seconds(&self) -> f64 {
+        self.stale_after_seconds
+    }
+
     /// Accepts one fix from the host's source.
     ///
     /// A fix that repeats the previous coordinate exactly is ignored for the
@@ -499,6 +508,7 @@ mod tests {
     fn staleness_and_source_failures_are_reported() {
         let mut controller = PositionController::new();
         controller.set_stale_after_seconds(5.0);
+        assert_eq!(controller.stale_after_seconds(), 5.0);
         controller
             .feed_fix(PositionFix {
                 timestamp_seconds: Some(100.0),
