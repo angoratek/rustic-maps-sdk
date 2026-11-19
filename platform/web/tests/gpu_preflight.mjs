@@ -9,6 +9,12 @@ import { BROWSER_LAUNCH_OPTIONS } from '../browser_launch_options.mjs';
 /** Environment value that downgrades the preflight to a warning. */
 const ALLOW_MISSING_GPU_ENVIRONMENT_NAME = 'ALLOW_MISSING_GPU';
 
+// The first adapter request after a cold launch can resolve to null while the
+// GPU process brings the software device up, so a single null is not yet a
+// verdict. Twenty half-second attempts cover the observed startup window.
+const ADAPTER_REQUEST_ATTEMPT_LIMIT = 20;
+const ADAPTER_REQUEST_RETRY_DELAY_MILLISECONDS = 500;
+
 /**
  * Asserts a WebGPU adapter is available in CI. No-op outside CI.
  *
@@ -26,16 +32,27 @@ export async function assertGpuAdapterAvailable() {
   let adapter_available = false;
   try {
     const page = await browser.newPage();
-    adapter_available = await page.evaluate(async () => {
-      if (navigator.gpu === undefined) {
-        return false;
+    for (
+      let attempt = 1;
+      attempt <= ADAPTER_REQUEST_ATTEMPT_LIMIT && !adapter_available;
+      attempt += 1
+    ) {
+      adapter_available = await page.evaluate(async () => {
+        if (navigator.gpu === undefined) {
+          return false;
+        }
+        try {
+          return (await navigator.gpu.requestAdapter()) !== null;
+        } catch {
+          return false;
+        }
+      });
+      if (!adapter_available && attempt < ADAPTER_REQUEST_ATTEMPT_LIMIT) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, ADAPTER_REQUEST_RETRY_DELAY_MILLISECONDS),
+        );
       }
-      try {
-        return (await navigator.gpu.requestAdapter()) !== null;
-      } catch {
-        return false;
-      }
-    });
+    }
   } finally {
     await browser.close();
   }
