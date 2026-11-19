@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the playground screenshot script is gone)
+
+- `platform/web/check-playground.mjs` was a one-off screenshot helper with no caller in the package scripts, the CI workflows, the tests or the documentation. It is deleted; the browser suite's own capture spec is the screenshot path that runs.
+
 ### Fixed (2026-11-19 — the reference application packages with the heap it needs)
 
 - The Android reference application's debug APK now builds with a four-gigabyte Gradle heap. Packaging the AAR's three ABIs, JNA, Compose and the generated bindings exhausted the default heap, and AGP's splitter failed with a bare `java.lang.OutOfMemoryError` after the bindings, the AAR and the unit suite had all passed.
