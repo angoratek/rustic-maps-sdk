@@ -84,8 +84,11 @@ ensure_codegen_spec_include_on_ios() {
         exit 1
     fi
     if grep -qF "${CODEGEN_SPEC_INCLUDE_SELF_NAME}" "${module_header}"; then
-        sed -i '' "s|${CODEGEN_SPEC_INCLUDE_SELF_NAME}|${CODEGEN_SPEC_INCLUDE_REPOINTED}|" \
-            "${module_header}"
+        # A temporary file and a rename edit in place on both BSD and GNU sed:
+        # `sed -i ''` is BSD syntax that GNU sed reads as a script argument.
+        sed "s|${CODEGEN_SPEC_INCLUDE_SELF_NAME}|${CODEGEN_SPEC_INCLUDE_REPOINTED}|" \
+            "${module_header}" > "${module_header}.repointed"
+        mv "${module_header}.repointed" "${module_header}"
         printf '==> re-pointed the codegen spec include past the own-name header collision\n'
     fi
 }

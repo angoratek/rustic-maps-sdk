@@ -160,7 +160,13 @@ mod tests {
     fn real_probe_reads_a_real_filesystem() {
         let probe = RealDiskSpaceProbe;
         // Any real readable file path works; only a positive value matters.
-        let real_path = std::env::temp_dir().join("rustic-maps-cache-quota-probe");
+        // The name carries the process id so two concurrent test binaries (a
+        // gate run in a second worktree, for example) cannot remove each
+        // other's probe between the write and the read.
+        let real_path = std::env::temp_dir().join(format!(
+            "rustic-maps-cache-quota-probe-{}",
+            std::process::id()
+        ));
         std::fs::write(&real_path, b"probe").unwrap();
         let available = probe.available_disk_bytes(&real_path).unwrap();
         assert!(available > 0);
