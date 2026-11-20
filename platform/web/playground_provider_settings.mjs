@@ -139,6 +139,12 @@ export function defineProviderSettings(runtime) {
       const terms_element = document.createElement('p');
       terms_element.className = 'provider-terms-note';
       terms_element.textContent = provider_descriptor.terms_note ?? '';
+      // A failed apply's honest record: which capabilities registered and
+      // which one stopped the credential short. Hidden until a failure.
+      const failure_element = document.createElement('p');
+      failure_element.className = 'reason-strip provider-apply-failure';
+      failure_element.dataset.providerApplyFailure = '';
+      failure_element.hidden = true;
       const actions_element = document.createElement('div');
       actions_element.className = 'provider-credential-actions';
       actions_element.append(apply_element, clear_element);
@@ -148,16 +154,25 @@ export function defineProviderSettings(runtime) {
         field_element,
         hint_element,
         actions_element,
+        failure_element,
         terms_element,
       );
       runtime.shared.provider_credential_rows.appendChild(row_element);
-      runtime.shared.provider_credential_controls_by_key.set(provider_descriptor.provider_key, {
+      const provider_control = {
         provider_descriptor,
         input_element,
         applied_chip_element,
+        failure_element,
         apply_element,
         clear_element,
         registration_available,
+      };
+      runtime.shared.provider_credential_controls_by_key.set(
+        provider_descriptor.provider_key, provider_control);
+      // Clear removes the credential and its UI state, including a recorded
+      // partial apply; the concern that owns the button clears the rest.
+      clear_element.addEventListener('click', () => {
+        clear_provider_apply_failure(provider_control);
       });
     }
   }
@@ -248,6 +263,39 @@ export function defineProviderSettings(runtime) {
    * JavaScript "Error:" decoration the SDK detail never carries. */
   function provider_failure_text(error) {
     return typeof error?.message === 'string' ? error.message : String(error);
+  }
+
+  /** The consumer-facing name of one registry contract key, never a raw
+   * snake-case spelling. An unknown key stays verbatim so a failure can
+   * still name it. */
+  function capability_display_name(contract_key) {
+    return runtime.shared.CAPABILITY_DISPLAY_NAMES[contract_key] ?? contract_key;
+  }
+
+  /** Wraps one apply detail as a failure whose `String()` is the detail
+   * alone, the convention every generated failure follows, so a calling
+   * surface reports no "Error:" decoration. */
+  function provider_apply_failure(failure_text) {
+    const failure = new Error(failure_text);
+    failure.name = '';
+    return failure;
+  }
+
+  /** Records an apply failure on the provider's own credential row and in
+   * the session's keyed record, so a partial apply is never silent. */
+  function record_provider_apply_failure(provider_control, failure_text) {
+    runtime.shared.provider_apply_failure_by_key.set(
+      provider_control.provider_descriptor.provider_key, failure_text);
+    provider_control.failure_element.textContent = failure_text;
+    provider_control.failure_element.hidden = false;
+  }
+
+  /** Clears a provider row's apply failure after a successful apply. */
+  function clear_provider_apply_failure(provider_control) {
+    runtime.shared.provider_apply_failure_by_key.delete(
+      provider_control.provider_descriptor.provider_key);
+    provider_control.failure_element.textContent = '';
+    provider_control.failure_element.hidden = true;
   }
 
   /**
@@ -525,19 +573,12 @@ export function defineProviderSettings(runtime) {
     }
   }
 
-  /** Applies one credential through the wasm registration seam. */
+  /** Applies one credential through the wasm registration seam in two
+   * phases: validate the whole declared capability set, then register it.
+   * Validation throws before the seam is touched, so an unmappable contract
+   * can never leave a partial registration behind. */
   async function apply_provider_credential(provider_control, credential_value,
     { persist = false } = {}) {
-    if (runtime.shared.use_provider_fixtures) {
-      // The harness serves the provider's recorded routes same-origin; the
-      // base URL override is keyed by the registry's wasm dispatch key.
-      window.mapTest.setProviderBaseUrl(
-        provider_control.provider_descriptor.wasm_registration
-          ?? provider_control.provider_descriptor.provider_key,
-        `${window.location.origin}${runtime.state.providers_registry.fixture_base_path}`
-          + `/${provider_control.provider_descriptor.provider_key}`,
-      );
-    }
     const { provider_descriptor } = provider_control;
     // One credential fills every capability the descriptor declares, each
     // through the provider-keyed call, so the row's own key decides which
@@ -550,24 +591,73 @@ export function defineProviderSettings(runtime) {
     // provider the panel is not marking Serving.
     const raster_is_selected_base =
       provider_descriptor.provider_key === runtime.state.current_raster_provider_key;
-    const served_contract_names = served_contract_keys
-      .filter((contract_key) => contract_key !== runtime.shared.RASTER_TILES_CAPABILITY_KEY
-        || raster_is_selected_base)
-      .map((contract_key) => runtime.shared.CAPABILITY_CONTRACT_NAMES[contract_key])
-      .filter((contract_name) => contract_name !== undefined);
-    if (!served_contract_keys.some(
-      (contract_key) => runtime.shared.CAPABILITY_CONTRACT_NAMES[contract_key] !== undefined)) {
-      throw new Error(
-        `${provider_descriptor.display_name} declares no capability this build can register.`,
+    // Phase one: every declared contract that is not an unselected raster
+    // base must map to a contract name this build knows. Nothing registers
+    // until the whole set passes, so no half-registered provider can exist.
+    const applicable_contract_keys = served_contract_keys.filter((contract_key) =>
+      contract_key !== runtime.shared.RASTER_TILES_CAPABILITY_KEY
+        || raster_is_selected_base);
+    const unmappable_contract_key = applicable_contract_keys.find(
+      (contract_key) =>
+        runtime.shared.CAPABILITY_CONTRACT_NAMES[contract_key] === undefined);
+    if (unmappable_contract_key !== undefined) {
+      const failure_text = `${provider_descriptor.display_name} declares the `
+        + `${unmappable_contract_key} contract, which this build cannot register`;
+      runtime.shared.applied_provider_keys.delete(provider_descriptor.provider_key);
+      record_provider_apply_failure(provider_control, failure_text);
+      runtime.services.refresh_credential_state();
+      throw provider_apply_failure(failure_text);
+    }
+    if (applicable_contract_keys.length === 0) {
+      const failure_text =
+        `${provider_descriptor.display_name} declares no capability this build can `
+        + 'register.';
+      runtime.shared.applied_provider_keys.delete(provider_descriptor.provider_key);
+      record_provider_apply_failure(provider_control, failure_text);
+      runtime.services.refresh_credential_state();
+      throw provider_apply_failure(failure_text);
+    }
+    if (runtime.shared.use_provider_fixtures) {
+      // The harness serves the provider's recorded routes same-origin; the
+      // base URL override is keyed by the registry's wasm dispatch key.
+      window.mapTest.setProviderBaseUrl(
+        provider_descriptor.wasm_registration ?? provider_descriptor.provider_key,
+        `${window.location.origin}${runtime.state.providers_registry.fixture_base_path}`
+          + `/${provider_descriptor.provider_key}`,
       );
     }
-    for (const contract_name of served_contract_names) {
-      window.mapTest.configureProvider(
-        contract_name,
-        provider_descriptor.provider_key,
-        credential_value,
-      );
+    // Phase two: register. The seam has no per-contract unregister
+    // (`clearProviderRegistrations` replaces the whole registry), so a
+    // failure here is recorded, never rolled back: the capabilities that did
+    // register stay named on the row, and the provider stays unapplied.
+    const registered_contract_keys = [];
+    for (const contract_key of applicable_contract_keys) {
+      const contract_name = runtime.shared.CAPABILITY_CONTRACT_NAMES[contract_key];
+      try {
+        window.mapTest.configureProvider(
+          contract_name,
+          provider_descriptor.provider_key,
+          credential_value,
+        );
+      } catch (error) {
+        runtime.shared.applied_provider_keys.delete(provider_descriptor.provider_key);
+        const failure_detail = provider_failure_text(error);
+        const registered_capability_names = registered_contract_keys.map(
+          (registered_contract_key) =>
+            capability_display_name(registered_contract_key));
+        const failure_text = registered_capability_names.length === 0
+          ? `${provider_descriptor.display_name} is not applied: `
+            + `${capability_display_name(contract_key)} failed because ${failure_detail}`
+          : `${provider_descriptor.display_name} is not fully applied: `
+            + `${registered_capability_names.join(', ')} registered; `
+            + `${capability_display_name(contract_key)} failed because ${failure_detail}`;
+        record_provider_apply_failure(provider_control, failure_text);
+        runtime.services.refresh_credential_state();
+        throw provider_apply_failure(failure_text);
+      }
+      registered_contract_keys.push(contract_key);
     }
+    clear_provider_apply_failure(provider_control);
     runtime.shared.provider_credentials_by_key.set(
       provider_descriptor.provider_key, credential_value);
     runtime.shared.applied_provider_keys.add(provider_control.provider_descriptor.provider_key);
@@ -751,6 +841,11 @@ export function installProviderSettingsPhase7(runtime) {
   // selection and an unreachable route plan both point the visitor at the
   // retry-or-own-deployment next step.
   runtime.shared.capability_failure_text_by_key = new Map();
+
+  // The providers whose credential apply stopped partway, keyed by provider:
+  // the honest record of which capabilities registered before the failure,
+  // rendered on the provider's own credential row.
+  runtime.shared.provider_apply_failure_by_key = new Map();
 
   runtime.shared.provider_keyless_status_text = ui_label_text('settings.keyless_status');
 
