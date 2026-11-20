@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the Android source-holder uses the shipped module identity)
+
+- `platform/android/map-sdk-native` is now `maps-sdk-native`, project `:maps-sdk-native`, matching the published `:maps-sdk` artifact; its namespace is `com.rusticmaps.sdk.mapsnative` instead of the unused `nativestyle`. Gradle settings, the wrapper's source and `jniLibs` wiring, the smoke module, the ignore rules, the build and documentation scripts, the README and the release guide follow, and the AAR build with its content assertions passes at the new path.
+- The React Native pod type prefixes stay for the React Native rename work; the changelog's earlier entry keeps the retired spelling as written.
+
 ### Changed (2026-11-19 — the browser matrix exercises every served contract)
 
 - `platform/web/tests/provider_console_provider_matrix.spec.mjs` now derives the expected contracts from each descriptor's `served_contracts`, groups the fixture routes by the registry's `contract` field, and runs one case per route with the committed fixture bytes and the parsed result asserted. Thirty-three cases pass; six are explicit skips that name the contract and the reason (vector tiles are exercised by the canvas vector-source spec, the three tile-only sources are not registrable in the browser, and Google's reverse call shares its forward path).

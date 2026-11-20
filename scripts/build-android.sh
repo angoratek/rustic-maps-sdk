@@ -6,7 +6,7 @@
 # with the Android NDK clang linkers -> uniffi Kotlin bindings generated from
 # the frozen UDL metadata embedded in the built cdylib -> the Kotlin sources
 # and the per-ABI `librustic_maps.so` files land in the internal source-holder
-# module (platform/android/map-sdk-native) -> `gradle :maps-sdk:assembleRelease`
+# module (platform/android/maps-sdk-native) -> `gradle :maps-sdk:assembleRelease`
 # compiles them into the one published AAR, `gradle :smoke-jvm:smokeRun`
 # exercises the generated Kotlin against the host dylib, and
 # `gradle :maps-sdk:testDebugUnitTest` runs the wrapper's unit suite over the
@@ -32,7 +32,7 @@ readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly BINDING_CRATE_NAME="rustic-maps-native-core"
 readonly BINDING_CRATE_FFI_LIBRARY_NAME="librustic_maps.so"
 readonly GRADLE_ROOT="${REPO_ROOT}/platform/android"
-readonly GRADLE_MODULE_PATH="${GRADLE_ROOT}/map-sdk-native"
+readonly GRADLE_MODULE_PATH="${GRADLE_ROOT}/maps-sdk-native"
 readonly KOTLIN_GENERATED_SOURCES_DIR="${GRADLE_MODULE_PATH}/src/main/kotlin"
 readonly JNILIBS_DIR="${GRADLE_MODULE_PATH}/src/main/jniLibs"
 # The published artifact is selected by its exact release name: a debug AAR
@@ -438,7 +438,7 @@ main() {
 
     echo "==> assembling the one AAR"
     # `:maps-sdk` compiles the generated bindings, the ABI libraries and the
-    # wrapper into a single artifact; `:map-sdk-native` is a source holder.
+    # wrapper into a single artifact; `:maps-sdk-native` is a source holder.
     (cd "${GRADLE_ROOT}" && ./gradlew --no-daemon :maps-sdk:assembleRelease)
 
     echo "==> asserting the AAR carries the bindings, wrapper classes and ABIs"

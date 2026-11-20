@@ -47,7 +47,7 @@ const DEFAULT_OUTPUT_DIRECTORY = path.join(
 
 const UDL_RELATIVE_PATH = 'crates/rustic-maps-native-core/src/rustic_maps.udl';
 const KOTLIN_BINDINGS_RELATIVE_PATH =
-  'platform/android/map-sdk-native/src/main/kotlin/uniffi/rustic_maps/rustic_maps.kt';
+  'platform/android/maps-sdk-native/src/main/kotlin/uniffi/rustic_maps/rustic_maps.kt';
 const SWIFT_BINDINGS_RELATIVE_PATH =
   'platform/ios/Sources/RusticMapsSDK/rustic_maps.swift';
 const REACT_NATIVE_BINDINGS_RELATIVE_PATH =

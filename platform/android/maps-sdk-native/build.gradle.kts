@@ -13,13 +13,14 @@ plugins {
 }
 
 // The module carries no publication identity of its own: `:maps-sdk`
-// publishes the one artifact. Its namespace is the released Kotlin package's
-// `.nativestyle` child.
+// publishes the one artifact. Its namespace follows the shipped `maps-sdk`
+// identity and names this source holder; the generated bindings keep their
+// own `uniffi.rustic_maps` package.
 group = "com.angoratek"
 version = "0.1.0"
 
 android {
-    namespace = "com.rusticmaps.sdk.nativestyle"
+    namespace = "com.rusticmaps.sdk.mapsnative"
     compileSdk = 36
 
     defaultConfig {

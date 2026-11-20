@@ -73,10 +73,10 @@ and notices. Consumers need no Rust. The Rust crates stay source-only;
 `scripts/build-android.sh` cross-builds the `rustic-maps-native-core` cdylib for
 `arm64-v8a`, `armeabi-v7a` and `x86_64` at the API-24 NDK linker level, regenerates the
 Kotlin bindings from the frozen UDL metadata, stages sources and per-ABI
-`librustic_maps.so` files into `platform/android/map-sdk-native/src/main/jniLibs`, and
+`librustic_maps.so` files into `platform/android/maps-sdk-native/src/main/jniLibs`, and
 runs `gradle :maps-sdk:assembleRelease` (AGP 9.0.0, Gradle wrapper 9.5.1, compileSdk 36,
 minSdk 24). `:maps-sdk` compiles those sources and the Compose wrapper into the one AAR;
-`:map-sdk-native` publishes nothing. The published dependencies are
+`:maps-sdk-native` publishes nothing. The published dependencies are
 `net.java.dev.jna:jna:5.18.1@aar` and
 `org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2`. The Compose wrapper is
 `compileOnly` and does not reach the POM; a Compose host supplies the BOM,

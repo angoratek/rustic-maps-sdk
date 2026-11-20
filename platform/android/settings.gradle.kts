@@ -18,7 +18,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "maps-sdk-android"
 
-include(":map-sdk-native")
+include(":maps-sdk-native")
 include(":maps-sdk")
 include(":smoke-jvm")
 include(":reference-application")
