@@ -23,6 +23,9 @@
 //! early — when no graphics adapter is available, so CPU-only environments
 //! pass.
 
+mod common;
+
+use common::golden::{GoldenTolerance, compare_or_create_golden};
 use image::GenericImageView as _;
 use rustic_maps_glyphs::decode_glyph_font_stack;
 use rustic_maps_rendering::vector_style::{
@@ -64,8 +67,6 @@ const ROAD_NAME_SCENE_LATITUDE_DEGREES: f64 = 38.565_347_844_885_46;
 /// Longitude of the fixture tile's south-east corner (121.508789 W).
 const ROAD_NAME_SCENE_LONGITUDE_DEGREES: f64 = -121.508_789_062_5;
 
-/// Directory of the golden fixtures, relative to the crate manifest.
-const GOLDEN_DIRECTORY: &str = "fixtures/render/golden";
 /// Fixture of the top-down scene.
 const TOP_DOWN_GOLDEN_FILE: &str = "sacramento_zoom14_top_down.png";
 /// Fixture of the pitched scene.
@@ -153,16 +154,6 @@ const RECORD_TILES_COMMAND: &str =
 /// recorded texels two fold; linear filtering smooths the upscale, and scene
 /// coverage comes from the tile spans, not from the texel size.
 const PLATFORM_RASTER_TILE_EDGE_PIXELS: u32 = 256;
-
-/// The mean absolute per-channel error (0..255 scale) tolerated between the
-/// rendered frame and its golden fixture.
-const MEAN_ABSOLUTE_ERROR_TOLERANCE: f64 = 2.0;
-/// Per-pixel absolute channel error (0..255 scale) above which a pixel counts
-/// as an outlier.
-const OUTLIER_CHANNEL_ERROR: f64 = 24.0;
-/// Fraction of outlier pixels tolerated; sampler differences gather along
-/// tile edges and steep gradients, never across the whole frame.
-const OUTLIER_PIXEL_FRACTION_LIMIT: f64 = 0.02;
 
 /// Builds the scene camera over Sacramento.
 fn sacramento_camera(pitch_degrees: f64) -> MapCamera {
@@ -393,108 +384,18 @@ fn request_renderer_or_skip() -> Option<HeadlessTileRenderer> {
     }
 }
 
-/// Compares a captured frame against its golden fixture, writing the fixture
-/// on first run and asserting the tolerance on every run after.
-/** Whether this run may write a missing golden (a deliberate regeneration). */
-fn golden_regeneration_is_requested() -> bool {
-    std::env::var("UPDATE_GOLDENS").is_ok_and(|value| value == "1")
-}
-
-fn compare_or_create_golden(
-    captured_frame: &CapturedFrame,
-    golden_file_name: &str,
-    scene_description: &str,
-) {
-    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join(GOLDEN_DIRECTORY)
-        .join(golden_file_name);
-    if !golden_path.exists() {
-        // A missing golden is a failure, not a quiet regeneration: a deleted
-        // or never-committed fixture must not pass. Regenerating one is a
-        // deliberate act - `UPDATE_GOLDENS=1 cargo test` - and the operator
-        // then reviews and commits the new image.
-        if !golden_regeneration_is_requested() {
-            panic!(
-                "golden fixture for {scene_description} is missing at {golden_path:?}; \
-                 regenerate deliberately with UPDATE_GOLDENS=1 and commit the result"
-            );
-        }
-        std::fs::create_dir_all(
-            golden_path
-                .parent()
-                .expect("the fixture directory has a parent"),
-        )
-        .expect("the golden fixture directory is writable");
-        image::save_buffer(
-            &golden_path,
-            &captured_frame.rgba_bytes,
-            captured_frame.width_pixels,
-            captured_frame.height_pixels,
-            image::ColorType::Rgba8,
-        )
-        .expect("the golden fixture is written deterministically on first run");
-        println!(
-            "golden fixture for {scene_description} was missing; wrote a deterministic reference \
-             at {golden_path:?} because UPDATE_GOLDENS is set - review and commit it"
-        );
-        return;
-    }
-
-    let golden_image = image::open(&golden_path)
-        .unwrap_or_else(|error| panic!("golden fixture {golden_path:?} is unreadable: {error}"))
-        .to_rgba8();
-    assert_eq!(
-        (golden_image.width(), golden_image.height()),
-        (captured_frame.width_pixels, captured_frame.height_pixels),
-        "golden fixture {golden_path:?} has a different size than the rendered frame"
-    );
-    let golden_bytes = golden_image.as_raw();
-    let pixel_count = captured_frame.width_pixels * captured_frame.height_pixels;
-    let mut absolute_error_sum: f64 = 0.0;
-    let mut outlier_pixel_count: u64 = 0;
-    for (captured_pixel, golden_pixel) in captured_frame
-        .rgba_bytes
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .zip(golden_bytes.as_chunks::<4>().0)
-    {
-        let mut pixel_maximum_error: f64 = 0.0;
-        for channel in 0..4 {
-            let channel_error = f64::from(captured_pixel[channel].abs_diff(golden_pixel[channel]));
-            absolute_error_sum += channel_error;
-            pixel_maximum_error = pixel_maximum_error.max(channel_error);
-        }
-        if pixel_maximum_error > OUTLIER_CHANNEL_ERROR {
-            outlier_pixel_count += 1;
-        }
-    }
-    let mean_absolute_error = absolute_error_sum / (f64::from(pixel_count) * 4.0);
-    let outlier_pixel_fraction = outlier_pixel_count as f64 / f64::from(pixel_count);
-    println!(
-        "{scene_description}: mean absolute channel error {mean_absolute_error:.4} \
-         (limit {MEAN_ABSOLUTE_ERROR_TOLERANCE}), outlier fraction \
-         {outlier_pixel_fraction:.5} (limit {OUTLIER_PIXEL_FRACTION_LIMIT})"
-    );
-    assert!(
-        mean_absolute_error <= MEAN_ABSOLUTE_ERROR_TOLERANCE,
-        "the rendered {scene_description} frame drifted from its golden fixture: \
-         mean absolute channel error {mean_absolute_error}"
-    );
-    assert!(
-        outlier_pixel_fraction <= OUTLIER_PIXEL_FRACTION_LIMIT,
-        "the rendered {scene_description} frame drifted from its golden fixture: \
-         outlier fraction {outlier_pixel_fraction} exceeds the limit"
-    );
-}
-
 #[test]
 fn sacramento_top_down_scene_matches_its_golden_fixture() {
     let Some(mut renderer) = request_renderer_or_skip() else {
         return;
     };
     let captured_frame = render_scene(&mut renderer, TOP_DOWN_PITCH_DEGREES);
-    compare_or_create_golden(&captured_frame, TOP_DOWN_GOLDEN_FILE, "the top-down scene");
+    compare_or_create_golden(
+        &captured_frame,
+        TOP_DOWN_GOLDEN_FILE,
+        "the top-down scene",
+        GoldenTolerance::STANDARD,
+    );
 }
 
 #[test]
@@ -503,7 +404,12 @@ fn sacramento_pitched_scene_matches_its_golden_fixture() {
         return;
     };
     let captured_frame = render_scene(&mut renderer, PITCHED_PITCH_DEGREES);
-    compare_or_create_golden(&captured_frame, PITCHED_GOLDEN_FILE, "the pitched scene");
+    compare_or_create_golden(
+        &captured_frame,
+        PITCHED_GOLDEN_FILE,
+        "the pitched scene",
+        GoldenTolerance::STANDARD,
+    );
 }
 
 // --- SDF coverage profile (M30 Slice D) --------------------------------
@@ -801,6 +707,7 @@ fn a_mid_fade_frame_dissolves_the_retired_level_into_the_new_one() {
         &captured_frame,
         CROSS_FADE_GOLDEN_FILE,
         "the mid-fade cross-fade scene",
+        GoldenTolerance::STANDARD,
     );
 }
 
@@ -829,6 +736,7 @@ fn sacramento_place_labels_scene_matches_its_golden_fixture() {
         &captured_frame,
         PLACE_LABELS_GOLDEN_FILE,
         "the place-label scene",
+        GoldenTolerance::STANDARD,
     );
 }
 
@@ -868,6 +776,7 @@ fn sacramento_road_names_scene_matches_its_golden_fixture() {
         &captured_frame,
         ROAD_NAMES_GOLDEN_FILE,
         "the road-name scene",
+        GoldenTolerance::STANDARD,
     );
 }
 
@@ -962,6 +871,7 @@ fn sacramento_regional_labels_scene_matches_its_golden_fixture() {
         &captured_frame,
         REGIONAL_LABELS_GOLDEN_FILE,
         "the dense regional label scene",
+        GoldenTolerance::STANDARD,
     );
 }
 
@@ -986,5 +896,6 @@ fn sacramento_regional_thinning_scene_matches_its_golden_fixture() {
         &captured_frame,
         REGIONAL_THINNING_GOLDEN_FILE,
         "the wide regional thinning scene",
+        GoldenTolerance::STANDARD,
     );
 }

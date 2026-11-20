@@ -18,7 +18,10 @@
 //! behavior. A missing golden is written deliberately with `UPDATE_GOLDENS=1`;
 //! the test skips when no graphics adapter exists.
 
+mod common;
+
 use async_trait::async_trait;
+use common::golden::{GoldenTolerance, compare_or_create_golden};
 use geospatial_traits::{VectorTileProvider, VectorTileSourceDescriptor};
 use geospatial_types::{GeographicCoordinate, SDKError, VectorTileData};
 use image::GenericImageView as _;
@@ -26,8 +29,8 @@ use rustic_maps_rendering::sprite::{SpriteAtlas, SpriteAtlasError, SpriteSource}
 use rustic_maps_rendering::vector_base::VectorBaseScheduler;
 use rustic_maps_rendering::vector_style::vector_tile_style_from_json;
 use rustic_maps_rendering::{
-    CapturedFrame, DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer,
-    MapCamera, PreparedTile, TileKey, TileReadiness, TileTexturePool, ViewportPixels,
+    DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer, MapCamera,
+    PreparedTile, TileKey, TileReadiness, TileTexturePool, ViewportPixels,
     WgpuGraphicsContextSource,
 };
 use std::path::PathBuf;
@@ -45,8 +48,6 @@ const SCENE_ZOOM_LEVEL: f64 = 14.0;
 /// The scene camera is top-down and north up.
 const SCENE_BEARING_DEGREES: f64 = 0.0;
 const SCENE_PITCH_DEGREES: f64 = 0.0;
-/// Directory of the golden fixtures, relative to the crate manifest.
-const GOLDEN_DIRECTORY: &str = "fixtures/render/golden";
 /// Fixture of the POI scene.
 const POI_GOLDEN_FILE: &str = "sacramento_zoom14_poi_labels.png";
 /// The style id the scheduler reports for the scene.
@@ -84,11 +85,6 @@ const REQUIRED_PLACED_LABELS: &[&str] = &["Sutter Health Park", "Chevron", "7-El
 /// The frame must place at least this many of the fixture's eight names: some
 /// of the western points sit close enough to collide at the scene's text size.
 const MINIMUM_PLACED_LABEL_COUNT: usize = 6;
-/// Tolerances mirrored from the other golden harnesses.
-const MEAN_ABSOLUTE_ERROR_TOLERANCE: f64 = 2.0;
-const OUTLIER_CHANNEL_ERROR: f64 = 24.0;
-const OUTLIER_PIXEL_FRACTION_LIMIT: f64 = 0.02;
-
 /// Serves the committed vector tile and refuses every other address.
 struct FixtureTileProvider;
 
@@ -218,66 +214,6 @@ fn request_renderer_or_skip() -> Option<HeadlessTileRenderer> {
     }
 }
 
-fn compare_or_create_golden(captured_frame: &CapturedFrame, golden_file_name: &str) {
-    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join(GOLDEN_DIRECTORY)
-        .join(golden_file_name);
-    if !golden_path.exists() {
-        if std::env::var("UPDATE_GOLDENS").is_err() {
-            panic!(
-                "golden fixture is missing at {golden_path:?}; regenerate deliberately with \
-                 UPDATE_GOLDENS=1 and commit the result"
-            );
-        }
-        image::save_buffer(
-            &golden_path,
-            &captured_frame.rgba_bytes,
-            captured_frame.width_pixels,
-            captured_frame.height_pixels,
-            image::ColorType::Rgba8,
-        )
-        .expect("the golden fixture is written");
-        println!("wrote {golden_path:?}; review and commit it");
-        return;
-    }
-    let golden_image = image::open(&golden_path)
-        .unwrap_or_else(|error| panic!("golden fixture {golden_path:?} is unreadable: {error}"))
-        .to_rgba8();
-    let golden_bytes = golden_image.as_raw();
-    let pixel_count = captured_frame.width_pixels * captured_frame.height_pixels;
-    let mut absolute_error_sum = 0.0_f64;
-    let mut outlier_pixel_count = 0_u64;
-    for (captured_pixel, golden_pixel) in captured_frame
-        .rgba_bytes
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .zip(golden_bytes.as_chunks::<4>().0)
-    {
-        let mut pixel_maximum_error = 0.0_f64;
-        for channel in 0..4 {
-            let channel_error = f64::from(captured_pixel[channel].abs_diff(golden_pixel[channel]));
-            absolute_error_sum += channel_error;
-            pixel_maximum_error = pixel_maximum_error.max(channel_error);
-        }
-        if pixel_maximum_error > OUTLIER_CHANNEL_ERROR {
-            outlier_pixel_count += 1;
-        }
-    }
-    let mean_absolute_error = absolute_error_sum / (f64::from(pixel_count) * 4.0);
-    let outlier_pixel_fraction = outlier_pixel_count as f64 / f64::from(pixel_count);
-    assert!(
-        mean_absolute_error <= MEAN_ABSOLUTE_ERROR_TOLERANCE,
-        "the POI frame drifted from {golden_file_name}: mean channel error \
-         {mean_absolute_error:.3} exceeds the tolerance"
-    );
-    assert!(
-        outlier_pixel_fraction <= OUTLIER_PIXEL_FRACTION_LIMIT,
-        "the POI frame drifted from {golden_file_name}: {outlier_pixel_fraction:.4} of pixels \
-         exceed the outlier error"
-    );
-}
-
 #[tokio::test]
 async fn the_poi_style_labels_named_points_of_interest_over_recorded_tiles() {
     let Some(mut renderer) = request_renderer_or_skip() else {
@@ -362,5 +298,10 @@ async fn the_poi_style_labels_named_points_of_interest_over_recorded_tiles() {
             Some(&label_layer),
         )
         .expect("the POI frame renders");
-    compare_or_create_golden(&captured_frame, POI_GOLDEN_FILE);
+    compare_or_create_golden(
+        &captured_frame,
+        POI_GOLDEN_FILE,
+        "the POI label scene",
+        GoldenTolerance::STANDARD,
+    );
 }

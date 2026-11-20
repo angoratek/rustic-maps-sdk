@@ -14,7 +14,10 @@
 //! in sampler behavior. A missing golden is written deliberately with
 //! `UPDATE_GOLDENS=1`; the test skips when no graphics adapter exists.
 
+mod common;
+
 use async_trait::async_trait;
+use common::golden::{GoldenTolerance, compare_or_create_golden};
 use geospatial_traits::{VectorTileProvider, VectorTileSourceDescriptor};
 use geospatial_types::{GeographicCoordinate, SDKError, VectorTileData};
 use rustic_maps_rendering::vector_base::{VectorBaseFrame, VectorBaseScheduler};
@@ -24,7 +27,6 @@ use rustic_maps_rendering::{
     MapCamera, TileKey, TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
 };
 use rustic_maps_style::CompiledStyle;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 /// Frame edge in pixels (the other golden scenes' extent).
@@ -49,11 +51,6 @@ const TRANSITION_MID_FRAME_GOLDEN_FILE: &str = "style_transition_cross_fade_half
 /// The clear colour every captured frame shares, so the translucent blend is
 /// legible against the surface rather than black.
 const GOLDEN_BACKGROUND_RGBA: [f32; 4] = [0.90, 0.90, 0.90, 1.0];
-/// Tolerances mirrored from the other vector-base goldens.
-const MEAN_ABSOLUTE_ERROR_TOLERANCE: f64 = 2.0;
-const OUTLIER_CHANNEL_ERROR: f64 = 24.0;
-const OUTLIER_PIXEL_FRACTION_LIMIT: f64 = 0.02;
-
 /// A provider serving the one committed tile; any other address fails, so
 /// only the fixture contributes geometry.
 struct FixtureTileProvider;
@@ -208,7 +205,12 @@ async fn a_declared_style_transition_blends_between_the_two_settled_styles() {
         10.0 + TRANSITION_DURATION_MILLISECONDS / 2000.0,
     );
     let half_captured = render_frame(&mut renderer, &camera, &viewport, &at_half);
-    compare_or_create_golden(&half_captured, TRANSITION_MID_FRAME_GOLDEN_FILE);
+    compare_or_create_golden(
+        &half_captured,
+        TRANSITION_MID_FRAME_GOLDEN_FILE,
+        "the style-transition half frame",
+        GoldenTolerance::STANDARD,
+    );
 
     // At the declared duration the change has landed and the transition has
     // stopped running. The frame must equal the untimed path's settled frame.
@@ -240,65 +242,4 @@ fn request_renderer_or_skip() -> Option<HeadlessTileRenderer> {
             None
         }
     }
-}
-
-/// Compares against (or deliberately writes) the scene's golden.
-fn compare_or_create_golden(captured_frame: &CapturedFrame, golden_file_name: &str) {
-    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("fixtures/render/golden")
-        .join(golden_file_name);
-    if !golden_path.exists() {
-        if std::env::var("UPDATE_GOLDENS").is_err() {
-            panic!(
-                "golden fixture is missing at {golden_path:?}; regenerate deliberately with \
-                 UPDATE_GOLDENS=1 and commit the result"
-            );
-        }
-        image::save_buffer(
-            &golden_path,
-            &captured_frame.rgba_bytes,
-            captured_frame.width_pixels,
-            captured_frame.height_pixels,
-            image::ColorType::Rgba8,
-        )
-        .expect("the golden fixture is written");
-        println!("wrote {golden_path:?}; review and commit it");
-        return;
-    }
-    let golden_image = image::open(&golden_path)
-        .expect("the golden fixture is readable")
-        .to_rgba8();
-    let golden_bytes = golden_image.as_raw();
-    let pixel_count = captured_frame.width_pixels * captured_frame.height_pixels;
-    let mut absolute_error_sum = 0.0_f64;
-    let mut outlier_pixel_count = 0_u64;
-    for (captured_pixel, golden_pixel) in captured_frame
-        .rgba_bytes
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .zip(golden_bytes.as_chunks::<4>().0)
-    {
-        let mut pixel_maximum_error = 0.0_f64;
-        for channel in 0..4 {
-            let channel_error = f64::from(captured_pixel[channel].abs_diff(golden_pixel[channel]));
-            absolute_error_sum += channel_error;
-            pixel_maximum_error = pixel_maximum_error.max(channel_error);
-        }
-        if pixel_maximum_error > OUTLIER_CHANNEL_ERROR {
-            outlier_pixel_count += 1;
-        }
-    }
-    let mean_absolute_error = absolute_error_sum / (f64::from(pixel_count) * 4.0);
-    let outlier_pixel_fraction = outlier_pixel_count as f64 / f64::from(pixel_count);
-    assert!(
-        mean_absolute_error <= MEAN_ABSOLUTE_ERROR_TOLERANCE,
-        "the transition frame drifted from {golden_path:?}: mean absolute error \
-         {mean_absolute_error}"
-    );
-    assert!(
-        outlier_pixel_fraction <= OUTLIER_PIXEL_FRACTION_LIMIT,
-        "the transition frame drifted from {golden_path:?}: outlier fraction \
-         {outlier_pixel_fraction}"
-    );
 }
