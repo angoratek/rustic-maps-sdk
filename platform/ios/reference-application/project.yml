@@ -40,6 +40,12 @@ targets:
       # follow (platform/reference-flows.json).
       - path: ../../reference-flows.json
         buildPhase: resources
+      # The shared provider registry, bundled straight from the single source
+      # (platform/providers.json): the settings surface renders the same
+      # descriptors the dev server and the other reference applications read.
+      - path: ../../providers.json
+        buildPhase: resources
+        group: SharedProviderRegistry
       # The recorded synthetic navigation traces, bundled straight from
       # the committed fixtures (the single sources of the simulated
       # journeys and the demo-plan picker's plans).
@@ -116,6 +122,11 @@ targets:
       # same demo places and routes the application renders.
       - path: Sources/ReferenceScenesCatalog.swift
       - path: Sources/ReferenceScenesCatalogLoader.swift
+      # The layout constants and the registry's decoded model live in the
+      # application too: the suite compiles them so it measures the same
+      # metrics and reads the same descriptors the application renders.
+      - path: Sources/AppLayout.swift
+      - path: Sources/ProviderRegistryCatalog.swift
       # The shared demo artifact, bundled straight from the single source
       # (platform/reference-scenes.json): the suite reads the same demo
       # places and routes the application bundles.

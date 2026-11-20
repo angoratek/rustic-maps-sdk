@@ -64,12 +64,17 @@ readonly PRIVACY_MANIFEST_PATH="${IOS_PACKAGE_ROOT}/PrivacyInfo.xcprivacy"
 # policy stays in the reference application.
 readonly REFAPP_ONLY_PACKAGE_MARKER="map_refapp"
 # Refapp-only demo content the published package must not carry: the demo
-# scenes loader/model, the UX theme, and the shared demo artifact resource all
-# live in the reference application's own source set (audit C10).
+# scenes loader/model, the UX theme, the shared demo artifact resource and the
+# reference application's layout, navigation-card and registry helpers all live
+# in the reference application's own source set (audit C10).
 readonly REFAPP_ONLY_DEMO_MARKERS=(
     "ReferenceScenesCatalog"
     "ReferenceAppUXTheme"
     "reference-scenes"
+    "AppLayout"
+    "NavigationInstructionPresentation"
+    "NavigationStateCardStore"
+    "ProviderRegistryCatalog"
 )
 
 require_tool() {

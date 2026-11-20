@@ -4,9 +4,9 @@
 //! registration dispatch arm, never a view rewrite. Descriptors carry labels,
 //! availability, attribution and hints only — never a credential value.
 //!
-//! The package bundles the registry from its single committed source at
-//! packaging time, so the data cannot drift from the file the dev server and
-//! the other reference applications consume.
+//! The application bundles the registry from its single committed source, so
+//! the data cannot drift from the file the dev server and the other reference
+//! applications consume.
 
 import Foundation
 import RusticMapsSDK
@@ -331,23 +331,26 @@ public struct ProviderRegistryCatalog: Decodable, Sendable {
         }
     }
 
-    /// The name the registry ships under in the processed package resource.
+    /// The name the registry ships under in the application bundle.
     static let registryResourceName = "providers"
 
-    /// The name the registry file ships under in the processed package resource.
+    /// The name the registry file ships under in the application bundle.
     static let registryResourceFileExtension = "json"
 
-    /// Loads the registry from the package's bundled resource, refreshed from
-    /// the shared registry at packaging time.
-    public static func loadedFromPackageResource() throws -> ProviderRegistryCatalog {
-        let packageResourceBundle = Bundle.module
-        guard let registryURL = packageResourceBundle.url(
+    /// Loads the registry from the application bundle. The reference
+    /// application bundles the shared registry straight from its single
+    /// source (`platform/providers.json`), so the settings surface renders
+    /// the same descriptors the dev server and the other reference
+    /// applications read.
+    public static func loadedFromApplicationBundle() throws -> ProviderRegistryCatalog {
+        let applicationBundle = Bundle.main
+        guard let registryURL = applicationBundle.url(
             forResource: registryResourceName,
             withExtension: registryResourceFileExtension
         ) else {
             throw ProviderRegistryCatalogError.registryResourceMissing(
                 bundleDescription:
-                    packageResourceBundle.bundleIdentifier ?? "an unnamed bundle"
+                    applicationBundle.bundleIdentifier ?? "an unnamed bundle"
             )
         }
         do {

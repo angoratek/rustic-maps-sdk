@@ -4,15 +4,16 @@
 //! capability added to the registry alone is therefore covered without a
 //! per-surface table.
 
-import MapNativeCoreUI
 import RusticMapsSDK
 import XCTest
+
+@testable import ReferenceApplication
 
 final class ProviderContractRegistryNamesTests: XCTestCase {
     /// Every name the bundled shared registry declares across its provider
     /// descriptors.
     private func registryDeclaredCapabilityNames() throws -> Set<String> {
-        let catalog = try ProviderRegistryCatalog.loadedFromPackageResource()
+        let catalog = try ProviderRegistryCatalog.loadedFromApplicationBundle()
         return Set(catalog.providers.flatMap(\.servedContracts))
     }
 

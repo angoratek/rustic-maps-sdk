@@ -51,9 +51,9 @@ final class ProviderConsoleTests: XCTestCase {
     }
 
     /// A distinct provider display name from the shared registry, when the
-    /// package resource loads; the fallback assertion covers a missing one.
+    /// application resource loads; the fallback assertion covers a missing one.
     private func firstRegistryDisplayName() -> (key: String, displayName: String)? {
-        guard let catalog = try? ProviderRegistryCatalog.loadedFromPackageResource(),
+        guard let catalog = try? ProviderRegistryCatalog.loadedFromApplicationBundle(),
               let descriptor = catalog.providers.first
         else {
             return nil
@@ -133,7 +133,7 @@ final class ProviderConsoleTests: XCTestCase {
             )
         )
         let descriptors = (try? ProviderRegistryCatalog
-            .loadedFromPackageResource())?.providers ?? []
+            .loadedFromApplicationBundle())?.providers ?? []
         let rowText = ProviderConsoleFormatting.rowText(
             for: event,
             descriptors: descriptors
