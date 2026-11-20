@@ -4,6 +4,34 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the recorded tiles stop being published)
+
+- The docs site no longer stages or publishes the 216 recorded MapQuest raster tiles, and the build fails if a served tile directory reappears. On a deployed page the first-run base is the registry's keyless vector base and a fixture-backed raster row waits for that provider's credential; the local dev server and the Playwright suite keep serving the fixtures unchanged.
+- The fixture-serving decision is one page capability: the playground asks whether this page answers the recorded fixtures and treats a remembered raster choice that is no longer servable as a fallback, not an error. `/demo/tiles/*` is gone from the release guide's served paths.
+
+### Changed (2026-11-19 — the OpenStreetMap-US vector tiles are synthetic)
+
+- The two committed OpenStreetMap-US vector tiles are replaced by tiles generated in-repository by `scripts/generate-openstreetmap-us-fixtures.mjs`; they fell from 28,539 and 116,934 bytes to 684 and 1,335, and the two perf copies are produced by the same generator. The fixture README names the command and the provenance manifest records both groups as generated.
+- The consuming tests now assert the exact 11-layer wire order, all three geometry kinds and the feature counts instead of accepting a non-empty buffer, and the vector goldens and the two LOD budgets were regenerated to the measured synthetic output.
+
+### Changed (2026-11-19 — the archive parser is four named phases)
+
+- `OfflineRoutingNetworkGraph::from_bytes` is now four documented phases — file header, resource table, resource decoding and decoded-graph validation — with `from_bytes` reduced to a five-line orchestration. Error variants, their conditions and their return order are unchanged.
+- Two cases were added at boundaries that had none: a misaligned resource offset and a payload that is not a whole number of records. The archive suite reports 11 tests.
+
+### Changed (2026-11-19 — one loopback fixture server for the native tests)
+
+- `crates/rustic-maps-native-core/tests/common/` now holds one provider-neutral `LoopbackFixtureServer`: it scripts a response sequence with status, content type and extra headers, records request lines, targets and bodies, and routes by path fragment. The seven hand-written servers across the vendor and URL-template test targets are gone, removing 722 lines while all 47 tests in those targets keep passing.
+
+### Added (2026-11-19 — React Native binding generation fails on drift)
+
+- `scripts/generate-rn-bindings.sh --check` regenerates the JSI bindings and the TurboModule glue into a temporary project outside the repository, applies the same post-generation patches, and compares every output byte-for-byte with the working tree, naming each stale or missing file and exiting non-zero.
+- The app-shell job runs the check after generation, and a dedicated `rn-binding-drift` job runs it when the frozen UDL, the generation script or the React Native manifests change.
+
+### Changed (2026-11-19 — the native records are eleven domain modules)
+
+- `crates/rustic-maps-native-core/src/records.rs`, 3,452 lines, is split into eleven private child modules behind the same `crate::records::<Name>` paths: geometry, provider, places, routing, traffic, tiles, terrain, overlays, navigation, positioning and diagnostics. The 90 public struct and enum names are identical before and after, and one doc link gained the `super::` path its new module needs.
+
 ### Changed (2026-11-19 — the public notes name no owner resources or internal plan)
 
 - The hosted-demo claim endpoint guide describes its Upstash store generically and no longer names the store, the Vercel project or the exact counter keys. The free plan, the absent payment method, the upgrade and eviction settings, the 30-minute monthly budget, the four daily grants and the kill switch stay.
