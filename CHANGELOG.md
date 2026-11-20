@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — every credentialed vendor's error mapping is asserted from a committed payload)
+
+- HERE, Google, TomTom, Mapbox and Radar each gain committed 401, 429 and no-route payloads under `fixtures/<vendor>/`. The 401 and 429 bodies are verbatim from the provider layer's tests; four of the five no-route payloads empty the success envelope their response types declare, because only Google's provider test records a no-route response.
+- `crates/rustic-maps-native-core/tests/vendor_provider_errors.rs` serves each payload and asserts the mapped variant and unified message: 401 and no-route map to `ProviderRequestRejected`, 429 to `RateLimitExhausted`, and no message contains the credential, which the test proves was sent.
+- Finding: the unified mapping is vendor-agnostic on both 401 and no-route, so a provider's own error body never reaches the message. That is recorded here rather than changed, because unifying the details is a product decision.
+
 ### Changed (2026-11-19 — the Android source-holder uses the shipped module identity)
 
 - `platform/android/map-sdk-native` is now `maps-sdk-native`, project `:maps-sdk-native`, matching the published `:maps-sdk` artifact; its namespace is `com.rusticmaps.sdk.mapsnative` instead of the unused `nativestyle`. Gradle settings, the wrapper's source and `jniLibs` wiring, the smoke module, the ignore rules, the build and documentation scripts, the README and the release guide follow, and the AAR build with its content assertions passes at the new path.
