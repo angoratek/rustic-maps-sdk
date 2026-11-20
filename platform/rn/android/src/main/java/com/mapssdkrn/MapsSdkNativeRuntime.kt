@@ -60,20 +60,6 @@ object MapsSdkNativeRuntime {
     /** The optional launch-intent extra naming the credential's provider. */
     private const val RUNTIME_PROVIDER_KEY_INTENT_EXTRA: String = "providerKey"
 
-    /**
-     * The assets file a build made for the hosted demo carries: `{ "provider_key": …, "api_key": … }`, written on
-     * the build machine from a dedicated, separately issued credential. It is
-     * never committed, and it is absent from every other build — so a
-     * distributed APK stays keyless.
-     */
-    private const val HOSTED_DEMO_CREDENTIAL_ASSET: String = "hosted-demo-credential.json"
-
-    /** The provider key field of the hosted-demo credential file. */
-    private const val HOSTED_DEMO_CREDENTIAL_PROVIDER_KEY_FIELD: String = "provider_key"
-
-    /** The credential field of the hosted-demo credential file. */
-    private const val HOSTED_DEMO_CREDENTIAL_API_KEY_FIELD: String = "api_key"
-
     /** The tile cache's file inside the host app's caches directory. */
     private const val TILE_CACHE_DATABASE_FILE_NAME: String = "rustic-maps-tile-cache.sqlite"
 
@@ -183,52 +169,19 @@ object MapsSdkNativeRuntime {
         if (launchCredentialApplied) {
             return
         }
-        val launchIntent = activity?.intent
-        val hostedDemoCredential = hostedDemoCredential(activity)
+        val launchIntent = activity?.intent ?: return
         val intentCredential = launchIntent
-            ?.getStringExtra(RUNTIME_CREDENTIAL_INTENT_EXTRA)
+            .getStringExtra(RUNTIME_CREDENTIAL_INTENT_EXTRA)
             ?.takeIf { credential -> credential.isNotBlank() }
-        val runtimeCredential = intentCredential ?: hostedDemoCredential?.second ?: return
-        val intentProviderKey = if (intentCredential == null) {
-            null
-        } else {
-            launchIntent
-                ?.getStringExtra(RUNTIME_PROVIDER_KEY_INTENT_EXTRA)
-                ?.takeIf { providerKey -> providerKey.isNotBlank() }
-        }
-        val runtimeProviderKey = intentProviderKey
-            ?: hostedDemoCredential?.first
-            ?: MAPQUEST_PROVIDER_KEY
+            ?: return
+        val intentProviderKey = launchIntent
+            .getStringExtra(RUNTIME_PROVIDER_KEY_INTENT_EXTRA)
+            ?.takeIf { providerKey -> providerKey.isNotBlank() }
+        val runtimeProviderKey = intentProviderKey ?: MAPQUEST_PROVIDER_KEY
         val (wasApplied, _) =
-            setProviderCredential(runtimeProviderKey, runtimeCredential, withTileCache = true)
+            setProviderCredential(runtimeProviderKey, intentCredential, withTileCache = true)
         if (wasApplied) {
             launchCredentialApplied = true
-        }
-    }
-
-    /**
-     * Reads the hosted demo's credential file from the build's assets, when
-     * it carries one. Returns null for every other build, and for a malformed
-     * file — an unreadable injected credential leaves the app keyless rather
-     * than failing.
-     */
-    private fun hostedDemoCredential(activity: Activity?): Pair<String, String>? {
-        val context: Context = activity?.applicationContext ?: return null
-        return try {
-            val credentialText = context.assets
-                .open(HOSTED_DEMO_CREDENTIAL_ASSET)
-                .bufferedReader()
-                .use { reader -> reader.readText() }
-            val credentialJson = org.json.JSONObject(credentialText)
-            val providerKey = credentialJson
-                .optString(HOSTED_DEMO_CREDENTIAL_PROVIDER_KEY_FIELD)
-                .takeIf { field -> field.isNotBlank() }
-            val credential = credentialJson
-                .optString(HOSTED_DEMO_CREDENTIAL_API_KEY_FIELD)
-                .takeIf { field -> field.isNotBlank() }
-            if (providerKey != null && credential != null) providerKey to credential else null
-        } catch (missingOrMalformedCredential: Exception) {
-            null
         }
     }
 

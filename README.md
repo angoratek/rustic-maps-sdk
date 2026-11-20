@@ -24,9 +24,10 @@ providers.
 - **Live browser demo:** <https://angoratek.github.io/rustic-maps-sdk-docs/demo/>
   — the WebAssembly build, keyless: recorded demo data on live OpenStreetMap
   base tiles outside the recorded area.
-- **Hosted mobile demo:**
-  <https://angoratek.github.io/rustic-maps-sdk-docs/demo/mobile/> — the Android,
-  iOS and React Native reference applications running on a hosted device.
+- **Recorded walkthrough:**
+  <https://angoratek.github.io/rustic-maps-sdk-docs/demo/walkthrough/> — the
+  Android, iOS and React Native reference applications recorded and playable in
+  the browser, with no account or provider key.
 
 **Build from source.** No versioned package release is published yet. The build
 scripts below produce each platform artifact from this repository. A versioned

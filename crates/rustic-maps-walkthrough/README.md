@@ -32,7 +32,7 @@ Every recording runs without a credential on every platform, through the same pr
 - Photon for geocoding and place search.
 - OSRM for routing. Valhalla is the documented fallback.
 
-`capture` refuses to start when any known credential variable is present in the environment: `PROVIDER_API_KEY`, `TEST_RUNNER_PROVIDER_API_KEY`, `HOSTED_DEMO_PROVIDER_API_KEY` or `MAPQUEST_CONSUMER_KEY`. The refusal names the variable, so a key can never slip into a recording, a manifest or a published frame.
+`capture` refuses to start when any known credential variable is present in the environment: `PROVIDER_API_KEY`, `TEST_RUNNER_PROVIDER_API_KEY` or `MAPQUEST_CONSUMER_KEY`. The refusal names the variable, so a key can never slip into a recording, a manifest or a published frame.
 
 ## The two-step capture
 

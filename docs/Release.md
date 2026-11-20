@@ -41,8 +41,8 @@ Unreleased work stays under `[Unreleased]`.
 | Generated UniFFI namespace | `rustic_maps` |
 
 **Rustic Maps SDK** is the product name; **Rustic Maps SDK Ref App** is the artifact
-name on the reference applications' installer, launcher, `CFBundleDisplayName` and
-Appetize listing. Neither touches a published identity or an Appetize build id.
+name on the reference applications' installer, launcher and `CFBundleDisplayName`.
+Neither touches a published identity.
 
 ## The artifacts
 
@@ -341,6 +341,7 @@ directory whose layout answers the same URLs the dev server maps.
 | `/demo/generated-runtime/@ubjs/*` | the page's player runtime from `platform/web/node_modules/@ubjs` |
 | `/demo/reference-scenes.json` | `platform/reference-scenes.json` |
 | `/demo/offline-graph/routing_grid.rmog` | `crates/rustic-maps-offline-graph-compiler/fixtures/rmog/routing_grid.rmog` |
+| `/demo/walkthrough/` | the walkthrough crate's `build` output for `platform/reference-walkthrough.json`: `index.html`, `player.css`, `player.js`, `manifest.json` and the normalised stills under `assets/` |
 
 The `/golden/` route family is test-only and the demo bundles none of it. The demo
 `index.html` is a curated copy; its only edit is the footer, with the version stamp from
@@ -355,7 +356,8 @@ A missing `navigator.gpu` shows the documented degradation message with the MDN 
 The directory carries the same `provenance.txt` fields and the `gates-green=<commit>`
 assertion. The full Playwright suite must have passed against this exact bundle, and
 copied files are byte-equality-asserted against `platform/web`. The scrub covers
-`/demo`, and the staged tree stays under 25 MB, enforced by `LIVE_DEMO_MAXIMUM_BYTES`.
+`/demo`, and the live demo's own files stay under 25 MB, enforced by
+`LIVE_DEMO_MAXIMUM_BYTES`; the recorded walkthrough beside it has its own 64 MB budget.
 
 ## Screenshots
 
@@ -591,76 +593,25 @@ print("credential check: clean")
 PY
 ```
 
-## The hosted mobile demo
+## The recorded walkthrough
 
-The demo at `/demo/mobile/` streams the Android, iOS and React Native reference
-applications through Appetize, one tab per platform. **The free plan.** 30 streamed
-minutes per month, shared by every visitor; 3-minute sessions, so at most ten full
-sessions a month. Sessions open in their own tab; a link with embed parameters may show
-Appetize's "app may not be embedded" notice. Nothing streams until **Start demo** is
-pressed. **The claim service.** `platform/web/mobile-demo/mobile-demo.mjs` asks a claim
-endpoint for a session; the default is
-`https://rustic-maps-demo-claim.vercel.app/api/claim`, overridable through the page's
-`demo-claim-endpoint` meta element. It enforces the monthly streamed-minutes budget, a
-per-visitor daily session count, and an optional operator bypass through
-`?operatorToken=`. The visitor is a randomly generated local token, not an IP address,
-so shared addresses do not lock each other out. The page never holds the operator
-secret; the token travels only in the URL the operator opens. When the daily count is
-reached, the page rests with "You have used today's demo sessions. Try again tomorrow."
-and the month's remaining minutes. A grant reserves the whole 3-minute session before
-the stream starts, so an abandoned claim can never overrun the free plan. That
-reservation is pessimistic: a claim where the visitor never presses Appetize's own Start
-button costs the budget but streams nothing. Before every decision the endpoint
-therefore reconciles its monthly counter with Appetize's usage report (`GET
-/v1/usageSummary`, the account key in the endpoint's `APPETIZE_API_KEY` environment
-variable): the counter drops to what actually streamed plus one session of headroom for
-claims in flight, and never below the report or above the reservation. Without the key,
-or when the report is unreachable, the reservation stands alone, which can only refuse a
-session early. The page's `status=true` readout reports the reconciled `streamedSeconds`
-beside the counter. **Reviewing the demo.** Append the operator token:
+The page at `/demo/walkthrough/` plays six recorded frames per platform — Android,
+iOS and React Native — cut from one revision and normalised to one shared frame.
+It needs no account, no session and no provider credential; the player and every
+image are served from the site itself. `scripts/build-docs-site.sh` builds it with
+`cargo run -p rustic-maps-walkthrough -- build --output <staged-site>/demo/walkthrough
+--contract platform/reference-walkthrough.json`, then byte-checks the staged
+stylesheet, script and stills against the crate's committed player and normalised
+assets. The browser suite runs the crate's `validate` in global setup, so a contract
+whose flow steps, image shapes or normalisation do not agree fails before a page
+runs.
 
-```
-https://<demo-host>/demo/mobile/?operatorToken=<operator-token>
-```
-
-The claim endpoint grants an operator session without counting against the daily
-allowance; streamed minutes still count against the month. When the month runs out, the
-page rests until it rolls over; raising the budget is an Appetize plan change.
-**Re-applying session settings.** The uploader updates settings only when it uploads. To
-re-apply them without a new artifact, for example after an account-level change dropped
-the referrer allow-list:
-
-```bash
-set -a; source .env; set +a
-node scripts/upload-demo-builds.mjs --reapply-settings
-```
-
-It reads each build id from `platform/demo-builds.json` and sends the timeout,
-three-minute limit, one-session concurrency, referrer allow-list and button text as a
-JSON body, then verifies the allow-list reads back. Builds and ids are unchanged.
-**Rebuilding.** `scripts/upload-demo-builds.mjs` updates the three published Appetize
-builds in place: Android, iOS and React Native Android. A React Native iOS entry exists
-but is unpublished, so it has no build id. Build ids never change. Re-upload after any
-change that should reach visitors, then confirm the app starts in a session. **The
-dedicated credential policy.** The Android and iOS hosted builds may carry a credential
-no other build carries. It is:
-
-- **dedicated**: issued for the demo alone, revoked and re-issued on rotation, never the
-  key the fixture tools and the live-smoke example use;
-- **injected on the build machine** from the repository secret
-  `HOSTED_DEMO_PROVIDER_API_KEY`, never stored in the repository and never written into
-  a file git tracks;
-- **read at startup** through the same public registration path as an automation
-  injection, never persisted to the Keystore or Keychain, never logged;
-- **absent from a normal build**, which therefore stays keyless.
-
-`scripts/inject-hosted-demo-credential.sh` writes the Android
-`assets/hosted-demo-credential.json` (gitignored) and deletes it with `--clean`, so a
-local build cannot silently become keyed. For iOS it writes nothing: the application
-reads `HostedDemoProviderAPIKey` from `Info.plist`, expanded from
-`HOSTED_DEMO_PROVIDER_API_KEY` (optionally paired with `HOSTED_DEMO_PROVIDER_KEY`) on
-the `xcodebuild` command line. The `.github/workflows/hosted-demo.yml` workflow builds
-the three applications and uploads them only when the Appetize API token is present.
+The recordings are made with the two-step capture in the crate's README: `capture`
+records the Android emulator, the iOS simulator and the browser harness, and `slice`
+cuts each still and transition clip at an exact timestamp. Every recording uses the
+keyless OpenFreeMap vector base, Photon search and OSRM routing, and `capture` refuses
+to start when a known credential variable is present in the environment. No recording,
+manifest or published frame carries a credential.
 
 ## Documentation snippets
 
@@ -732,8 +683,8 @@ release pipeline is trusted, but not the product surface.
    the repository was created fresh, so no pre-rewrite object is reachable by SHA.
 2. **Contributions carry a Developer Certificate of Origin sign-off.** No CLA. CI checks
    it with `scripts/check-dco-signoff.mjs`; commits stay one line with no trailers.
-3. **The opening covers the repository, docs site, browser and mobile demos;** packages
-   stay build-from-source until the first versioned release.
+3. **The opening covers the repository, docs site, browser demo and recorded
+   walkthrough;** packages stay build-from-source until the first versioned release.
 4. **Vulnerability reports arrive through GitHub private vulnerability reporting only.**
    No personal address is published.
 5. **Internal planning documents are published sanitized.** Process vocabulary, billing
@@ -806,8 +757,8 @@ Apply these host-side settings in one pass so the repository never exists unprot
   and automated security fixes all on.
 - Actions: GitHub-authored and the pinned third-party set only, read-only permissions by
   default, no `pull_request_target`, no secrets to fork PRs.
-- Environments `release` and `hosted-demo` with required reviewers and deployment
-  branches limited to `main` and version tags.
+- Environment `release` with required reviewers and deployment branches limited to
+  `main` and version tags.
 - Discussions enabled; issue forms and the pull-request template are in the tree. The
   docs repository keeps its own deploy path; its deploy key is an account-level action,
   never a repository secret in the SDK.

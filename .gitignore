@@ -64,9 +64,3 @@ playwright-report/
 # (scripts/build-refapp-core.sh). Never part of a published package.
 platform/android/reference-application/src/refapp-core/generated/
 platform/ios/reference-application/Generated/
-
-# The hosted demo's injected credential (scripts/inject-hosted-demo-credential.sh).
-# Generated on the build machine from a secret; never a build input for a
-# distributed artifact.
-platform/android/reference-application/src/main/assets/hosted-demo-credential.json
-platform/rn/app-shell/android/app/src/main/assets/hosted-demo-credential.json

@@ -997,21 +997,14 @@ final class ReferenceApplicationModel: ObservableObject {
         let environmentCredential = environment[
             ReferenceApplicationConfiguration.runtimeCredentialEnvironmentKey
         ].flatMap { value in value.isEmpty ? nil : value }
-        // A build made for the hosted demo carries its own dedicated
-        // credential in the Info.plist; every ordinary build expands
-        // that key to nothing, so this stays nil outside the hosted pipeline.
-        // The environment seam keeps precedence so a local run can override it.
-        let hostedDemoCredential = environmentCredential == nil
-            ? ReferenceApplicationConfiguration.hostedDemoBundleCredential()
-            : nil
-        guard let runtimeCredential = environmentCredential ?? hostedDemoCredential?.credential else {
+        guard let runtimeCredential = environmentCredential else {
             return
         }
         let requestedProviderKey = environment[
             ReferenceApplicationConfiguration.runtimeProviderKeyEnvironmentKey
         ].flatMap { providerKey in
             providerKey.isEmpty ? nil : providerKey
-        } ?? hostedDemoCredential?.providerKey
+        }
         // Absent an explicit provider key, the only provider the registry
         // declares available on iOS is the target (never a vendor guess).
         let availableDescriptors = providerCredentialDescriptors.filter {
@@ -2126,8 +2119,8 @@ extension ReferenceApplicationModel {
     /// Opens the map on the registry's keyless base map when nothing else is
     /// serving one.
     ///
-    /// A keyless run (the hosted demo, a first launch, any build without a
-    /// credential) would otherwise draw an empty surface. The choice is
+    /// A keyless run (a first launch, any build without a credential) would
+    /// otherwise draw an empty surface. The choice is
     /// registry-driven and provider-neutral: the first descriptor that declares
     /// a credential-less raster template and is servable on this platform. A
     /// base map the application already selected always wins.

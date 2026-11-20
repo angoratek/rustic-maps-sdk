@@ -216,8 +216,8 @@ const CONTENT_TYPES_BY_EXTENSION = {
 const server = createServer(async (request, response) => {
   try {
     const request_path = new URL(request.url, `http://${HOST}:${PORT}`).pathname;
-    // A directory request (`/mobile-demo/`) serves its index page, the way
-    // the static site does; every other path is a file request.
+    // A directory request serves its index page, the way the static site
+    // does; every other path is a file request.
     const static_request_path = request_path.endsWith('/')
       ? `${request_path}index.html`
       : request_path;

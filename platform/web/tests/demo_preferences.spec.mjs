@@ -452,30 +452,3 @@ test('the settings sheet fits a small viewport and scrolls to its last row', asy
     .toBeLessThanOrEqual(dialog_box.y + dialog_box.height);
   await expect(page.locator('#settings-close-control')).toBeVisible();
 });
-
-test('the header link targets the local mobile demo and is keyboard reachable', async ({
-  page,
-}) => {
-  await page.route('**/demo-builds.json', (route) => route.fulfill({
-    json: {
-      sourceCommit: '0123456789abcdef0123456789abcdef01234567',
-      builds: {
-        android: { buildId: 'android-build-id', updatedAt: '2026-10-30T00:00:00Z' },
-        ios: { buildId: 'ios-build-id', updatedAt: '2026-10-30T00:00:00Z' },
-        reactNativeAndroid: { buildId: 'rn-build-id', updatedAt: '2026-10-30T00:00:00Z' },
-      },
-    },
-  }));
-  await page.goto('/');
-
-  const mobile_demo_link = page.locator('#mobile-demo-link');
-  await expect(mobile_demo_link).toBeVisible();
-  await expect(mobile_demo_link).toHaveText('Mobile demo');
-  await expect(mobile_demo_link).toHaveAttribute('href', 'mobile-demo/');
-
-  // A keyboard visitor can reach it and follow it.
-  await mobile_demo_link.focus();
-  await expect(mobile_demo_link).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/mobile-demo\/$/);
-});

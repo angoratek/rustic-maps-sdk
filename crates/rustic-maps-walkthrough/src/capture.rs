@@ -31,10 +31,9 @@ pub const BROWSER_HARNESS_DIRECTORY: &str = "platform/web";
 pub const KEYLESS_PROVIDER_SUMMARY: &str = "OpenFreeMap for the vector base, Photon for geocoding and place search, and OSRM for routing (Valhalla is the documented fallback)";
 
 /// The credential environment variables a capture refuses to run with.
-pub const CREDENTIAL_ENVIRONMENT_VARIABLES: [&str; 4] = [
+pub const CREDENTIAL_ENVIRONMENT_VARIABLES: [&str; 3] = [
     "PROVIDER_API_KEY",
     "TEST_RUNNER_PROVIDER_API_KEY",
-    "HOSTED_DEMO_PROVIDER_API_KEY",
     "MAPQUEST_CONSUMER_KEY",
 ];
 

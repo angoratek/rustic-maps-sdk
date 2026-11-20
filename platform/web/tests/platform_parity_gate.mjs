@@ -15,8 +15,7 @@
 //      diagnostics, vector geometry);
 //   4. every surface still implements the three-way Light/Dark/Auto theme
 //      with Auto as the default;
-//   5. the web map keeps its keyboard/screen-reader contract and the mobile
-//      page its ARIA tabs pattern;
+//   5. the web map keeps its keyboard/screen-reader contract;
 //   6. the registry mirror is byte-identical and every fixture it names is
 //      committed.
 //
@@ -163,7 +162,7 @@ const THEME_MODEL_SOURCES = [
   },
 ];
 
-/** The web accessibility contract the page and the mobile page must keep. */
+/** The web accessibility contract the page must keep. */
 const ACCESSIBILITY_MARKUP = [
   {
     source: 'platform/web/index.html',
@@ -177,16 +176,6 @@ const ACCESSIBILITY_MARKUP = [
       'id="map-status"',
     ],
     description: 'the map is a labelled, keyboard-operable focus stop with a live status',
-  },
-  {
-    source: 'platform/web/mobile-demo/index.html',
-    fragments: [
-      'role="tablist"',
-      'role="tabpanel"',
-      'aria-controls="mobile-demo-stage"',
-      'tabindex="-1"',
-    ],
-    description: 'the mobile page follows the ARIA tabs pattern',
   },
 ];
 

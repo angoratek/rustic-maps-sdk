@@ -242,8 +242,7 @@
       }
       /* The header links are quiet chips in the accent role, never the
          browser's default link blue (which vanishes on the dark surface). */
-      #docs-back-link,
-      #mobile-demo-link {
+      #docs-back-link {
         display: inline-flex;
         align-items: center;
         font-size: var(--type-caption-size);
@@ -255,10 +254,8 @@
         border-radius: var(--radius-inline);
         white-space: nowrap;
       }
-      #docs-back-link:hover,
-      #mobile-demo-link:hover { border-color: var(--accent-color); }
+      #docs-back-link:hover { border-color: var(--accent-color); }
       #docs-back-link:focus-visible,
-      #mobile-demo-link:focus-visible,
       #settings-control:focus-visible {
         outline: 2px solid var(--accent-color);
         outline-offset: 1px;
