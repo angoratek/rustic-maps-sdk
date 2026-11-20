@@ -60,11 +60,17 @@ use rustic_maps_core::{
 };
 use std::sync::Arc;
 
-/// The highest tile zoom level the web-mercator plane math represents: tile
-/// indices are `u32` and the plane is `1 << zoom` tiles wide, so zoom 31 is
-/// the last representable level. This is a **structural** bound, not a
-/// provider ceiling: each provider declares its own usable maximum, and a
-/// [`TilePackManager`] takes that declared ceiling as configuration.
+/// The highest tile zoom level this crate's web-mercator plane math
+/// represents: pack tile indices are `u32` and the plane is `1u32 << zoom`
+/// tiles wide, so zoom 31 is the last level whose tile count fits.
+///
+/// This is a **structural** bound of the pack representation, not a provider
+/// ceiling: each provider declares its own usable maximum, and a
+/// [`TilePackManager`] takes that declared ceiling as configuration. It must
+/// not exceed the shared tile-grid bound
+/// [`geospatial_types::MAXIMUM_TILE_ZOOM_LEVEL`], because every pack tile
+/// address names a tile of that grid; a deeper level would describe a tile the
+/// grid cannot address. The test below pins that relationship.
 const MAXIMUM_REPRESENTABLE_TILE_ZOOM_LEVEL: u8 = 31;
 
 /// Guard against an integrator bounding box plus zoom range enumerating an
@@ -1184,8 +1190,8 @@ mod tests {
     use async_trait::async_trait;
     use geospatial_traits::RasterTileProvider;
     use geospatial_types::{
-        BoundingBox, CacheOperationFailureReason, GeographicCoordinate, RasterImageFormat,
-        RasterTileData, RasterTileResolution, SDKError,
+        BoundingBox, CacheOperationFailureReason, GeographicCoordinate, MAXIMUM_TILE_ZOOM_LEVEL,
+        RasterImageFormat, RasterTileData, RasterTileResolution, SDKError,
     };
     use rustic_maps_core::{BlockingWorkExecutor, CachedResponseStore};
     use std::collections::HashMap;
@@ -1552,6 +1558,20 @@ mod tests {
             vec![(1, 0)],
             "a tile-edge-aligned west boundary includes the tile starting on it"
         );
+    }
+
+    /// The pack's `u32` tile-index bound is narrower than the shared grid
+    /// bound, never wider: a pack tile level must still name a tile of the
+    /// shared grid. The shared value is imported, not copied, so a change to
+    /// either bound re-checks the relationship.
+    #[test]
+    fn the_representable_tile_zoom_bound_stays_within_the_shared_grid_bound() {
+        const {
+            assert!(
+                super::MAXIMUM_REPRESENTABLE_TILE_ZOOM_LEVEL <= MAXIMUM_TILE_ZOOM_LEVEL,
+                "the representable tile-pack maximum must not exceed the shared grid maximum"
+            );
+        }
     }
 
     #[test]
