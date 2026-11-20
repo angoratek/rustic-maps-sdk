@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — every fixture carries provenance and drift is gated)
+
+- `fixtures/provenance.json` records the source, recording date and SHA-256 for 353 payloads across 26 groups, plus the pinned provider layer (`everymap-core` 0.4.7) and the date the provenance was reviewed. Sources are classified as URL, provider-crate copy, recording, generator, authored, copied or honestly unrecorded.
+- `platform/web/tests/fixture_provenance.mjs` runs in Playwright's global setup and is named in `CLAUDE.md`'s gate list. It fails on a changed hash or byte count, a fixture without an entry, an entry naming a missing file, an unscanned fixture directory, or a provider-layer requirement or resolution change; each failure mode was proved by perturbing the tree and restoring it.
+- The READMEs fill the gaps the issue named: the OpenFreeMap tile, the OSM US z9 tile, the z13 rendering tile with no in-repo recorder, the glyph hashes, and the vendor hand-export provenance. One file is recorded as unrecorded rather than given a false origin.
+
 ### Changed (2026-11-19 — every credentialed vendor's error mapping is asserted from a committed payload)
 
 - HERE, Google, TomTom, Mapbox and Radar each gain committed 401, 429 and no-route payloads under `fixtures/<vendor>/`. The 401 and 429 bodies are verbatim from the provider layer's tests; four of the five no-route payloads empty the success envelope their response types declare, because only Google's provider test records a no-route response.
