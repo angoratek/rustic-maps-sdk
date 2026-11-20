@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Walkthrough</title>
+  <link rel="stylesheet" href="player.css">
+</head>
+<body>
+  <main class="walkthrough" aria-label="Recorded walkthrough">
+    <header class="walkthrough-header">
+      <h1 class="walkthrough-title">Walkthrough</h1>
+      <nav class="platforms" id="platforms" aria-label="Platform"></nav>
+    </header>
+
+    <section class="stage" aria-label="Phone frame">
+      <div class="phone" id="phone">
+        <img class="still" data-buffer="front" alt="">
+        <img class="still" data-buffer="back" alt="">
+        <video class="transition-video" id="transition-video" muted playsinline preload="auto" hidden></video>
+        <div class="hotspots" id="hotspots"></div>
+      </div>
+      <p class="caption" id="caption"></p>
+    </section>
+
+    <footer class="walkthrough-footer">
+      <div class="progress" id="progress" role="progressbar" aria-valuemin="1" aria-valuemax="1" aria-valuenow="1">1 / 1</div>
+      <div class="dots" id="dots" aria-label="Screens"></div>
+    </footer>
+  </main>
+
+  <script type="application/json" id="walkthrough-data">__WALKTHROUGH_DATA__</script>
+  <script src="player.js"></script>
+</body>
+</html>

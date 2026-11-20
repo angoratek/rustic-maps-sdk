@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "artifact": {
+    "name": "reference-walkthrough",
+    "purpose": "The recorded reference walkthrough: six published frames per platform, linked to the flow steps they show and to the gestures that move between them."
+  },
+  "platforms": {
+    "android": {
+      "display_name": "Android",
+      "aspect_ratio": 2.037,
+      "screens": [
+        {
+          "id": "plan-sheet",
+          "step_id": "assign_destination",
+          "image": "site/book-src/img/android-plan-sheet.png",
+          "caption": "The plan sheet with both endpoints chosen.",
+          "hotspots": []
+        },
+        {
+          "id": "provider-section",
+          "step_id": "open_settings",
+          "image": "site/book-src/img/android-provider-section.png",
+          "caption": "The provider section with each capability's display name and credential state.",
+          "hotspots": []
+        },
+        {
+          "id": "navigation",
+          "step_id": "drive",
+          "image": "site/book-src/img/android-navigation.png",
+          "caption": "Simulated navigation with the turn banner, route polyline, ETA line and 1x playback controls.",
+          "hotspots": []
+        },
+        {
+          "id": "vector-base",
+          "step_id": "open",
+          "image": "site/book-src/img/android-vector-base.png",
+          "caption": "The styled vector base with its place labels.",
+          "hotspots": []
+        },
+        {
+          "id": "layers-closed",
+          "step_id": "open",
+          "image": "site/book-src/img/android-layers-closed.png",
+          "caption": "The map with the layers control closed over the applied raster base.",
+          "hotspots": []
+        },
+        {
+          "id": "layers-open",
+          "step_id": "open",
+          "image": "site/book-src/img/android-layers-open.png",
+          "caption": "The same camera with the layers panel open on its lower rows.",
+          "hotspots": []
+        }
+      ]
+    },
+    "ios": {
+      "display_name": "iOS",
+      "aspect_ratio": 2.1741,
+      "screens": [
+        {
+          "id": "plan-sheet",
+          "step_id": "assign_destination",
+          "image": "site/book-src/img/ios-plan-sheet.png",
+          "caption": "The plan sheet with both endpoints chosen.",
+          "hotspots": []
+        },
+        {
+          "id": "provider-section",
+          "step_id": "open_settings",
+          "image": "site/book-src/img/ios-provider-section.png",
+          "caption": "The provider section with each capability's display name and credential state.",
+          "hotspots": []
+        },
+        {
+          "id": "navigation",
+          "step_id": "drive",
+          "image": "site/book-src/img/ios-navigation.png",
+          "caption": "Simulated navigation with the turn banner, route polyline, ETA line and 1x playback controls.",
+          "hotspots": []
+        },
+        {
+          "id": "vector-base",
+          "step_id": "open",
+          "image": "site/book-src/img/ios-vector-base.png",
+          "caption": "The styled vector base with its place labels.",
+          "hotspots": []
+        },
+        {
+          "id": "layers-closed",
+          "step_id": "open",
+          "image": "site/book-src/img/ios-layers-closed.png",
+          "caption": "The map with the layers control closed over the applied raster base.",
+          "hotspots": []
+        },
+        {
+          "id": "layers-open",
+          "step_id": "open",
+          "image": "site/book-src/img/ios-layers-open.png",
+          "caption": "The same camera with the layers panel open on its lower rows.",
+          "hotspots": []
+        }
+      ]
+    },
+    "react_native": {
+      "display_name": "React Native",
+      "aspect_ratio": 2.037,
+      "screens": [
+        {
+          "id": "plan-sheet",
+          "step_id": "assign_destination",
+          "image": "site/book-src/img/react-native-plan-sheet.png",
+          "caption": "The plan sheet with both endpoints chosen.",
+          "hotspots": []
+        },
+        {
+          "id": "provider-section",
+          "step_id": "open_settings",
+          "image": "site/book-src/img/react-native-provider-section.png",
+          "caption": "The provider section with each capability's display name and credential state.",
+          "hotspots": []
+        },
+        {
+          "id": "navigation",
+          "step_id": "drive",
+          "image": "site/book-src/img/react-native-navigation.png",
+          "caption": "Simulated navigation with the turn banner, route polyline, ETA line and 1x playback controls.",
+          "hotspots": []
+        },
+        {
+          "id": "vector-base",
+          "step_id": "open",
+          "image": "site/book-src/img/react-native-vector-base.png",
+          "caption": "The styled vector base with its place labels.",
+          "hotspots": []
+        },
+        {
+          "id": "layers-closed",
+          "step_id": "open",
+          "image": "site/book-src/img/react-native-layers-closed.png",
+          "caption": "The map with the layers control closed over the applied raster base.",
+          "hotspots": []
+        },
+        {
+          "id": "layers-open",
+          "step_id": "open",
+          "image": "site/book-src/img/react-native-layers-open.png",
+          "caption": "The same camera with the layers panel open on its lower rows.",
+          "hotspots": []
+        }
+      ]
+    }
+  }
+}
