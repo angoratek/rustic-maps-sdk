@@ -164,6 +164,42 @@ pub fn get_sdk_compiled_version() -> String {
     SDK_COMPILED_VERSION.to_string()
 }
 
+/// The renderer's default perspective field of view, in degrees.
+///
+/// A camera call that does not configure a field of view uses this value.
+/// Hosts read it from the contract instead of carrying their own copy, so a
+/// renderer change reaches every target.
+///
+/// # Returns
+/// The default vertical field of view in degrees.
+pub fn default_field_of_view_degrees() -> f64 {
+    rustic_maps_rendering::DEFAULT_FIELD_OF_VIEW_DEGREES
+}
+
+/// The camera's maximum zoom level.
+///
+/// The contract clamps every camera to this ceiling. Hosts read it from the
+/// contract instead of carrying their own copy, so a slider range or
+/// fit-bounds ceiling follows the SDK.
+///
+/// # Returns
+/// The largest zoom level a camera accepts.
+pub fn maximum_zoom_level() -> f64 {
+    rustic_maps_rendering::MAXIMUM_ZOOM_LEVEL
+}
+
+/// Meters covered by one degree of latitude on the WGS 84 mean sphere.
+///
+/// Hosts that convert a ground distance into a latitude offset read this
+/// value from the contract instead of carrying their own approximation, so
+/// both sides use the same sphere.
+///
+/// # Returns
+/// The mean-sphere length of one degree of latitude in meters.
+pub fn meters_per_degree_latitude() -> f64 {
+    rustic_maps_rendering::camera::METERS_PER_DEGREE_LATITUDE
+}
+
 // Scaffolding generated at build time from the committed UDL. The contract is
 // compiled on every target: natively from the frozen contract, and on wasm
 // from `rustic_maps_wasm.udl`, which is the same contract without the native

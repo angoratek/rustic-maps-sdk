@@ -2142,12 +2142,46 @@ const OMISSION_NOTES = {
   web: 'the v1 playground has no home-sheet rows and no weight tokens beyond type-body-strong',
 };
 
+/**
+ * Artifact keys a platform now reads from the SDK contract instead of
+ * mirroring a literal. Each entry names the wrapper source that calls the
+ * generated getter, and the gate fails when that call is missing, so an
+ * adoption is verified rather than assumed. A platform may keep a literal
+ * beside the adoption; the literal is then compared as before.
+ */
+const PLATFORM_CONTRACT_ADOPTIONS = {
+  android: {
+    'behavior/field-of-view-degrees': {
+      source: 'platform/android/maps-sdk/src/main/kotlin/com/rusticmaps/sdk/MapView.kt',
+      call: 'defaultFieldOfViewDegrees()',
+    },
+  },
+  ios: {
+    'behavior/field-of-view-degrees': {
+      source: 'platform/ios/Sources/MapNativeCoreUI/MapView.swift',
+      call: 'defaultFieldOfViewDegrees()',
+    },
+  },
+  rn: {
+    'behavior/field-of-view-degrees': {
+      source: 'platform/rn/ios/MapsSdkRusticMapView.swift',
+      call: 'defaultFieldOfViewDegrees()',
+    },
+  },
+  web: {
+    'behavior/field-of-view-degrees': {
+      source: 'platform/web/playground_map_surface.mjs',
+      call: 'defaultFieldOfViewDegrees()',
+    },
+  },
+};
+
 // --- The parity run ---------------------------------------------------------
 
 /**
  * @typedef {object} ParityReport
  * @property {string[]} failures Blocking drifts (tokens, error sentences, the §2.5 document).
- * @property {{platform: string, mirrored: number, total: number, omitted: string[], note: string}[]} summary
+ * @property {{platform: string, mirrored: number, adopted: number, adoptedKeys: string[], total: number, omitted: string[], note: string}[]} summary
  * @property {string[]} labelDivergences Consumer-copy drifts, report-only in M28 slice 1.
  * @property {{platform: string, matched: number, total: number, omitted: string[], note: string}[]} labelSummary
  */
@@ -2210,14 +2244,31 @@ function runChecks(rootDirectory) {
       failures.push(`[${platform}] could not read the mirror: ${error.message}`);
       continue;
     }
+    const adoptions = PLATFORM_CONTRACT_ADOPTIONS[platform] ?? {};
+    const adoptedKeys = Object.keys(adoptions)
+      .filter((key) => expectations.has(key));
     const omitted = [...new Set([
       ...(PLATFORM_OMISSIONS[platform] ?? []),
-    ])].filter((key) => expectations.has(key));
+    ])].filter((key) => expectations.has(key) && !adoptedKeys.includes(key));
     const requiredKeys = [...expectations.keys()]
       .filter((key) => !omitted.includes(key));
     let matchedCount = 0;
+    let adoptedCount = 0;
     for (const key of requiredKeys) {
       if (!mirrored.has(key)) {
+        const adoption = adoptions[key];
+        if (adoption !== undefined) {
+          const adoptionSource = read(adoption.source);
+          if (adoptionSource.includes(adoption.call)) {
+            adoptedCount += 1;
+            continue;
+          }
+          failures.push(
+            `[${platform}] "${key}" is contract-adopted but `
+            + `${adoption.source} has no \`${adoption.call}\``,
+          );
+          continue;
+        }
         failures.push(`[${platform}] the mirror has no value for "${key}"`);
         continue;
       }
@@ -2230,6 +2281,8 @@ function runChecks(rootDirectory) {
     summary.push({
       platform,
       mirrored: matchedCount,
+      adopted: adoptedCount,
+      adoptedKeys,
       total: expectations.size,
       omitted,
       note: OMISSION_NOTES[platform] ?? '',
@@ -2302,9 +2355,12 @@ function printReport(report) {
     const omitted = entry.omitted.length === 0
       ? 'none'
       : `${entry.omitted.length} (${entry.omitted.join(', ')})`;
+    const adopted = entry.adopted === 0
+      ? ''
+      : ` · adopted: ${entry.adopted} (${entry.adoptedKeys.join(', ')})`;
     console.log(
       `  ${entry.platform.padEnd(8)} ${String(entry.mirrored).padStart(2)}/${entry.total}`
-      + ` mirrored · omitted: ${omitted}`,
+      + ` mirrored${adopted} · omitted: ${omitted}`,
     );
     if (entry.omitted.length > 0) {
       console.log(`           note: ${entry.note}`);
@@ -2400,6 +2456,9 @@ function createTemporaryCopy(rootDirectory) {
     CONSUMER_COPY_DOCUMENT,
     ...Object.values(MIRROR_FILES).flatMap(sourcePaths),
     ...Object.values(STRING_MIRROR_FILES).flatMap(sourcePaths),
+    ...Object.values(PLATFORM_CONTRACT_ADOPTIONS)
+      .flatMap((adoptions) => Object.values(adoptions))
+      .map((adoption) => adoption.source),
   ]);
   for (const relativePath of relativePaths) {
     const destination = path.join(temporaryRoot, relativePath);
@@ -2500,6 +2559,26 @@ function runSelfTest() {
       });
     } finally {
       rmSync(canvasCopy, { recursive: true, force: true });
+    }
+
+    // Class 2d: a contract adoption loses its generated-getter call.
+    const adoptionCopy = createTemporaryCopy(rootDirectory);
+    try {
+      mutateFirstSource(
+        adoptionCopy,
+        PLATFORM_CONTRACT_ADOPTIONS.android['behavior/field-of-view-degrees'].source,
+        'defaultFieldOfViewDegrees()',
+        'defaultFieldOfViewDegreesRemoved()',
+      );
+      const report = runChecks(adoptionCopy);
+      cases.push({
+        name: 'contract adoption drift (Android field of view)',
+        expectation: 'fail',
+        report,
+        ok: report.failures.some((failure) => failure.includes('field-of-view-degrees')),
+      });
+    } finally {
+      rmSync(adoptionCopy, { recursive: true, force: true });
     }
 
     // Class 3: a canonical consumer-copy value drifts in the artifact.

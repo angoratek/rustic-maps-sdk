@@ -183,8 +183,6 @@ export const themeElevationSurface = {
  * seams (the JS side only names them; the camera work happens natively).
  */
 export const themeFramingTokens = {
-  /** `field-of-view-degrees`: the archetypal framed camera (60). */
-  fieldOfViewDegrees: 60,
   /** `navigation-follow-zoom`: the follow camera's base zoom (17). */
   navigationFollowZoom: 17,
   /** `navigation-follow-zoom-maximum`: the follow zoom's end clamp (17.5). */

@@ -67,13 +67,6 @@ object ReferenceAppUXDimensions {
     const val SHEET_PEEK_CONTENT_ROWS: Int = 2
 
     /**
-     * The archetypal framed camera's field of view (`field-of-view-degrees` §2.4),
-     * mirroring `rustic-maps-rendering`'s default; everything the reference
-     * application projects through the SDK camera uses this value.
-     */
-    const val FIELD_OF_VIEW_DEGREES: Double = 60.0
-
-    /**
      * Characters a search query needs before type-ahead asks the provider
      * (`autocomplete-minimum-query-characters`).
      */

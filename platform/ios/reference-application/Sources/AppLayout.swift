@@ -49,13 +49,6 @@ public enum AppLayout {
     /// The elevation shadow's opacity channel (`rgba(0, 0, 0, 0.25)`).
     private static let elevationSurfaceOpacity: Double = 0.25
 
-    // MARK: §2.4 framing token
-
-    /// `field-of-view-degrees` (60): the archetypal framed camera, mirroring
-    /// `rustic-maps-rendering`'s default. Every camera-dependent SDK call the
-    /// reference applications make passes this value.
-    public static let fieldOfViewDegrees: Double = 60
-
     /// Characters a search query needs before type-ahead asks the provider
     /// (`autocomplete-minimum-query-characters`).
     public static let autocompleteMinimumQueryCharacters: Int = 3

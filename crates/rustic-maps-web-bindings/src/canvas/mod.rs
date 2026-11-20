@@ -150,8 +150,8 @@ const SURFACE_FORMAT_PREFERENCE: [TextureFormat; 2] =
 const PIXEL_BYTES: u32 = 4;
 
 /// The vertical field of view the programmatic canvas camera verbs use: the
-/// same perspective the native wrappers hand the contract's camera members.
-const DEFAULT_FIELD_OF_VIEW_DEGREES: f64 = 60.0;
+/// renderer's own default, the value the contract getter reports.
+const DEFAULT_FIELD_OF_VIEW_DEGREES: f64 = rustic_maps_rendering::DEFAULT_FIELD_OF_VIEW_DEGREES;
 
 /// The `widthPixels` field of the viewport extent readback.
 const VIEWPORT_SIZE_FIELD_WIDTH_PIXELS: &str = "widthPixels";

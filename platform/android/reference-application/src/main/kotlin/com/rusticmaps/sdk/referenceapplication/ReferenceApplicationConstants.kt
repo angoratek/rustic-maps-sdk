@@ -1,18 +1,21 @@
 package com.rusticmaps.sdk.referenceapplication
 
+import uniffi.rustic_maps.maximumZoomLevel
+
 /**
  * Named constants of the reference application. Every tunable value lives
  * here with its source; the repository rule forbids magic numbers.
  */
 object ReferenceApplicationConstants {
-    // --- Camera ranges (the rustic-maps-rendering camera constants the SDK clamps to) ---
-    // `rustic-maps-rendering/src/camera.rs`: MINIMUM_ZOOM_LEVEL, MAXIMUM_ZOOM_LEVEL,
-    // MAXIMUM_PITCH_DEGREES. The sliders present the same ranges the SDK
-    // camera clamps to, so a slider value is always a usable camera value.
+    // --- Camera ranges (the camera limits the SDK clamps to) ---
+    // The sliders present the same ranges the SDK camera clamps to, so a
+    // slider value is always a usable camera value. The maximum zoom and the
+    // fit-bounds ceiling are read from the contract, so a renderer change
+    // reaches this screen without an edit here.
     const val MINIMUM_ZOOM_LEVEL: Double = 0.0
-    const val MAXIMUM_ZOOM_LEVEL: Double = 24.0
+    val MAXIMUM_ZOOM_LEVEL: Double get() = maximumZoomLevel()
     const val MAXIMUM_PITCH_DEGREES: Double = 75.0
-    const val MAXIMUM_FIT_BOUNDS_ZOOM_LEVEL: Double = 24.0
+    val MAXIMUM_FIT_BOUNDS_ZOOM_LEVEL: Double get() = maximumZoomLevel()
 
     // --- Simulated turn-by-turn demo (docs/ReferenceAppUX.md §7) ---
     // The recorded trace samples advance five simulated seconds apart; the
