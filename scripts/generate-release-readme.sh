@@ -4,10 +4,10 @@
 # `rustic-maps-sdk-v<version>-README.md`.
 #
 # The README names the tagged version and every release asset, and carries the
-# copy-paste install snippet per platform (Android AAR, iOS Swift Package
-# Manager, React Native npm tarball, WebAssembly npm tarball) plus the
-# checksum and Sigstore verification commands. It is assembled from the
-# version and repository only — never from a timestamp, host or environment
+# copy-paste install snippet per platform (Rust source archive, Android AAR,
+# iOS Swift Package Manager, React Native npm tarball, WebAssembly npm tarball)
+# plus the checksum and Sigstore verification commands. It is assembled from
+# the version and repository only — never from a timestamp, host or environment
 # value — so the same inputs always produce the same bytes.
 #
 # Usage:
@@ -99,7 +99,8 @@ published to Maven Central, the npm registry or the Swift Package registry.
 
 | Platform | Asset |
 |---|---|
-| Android | \`rustic-maps-sdk-android-v${version}.aar\` (bindings, native libraries and `MapView`) |
+| Rust | \`rustic-maps-sdk-rust-v${version}.tar.gz\` (the workspace crates' sources at the tag, for path-dependency consumption) |
+| Android | \`rustic-maps-sdk-android-v${version}.aar\` (bindings, native libraries and \`MapView\`) |
 | iOS | \`rustic-maps-sdk-ios-v${version}.xcframework.zip\` |
 | React Native | \`rustic-maps-sdk-rn-v${version}.tgz\` |
 | WebAssembly | \`rustic-maps-sdk-web-v${version}.tgz\` (npm-installable; extract and serve \`package/\` without npm) |
@@ -112,6 +113,27 @@ published to Maven Central, the npm registry or the Swift Package registry.
 \`sha256sum --check <asset>.sha256\` (or compare it against the matching line
 in \`SHA256SUMS.txt\`) before installing it. Every asset has a keyless
 Sigstore \`.sigstore.json\` bundle (see *Verifying the download* below).
+
+## Rust
+
+The tarball is the workspace source at this tag, for building the crates
+yourself. Unpack it:
+
+\`\`\`bash
+tar -xzf rustic-maps-sdk-rust-v${version}.tar.gz
+\`\`\`
+
+From the unpacked tree, point a path dependency at the crates you use:
+
+\`\`\`toml
+[dependencies]
+rustic-maps-rendering = { path = "crates/rustic-maps-rendering" }
+rustic-maps-navigation = { path = "crates/rustic-maps-navigation" }
+\`\`\`
+
+The archive carries \`Cargo.lock\`, \`rust-toolchain.toml\`, the UDL contracts,
+the provider registry and both license files. Rust 1.89 or newer is required.
+Consumers who install a compiled package do not need it.
 
 ## Android
 
@@ -154,8 +176,8 @@ npm install ./rustic-maps-sdk-rn-v${version}.tgz
 The published React Native tarball is the generated TurboModule package
 (TypeScript, JSI C++, Android Gradle and iOS podspec sources, the dual license
 files and the third-party notices) with the compiled Rust libraries it links:
-`android/src/main/jniLibs/<abi>/librustic_maps.a` for arm64-v8a, armeabi-v7a
-and x86_64, and `AngoratekRusticMapsSdkFramework.xcframework` for arm64 device
+\`android/src/main/jniLibs/<abi>/librustic_maps.a\` for arm64-v8a, armeabi-v7a
+and x86_64, and \`AngoratekRusticMapsSdkFramework.xcframework\` for arm64 device
 and simulator. Installing it needs no Rust toolchain.
 
 ## WebAssembly

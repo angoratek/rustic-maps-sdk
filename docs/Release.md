@@ -46,13 +46,14 @@ Neither touches a published identity.
 
 ## The artifacts
 
-A release carries one package per compiled target plus the notices, the install README
-and the dual license files. `SHA256SUMS.txt`, a `.sha256` sidecar per file and a
-`.sigstore.json` bundle per signed file complete the set. The workflow asserts the exact
-set in both directions.
+A release carries one package per compiled target, the Rust workspace sources, the
+notices, the install README and the dual license files. `SHA256SUMS.txt`, a `.sha256`
+sidecar per file and a `.sigstore.json` bundle per signed file complete the set. The
+workflow asserts the exact set in both directions.
 
 | Platform | Release asset | Contents | Measured size |
 |---|---|---|---|
+| Rust | `rustic-maps-sdk-rust-vX.Y.Z.tar.gz` | the workspace sources at the tagged commit: `Cargo.lock`, `rust-toolchain.toml`, the UDL contracts, the provider registry and both licenses | about 54 MiB |
 | Android | `rustic-maps-sdk-android-vX.Y.Z.aar` | Kotlin bindings, per-ABI Rust libraries, `MapView`/Compose wrapper | about 16 MiB; stripped libraries 12 MiB arm64-v8a, 8.7 MiB armeabi-v7a, 13 MiB x86_64 |
 | iOS | `rustic-maps-sdk-ios-vX.Y.Z.xcframework.zip` | static library, headers, module maps, licenses, notices | 217 MiB per slice, 207 MiB after `strip -x` |
 | React Native | `rustic-maps-sdk-rn-vX.Y.Z.tgz` | TurboModule sources, Android static archives, iOS framework | 249 MiB download, 786 MiB unpacked |
@@ -64,9 +65,11 @@ set in both directions.
 **Self-containment.** Each compiled package carries everything needed to link it: the RN
 tarball vendors the Android archives and iOS framework, the AAR embeds its consumer R8
 rules, and the XCFramework and wasm tarballs carry their headers, declarations, licenses
-and notices. Consumers need no Rust. The Rust crates stay source-only;
-`scripts/assemble-release-artifacts.sh` also assembles
-`rustic-maps-sdk-rust-vX.Y.Z.tar.gz` and checksums.
+and notices. Consumers of the compiled packages need no Rust. The Rust crates ship
+source-only, as `rustic-maps-sdk-rust-vX.Y.Z.tar.gz`: the `git archive` of the release
+commit, so it carries the tracked tree the tag names and no build output. Unpack it and
+depend on the crates by path. `scripts/assemble-release-artifacts.sh` builds the same
+archive, with its checksum, for a local assembly.
 
 ### Android — the AAR
 
@@ -217,8 +220,9 @@ push tag v0.4.0
   ├─ rn         rustic-maps-sdk-rn-v0.4.0.tgz
   ├─ wasm       rustic-maps-sdk-web-v0.4.0.tgz
   ├─ restore    republishes reusable artifacts, bytes re-hashed
-  └─ assemble   verify the asset set, regenerate notices, generate the
-                README, hash and sign, draft the release, push swift-package
+  └─ assemble   archive the Rust sources, verify the asset set, regenerate
+                notices, generate the README, hash and sign, draft the
+                release, push swift-package
 ```
 
 **Gates on the tagged commit.** The standard set (`cargo fmt --check`, `cargo clippy
