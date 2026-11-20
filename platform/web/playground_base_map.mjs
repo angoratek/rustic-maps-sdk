@@ -47,6 +47,18 @@ import {
   vectorStyleIdForDescriptor,
 } from './tile_switch.mjs';
 
+/**
+ * Whether a raster descriptor's recorded tile set is served by this page.
+ * The dev server answers the committed fixtures same-origin; a deployed page
+ * stages none, so its fixture-backed row is not demonstrable and waits for
+ * that provider's credential instead of requesting a directory the site does
+ * not carry. The keyless first-run base on such a page is the vector base.
+ */
+function raster_descriptor_serves_this_page(runtime, provider_descriptor) {
+  return runtime.shared.recorded_tile_fixtures_are_served === true
+    && raster_descriptor_serves_demo_fixtures(provider_descriptor);
+}
+
 export function defineBaseMap(runtime) {
   /** The style the base paints now: the picked one, else the theme join. */
   function active_vector_style_id() {
@@ -342,7 +354,7 @@ export function defineBaseMap(runtime) {
       }
       return true;
     }
-    if (raster_descriptor_serves_demo_fixtures(provider_descriptor)) {
+    if (raster_descriptor_serves_this_page(runtime, provider_descriptor)) {
       runtime.services.clear_credentialed_raster_provider();
       return true;
     }
@@ -492,18 +504,41 @@ export function defineBaseMap(runtime) {
     };
   }
 
+  /**
+   * Installs the first-run base when nothing usable is remembered: the
+   * recorded raster fixtures where this page serves them, else the keyless
+   * vector base. Both selections come from the shared registry's order, so
+   * the page names no provider.
+   */
+  function install_default_base_map() {
+    if (runtime.shared.recorded_tile_fixtures_are_served) return;
+    const default_vector_descriptor = runtime.services.selected_vector_descriptor();
+    if (default_vector_descriptor === null) return;
+    runtime.services.switch_tile_mode(
+      TILE_LAYER_MODES.vector,
+      default_vector_descriptor.provider_key,
+      { remember: false },
+    );
+  }
+
   /** Restores the remembered base map once the renderer can serve it.
    * An undeclared provider or style is dropped, never guessed. */
   function restore_remembered_base_map() {
     const remembered_base_map = runtime.shared.initial_demo_preferences.baseMap;
-    if (remembered_base_map === null) return;
+    if (remembered_base_map === null) {
+      runtime.services.install_default_base_map();
+      return;
+    }
     if (remembered_base_map.mode === TILE_LAYER_MODES.raster) {
       const raster_provider_key = remembered_base_map.rasterProviderKey
         ?? runtime.state.current_raster_provider_key;
       const raster_descriptor = runtime.shared.RASTER_BASE_MAP_DESCRIPTORS.find(
         (provider_descriptor) =>
           provider_descriptor.provider_key === raster_provider_key);
-      if (raster_descriptor === undefined) return;
+      if (raster_descriptor === undefined) {
+        runtime.services.install_default_base_map();
+        return;
+      }
       // A remembered provider whose key is not applied (or remembered)
       // cannot serve; the page keeps its keyless default rather than
       // restoring a disabled row or reporting a refusal at startup.
@@ -511,8 +546,9 @@ export function defineBaseMap(runtime) {
         raster_descriptor,
         runtime.shared.applied_provider_keys,
         { servedFromFixtures:
-          raster_descriptor_serves_demo_fixtures(raster_descriptor) },
+          raster_descriptor_serves_this_page(runtime, raster_descriptor) },
       ) !== null) {
+        runtime.services.install_default_base_map();
         return;
       }
       runtime.services.switch_tile_mode(
@@ -522,12 +558,18 @@ export function defineBaseMap(runtime) {
       );
       return;
     }
-    if (remembered_base_map.mode !== TILE_LAYER_MODES.vector) return;
+    if (remembered_base_map.mode !== TILE_LAYER_MODES.vector) {
+      runtime.services.install_default_base_map();
+      return;
+    }
     const vector_descriptor = runtime.shared.VECTOR_BASE_MAP_DESCRIPTORS.find(
       (provider_descriptor) =>
         provider_descriptor.provider_key
           === remembered_base_map.vectorProviderKey);
-    if (vector_descriptor === undefined) return;
+    if (vector_descriptor === undefined) {
+      runtime.services.install_default_base_map();
+      return;
+    }
     const style_is_declared = remembered_base_map.vectorStyleId === null
       || (vector_descriptor.vector_styles ?? []).some((style_choice) =>
         style_choice.style_id === remembered_base_map.vectorStyleId);
@@ -543,9 +585,9 @@ export function defineBaseMap(runtime) {
 
   /**
    * Keeps the raster selection honest after a credential change: a
-   * selected provider whose key just went away can no longer serve, so the
-   * keyless fixture base takes over instead of a disabled row staying
-   * marked Serving.
+   * selected provider whose key just went away can no longer serve, so a
+   * keyless base takes over instead of a disabled row staying marked
+   * Serving.
    */
   function ensure_raster_selection_is_servable() {
     if (runtime.state.current_tile_mode !== TILE_LAYER_MODES.raster) return;
@@ -556,7 +598,7 @@ export function defineBaseMap(runtime) {
       runtime.shared.applied_provider_keys,
       {
         servedFromFixtures:
-          raster_descriptor_serves_demo_fixtures(raster_descriptor),
+          raster_descriptor_serves_this_page(runtime, raster_descriptor),
       },
     );
     if (refusal_text === null) return;
@@ -567,7 +609,7 @@ export function defineBaseMap(runtime) {
           runtime.shared.applied_provider_keys,
           {
             servedFromFixtures:
-              raster_descriptor_serves_demo_fixtures(candidate_descriptor),
+              raster_descriptor_serves_this_page(runtime, candidate_descriptor),
           },
         ) === null);
     if (fallback_descriptor === undefined
@@ -617,11 +659,11 @@ export function defineBaseMap(runtime) {
         mode: TILE_LAYER_MODES.raster,
         provider_descriptor,
         style_id: null,
-        // Only a descriptor with a complete committed tile set backs the
-        // demo camera keylessly; a credentialed provider with one
-        // recorded sample still needs its key.
+        // Only a descriptor whose complete committed tile set this page
+        // serves backs the demo camera keylessly; a credentialed provider
+        // with one recorded sample still needs its key.
         served_from_fixtures:
-          raster_descriptor_serves_demo_fixtures(provider_descriptor),
+          raster_descriptor_serves_this_page(runtime, provider_descriptor),
       })),
       ...[...keyless_vector_descriptors, ...hosted_vector_descriptors]
         .flatMap((provider_descriptor) =>
@@ -822,6 +864,7 @@ export function defineBaseMap(runtime) {
     apply_raster_base_clear_color,
     switch_tile_mode,
     current_base_map_preference,
+    install_default_base_map,
     restore_remembered_base_map,
     ensure_raster_selection_is_servable,
     refresh_vector_base_for_theme,
@@ -845,6 +888,12 @@ export function installBaseMapPhase1(runtime) {
     !runtime.shared.LOCAL_DEMO_HOSTNAMES.has(window.location.hostname)
     || new URLSearchParams(window.location.search)
       .has(runtime.shared.LIVE_TILES_OPT_IN_PARAMETER);
+  // Whether this page answers the recorded raster tile fixtures. The dev
+  // server serves them from the repository; a deployed site stages none, so
+  // a fixture-backed raster base is demonstrated locally only and the
+  // keyless vector base is the first-run base elsewhere.
+  runtime.shared.recorded_tile_fixtures_are_served =
+    runtime.shared.LOCAL_DEMO_HOSTNAMES.has(window.location.hostname);
 }
 
 export function installBaseMapPhase2(runtime) {
@@ -939,11 +988,14 @@ export function installBaseMapPhase4(runtime) {
 
   runtime.state.current_tile_mode = TILE_LAYER_MODES.raster;
 
-  // The raster descriptor the page last selected. The demo's keyless
-  // default is the first descriptor whose complete committed tile set
-  // backs the camera; a registry with none falls back to its first entry.
+  // The raster descriptor the page last selected. The local dev server's
+  // keyless default is the first descriptor whose complete committed tile
+  // set backs the camera; a page that stages no tile fixtures (the deployed
+  // demo) falls back to the first entry, and its first-run base is the
+  // keyless vector base.
   runtime.state.current_raster_provider_key =
-    (runtime.shared.RASTER_BASE_MAP_DESCRIPTORS.find(raster_descriptor_serves_demo_fixtures)
+    (runtime.shared.RASTER_BASE_MAP_DESCRIPTORS.find((provider_descriptor) =>
+      raster_descriptor_serves_this_page(runtime, provider_descriptor))
       ?? runtime.shared.RASTER_BASE_MAP_DESCRIPTORS[0])?.provider_key ?? null;
 
   // Whether the page registered a live URL-template raster source (the

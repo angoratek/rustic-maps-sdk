@@ -339,7 +339,6 @@ directory whose layout answers the same URLs the dev server maps.
 | `/demo/` | `platform/web/index.html` plus `main.mjs`, `map_controls.mjs`, `overlay_scenes.mjs`, copied 1:1 |
 | `/demo/generated/*` | `platform/web/generated/*`: the ESM set, declarations and `rustic_maps.wasm` |
 | `/demo/generated-runtime/@ubjs/*` | the page's player runtime from `platform/web/node_modules/@ubjs` |
-| `/demo/tiles/*` | the recorded tile fixtures in `crates/rustic-maps-rendering/fixtures/render/tiles` |
 | `/demo/reference-scenes.json` | `platform/reference-scenes.json` |
 | `/demo/offline-graph/routing_grid.rmog` | `crates/rustic-maps-offline-graph-compiler/fixtures/rmog/routing_grid.rmog` |
 
@@ -347,8 +346,11 @@ The `/golden/` route family is test-only and the demo bundles none of it. The de
 `index.html` is a curated copy; its only edit is the footer, with the version stamp from
 the wasm `get_sdk_compiled_version` probe and a link to the release that shipped it.
 Everything else stays byte-equal to the harness page. The demo deploys statically,
-because GitHub Pages cannot run Node; it is keyless and renders recorded fixture tiles
-and the recorded offline graph. Attribution comes from the shared registry on the page.
+because GitHub Pages cannot run Node; it is keyless and renders the registry's keyless
+vector base and the recorded offline graph. The recorded raster tile fixtures are not
+staged: they stay in the repository for the dev server and the test harness, and a
+staged tile directory fails the build. Attribution comes from the shared registry on
+the page.
 A missing `navigator.gpu` shows the documented degradation message with the MDN link.
 The directory carries the same `provenance.txt` fields and the `gates-green=<commit>`
 assertion. The full Playwright suite must have passed against this exact bundle, and
@@ -754,7 +756,7 @@ repository, and the public history is the curated sequence plus the work that
 followed it, so no public commit depends on a private object.
 
 Every open work item is one issue in the public repository, grouped under a
-milestone (`M60`, `M82`, `Backlog`) whose description states when it is done. An
+milestone whose description states when it is done. An
 issue carries its acceptance criteria, and a pull request closes it. Labels
 separate ordinary work (`plan`, `enhancement`, `documentation`, `bug`) from
 `owner-action` items that need the maintainer's account, credentials or
