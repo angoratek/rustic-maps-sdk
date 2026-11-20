@@ -32,10 +32,29 @@ import { run_reference_flow_checks } from '../../../scripts/check-reference-flow
 const TEST_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = path.resolve(TEST_DIRECTORY, '..', '..', '..');
 
-/** Reads one repository-relative file as UTF-8. */
+/**
+ * Reads one repository-relative file as UTF-8. An array of paths is read as
+ * one text, which is how the split playground controller stays scanned as a
+ * single source.
+ */
 function read(relative_path) {
-  return readFileSync(path.join(REPOSITORY_ROOT, relative_path), 'utf8');
+  const paths = Array.isArray(relative_path) ? relative_path : [relative_path];
+  return paths
+    .map((one_path) => readFileSync(path.join(REPOSITORY_ROOT, one_path), 'utf8'))
+    .join('\n');
 }
+
+/**
+ * The playground controller's entry and concern modules. The controller is
+ * split by concern, so every web fragment is checked against the whole set.
+ */
+const WEB_CONTROLLER_SOURCES = [
+  'platform/web/playground.mjs',
+  ...readdirSync(path.join(REPOSITORY_ROOT, 'platform', 'web'))
+    .filter((file_name) => /^playground_.*\.mjs$/.test(file_name))
+    .sort()
+    .map((file_name) => `platform/web/${file_name}`),
+];
 
 /** Fails with `message` when `condition` is falsy. */
 function assert(condition, message) {
@@ -135,7 +154,7 @@ const THEME_MODEL_SOURCES = [
     description: 'React Native declares Auto as the default choice',
   },
   {
-    source: 'platform/web/playground.mjs',
+    source: WEB_CONTROLLER_SOURCES,
     fragments: [
       "THEME_CHOICE_NAMES = Object.freeze(['light', 'dark', 'auto'])",
       "theme_choice = 'auto'",
@@ -191,7 +210,7 @@ const POSITIONING_SOURCES = [
     description: 'React Native exposes the positioning surface on the curated SDK',
   },
   {
-    source: 'platform/web/playground.mjs',
+    source: WEB_CONTROLLER_SOURCES,
     fragments: ['device-location-control', 'feedFix', 'mapDeviceLocationState'],
     description: 'the browser feeds the controller from the Geolocation API',
   },
@@ -202,7 +221,7 @@ const POSITIONING_SOURCES = [
  * instead of the recorded trace. */
 const DEVICE_NAVIGATION_SOURCES = [
   {
-    source: 'platform/web/playground.mjs',
+    source: WEB_CONTROLLER_SOURCES,
     fragments: [
       'device-navigation-control',
       'start_device_navigation',
@@ -295,7 +314,7 @@ const MAP_LAYERS_SOURCES = [
     description: 'the shared layer identifiers and capability name stay declared once',
   },
   {
-    source: 'platform/web/playground.mjs',
+    source: WEB_CONTROLLER_SOURCES,
     fragments: [
       'mapTrafficLayerState',
       'traffic_flow_overlay_descriptor',
@@ -323,7 +342,7 @@ const DIRECTIONS_CONTROL_SOURCES = [
     description: 'the browser Directions groups keep their shared identifiers',
   },
   {
-    source: 'platform/web/playground.mjs',
+    source: WEB_CONTROLLER_SOURCES,
     fragments: [
       'directionsTransportationMode',
       'directionsRouteStrategy',
@@ -387,10 +406,11 @@ const RETIRED_TUTORIAL_VOCABULARY = [
 /** Asserts each file contains every fragment, with one useful message. */
 function assert_fragments_present({ source, fragments, description }) {
   const text = read(source);
+  const source_label = Array.isArray(source) ? source.join(' + ') : source;
   for (const fragment of fragments) {
     assert(
       text.includes(fragment),
-      `${description}: ${source} no longer contains "${fragment}".`,
+      `${description}: ${source_label} no longer contains "${fragment}".`,
     );
   }
 }

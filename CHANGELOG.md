@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the browser playground is split by concern)
+
+- `platform/web/playground.mjs` fell from 8,461 lines to 271. The controller now lives in seven modules — preferences, provider settings, base map, overlays, navigation, diagnostics and the map surface — imported by one entry that creates an explicit runtime (services, shared constants, mutable state, install parameters) and replays the original statement order. No concern module imports another, so module evaluation order cannot change first-frame behaviour.
+- The split is a pure extraction: the public globals, DOM identifiers, user-visible strings and every top-level statement are unchanged, and the full Playwright suite reports the same 273 passed and 8 skipped before and after.
+- The UX-parity check and its self-test read the entry and its modules as one source, including constants declared on the shared runtime; the docs site stages and byte-checks the modules; the lint workflow watches `platform/web/playground*.mjs`. The self-test's stale mutation target was repaired — that case had been failing before this change.
+
 ### Changed (2026-11-19 — every fixture carries provenance and drift is gated)
 
 - `fixtures/provenance.json` records the source, recording date and SHA-256 for 353 payloads across 26 groups, plus the pinned provider layer (`everymap-core` 0.4.7) and the date the provenance was reviewed. Sources are classified as URL, provider-crate copy, recording, generator, authored, copied or honestly unrecorded.

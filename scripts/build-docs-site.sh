@@ -461,6 +461,9 @@ stage_live_demo() {
     log_step "staging the live wasm demo at /demo"
     local demo_directory="${stage_root}/site/demo"
     for demo_input in index.html playground.mjs styles/playground.css main.mjs \
+        playground_preferences.mjs playground_provider_settings.mjs \
+        playground_base_map.mjs playground_overlays.mjs playground_navigation.mjs \
+        playground_diagnostics.mjs playground_map_surface.mjs \
         map_controls.mjs map_layers.mjs overlay_scenes.mjs vector_layer.mjs tile_switch.mjs \
         ui_strings.mjs generated/index.js generated/rustic_maps.js \
         generated/rustic_maps-ffi.js generated/rustic_maps_bg.js \
@@ -477,6 +480,13 @@ stage_live_demo() {
         "${demo_directory}/offline-graph" "${demo_directory}/styles" \
         "${demo_directory}/glyphs/${GLYPH_SERVED_FONT_STACK}"
     cp "${WEB_HARNESS_DIRECTORY}/index.html" "${WEB_HARNESS_DIRECTORY}/playground.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/playground_preferences.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/playground_provider_settings.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/playground_base_map.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/playground_overlays.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/playground_navigation.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/playground_diagnostics.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/playground_map_surface.mjs" \
         "${WEB_HARNESS_DIRECTORY}/main.mjs" \
         "${WEB_HARNESS_DIRECTORY}/map_controls.mjs" "${WEB_HARNESS_DIRECTORY}/map_layers.mjs" \
         "${WEB_HARNESS_DIRECTORY}/overlay_scenes.mjs" \
@@ -559,6 +569,9 @@ verify_staged_demo() {
     local demo_directory="${stage_root}/site/demo"
     local copied_file
     for copied_file in index.html playground.mjs styles/playground.css main.mjs \
+        playground_preferences.mjs playground_provider_settings.mjs \
+        playground_base_map.mjs playground_overlays.mjs playground_navigation.mjs \
+        playground_diagnostics.mjs playground_map_surface.mjs \
         map_controls.mjs map_layers.mjs overlay_scenes.mjs vector_layer.mjs tile_switch.mjs \
         ui_strings.mjs; do
         cmp -s "${demo_directory}/${copied_file}" "${WEB_HARNESS_DIRECTORY}/${copied_file}" \
