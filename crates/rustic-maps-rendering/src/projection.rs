@@ -18,6 +18,11 @@ pub const MERCATOR_TILE_SIZE_PIXELS: f64 = 512.0;
 /// re-exported from `geospatial-types` so every layer shares one value.
 pub use geospatial_types::MAXIMUM_MERCATOR_LATITUDE_DEGREES;
 
+/// Highest zoom level the XYZ tile grid can address; re-exported from
+/// `geospatial-types` so projection, camera and tile validation share one
+/// bound.
+pub use geospatial_types::MAXIMUM_TILE_ZOOM_LEVEL;
+
 /// Guard so a right-hand range boundary landing exactly on a tile edge maps
 /// to the tile on the far side of that edge, mirroring `floor` semantics.
 pub(crate) const TILE_BOUNDARY_EPSILON: f64 = 1e-9;
@@ -54,11 +59,16 @@ pub fn zoom_scale_pixels(zoom_level: f64) -> f64 {
 }
 
 /// The XYZ address of the tile containing the coordinate at the zoom level.
+/// Zoom levels above [`MAXIMUM_TILE_ZOOM_LEVEL`] are clamped to it.
 pub fn tile_key_for_coordinate(coordinate: &GeographicCoordinate, zoom_level: u8) -> TileKey {
     let normalized_world = coordinate_to_normalized_world(coordinate);
-    let tiles_per_axis = (1u32 << zoom_level.min(24)) as f64;
-    let tile_x = ((normalized_world[0] * tiles_per_axis) as u32).min(tiles_per_axis as u32 - 1);
-    let tile_y = ((normalized_world[1] * tiles_per_axis) as u32).min(tiles_per_axis as u32 - 1);
+    let zoom_level = zoom_level.min(MAXIMUM_TILE_ZOOM_LEVEL);
+    let tiles_per_axis = 1u64 << zoom_level;
+    let maximum_tile_index = (tiles_per_axis - 1).min(u64::from(u32::MAX));
+    let tile_x =
+        ((normalized_world[0] * tiles_per_axis as f64) as u64).min(maximum_tile_index) as u32;
+    let tile_y =
+        ((normalized_world[1] * tiles_per_axis as f64) as u64).min(maximum_tile_index) as u32;
     TileKey {
         tile_x,
         tile_y,
@@ -84,12 +94,17 @@ pub fn tiles_covering(bounding_box: &BoundingBox, zoom_level: u8) -> Vec<TileKey
 
 /// Every XYZ tile intersecting the normalized-world axis-aligned box, ordered
 /// row-major from the north. Both bounds inclusive; y values clamp to the
-/// map square, x values are expected to already sit in `[0, 1]`.
+/// map square, x values are expected to already sit in `[0, 1]`. A zoom level
+/// above [`MAXIMUM_TILE_ZOOM_LEVEL`] yields no tiles: its grid count is not
+/// representable.
 pub(crate) fn tiles_covering_normalized_world(
     minimum: [f64; 2],
     maximum: [f64; 2],
     zoom_level: u8,
 ) -> Vec<TileKey> {
+    if zoom_level > MAXIMUM_TILE_ZOOM_LEVEL {
+        return Vec::new();
+    }
     let tiles_per_axis = 2f64.powi(i32::from(zoom_level));
     let tiles_per_axis_index = (tiles_per_axis as u32).saturating_sub(1);
     let min_tile_x = (minimum[0] * tiles_per_axis).floor().max(0.0) as u32;
@@ -115,8 +130,8 @@ pub(crate) fn tiles_covering_normalized_world(
 #[cfg(test)]
 mod tests {
     use super::{
-        coordinate_to_normalized_world, normalized_world_to_coordinate, tile_key_for_coordinate,
-        tiles_covering, zoom_scale_pixels,
+        MAXIMUM_TILE_ZOOM_LEVEL, coordinate_to_normalized_world, normalized_world_to_coordinate,
+        tile_key_for_coordinate, tiles_covering, zoom_scale_pixels,
     };
     use crate::tile_key::TileKey;
     use geospatial_types::{BoundingBox, GeographicCoordinate};
@@ -218,6 +233,21 @@ mod tests {
             north_east: coordinate(89.9, 1.0),
         };
         assert_eq!(tiles_covering(&polar_box, 2).len(), 2);
+    }
+
+    #[test]
+    fn tile_address_requests_above_the_zoom_bound_clamp_to_it() {
+        let tile = tile_key_for_coordinate(&coordinate(0.0, 0.0), MAXIMUM_TILE_ZOOM_LEVEL + 1);
+        assert_eq!(tile.zoom_level, MAXIMUM_TILE_ZOOM_LEVEL);
+    }
+
+    #[test]
+    fn covering_above_the_zoom_bound_lists_no_tiles() {
+        let world_center_box = BoundingBox {
+            south_west: coordinate(-1.0, -1.0),
+            north_east: coordinate(1.0, 1.0),
+        };
+        assert!(tiles_covering(&world_center_box, MAXIMUM_TILE_ZOOM_LEVEL + 1).is_empty());
     }
 
     proptest! {

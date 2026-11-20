@@ -110,8 +110,9 @@ pub use prefetch::{
     TilePrefetchPlanner,
 };
 pub use projection::{
-    MAXIMUM_MERCATOR_LATITUDE_DEGREES, MERCATOR_TILE_SIZE_PIXELS, coordinate_to_normalized_world,
-    normalized_world_to_coordinate, tile_key_for_coordinate, tiles_covering, zoom_scale_pixels,
+    MAXIMUM_MERCATOR_LATITUDE_DEGREES, MAXIMUM_TILE_ZOOM_LEVEL, MERCATOR_TILE_SIZE_PIXELS,
+    coordinate_to_normalized_world, normalized_world_to_coordinate, tile_key_for_coordinate,
+    tiles_covering, zoom_scale_pixels,
 };
 pub use renderer::{
     CLEAR_COLOR_RGBA, ClipSpaceTileVertex, Renderer, RetainedTileLevel, TextureWindow, TileQuad,

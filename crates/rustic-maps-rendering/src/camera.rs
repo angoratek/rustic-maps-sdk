@@ -8,8 +8,9 @@
 //! `f64` matrices because world units reach ~8.6e9 pixels at zoom 24.
 
 use crate::projection::{
-    MERCATOR_TILE_SIZE_PIXELS, TILE_BOUNDARY_EPSILON, coordinate_to_normalized_world,
-    normalized_world_to_coordinate, tile_key_for_coordinate, zoom_scale_pixels,
+    MAXIMUM_TILE_ZOOM_LEVEL, MERCATOR_TILE_SIZE_PIXELS, TILE_BOUNDARY_EPSILON,
+    coordinate_to_normalized_world, normalized_world_to_coordinate, tile_key_for_coordinate,
+    zoom_scale_pixels,
 };
 use crate::tile_key::TileKey;
 use geospatial_types::{BoundingBox, GeographicCoordinate};
@@ -382,12 +383,13 @@ impl MapCamera {
 
     /// Nearest whole zoom level a tile fetch should use for this camera:
     /// fractional camera zooms round to the tile grid that best matches the
-    /// on-screen scale.
+    /// on-screen scale, never exceeding [`MAXIMUM_TILE_ZOOM_LEVEL`].
     pub fn tile_zoom_level(&self) -> u8 {
+        let maximum_tile_zoom_level = MAXIMUM_ZOOM_LEVEL.min(f64::from(MAXIMUM_TILE_ZOOM_LEVEL));
         (self
             .zoom_level
             .round()
-            .clamp(MINIMUM_ZOOM_LEVEL, MAXIMUM_ZOOM_LEVEL)) as u8
+            .clamp(MINIMUM_ZOOM_LEVEL, maximum_tile_zoom_level)) as u8
     }
 
     /// Every tile at `tile_zoom_level` whose area intersects the visible
@@ -395,13 +397,18 @@ impl MapCamera {
     /// camera's world copy across the antimeridian. The footprint reduces to
     /// its axis-aligned normalized-world bounding box, so bearing-rotated
     /// views also list the covering corner tiles. Returns the tiles sorted
-    /// row-major from the north.
+    /// row-major from the north. A tile zoom level above
+    /// [`MAXIMUM_TILE_ZOOM_LEVEL`] yields no tiles: its grid count is not
+    /// representable.
     pub fn visible_tile_keys(
         &self,
         viewport: &ViewportPixels,
         field_of_view_degrees: f64,
         tile_zoom_level: u8,
     ) -> Vec<TileKey> {
+        if tile_zoom_level > MAXIMUM_TILE_ZOOM_LEVEL {
+            return Vec::new();
+        }
         let zoom_scale = zoom_scale_pixels(self.zoom_level);
         let ground_polygon = self.clipped_ground_polygon_vertices(viewport, field_of_view_degrees);
         if ground_polygon.is_empty() {
@@ -1150,7 +1157,8 @@ mod tests {
         camera_geographic_bounds, fit_bounds, fly_to_animation, interpolate_camera,
     };
     use crate::projection::{
-        coordinate_to_normalized_world, normalized_world_to_coordinate, zoom_scale_pixels,
+        MAXIMUM_TILE_ZOOM_LEVEL, coordinate_to_normalized_world, normalized_world_to_coordinate,
+        zoom_scale_pixels,
     };
     use geospatial_types::{BoundingBox, GeographicCoordinate};
     use proptest::prelude::*;
@@ -1219,13 +1227,28 @@ mod tests {
     #[test]
     fn camera_construction_clamps_and_wraps() {
         let camera = MapCamera::new(coordinate(47.0, 8.5), 90.0, -10.0, 200.0);
-        assert_eq!(camera.zoom_level, 24.0);
+        assert_eq!(camera.zoom_level, MAXIMUM_ZOOM_LEVEL);
         assert_eq!(camera.bearing_degrees, 350.0);
         assert_eq!(camera.pitch_degrees, MAXIMUM_PITCH_DEGREES);
         let bottom = MapCamera::new(coordinate(47.0, 8.5), -3.0, -700.0, -5.0);
         assert_eq!(bottom.zoom_level, 0.0);
         assert_eq!(bottom.bearing_degrees, 20.0);
         assert_eq!(bottom.pitch_degrees, 0.0);
+    }
+
+    #[test]
+    fn tile_zoom_level_respects_the_shared_grid_bound() {
+        let camera = MapCamera::new(coordinate(0.0, 0.0), MAXIMUM_ZOOM_LEVEL, 0.0, 0.0);
+        assert!(camera.tile_zoom_level() <= MAXIMUM_TILE_ZOOM_LEVEL);
+        assert!(
+            camera
+                .visible_tile_keys(
+                    &viewport(),
+                    DEFAULT_FIELD_OF_VIEW_DEGREES,
+                    MAXIMUM_TILE_ZOOM_LEVEL + 1,
+                )
+                .is_empty()
+        );
     }
 
     #[test]
