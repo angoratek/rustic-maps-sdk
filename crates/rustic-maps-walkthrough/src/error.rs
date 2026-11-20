@@ -196,11 +196,98 @@ pub enum WalkthroughError {
         source: std::io::Error,
     },
 
-    /// A requested command has no implementation in this build.
-    #[error("the `{command}` command is not implemented by this build")]
-    CommandNotImplemented {
-        /// The command name.
-        command: &'static str,
+    /// Two platforms declare different aspect ratios.
+    #[error(
+        "platform `{platform}` declares aspect ratio {aspect_ratio:.4}, but platform `{reference_platform}` declares {reference_aspect_ratio:.4}; every platform must share one aspect ratio"
+    )]
+    InconsistentAspectRatio {
+        /// The platform whose declaration differs.
+        platform: String,
+        /// Its declared height divided by width.
+        aspect_ratio: f64,
+        /// The first platform in the published order, whose ratio is the
+        /// reference.
+        reference_platform: String,
+        /// The reference platform's declared height divided by width.
+        reference_aspect_ratio: f64,
+    },
+
+    /// A normalisation record contradicts the image it describes or the
+    /// platform that declares it.
+    #[error("the normalisation recorded for platform `{platform}` contradicts `{path}`: {reason}")]
+    NormalisationMismatch {
+        /// The platform key.
+        platform: String,
+        /// The contract-relative image path.
+        path: String,
+        /// The failed consistency check.
+        reason: String,
+    },
+
+    /// A required external program is not on `PATH`.
+    #[error("`{program}` is required for this command but was not found on PATH; {install}")]
+    ProgramMissing {
+        /// The program name.
+        program: String,
+        /// The documented installation command.
+        install: String,
+    },
+
+    /// An external command failed.
+    #[error("`{program} {arguments}` failed with {status}: {stderr}")]
+    CommandFailed {
+        /// The program name.
+        program: String,
+        /// The argument vector, rendered for a shell.
+        arguments: String,
+        /// The exit status.
+        status: String,
+        /// The captured standard error, tail-truncated.
+        stderr: String,
+    },
+
+    /// A command option value was rejected.
+    #[error("invalid value for `{option}`: {reason}")]
+    InvalidOption {
+        /// The option name, including its leading `--`.
+        option: String,
+        /// Why the value was rejected.
+        reason: String,
+    },
+
+    /// A command reported success but wrote no output file.
+    #[error("the command reported success but did not write `{path}`")]
+    OutputNotProduced {
+        /// The requested output path.
+        path: PathBuf,
+    },
+
+    /// A credential environment variable is set while capturing.
+    #[error(
+        "refusing to capture: the credential environment variable `{variable}` is set, but the recorded walkthrough is keyless; unset it and run the capture again"
+    )]
+    CredentialEnvironmentPresent {
+        /// The offending variable name.
+        variable: String,
+    },
+
+    /// A transition clip's last decoded frame disagrees with the next still.
+    #[error(
+        "the transition clip `{clip}` does not end on the frame in `{still}`: {mismatched_channels} of {total_channels} colour channels differ by more than {tolerance}, with a maximum channel difference of {maximum_difference}"
+    )]
+    FrameHandoffMismatch {
+        /// The transition clip.
+        clip: PathBuf,
+        /// The declared next still.
+        still: PathBuf,
+        /// The number of channels beyond the tolerance.
+        mismatched_channels: u64,
+        /// The number of channels compared.
+        total_channels: u64,
+        /// The largest absolute channel difference.
+        maximum_difference: u8,
+        /// The per-channel tolerance.
+        tolerance: u8,
     },
 
     /// The local server could not read from or write to a connection.

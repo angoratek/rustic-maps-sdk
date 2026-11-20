@@ -1,5 +1,6 @@
 //! Contract validation, build and manifest tests.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream};
@@ -185,13 +186,72 @@ fn validates_the_seeded_contract_with_empty_hotspots() {
     let report = validate_walkthrough(&ValidateOptions {
         contract_path: repository.join(DEFAULT_CONTRACT_PATH),
         flows_path: repository.join(DEFAULT_FLOWS_PATH),
-        repository_root: repository,
+        repository_root: repository.clone(),
     })
     .expect("the committed contract should validate");
     assert_eq!(report.platform_count, 3);
     assert_eq!(report.screen_count, 18);
     assert_eq!(report.hotspot_count, 0);
     assert_eq!(report.asset_count, 18);
+
+    let contract = WalkthroughContract::from_file(&repository.join(DEFAULT_CONTRACT_PATH))
+        .expect("the committed contract should read");
+    let ratios: Vec<f64> = contract
+        .platforms
+        .values()
+        .map(|platform| platform.aspect_ratio)
+        .collect();
+    assert!(
+        ratios.windows(2).all(|pair| pair[0] == pair[1]),
+        "every platform must declare the same ratio, got {ratios:?}"
+    );
+    for (platform_key, platform) in &contract.platforms {
+        assert!(
+            platform.normalisation.is_some(),
+            "platform `{platform_key}` should record its normalisation transform"
+        );
+    }
+}
+
+#[test]
+fn rejects_platforms_that_declare_different_ratios() {
+    let temporary = TemporaryDirectory::new("inconsistent-ratio");
+    let mut contract = base_contract(temporary.path());
+    write_png(&temporary.path().join("assets/ios.png"), 400, 1200);
+    contract["platforms"]["ios"]["aspect_ratio"] = json!(3.0);
+    let result = validate_documents(&contract, temporary.path());
+    assert!(
+        matches!(
+            &result,
+            Err(WalkthroughError::InconsistentAspectRatio { platform, .. }) if platform == "ios"
+        ),
+        "expected an inconsistent-ratio failure, got {result:?}"
+    );
+}
+
+#[test]
+fn rejects_a_normalisation_that_contradicts_its_image() {
+    let temporary = TemporaryDirectory::new("normalisation");
+    let mut contract = base_contract(temporary.path());
+    contract["platforms"]["android"]["normalisation"] = json!({
+        "target_aspect_ratio": 1100.0 / 540.0,
+        "mode": "pad",
+        "source_width": 540,
+        "source_height": 1100,
+        "target_width": 540,
+        "target_height": 1101,
+        "offset_x": 0,
+        "offset_y": 0,
+        "pad_color": "#000000"
+    });
+    let result = validate_documents(&contract, temporary.path());
+    assert!(
+        matches!(
+            &result,
+            Err(WalkthroughError::NormalisationMismatch { platform, .. }) if platform == "android"
+        ),
+        "expected a normalisation failure, got {result:?}"
+    );
 }
 
 #[test]
@@ -331,6 +391,7 @@ fn rejects_a_manifest_commit_that_the_repository_cannot_resolve() {
             path: "platform/reference-walkthrough.json".to_owned(),
             sha256: sha256_hex(b""),
         },
+        normalisation: BTreeMap::new(),
         player: Vec::new(),
         assets: Vec::new(),
     };
@@ -355,6 +416,7 @@ fn skips_the_manifest_commit_check_without_a_git_repository() {
             path: "contract.json".to_owned(),
             sha256: sha256_hex(b""),
         },
+        normalisation: BTreeMap::new(),
         player: Vec::new(),
         assets: Vec::new(),
     };
@@ -400,6 +462,10 @@ fn builds_the_seeded_contract_and_writes_matching_hashes() {
         .expect("the manifest should be readable");
     assert_eq!(manifest.assets.len(), 18);
     assert_eq!(manifest.player.len(), 3);
+    assert_eq!(manifest.normalisation.len(), 3);
+    assert!(manifest.normalisation.get("android").is_some_and(
+        |record| record.transform.mode == rustic_maps_walkthrough::NormalisationMode::Pad
+    ));
     assert_eq!(
         manifest.contract.sha256,
         sha256_hex(

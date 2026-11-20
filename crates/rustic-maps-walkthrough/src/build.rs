@@ -228,6 +228,16 @@ pub fn build_site(options: &BuildOptions) -> Result<BuildReport, WalkthroughErro
             path: options.contract_path.clone(),
             source,
         })?;
+    let normalisation = contract
+        .platforms
+        .iter()
+        .filter_map(|(platform_key, platform)| {
+            platform
+                .normalisation
+                .clone()
+                .map(|record| (platform_key.clone(), record))
+        })
+        .collect();
     let manifest = BuiltManifest {
         schema_version: MANIFEST_SCHEMA_VERSION,
         artifact: contract.artifact.name.clone(),
@@ -236,6 +246,7 @@ pub fn build_site(options: &BuildOptions) -> Result<BuildReport, WalkthroughErro
             path: options.contract_path.display().to_string(),
             sha256: sha256_hex(&contract_bytes),
         },
+        normalisation,
         player: manifest_player,
         assets: manifest_assets,
     };

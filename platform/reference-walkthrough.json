@@ -2,52 +2,63 @@
   "schema_version": 1,
   "artifact": {
     "name": "reference-walkthrough",
-    "purpose": "The recorded reference walkthrough: six published frames per platform, linked to the flow steps they show and to the gestures that move between them."
+    "purpose": "The recorded reference walkthrough: six published frames per platform, normalised to one shared 9/19.5 frame, linked to the flow steps they show and to the gestures that move between them."
   },
   "platforms": {
     "android": {
       "display_name": "Android",
-      "aspect_ratio": 2.037,
+      "aspect_ratio": 2.1667,
+      "normalisation": {
+        "target_aspect_ratio": 2.1667,
+        "mode": "pad",
+        "source_width": 1080,
+        "source_height": 2200,
+        "target_width": 1080,
+        "target_height": 2340,
+        "offset_x": 0,
+        "offset_y": 70,
+        "pad_color": "#000000"
+      },
       "screens": [
         {
           "id": "plan-sheet",
           "step_id": "assign_destination",
-          "image": "site/book-src/img/android-plan-sheet.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/android-plan-sheet.png",
           "caption": "The plan sheet with both endpoints chosen.",
           "hotspots": []
         },
         {
           "id": "provider-section",
           "step_id": "open_settings",
-          "image": "site/book-src/img/android-provider-section.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/android-provider-section.png",
           "caption": "The provider section with each capability's display name and credential state.",
           "hotspots": []
         },
         {
           "id": "navigation",
           "step_id": "drive",
-          "image": "site/book-src/img/android-navigation.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/android-navigation.png",
           "caption": "Simulated navigation with the turn banner, route polyline, ETA line and 1x playback controls.",
           "hotspots": []
         },
         {
           "id": "vector-base",
           "step_id": "open",
-          "image": "site/book-src/img/android-vector-base.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/android-vector-base.png",
           "caption": "The styled vector base with its place labels.",
           "hotspots": []
         },
         {
           "id": "layers-closed",
           "step_id": "open",
-          "image": "site/book-src/img/android-layers-closed.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/android-layers-closed.png",
           "caption": "The map with the layers control closed over the applied raster base.",
           "hotspots": []
         },
         {
           "id": "layers-open",
           "step_id": "open",
-          "image": "site/book-src/img/android-layers-open.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/android-layers-open.png",
           "caption": "The same camera with the layers panel open on its lower rows.",
           "hotspots": []
         }
@@ -55,47 +66,57 @@
     },
     "ios": {
       "display_name": "iOS",
-      "aspect_ratio": 2.1741,
+      "aspect_ratio": 2.1667,
+      "normalisation": {
+        "target_aspect_ratio": 2.1667,
+        "mode": "crop",
+        "source_width": 1206,
+        "source_height": 2622,
+        "target_width": 1206,
+        "target_height": 2613,
+        "offset_x": 0,
+        "offset_y": 4
+      },
       "screens": [
         {
           "id": "plan-sheet",
           "step_id": "assign_destination",
-          "image": "site/book-src/img/ios-plan-sheet.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/ios-plan-sheet.png",
           "caption": "The plan sheet with both endpoints chosen.",
           "hotspots": []
         },
         {
           "id": "provider-section",
           "step_id": "open_settings",
-          "image": "site/book-src/img/ios-provider-section.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/ios-provider-section.png",
           "caption": "The provider section with each capability's display name and credential state.",
           "hotspots": []
         },
         {
           "id": "navigation",
           "step_id": "drive",
-          "image": "site/book-src/img/ios-navigation.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/ios-navigation.png",
           "caption": "Simulated navigation with the turn banner, route polyline, ETA line and 1x playback controls.",
           "hotspots": []
         },
         {
           "id": "vector-base",
           "step_id": "open",
-          "image": "site/book-src/img/ios-vector-base.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/ios-vector-base.png",
           "caption": "The styled vector base with its place labels.",
           "hotspots": []
         },
         {
           "id": "layers-closed",
           "step_id": "open",
-          "image": "site/book-src/img/ios-layers-closed.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/ios-layers-closed.png",
           "caption": "The map with the layers control closed over the applied raster base.",
           "hotspots": []
         },
         {
           "id": "layers-open",
           "step_id": "open",
-          "image": "site/book-src/img/ios-layers-open.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/ios-layers-open.png",
           "caption": "The same camera with the layers panel open on its lower rows.",
           "hotspots": []
         }
@@ -103,47 +124,58 @@
     },
     "react_native": {
       "display_name": "React Native",
-      "aspect_ratio": 2.037,
+      "aspect_ratio": 2.1667,
+      "normalisation": {
+        "target_aspect_ratio": 2.1667,
+        "mode": "pad",
+        "source_width": 1080,
+        "source_height": 2200,
+        "target_width": 1080,
+        "target_height": 2340,
+        "offset_x": 0,
+        "offset_y": 70,
+        "pad_color": "#000000"
+      },
       "screens": [
         {
           "id": "plan-sheet",
           "step_id": "assign_destination",
-          "image": "site/book-src/img/react-native-plan-sheet.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/react-native-plan-sheet.png",
           "caption": "The plan sheet with both endpoints chosen.",
           "hotspots": []
         },
         {
           "id": "provider-section",
           "step_id": "open_settings",
-          "image": "site/book-src/img/react-native-provider-section.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/react-native-provider-section.png",
           "caption": "The provider section with each capability's display name and credential state.",
           "hotspots": []
         },
         {
           "id": "navigation",
           "step_id": "drive",
-          "image": "site/book-src/img/react-native-navigation.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/react-native-navigation.png",
           "caption": "Simulated navigation with the turn banner, route polyline, ETA line and 1x playback controls.",
           "hotspots": []
         },
         {
           "id": "vector-base",
           "step_id": "open",
-          "image": "site/book-src/img/react-native-vector-base.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/react-native-vector-base.png",
           "caption": "The styled vector base with its place labels.",
           "hotspots": []
         },
         {
           "id": "layers-closed",
           "step_id": "open",
-          "image": "site/book-src/img/react-native-layers-closed.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/react-native-layers-closed.png",
           "caption": "The map with the layers control closed over the applied raster base.",
           "hotspots": []
         },
         {
           "id": "layers-open",
           "step_id": "open",
-          "image": "site/book-src/img/react-native-layers-open.png",
+          "image": "crates/rustic-maps-walkthrough/assets/normalised/react-native-layers-open.png",
           "caption": "The same camera with the layers panel open on its lower rows.",
           "hotspots": []
         }

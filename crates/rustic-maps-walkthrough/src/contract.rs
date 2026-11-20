@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::WalkthroughError;
 use crate::flows::ReferenceFlows;
+use crate::normalise::PlatformNormalisation;
 use crate::png::read_png_dimensions;
 
 /// The contract schema version this build reads and validates.
@@ -77,9 +78,14 @@ pub struct PlatformWalkthrough {
     pub display_name: String,
     /// The published frame shape, expressed as height divided by width.
     ///
-    /// The three platforms use different device frames, so the ratio belongs
-    /// to the platform rather than to the document.
+    /// Every platform declares the same ratio so the walkthroughs play in
+    /// step. The contract records the ratio per platform so a normalised
+    /// still's measured shape is checked against the platform that uses it.
     pub aspect_ratio: f64,
+    /// The crop or pad that brought this platform's published stills to the
+    /// shared ratio.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub normalisation: Option<PlatformNormalisation>,
     /// The screens in playback order.
     pub screens: Vec<Screen>,
 }
@@ -291,12 +297,21 @@ pub fn validate_contract(
             }
 
             let image_path = resolve_asset_path(repository_root, &screen.image)?;
-            validate_image(
+            let (image_width, image_height) = validate_image(
                 platform_key,
                 &platform.aspect_ratio,
                 &screen.image,
                 &image_path,
             )?;
+            if let Some(normalisation) = &platform.normalisation {
+                normalisation.validate(
+                    platform_key,
+                    &screen.image,
+                    image_width,
+                    image_height,
+                    platform.aspect_ratio,
+                )?;
+            }
             report.asset_count += 1;
             report.screen_count += 1;
 
@@ -320,7 +335,33 @@ pub fn validate_contract(
         report.platform_count += 1;
     }
 
+    validate_shared_aspect_ratio(contract)?;
+
     Ok(report)
+}
+
+fn validate_shared_aspect_ratio(contract: &WalkthroughContract) -> Result<(), WalkthroughError> {
+    let Some(reference_key) = SUPPORTED_PLATFORMS.first() else {
+        return Ok(());
+    };
+    let Some(reference) = contract.platforms.get(*reference_key) else {
+        return Ok(());
+    };
+    let allowed_deviation = reference.aspect_ratio * ASPECT_RATIO_RELATIVE_TOLERANCE;
+    for platform_key in SUPPORTED_PLATFORMS.iter().skip(1) {
+        let Some(platform) = contract.platforms.get(*platform_key) else {
+            continue;
+        };
+        if (platform.aspect_ratio - reference.aspect_ratio).abs() > allowed_deviation {
+            return Err(WalkthroughError::InconsistentAspectRatio {
+                platform: (*platform_key).to_owned(),
+                aspect_ratio: platform.aspect_ratio,
+                reference_platform: (*reference_key).to_owned(),
+                reference_aspect_ratio: reference.aspect_ratio,
+            });
+        }
+    }
+    Ok(())
 }
 
 fn validate_image(
@@ -328,7 +369,7 @@ fn validate_image(
     declared_aspect_ratio: &f64,
     contract_path: &str,
     resolved_path: &Path,
-) -> Result<(), WalkthroughError> {
+) -> Result<(u32, u32), WalkthroughError> {
     let bytes = std::fs::read(resolved_path).map_err(|source| WalkthroughError::Read {
         path: resolved_path.to_path_buf(),
         source,
@@ -348,7 +389,7 @@ fn validate_image(
             declared: *declared_aspect_ratio,
         });
     }
-    Ok(())
+    Ok((width, height))
 }
 
 fn validate_rect(platform: &str, hotspot: &Hotspot) -> Result<(), WalkthroughError> {
