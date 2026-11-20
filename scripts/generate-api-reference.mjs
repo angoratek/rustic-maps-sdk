@@ -123,14 +123,14 @@ const WASM_FUNCTION_SECTION_NAMES = new Map([
   ['diagnostics.rs', 'Diagnostics'],
   ['vector_layer.rs', 'Vector tile helpers'],
   ['camera_interaction.rs', 'Camera interaction aliases'],
-  ['canvas.rs', 'Device and base-map helpers'],
+  ['canvas/mod.rs', 'Device and base-map helpers'],
 ]);
 
 /** The wasm export source file order (deterministic grouping). */
 const WASM_SOURCE_FILE_ORDER = [
   'exports.rs',
   'live_providers.rs',
-  'canvas.rs',
+  'canvas/mod.rs',
   'vector_layer.rs',
   'refapp.rs',
   'refapp_math.rs',
@@ -1432,12 +1432,28 @@ function renderWasmType(rustTypeText) {
   return { type: rendered, throws };
 }
 
+/** Lists the Rust sources under a directory, recursively, as relative paths. */
+function list_rust_source_paths(directory, relative_prefix = '') {
+  const collected = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const relativePath = relative_prefix === ''
+      ? entry.name
+      : `${relative_prefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      collected.push(
+        ...list_rust_source_paths(path.join(directory, entry.name), relativePath),
+      );
+    } else if (entry.isFile() && entry.name.endsWith('.rs')) {
+      collected.push(relativePath);
+    }
+  }
+  return collected.sort();
+}
+
 /** Parses the exported classes, functions and enums of the wasm sources. */
 function collectWasmSurface(repositoryRoot) {
   const sourceDirectory = path.join(repositoryRoot, WASM_BINDINGS_SOURCE_DIRECTORY);
-  const sourceFiles = readdirSync(sourceDirectory)
-    .filter((entry) => entry.endsWith('.rs'))
-    .sort();
+  const sourceFiles = list_rust_source_paths(sourceDirectory);
   const orderedFiles = [
     ...WASM_SOURCE_FILE_ORDER.filter((file) => sourceFiles.includes(file)),
     ...sourceFiles.filter((file) => !WASM_SOURCE_FILE_ORDER.includes(file)),

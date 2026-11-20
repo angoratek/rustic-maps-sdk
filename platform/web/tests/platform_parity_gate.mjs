@@ -416,17 +416,32 @@ function assert_contract_interfaces_present() {
   }
 }
 
+/** Lists every Rust source under a repository directory, recursively. */
+function list_rust_source_paths(relative_directory) {
+  const collected = [];
+  const walk = (directory) => {
+    const entries = readdirSync(path.join(REPOSITORY_ROOT, directory), {
+      withFileTypes: true,
+    }).sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
+      const entry_path = `${directory}/${entry.name}`;
+      if (entry.isDirectory()) {
+        walk(entry_path);
+      } else if (entry.isFile() && entry.name.endsWith('.rs')) {
+        collected.push(entry_path);
+      }
+    }
+  };
+  walk(relative_directory);
+  return collected;
+}
+
 /** Asserts the wasm Rust sources still name every export in the floor. */
 function assert_wasm_capability_floor_present() {
-  const wasm_source_directory = path.join(
-    REPOSITORY_ROOT,
-    'crates',
-    'rustic-maps-web-bindings',
-    'src',
-  );
-  const wasm_sources = readdirSync(wasm_source_directory)
-    .filter((file_name) => file_name.endsWith('.rs'))
-    .map((file_name) => read(`crates/rustic-maps-web-bindings/src/${file_name}`))
+  const wasm_sources = list_rust_source_paths(
+    'crates/rustic-maps-web-bindings/src',
+  )
+    .map((source_path) => read(source_path))
     .join('\n');
   for (const export_name of REQUIRED_WASM_EXPORTS) {
     // Functions carry a `js_name`; wasm-bindgen classes are exported under
