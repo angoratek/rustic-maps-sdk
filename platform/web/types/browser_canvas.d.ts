@@ -14,7 +14,18 @@
 
 /** The browser canvas GPU surface over a page's `HTMLCanvasElement`. */
 export class BrowserMapView {
-  constructor(canvas: HTMLCanvasElement, tileResolution?: TileResolution);
+  /**
+   * `recordedTileFixturesAreServed` decides whether a raster request may probe
+   * the same-origin `/tiles` fixtures before a registered live source. It
+   * defaults to `true`, the local dev server and test harness behaviour; a
+   * page that stages no fixtures passes `false`, so the request goes straight
+   * to the provider and no fixture 404 is issued.
+   */
+  constructor(
+    canvas: HTMLCanvasElement,
+    tileResolution?: TileResolution,
+    recordedTileFixturesAreServed?: boolean,
+  );
 
   /** Acquires the GPU device and configures the surface. */
   initialize(): Promise<string>;
