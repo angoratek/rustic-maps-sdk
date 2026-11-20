@@ -4,6 +4,30 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-20 — the RN app shell is one root and named modules)
+
+- `platform/rn/app-shell/App.tsx` fell from 5,692 lines to 20: it now holds only the root component and its provider wiring. `ReferenceAppScreen`, `PlanSearchView`, ten components and four helpers live under `src/screens/`, `src/components/` and `src/helpers/`.
+- The split is a pure move. An AST comparison against the original found no difference in string literals, numeric literals or JSX attribute names, no dependency was added, and `PlanSearchView` stays re-exported from `App.tsx` because a test imports it there. The UX-parity and platform-parity gates now read the moved sources.
+
+### Changed (2026-11-20 — the native provider catalog derives from the shared table)
+
+- `provider_catalog.rs` no longer restates any provider key, display name, credential flag or served-contract list: each row reads `PROVIDER_ENTRIES` through a const lookup, and the contract array's length is the shared row's own length taken as a const generic. The install dispatch and the two raster-tile values stay native-only, and a shared key with no native row fails at compile time.
+- Four stale install comments were corrected, not the two the issue named: the OSRM, Photon and Valhalla descriptions had each been left on the following function, and the shared-client comment sat on the single-client builder.
+
+### Changed (2026-11-20 — the benchmark support sits behind a bench feature)
+
+- A non-default `bench` feature gates `offline_routing_benchmark` and `dijkstra_reference_search`, removing 534 production lines from the default build. The bench target declares `required-features`, so naming it without the feature fails with Cargo's own message.
+- The criterion workflow passes the feature, and the default test job gains an explicit `cargo test -p rustic-maps-core --features bench` step so the coarse solve-budget alarm keeps running.
+
+### Changed (2026-11-20 — the RN shell shares its text, error and registration helpers)
+
+- `sdkErrorText.ts` and `providerRegistration.ts` replace copies that lived in `App.tsx` and `capabilityProviderState.ts`, and `providerCredentialStatusText` is exported as a pure function taking only its arguments. All 263 jest tests pass.
+- Two string pairs stay separate on purpose: the registration path keeps `String(applyError)` because `verbatimErrorText` strips the `Error:` prefix, and the capability-row and settings-row status helpers compose different canonical strings.
+
+### Changed (2026-11-20 — the large modules keep their tests in child files)
+
+- `labels.rs` fell from 6,112 to 3,005 lines, `surface_view.rs` from 5,354 to 2,517 and `reducer.rs` from 2,417 to 619, their inline test modules moved into child files. Per-crate test counts are identical before and after (416 / 330 / 178), and only `include_bytes!`/`include_str!` paths changed depth.
+
 ### Changed (2026-11-20 — the hosted demo is a recorded walkthrough, not a streamed session)
 
 - New `rustic-maps-walkthrough` crate, publish-disabled and free of any SDK dependency so it can be extracted later: it validates one flow contract, builds a self-contained site with a SHA-256 manifest, serves it with a dev-only authoring overlay, and slices recordings with `ffmpeg`. `capture` and `slice` refuse to start when any known credential variable is set.
