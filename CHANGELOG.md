@@ -4,6 +4,40 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Added (2026-11-20 — the diagnostics stream gains a subscription handle)
+
+- `subscribe_to_diagnostic_events_with_subscription` returns a `DiagnosticSubscription` object whose `cancel()` removes exactly that registration; cancelling twice is a no-op, and dropping the handle does not unregister. `subscribe_to_diagnostic_events` is unchanged.
+- The first attempt, an unsubscribe matched by listener identity, was discarded before merge because UniFFI lowers a foreign listener to a fresh handle on every call, so the identity never matches across the boundary. The handle is Rust-backed, so it survives lowering.
+- The iOS model holds the subscription, cancels it when the sheet closes and subscribes again on the next open, which also removes the duplicate-delivery path when the debug switch changed severity. `cancel` is the member name because UniFFI already generates `close` for the object handle and the two collide in Kotlin.
+
+### Changed (2026-11-20 — the provider registry is compared with the catalog table)
+
+- `crates/rustic-maps-providers/tests/registry_parity.rs` compares `platform/providers.json` with `PROVIDER_ENTRIES`: keys in both directions, display names, served contracts, the credential-required flag and the registration key. A registry-only provider must carry a URL-template source, so a future vendor cannot appear uncatalogued; the three URL-template base maps are the documented category split. The suite skips with one explicit line when the registry file is absent, so the crate still tests standalone.
+
+### Added (2026-11-20 — the camera defaults cross the contract)
+
+- `default_field_of_view_degrees()`, `maximum_zoom_level()` and `meters_per_degree_latitude()` are additive contract getters, each returning the renderer's constant and each pinned by a test. The Android and iOS wrappers, the React Native pod, the web canvas and the playground read them instead of 60/24/111,320 literals, verified by the Android AAR build, the iOS package and reference-app builds and both TypeScript checks.
+
+### Changed (2026-11-20 — credential parameter names are stated once)
+
+- `HERE_CREDENTIAL_PARAMETER`, `GOOGLE_CREDENTIAL_PARAMETER`, `TOMTOM_CREDENTIAL_PARAMETER` and `MAPBOX_CREDENTIAL_PARAMETER` replace the four literals in the shared construction crate, each documented as the provider's wire contract and pinned by a test.
+
+### Fixed (2026-11-20 — a credential apply is staged)
+
+- The browser applies a credential in two phases: it validates that every declared contract maps to one this build registers before calling the seam even once, then applies and tracks what registered. A failure leaves the provider unapplied and records the capabilities that did register, instead of silently registering a subset and reporting success.
+
+### Added (2026-11-20 — every remaining provider contract crosses the native bridge)
+
+- Nine fixture-backed tests cover OSRM and Valhalla routing, Photon forward geocoding, place search and reverse geocoding, MapQuest place search, distance matrix and a raster tile, plus the provider-key readback. The slice found that native `configure_provider` has no base-URL override, tracked as #219.
+
+### Fixed (2026-11-20 — the provenance gate ignores local worktrees)
+
+- The fixture-provenance scan treated every `fixtures` directory under `.claude/worktrees/` as drift, so a checkout with a worktree open failed the browser suite at global setup. `.claude` is now skipped as gitignored scratch, through one exported predicate with a test.
+
+### Changed (2026-11-20 — the normalised still is proved against its recipe)
+
+- The real-encoder test now decodes the regenerated still and the committed walkthrough asset to raw RGB and asserts channel equality. The committed asset matches the `normalise` recipe in all 7,581,600 channels, so the earlier `sips` workaround left no drift and no asset needed regenerating.
+
 ### Changed (2026-11-20 — the RN app shell is one root and named modules)
 
 - `platform/rn/app-shell/App.tsx` fell from 5,692 lines to 20: it now holds only the root component and its provider wiring. `ReferenceAppScreen`, `PlanSearchView`, ten components and four helpers live under `src/screens/`, `src/components/` and `src/helpers/`.
