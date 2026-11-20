@@ -80,9 +80,21 @@ const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
  * fixtures. A `fixtures` directory under one of these is not scanned.
  */
 const SKIPPED_DIRECTORY_NAMES = new Set([
-  '.git', '.gradle', '.build', 'DerivedData', 'Pods', 'build', 'coverage',
+  '.claude', '.git', '.gradle', '.build', 'DerivedData', 'Pods', 'build', 'coverage',
   'generated', 'node_modules', 'playwright-report', 'target', 'test-results', 'tmp',
 ]);
+
+/**
+ * Whether the scan treats a directory name as gitignored scratch it never
+ * enters. `.claude` holds local git worktrees, each with its own copy of
+ * every fixture directory; scanning them would report the same fixtures
+ * twice and fail a clean checkout that happens to have a worktree open.
+ * @param {string} directory_name The base name of a directory.
+ * @returns {boolean}
+ */
+export function is_skipped_directory_name(directory_name) {
+  return SKIPPED_DIRECTORY_NAMES.has(directory_name);
+}
 
 /** A resolved semantic version (`MAJOR.MINOR.PATCH`). */
 const SEMANTIC_VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
@@ -123,7 +135,7 @@ function payload_files_under(absolute_directory) {
 function fixture_directories_under(absolute_directory) {
   const directories = [];
   for (const entry of readdirSync(absolute_directory, { withFileTypes: true })) {
-    if (!entry.isDirectory() || SKIPPED_DIRECTORY_NAMES.has(entry.name)) {
+    if (!entry.isDirectory() || is_skipped_directory_name(entry.name)) {
       continue;
     }
     const absolute_path = path.join(absolute_directory, entry.name);
@@ -462,6 +474,10 @@ export function run_fixture_provenance_checks() {
 const FIXTURE_PROVENANCE_TEST_NAME =
   'every committed fixture carries reviewed provenance and unmodified bytes';
 
+/** The `node --test` suite name of the skipped-directory assertion. */
+const SKIPPED_DIRECTORY_TEST_NAME =
+  'the scan ignores gitignored scratch such as local worktrees';
+
 // Run the suite only when this file is the entry point; the Playwright
 // `globalSetup` imports the exported runner instead.
 const RUNNING_AS_ENTRY = process.argv[1] !== undefined
@@ -470,5 +486,13 @@ const RUNNING_AS_ENTRY = process.argv[1] !== undefined
 if (RUNNING_AS_ENTRY) {
   test(FIXTURE_PROVENANCE_TEST_NAME, () => {
     run_fixture_provenance_checks();
+  });
+  test(SKIPPED_DIRECTORY_TEST_NAME, () => {
+    assert.equal(is_skipped_directory_name('.claude'), true);
+    assert.equal(is_skipped_directory_name('.git'), true);
+    assert.equal(is_skipped_directory_name('target'), true);
+    assert.equal(is_skipped_directory_name('node_modules'), true);
+    assert.equal(is_skipped_directory_name('crates'), false);
+    assert.equal(is_skipped_directory_name('fixtures'), false);
   });
 }
