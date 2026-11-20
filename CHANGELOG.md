@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the public notes name no owner resources or internal plan)
+
+- The hosted-demo claim endpoint guide describes its Upstash store generically and no longer names the store, the Vercel project or the exact counter keys. The free plan, the absent payment method, the upgrade and eviction settings, the 30-minute monthly budget, the four daily grants and the kill switch stay.
+- `SECURITY.md` separates the synthetic test payloads and style documents from the recorded provider payloads and imagery, and points each class at the terms the project records for it.
+- Internal plan identifiers are gone from `CONTRIBUTING.md`, `platform/demo-builds.json` and the claim endpoint's notes, and the references to the retired working plan in scripts, tests and benches now point at the issue tracker.
+
 ### Changed (2026-11-19 — the browser playground is split by concern)
 
 - `platform/web/playground.mjs` fell from 8,461 lines to 271. The controller now lives in seven modules — preferences, provider settings, base map, overlays, navigation, diagnostics and the map surface — imported by one entry that creates an explicit runtime (services, shared constants, mutable state, install parameters) and replays the original statement order. No concern module imports another, so module evaluation order cannot change first-frame behaviour.

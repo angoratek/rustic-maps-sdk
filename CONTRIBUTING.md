@@ -144,7 +144,7 @@ fixes and documentation corrections can go straight to a pull request.
 ## Issues and milestones
 
 The issue tracker is the project record: every open work item is one issue,
-grouped under a milestone such as `M57` or `Backlog`, whose description states
+grouped under a milestone such as `Backlog`, whose description states
 when the milestone is done. An issue carries its acceptance criteria. Pick an
 issue, branch from `main` as described above, and open a pull request that links
 it with `Closes #123`.

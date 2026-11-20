@@ -1,6 +1,6 @@
-//! Criterion benchmark suite for the offline routing engine — the M7
-//! slice 6 benchmark gate (`PLAN.md` M7 item 3; the recorded baseline
-//! behind `PRD.md` §4.6's "Dijkstra upgraded to A*").
+//! Criterion benchmark suite for the offline routing engine: the
+//! benchmark gate for the recorded baseline behind `PRD.md` §4.6's
+//! "Dijkstra upgraded to A*".
 //!
 //! Two groups:
 //!

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Tutorial snippet generator (PLAN.md, M25).
+// Tutorial snippet generator.
 //
 // Every fenced code block in the tutorial chapters is regenerated from a
 // marked region of a reference application, so a guide cannot drift from the

@@ -1,4 +1,4 @@
-//! The frame-sharing bench (PLAN.md M65).
+//! The frame-sharing bench.
 //!
 //! Three measurements over one settled z7-shaped frame carrying 46k overlays:
 //!
