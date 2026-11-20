@@ -126,8 +126,8 @@ extension ReferenceApplicationModel {
         ) {
             await runWalkthroughDemo()
         }
-        // The hosted demo's opening base map: one provider key, resolved
-        // through the registry like any other selection.
+        // The opening base map: one provider key, resolved through the
+        // registry like any other selection.
         if let demoBaseMapProviderKey = processDefaults.string(
             forKey: ReferenceApplicationConfiguration.launchArgumentDemoBaseMap
         ), !demoBaseMapProviderKey.isEmpty {

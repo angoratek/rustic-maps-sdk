@@ -121,23 +121,13 @@ xcodebuild test -project ReferenceApplication.xcodeproj \
 Keyed captures use the same seams for one session and publish no credential;
 `Release.md` records commands and revision.
 
-### The hosted-demo exception
+### No build-time credential exception
 
-The Appetize-hosted demo is the one artifact that may carry a credential, being a build
-inside Appetize rather than a downloadable distribution.
-
-- **Dedicated:** issued for the demo alone, rotated on schedule, never the fixture or
-  live-smoke key.
-- **Injected, never stored:** `scripts/inject-hosted-demo-credential.sh` writes
-  `assets/hosted-demo-credential.json` into the Android and React Native Android apps
-  from `HOSTED_DEMO_PROVIDER_API_KEY` and `HOSTED_DEMO_PROVIDER_KEY` (default MapQuest);
-  iOS reads `HostedDemoProviderAPIKey` from `Info.plist`, expanded from the same build
-  setting. Both paths are gitignored, produced only inside
-  `.github/workflows/hosted-demo.yml`, and `--clean` removes the Android files.
-- **Runtime unchanged:** applied through the settings registration path, never persisted
-  or logged, gone at process end; without it the build is keyless.
-- **Permissions off:** `appPermissions.adbConnect`, `networkProxy` and `debugLog` stay
-  disabled and no API path serves the binary.
+Every build is keyless. Credentials enter at runtime, and automation may inject one for
+a session without persisting or logging it. The one former exception, a hosted-device
+demo carrying a dedicated key, was retired on 2026-11-20
+(`PRD.md` §6 item 79): no distributed or hosted artifact may carry a provider credential,
+and `CHANGELOG.md` records the change.
 
 ### What must never carry a credential
 
@@ -145,8 +135,7 @@ No credential in a build input, source file, fixture, doc page, log, diagnostic,
 detail, crash report, screenshot or the shared demo artifact; no build field, plist key,
 `local.properties` line or `.xcconfig` carries one. GitHub Release, npm/Maven/SwiftPM
 package, docs download, repository, fixture and screenshot stay keyless and
-runtime-entered. The hosted-demo key is never the fixture-recording key and never enters
-a release or package.
+runtime-entered.
 
 ### Browser transport
 

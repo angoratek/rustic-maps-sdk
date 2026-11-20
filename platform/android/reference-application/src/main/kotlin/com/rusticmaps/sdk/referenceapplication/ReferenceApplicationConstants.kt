@@ -435,9 +435,9 @@ object ReferenceApplicationConstants {
 
     /**
      * The launch-intent extra that selects a base map at startup by provider
-     * key (`adb shell am start -e demoBaseMap <provider-key>`). The hosted demo
-     * uses it to open on a keyless source, so the first screen is imagery
-     * rather than an empty surface; no credential is involved.
+     * key (`adb shell am start -e demoBaseMap <provider-key>`). It opens the
+     * app on a chosen source, so a keyless run can start on imagery rather
+     * than an empty surface; no credential is involved.
      */
     const val DEMO_BASE_MAP_INTENT_EXTRA: String = "demoBaseMap"
 
@@ -463,22 +463,6 @@ object ReferenceApplicationConstants {
         REFERENCE_FLOW_ROUTING_PROVIDER_SWITCH,
         REFERENCE_FLOW_DIAGNOSTICS_OPT_IN,
     )
-
-    /**
-     * The assets file a build made for the hosted demo carries (M24, owner
-     * ruling 2026-10-30): `{ "provider_key": …, "api_key": … }`, generated on
-     * the build machine from a dedicated, separately issued credential. The
-     * file is never committed — see `scripts/inject-hosted-demo-credential.sh`
-     * — and it is absent from every build that is not the hosted demo, so a
-     * distributed APK still carries no key.
-     */
-    const val HOSTED_DEMO_CREDENTIAL_ASSET: String = "hosted-demo-credential.json"
-
-    /** The provider key field of the hosted-demo credential file. */
-    const val HOSTED_DEMO_CREDENTIAL_PROVIDER_KEY_FIELD: String = "provider_key"
-
-    /** The credential field of the hosted-demo credential file. */
-    const val HOSTED_DEMO_CREDENTIAL_API_KEY_FIELD: String = "api_key"
 
     /** The origin the walkthrough searches for; the demo corridor's start. */
     const val WALKTHROUGH_ORIGIN_SEARCH_QUERY: String = "Capitol Park, Sacramento, California"

@@ -54,33 +54,6 @@ enum ReferenceApplicationConfiguration {
         ].flatMap { value in value.isEmpty ? nil : value }
     }
 
-    /// The `Info.plist` key that carries the hosted demo's own credential.
-    /// The build expands it from the
-    /// `HOSTED_DEMO_PROVIDER_API_KEY` build setting, which the hosted-demo
-    /// pipeline passes from a secret on the build machine; every ordinary
-    /// build expands it to the empty string, so a distributed app carries no
-    /// key. See `hostedDemoBundleCredential()`.
-    static let hostedDemoProviderAPIKeyInfoKey = "HostedDemoProviderAPIKey"
-
-    /// The `Info.plist` key naming the provider the hosted credential belongs
-    /// to, expanded from the `HOSTED_DEMO_PROVIDER_KEY` build setting.
-    static let hostedDemoProviderKeyInfoKey = "HostedDemoProviderKey"
-
-    /// The hosted demo's credential, when this build carries one. Returns
-    /// `nil` for every ordinary build and for an unexpanded placeholder; the
-    /// caller applies the value through the public registration path, which
-    /// never persists and never logs it.
-    static func hostedDemoBundleCredential() -> (providerKey: String?, credential: String)? {
-        let apiKey = (Bundle.main.object(forInfoDictionaryKey: hostedDemoProviderAPIKeyInfoKey) as? String)
-            .flatMap { value in value.isEmpty || value.hasPrefix("$(") ? nil : value }
-        guard let apiKey else {
-            return nil
-        }
-        let providerKey = (Bundle.main.object(forInfoDictionaryKey: hostedDemoProviderKeyInfoKey) as? String)
-            .flatMap { value in value.isEmpty || value.hasPrefix("$(") ? nil : value }
-        return (providerKey, apiKey)
-    }
-
     /// The keyless state's honest line: no credential is configured, so the
     /// application loads no live map data until one is entered.
     static let keylessReadinessText = "Set a provider key to load live map data"
@@ -920,8 +893,8 @@ enum ReferenceApplicationConfiguration {
     static let launchArgumentWalkthroughDemo = "DemoWalkthrough"
 
     /// The launch-argument key that selects a base map at startup by provider
-    /// key (`-DemoBaseMap <provider-key>`). The hosted demo uses it to open on a
-    /// keyless source, so the first screen is imagery rather than an empty
+    /// key (`-DemoBaseMap <provider-key>`). It opens the app on a chosen
+    /// source, so a keyless run can start on imagery rather than an empty
     /// surface; no credential is involved.
     static let launchArgumentDemoBaseMap = "DemoBaseMap"
 

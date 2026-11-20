@@ -466,21 +466,14 @@ export function installPreferencesPhase4(runtime) {
 }
 
 export function installPreferencesPhase5(runtime) {
-  // The header's two outbound links. The docs back-link is shown only
-  // when the harness is served from the documentation site's `/demo/`
-  // path, so the local dev server's root page never grows a dead "up"
-  // link. The mobile-demo link is always present: the hosted page sits
-  // beside the demo on the published site (`mobile/`) and under this
-  // harness's own root (`mobile-demo/`). One signal decides both.
+  // The header's docs back-link is shown only when the demo is served from
+  // the documentation site's `/demo/` path, so the local dev server's root
+  // page never grows a dead "up" link.
   runtime.shared.is_published_demo = window.location.pathname.includes('/demo/');
 
   runtime.shared.docs_back_link = document.getElementById('docs-back-link');
 
   runtime.shared.docs_back_link.hidden = !runtime.shared.is_published_demo;
-
-  runtime.shared.mobile_demo_link = document.getElementById('mobile-demo-link');
-
-  runtime.shared.mobile_demo_link.href = runtime.shared.is_published_demo ? 'mobile/' : 'mobile-demo/';
 
   runtime.shared.theme_toggle_control.addEventListener('click', () => {
     runtime.services.apply_theme_choice(runtime.shared.THEME_NAMES_CYCLING[runtime.state.theme_choice]);

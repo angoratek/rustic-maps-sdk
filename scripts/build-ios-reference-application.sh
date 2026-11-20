@@ -12,15 +12,11 @@
 # destination asks for an architecture the framework does not have and the
 # link fails.
 #
-# A hosted-demo build may carry the demo's dedicated credential (M24, owner
-# ruling 2026-10-30, `docs/Providers.md` (the hosted-demo exception)).
-# Pass it in the environment; without it the build is keyless, which is what
-# every distributed build must be.
+# Every build is keyless: a credential is entered at runtime through the
+# settings surface or injected for one automation session, never compiled in.
 #
 # Usage:
 #   scripts/build-ios-reference-application.sh
-#   HOSTED_DEMO_PROVIDER_API_KEY=… HOSTED_DEMO_PROVIDER_KEY=mapquest \
-#       scripts/build-ios-reference-application.sh
 set -euo pipefail
 
 readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -54,6 +50,4 @@ xcodebuild \
     -destination "${SIMULATOR_DESTINATION}" \
     -derivedDataPath "${APPLICATION_DIRECTORY}/build" \
     ONLY_ACTIVE_ARCH=YES \
-    HOSTED_DEMO_PROVIDER_API_KEY="${HOSTED_DEMO_PROVIDER_API_KEY:-}" \
-    HOSTED_DEMO_PROVIDER_KEY="${HOSTED_DEMO_PROVIDER_KEY:-mapquest}" \
     build

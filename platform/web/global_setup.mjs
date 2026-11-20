@@ -17,8 +17,10 @@
 // fixture-provenance gate (`tests/fixture_provenance.mjs`) hashes every
 // committed fixture against `fixtures/provenance.json` and fails on a byte
 // change, an unrecorded fixture, a stale entry or a provider-layer version
-// bump. It then asserts a WebGPU adapter in CI, so a GPU-dependent test
-// cannot pass by skipping on a runner that renders nothing.
+// bump. It validates the recorded walkthrough contract through the
+// walkthrough crate, so an invalid contract fails before a page runs. It then
+// asserts a WebGPU adapter in CI, so a GPU-dependent test cannot pass by
+// skipping on a runner that renders nothing.
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -41,6 +43,67 @@ const REPOSITORY_ROOT = path.resolve(
   '..',
   '..',
 );
+
+/** The crate whose `validate` checks the recorded walkthrough contract. */
+const WALKTHROUGH_PACKAGE_NAME = 'rustic-maps-walkthrough';
+/** The contract the recorded walkthrough page is built from. */
+const WALKTHROUGH_CONTRACT_PATH = path.join(
+  REPOSITORY_ROOT,
+  'platform',
+  'reference-walkthrough.json',
+);
+
+/** Whether `cargo` can be spawned on this machine. */
+function cargo_is_available() {
+  try {
+    execFileSync('cargo', ['--version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validates the recorded walkthrough contract before any browser test runs.
+ * A missing or invalid contract fails the suite; only a missing cargo
+ * toolchain skips the check, and the skip is printed so it is never silent.
+ */
+function run_walkthrough_contract_check() {
+  if (!existsSync(WALKTHROUGH_CONTRACT_PATH)) {
+    throw new Error(
+      `The recorded walkthrough contract ${WALKTHROUGH_CONTRACT_PATH} is missing.`,
+    );
+  }
+  if (!cargo_is_available()) {
+    console.warn(
+      'walkthrough contract check skipped: cargo is not on PATH, so '
+        + `${WALKTHROUGH_CONTRACT_PATH} was not validated.`,
+    );
+    return;
+  }
+  try {
+    execFileSync(
+      'cargo',
+      [
+        'run',
+        '--quiet',
+        '-p',
+        WALKTHROUGH_PACKAGE_NAME,
+        '--',
+        'validate',
+        '--contract',
+        WALKTHROUGH_CONTRACT_PATH,
+      ],
+      { cwd: REPOSITORY_ROOT, stdio: 'pipe' },
+    );
+  } catch (error) {
+    const detail = error.stderr?.toString().trim() || error.message;
+    throw new Error(
+      `The recorded walkthrough contract failed validation:\n${detail}`,
+    );
+  }
+}
+
 /** The packaging script that builds `platform/web/generated`. */
 const GENERATED_PACKAGE_BUILD_SCRIPT = path.join(
   REPOSITORY_ROOT,
@@ -101,6 +164,7 @@ export default async function run_file_parsing_gates() {
   run_fixture_provenance_checks();
   run_style_layer_coverage_checks();
   run_reference_flow_checks();
+  run_walkthrough_contract_check();
   verifyPodViewMirror();
   // The npm tarball stages the same generated package; assert it can be
   // packed before any browser test trusts the published shape.

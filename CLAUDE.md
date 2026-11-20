@@ -15,9 +15,9 @@
 - Custom self-describing `RMOG` offline routing graph compiled from OpenStreetMap — not Valhalla.
 - WebAssembly is a first-class target, not a convenience build.
 - Provider genericity at every layer (next section).
-- **No provider credential in git or in any distributed build.** Credentials are entered at runtime; automation may inject one for the session only. The one recorded exception is the Appetize-hosted demo build (2026-10-30): it may carry a **dedicated, separately issued** key, injected on the build machine from a repository secret and read at startup through the same registration path as the settings surface. The key is never the fixture-recording key and never appears in a GitHub Release, an npm/Maven/SwiftPM package, a docs download, the repository, a fixture or a screenshot (`docs/Providers.md`, the hosted-demo exception).
+- **No provider credential in git or in any distributed build.** Credentials are entered at runtime; automation may inject one for the session only. There is no hosted-build exception: the former exception was retired on 2026-11-20 (`PRD.md` §6 item 79), so no build, hosted or distributed, carries a provider credential, and `CHANGELOG.md` records the change.
 - Tests never touch the network: imagery and provider payloads are committed fixtures, served same-origin by `platform/web/serve.mjs`.
-- The published package identities are fixed (`com.angoratek:rustic-maps-sdk`; SwiftPM `RusticMapsSDK` and `MapNativeCoreUI`; npm `@angoratek/rustic-maps-sdk` and `@angoratek/rustic-maps-sdk-web`; the generated `rustic_maps` namespace), and the Appetize build ids never change because uploads update in place.
+- The published package identities are fixed (`com.angoratek:rustic-maps-sdk`; SwiftPM `RusticMapsSDK` and `MapNativeCoreUI`; npm `@angoratek/rustic-maps-sdk` and `@angoratek/rustic-maps-sdk-web`; the generated `rustic_maps` namespace).
 
 **The three things that most often go wrong here:**
 
@@ -142,6 +142,6 @@ Generated bindings are gitignored build artifacts; after any UDL change, regener
 
 - `docs/ReferenceAppUX.md` is the design-language source of truth. The theme is a three-way Light / Dark / **Auto** choice with **Auto** the default, following the OS preference live and remembering an explicit choice on the device.
 - The shared artifacts are consumed by name, never copied as constants: `platform/reference-scenes.json`, `platform/providers.json`, `platform/reference-tokens.json`. Each is mirrored where a build needs it; `scripts/check_ux_parity.mjs` fails on token or error-text drift.
-- Credentials are entered at runtime through the settings surface. UI automation may inject one at launch (`providerApiKey` on Android/RN, `PROVIDER_API_KEY` on iOS/RN), never persisted by the injection and never logged. The hosted-demo build is the one bounded exception: the dedicated key is written to the gitignored Android asset, while iOS expands `$(HOSTED_DEMO_PROVIDER_API_KEY)` from the build setting.
+- Credentials are entered at runtime through the settings surface. UI automation may inject one at launch (`providerApiKey` on Android/RN, `PROVIDER_API_KEY` on iOS/RN), never persisted by the injection and never logged. Every build is keyless; the former hosted-build exception was retired on 2026-11-20 (`PRD.md` §6 item 79).
 - Standing test devices: Android Pixel_9 emulator and iOS iPhone 17 Pro simulator; evidence screenshots live under `tmp/refapp-*` (gitignored).
 - `simctl` has no touch injection, so launch-argument automation drives the same user-path methods.

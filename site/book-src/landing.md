@@ -12,7 +12,7 @@ raster or vector source connects through the URL-template providers.
 
 <p class="landing-cta">
 <a href="demo/">Open the live wasm demo</a>
-<a href="demo/mobile/">Run the apps on a hosted device</a>
+<a href="demo/walkthrough/">Watch the recorded walkthrough</a>
 <a href="first-map.html">Start building</a>
 <a href="downloads.html">Downloads</a>
 </p>

@@ -10,7 +10,7 @@
 - [Performance and profiling](performance.md)
 - [Live demo](live-demo.md)
 - [See provider requests in the demo](provider-console.md)
-- [Mobile demo](mobile-demo.md)
+- [Recorded walkthrough](walkthrough.md)
 
 ---
 

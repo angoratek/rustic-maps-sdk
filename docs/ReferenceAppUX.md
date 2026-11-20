@@ -564,13 +564,10 @@ coordinates, zoom, bearing or pitch — debounced to one message per burst. The 
 focus ring is drawn inside the viewport so it never clips, every button and input has an
 accessible name, the 2D/3D toggle exposes `aria-pressed`, and a visitor who requests
 reduced motion gets the camera eases applied immediately along with the stylesheet's
-transitions disabled. The hosted mobile-demo page follows the ARIA tabs pattern: a named
-tablist with a roving tabindex, Left/Right/Home/End moving selection, a tabpanel
-labelled by the selected tab, a session link whose accessible name says it opens a new
-tab and which takes focus when it replaces Start, and Stop returning focus to Start. The
-same control set and accessible names are the parity target for the native shells
-through their platform accessibility services (TalkBack, VoiceOver, RN accessibility
-props); keyboard is a web-only input, the semantics and wording are not.
+transitions disabled. The same control set and accessible names are the parity target
+for the native shells through their platform accessibility services (TalkBack,
+VoiceOver, RN accessibility props); keyboard is a web-only input, the semantics and
+wording are not.
 
 ### 5.5 Type-ahead in the plan fields
 
@@ -960,7 +957,6 @@ The Playwright suite locks the language:
 | Phone-width layout stays inside one scroll axis | default viewport + a 360px-width pass |
 | Keyboard map model: focus, pan/zoom/rotate/tilt/Home, spoken status | `#map-overlay[role=application]`, `#map-status`, `window.mapCameraState` |
 | Skip link and focus rings reach every control | `.skip-link`, `#controls[tabindex]`, computed `outline` |
-| Mobile-demo tablist follows the ARIA tabs pattern | `[role=tablist]`, `[role=tabpanel]`, roving `tabindex` |
 | Offline-maps card plans over the committed routing graph | `#offline-maps-controls`, `#offline-route-control`, `#offline-route-result` |
 | Camera presets ease every pose component to the artifact pose | `#camera-preset-controls [data-camera-preset-id]`, `window.mapCameraState` |
 | Navigation card and trip card carry the drawer's one ETA-distance line | `#navigation-eta-line`, `#navigation-eta-distance-value`, `#navigation-eta-duration-value`, `#trip-navigation-eta-line` |

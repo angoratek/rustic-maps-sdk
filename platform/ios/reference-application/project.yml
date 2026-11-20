@@ -80,12 +80,6 @@ targets:
         # `enablesBackgroundLocationUpdates: true` to `DeviceLocationSource`;
         # the source enables the capability only when all three hold.
         UIBackgroundModes: []
-        # The hosted demo's own credential (M24, owner ruling 2026-10-30):
-        # an empty value in every ordinary build, and resolved from the build
-        # setting the hosted-demo pipeline passes, so the key never enters
-        # this repository.
-        HostedDemoProviderAPIKey: $(HOSTED_DEMO_PROVIDER_API_KEY)
-        HostedDemoProviderKey: $(HOSTED_DEMO_PROVIDER_KEY)
   ReferenceApplicationTests:
     type: bundle.unit-test
     platform: iOS

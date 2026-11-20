@@ -1458,8 +1458,8 @@ class ReferenceApplicationState(
      * Opens the map on the registry's keyless base map when nothing else is
      * serving one.
      *
-     * A keyless run (the hosted demo, a first launch, any build without a
-     * credential) would otherwise draw an empty surface. The choice is
+     * A keyless run (a first launch, any build without a credential) would
+     * otherwise draw an empty surface. The choice is
      * registry-driven and provider-neutral: the first descriptor that declares
      * a credential-less raster template and is servable on this platform. A
      * credentialed or already-chosen base map always wins, so this never

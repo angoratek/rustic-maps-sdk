@@ -1,6 +1,5 @@
 package com.rusticmaps.sdk.referenceapplication
 
-import android.content.Context
 import android.content.res.AssetManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.rusticmaps.sdk.MapsSdkFacade
-import org.json.JSONObject
 import com.rusticmaps.sdk.demo.ProviderRegistryLoader
 import com.rusticmaps.sdk.demo.ReferenceSceneDemoPlan
 import com.rusticmaps.sdk.demo.ReferenceScenesLoader
@@ -198,23 +196,6 @@ private fun ReferenceApplicationRoot() {
                         runtimeCredential,
                     )
                 }
-            } else {
-                // The hosted demo's own credential (M24): a build made for the
-                // Appetize demo carries this file in its assets, generated on
-                // the build machine from a dedicated, separately issued key
-                // that never enters the repository. It takes the same runtime
-                // path as an automation injection — never persisted, never
-                // logged — and it is absent from every other build, so a
-                // distributed APK stays keyless.
-                hostedDemoCredentialFromAssets(applicationContext)?.let { hostedCredential ->
-                    val isApplied = applicationStateResult.applyRuntimeInjectedCredential(
-                        hostedCredential.first,
-                        hostedCredential.second,
-                    )
-                    if (isApplied) {
-                        applicationStateResult.selectBaseMap(hostedCredential.first)
-                    }
-                }
             }
             // Type-ahead's provider slot (docs/ReferenceAppUX.md §5.5): a
             // credentialed session already holds the provider its credential
@@ -237,10 +218,10 @@ private fun ReferenceApplicationRoot() {
                 ?.getStringExtra(ReferenceApplicationConstants.REFERENCE_FLOW_INTENT_EXTRA)
                 ?.takeIf { flowId -> flowId.isNotBlank() }
                 ?.let { flowId -> applicationStateResult.requestReferenceFlow(flowId) }
-            // The hosted demo's opening base map (M24): one provider key from
-            // the launch intent, resolved through the registry like any other
-            // selection. Used with a keyless source so the public build shows
-            // imagery without a credential.
+            // The opening base map: one provider key from the launch intent,
+            // resolved through the registry like any other selection. Used
+            // with a keyless source so the app shows imagery without a
+            // credential.
             val demoBaseMapProviderKey = runtimeIntent
                 ?.getStringExtra(ReferenceApplicationConstants.DEMO_BASE_MAP_INTENT_EXTRA)
             if (!demoBaseMapProviderKey.isNullOrBlank()) {
@@ -301,33 +282,6 @@ private fun ReferenceApplicationRoot() {
  * artifact's own navigation demo (the plan the demo starts on before any
  * pick).
  */
-/**
- * Reads the hosted demo's credential file from the build's assets, when it
- * carries one (M24, owner ruling 2026-10-30): a build made for the hosted
- * demo has `hosted-demo-credential.json` written into its assets on the build
- * machine from a dedicated, separately issued key. Returns null for every
- * other build, and for a malformed file — an injected credential that cannot
- * be read leaves the app keyless rather than failing.
- */
-private fun hostedDemoCredentialFromAssets(context: Context): Pair<String, String>? {
-    return try {
-        val credentialText = context.assets
-            .open(ReferenceApplicationConstants.HOSTED_DEMO_CREDENTIAL_ASSET)
-            .bufferedReader()
-            .use { reader -> reader.readText() }
-        val credentialJson = JSONObject(credentialText)
-        val providerKey = credentialJson
-            .optString(ReferenceApplicationConstants.HOSTED_DEMO_CREDENTIAL_PROVIDER_KEY_FIELD)
-            .takeIf { field -> field.isNotBlank() }
-        val credential = credentialJson
-            .optString(ReferenceApplicationConstants.HOSTED_DEMO_CREDENTIAL_API_KEY_FIELD)
-            .takeIf { field -> field.isNotBlank() }
-        if (providerKey != null && credential != null) providerKey to credential else null
-    } catch (missingOrMalformedCredential: Exception) {
-        null
-    }
-}
-
 private fun buildDemoPlan(
     assetManager: android.content.res.AssetManager,
     planDefinition: ReferenceSceneDemoPlan,

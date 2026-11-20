@@ -62,6 +62,12 @@ readonly OFFLINE_GRAPH_FIXTURE_PATH="${REPO_ROOT}/crates/rustic-maps-offline-gra
 # per declared plan.
 readonly REFERENCE_SCENES_ARTIFACT_PATH="${REPO_ROOT}/platform/reference-scenes.json"
 readonly LIVE_DEMO_MAXIMUM_BYTES=$((25 * 1024 * 1024))
+# The recorded walkthrough is built by this crate from its contract; the
+# published directory holds the player, its manifest and eighteen normalised
+# stills (about 19 MB today), with transition clips to follow.
+readonly WALKTHROUGH_CRATE_NAME="rustic-maps-walkthrough"
+readonly WALKTHROUGH_CONTRACT_RELATIVE_PATH="platform/reference-walkthrough.json"
+readonly WALKTHROUGH_MAXIMUM_BYTES=$((64 * 1024 * 1024))
 
 
 log_step() {
@@ -229,7 +235,7 @@ compose_book_sources() {
     # gate. The img/ directory accepts the screenshots a later slice
     # places into the tutorials.
     for authored_chapter in requirements.md performance.md live-demo.md \
-        mobile-demo.md how-it-works.md quickstart.md map-concepts.md first-map.md \
+        walkthrough.md how-it-works.md quickstart.md map-concepts.md first-map.md \
         search-and-routing.md navigation-simulation.md offline-maps.md positioning.md \
         map-layers-and-traffic.md vector-base.md versions-and-support.md faq.md downloads.md screenshots.md \
         rust.md api-reference.md udl-contract.md \
@@ -372,8 +378,11 @@ stage_reference_material() {
     if [ -n "${HOME:-}" ]; then
         readable_source_paths="${readable_source_paths} --remap-path-prefix=${HOME}=home"
     fi
+    # The walkthrough recorder is internal tooling: its sources name a local
+    # harness address and its player is published separately at
+    # /demo/walkthrough, so it stays out of the SDK's published rustdoc tree.
     RUSTDOCFLAGS="${RUSTDOCFLAGS:-} ${readable_source_paths}" \
-        cargo doc --workspace --lib --no-deps --quiet
+        cargo doc --workspace --exclude "$WALKTHROUGH_CRATE_NAME" --lib --no-deps --quiet
     rm -rf "${stage_root}/site/api"
     cp -R "${REPO_ROOT}/target/doc" "${stage_root}/site/api"
     rewrite_build_machine_paths "${stage_root}/site"
@@ -508,7 +517,6 @@ stage_live_demo() {
     stage_navigation_traces "${demo_directory}"
     verify_staged_demo_imports "${demo_directory}"
     stamp_provenance "${demo_directory}/provenance.txt" >/dev/null
-    stage_mobile_demo "${stage_root}"
 }
 
 # Fails when a staged browser module imports a file the staging did not copy.
@@ -539,25 +547,66 @@ verify_staged_demo_imports() {
     fi
 }
 
-# The hosted mobile demo (M24): the page that embeds the Appetize builds behind
-# a click-to-start gate, beside the public build manifest the upload tooling
-# writes. The Appetize API token is never staged — the page only ever holds a
-# public build id.
-stage_mobile_demo() {
+# The recorded walkthrough (`docs/Release.md` (The recorded walkthrough)): the
+# player, its embedded data and the normalised stills the contract names, built
+# by the walkthrough crate into /demo/walkthrough/. The crate validates the
+# contract before it writes anything, so an invalid contract fails the build.
+stage_walkthrough() {
     local stage_root="$1"
-    log_step "staging the hosted mobile demo at /demo/mobile"
-    local mobile_directory="${stage_root}/site/demo/mobile"
-    local mobile_source_directory="${WEB_HARNESS_DIRECTORY}/mobile-demo"
-    for mobile_input in index.html mobile-demo.mjs mobile-demo.css; do
-        [ -f "${mobile_source_directory}/${mobile_input}" ] \
-            || fail "the hosted mobile demo input platform/web/mobile-demo/${mobile_input} is missing"
+    local walkthrough_directory="${stage_root}/site/demo/walkthrough"
+    log_step "building the recorded walkthrough at /demo/walkthrough"
+    (cd "$REPO_ROOT" && cargo run --quiet -p "$WALKTHROUGH_CRATE_NAME" -- build \
+        --output "$walkthrough_directory" \
+        --contract "$WALKTHROUGH_CONTRACT_RELATIVE_PATH") \
+        || fail "the recorded walkthrough failed to build; the site would publish no player"
+    verify_staged_walkthrough "$walkthrough_directory"
+}
+
+# The walkthrough is a build artifact: the stylesheet and script must be
+# byte-equal to the crate's committed player, and every copied still byte-equal
+# to its normalised source. The document must carry the generated player data.
+# This is the walkthrough twin of the demo copy's byte-equality gate.
+verify_staged_walkthrough() {
+    local walkthrough_directory="$1"
+    local player_source_root="${REPO_ROOT}/crates/${WALKTHROUGH_CRATE_NAME}/player"
+    local asset_source_root="${REPO_ROOT}/crates/${WALKTHROUGH_CRATE_NAME}/assets/normalised"
+    local player_file
+    for player_file in index.html player.css player.js manifest.json; do
+        [ -s "${walkthrough_directory}/${player_file}" ] \
+            || fail "the staged walkthrough is missing ${player_file}"
     done
-    mkdir -p "${mobile_directory}"
-    cp "${mobile_source_directory}/index.html" \
-        "${mobile_source_directory}/mobile-demo.mjs" \
-        "${mobile_source_directory}/mobile-demo.css" \
-        "${mobile_directory}/"
-    cp "${REPO_ROOT}/platform/demo-builds.json" "${mobile_directory}/demo-builds.json"
+    cmp -s "${walkthrough_directory}/player.css" "${player_source_root}/player.css" \
+        || fail "the staged walkthrough's player.css drifted from the crate's player"
+    cmp -s "${walkthrough_directory}/player.js" "${player_source_root}/player.js" \
+        || fail "the staged walkthrough's player.js drifted from the crate's player"
+    grep -q '"platform_order"' "${walkthrough_directory}/index.html" \
+        || fail "the staged walkthrough's index.html carries no generated player data"
+    local staged_asset
+    local source_asset
+    while IFS= read -r staged_asset; do
+        source_asset="${asset_source_root}/$(basename "$staged_asset")"
+        [ -f "$source_asset" ] \
+            || fail "the staged walkthrough asset $(basename "$staged_asset") has no normalised source"
+        cmp -s "$staged_asset" "$source_asset" \
+            || fail "the staged walkthrough asset $(basename "$staged_asset") drifted from its normalised source"
+    done < <(find "${walkthrough_directory}/assets" -type f -name '*.png' | sort)
+    python3 -I - "$walkthrough_directory" "$WALKTHROUGH_MAXIMUM_BYTES" <<'WALKTHROUGH_SIZE_EOF'
+import sys
+from pathlib import Path
+
+walkthrough_directory = Path(sys.argv[1])
+maximum_bytes = int(sys.argv[2])
+total_bytes = sum(
+    file.stat().st_size for file in walkthrough_directory.rglob('*') if file.is_file()
+)
+print(f"recorded walkthrough size: {total_bytes} bytes (limit {maximum_bytes})")
+if total_bytes > maximum_bytes:
+    print(
+        f"the recorded walkthrough exceeds the publish size limit: {total_bytes} > {maximum_bytes}",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+WALKTHROUGH_SIZE_EOF
 }
 
 # The demo copy is a byte-for-byte copy of the harness inputs (an anti-drift
@@ -605,24 +654,19 @@ verify_staged_demo() {
     rm -f "$trace_listing"
     [ ! -e "${demo_directory}/golden" ] \
         || fail "the live demo must not ship the test-only /golden route"
-    # The hosted mobile demo is copied, never rewritten: the page a visitor
-    # loads is the page in the tree.
-    local mobile_file
-    for mobile_file in index.html mobile-demo.mjs mobile-demo.css; do
-        cmp -s "${demo_directory}/mobile/${mobile_file}" \
-            "${WEB_HARNESS_DIRECTORY}/mobile-demo/${mobile_file}" \
-            || fail "the staged mobile demo's ${mobile_file} drifted from platform/web/mobile-demo/${mobile_file}"
-    done
-    cmp -s "${demo_directory}/mobile/demo-builds.json" "${REPO_ROOT}/platform/demo-builds.json" \
-        || fail "the staged mobile demo's demo-builds.json drifted from platform/demo-builds.json"
+    # The recorded walkthrough shares /demo/ but has its own budget; the live
+    # demo's limit covers only the wasm harness copied beside it.
     python3 -I - "$demo_directory" "$LIVE_DEMO_MAXIMUM_BYTES" <<'DEMO_SIZE_EOF'
 import sys
 from pathlib import Path
 
 demo_directory = Path(sys.argv[1])
 maximum_bytes = int(sys.argv[2])
+walkthrough_directory = demo_directory / 'walkthrough'
 total_bytes = sum(
-    file.stat().st_size for file in demo_directory.rglob('*') if file.is_file()
+    file.stat().st_size
+    for file in demo_directory.rglob('*')
+    if file.is_file() and walkthrough_directory not in file.parents
 )
 print(f"live demo size: {total_bytes} bytes (limit {maximum_bytes})")
 if total_bytes > maximum_bytes:
@@ -815,7 +859,7 @@ internal_vocabulary_patterns = [
 hand_authored_chapter_pages = {
     "index.html", "requirements.html", "performance.html", "live-demo.html",
     "provider-console.html",
-    "mobile-demo.html", "how-it-works.html", "quickstart.html",
+    "walkthrough.html", "how-it-works.html", "quickstart.html",
     "map-concepts.html", "first-map.html", "search-and-routing.html",
     "navigation-simulation.html", "offline-maps.html",
     "map-layers-and-traffic.html",
@@ -1053,6 +1097,7 @@ main() {
     verify_summary_coverage "$STAGE_ROOT"
     stage_reference_material "$STAGE_ROOT"
     stage_live_demo "$STAGE_ROOT"
+    stage_walkthrough "$STAGE_ROOT"
     stage_release_downloads "$STAGE_ROOT"
     verify_staged_render_fidelity "$STAGE_ROOT"
     verify_staged_demo "$STAGE_ROOT"
