@@ -168,9 +168,7 @@ pub fn validate_manifest(
 /// # Errors
 /// Returns [`WalkthroughError::Git`] when Git runs but cannot start.
 pub fn current_source_commit(repository_root: &Path) -> Result<Option<String>, WalkthroughError> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(repository_root)
+    let output = git_command(repository_root)
         .args(["rev-parse", "--verify", "HEAD"])
         .output();
     match output {
@@ -187,6 +185,24 @@ pub fn current_source_commit(repository_root: &Path) -> Result<Option<String>, W
     }
 }
 
+/// Builds a `git` command rooted at `repository_root` with the repository
+/// location variables cleared.
+///
+/// Git exports `GIT_DIR` and `GIT_WORK_TREE` to the hooks it runs, and a
+/// command that inherited them would consult the hook's repository instead of
+/// the directory named by `-C`. Clearing them keeps every answer about the
+/// directory the caller asked about, whether or not a hook is running.
+fn git_command(repository_root: &Path) -> Command {
+    let mut command = Command::new("git");
+    command
+        .arg("-C")
+        .arg(repository_root)
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_WORK_TREE")
+        .env_remove("GIT_COMMON_DIR");
+    command
+}
+
 fn repository_is_available(repository_root: &Path) -> Result<bool, WalkthroughError> {
     run_git(repository_root, &["rev-parse", "--git-dir"])
 }
@@ -197,11 +213,7 @@ fn commit_is_reachable(repository_root: &Path, commit: &str) -> Result<bool, Wal
 }
 
 fn run_git(repository_root: &Path, arguments: &[&str]) -> Result<bool, WalkthroughError> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(repository_root)
-        .args(arguments)
-        .output();
+    let output = git_command(repository_root).args(arguments).output();
     match output {
         Ok(output) => Ok(output.status.success()),
         Err(source) if source.kind() == std::io::ErrorKind::NotFound => Ok(false),
