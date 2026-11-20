@@ -5,6 +5,11 @@ name: rn-app-shell
 # itself, the generated binding package it consumes, or the frozen UDL it
 # mirrors. Native builds stay with scripts/build-rn.sh and the platform
 # workflows; this job keeps the JS seam honest on every PR.
+#
+# The `rn-binding-drift` job regenerates the binding package into a temporary
+# directory and compares it byte-for-byte with the generated tree. The paths
+# below already carry every generation input — the frozen UDL, the generation
+# script and the package manifests — so a change to any of them runs it.
 
 on:
   workflow_dispatch:
@@ -69,6 +74,12 @@ jobs:
         # suite and the typecheck resolve the package from them.
         run: ./scripts/generate-rn-bindings.sh
 
+      - name: Check the generated bindings for drift
+        # Regenerates into a temporary directory and compares every generated
+        # file with the tree the step above produced; a mismatch fails here
+        # rather than surfacing as an unexplained compile error.
+        run: ./scripts/generate-rn-bindings.sh --check
+
       - name: Jest (screen + speech consumer)
         run: npx jest --ci
         working-directory: platform/rn/app-shell
@@ -76,3 +87,33 @@ jobs:
       - name: Strict TypeScript
         run: npx tsc --noEmit
         working-directory: platform/rn/app-shell
+
+  rn-binding-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/rn/package-lock.json
+
+      - name: Install the binding package's dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: platform/rn
+
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      - name: Generate the binding package's sources
+        # The check needs a baseline generated tree to compare against.
+        run: ./scripts/generate-rn-bindings.sh
+
+      - name: Fail on generated binding drift
+        # Runs on every change to the frozen UDL, this generation script or
+        # the package manifests, so a generator or contract change that does
+        # not reproduce the generated tree fails the pull request.
+        run: ./scripts/generate-rn-bindings.sh --check
