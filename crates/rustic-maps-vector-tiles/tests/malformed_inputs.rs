@@ -5,8 +5,8 @@
 //!
 //! Three surfaces, all network-free:
 //! 1. arbitrary byte strings (proptest);
-//! 2. deterministic seeded mutations of the committed Sourdough tile
-//!    (bounded set of byte flips, truncations, byte-count inflations);
+//! 2. deterministic seeded mutations of the committed synthetic Sourdough
+//!    tile (bounded set of byte flips, truncations, byte-count inflations);
 //! 3. deterministic seeded mutations of a decoded reference tile built by
 //!    the test-suite encoder (structure-targeted corruptions: tag
 //!    indices, dictionary truncations, geometry command streams).
@@ -96,8 +96,8 @@ fn mutate_buffer_deterministically(base_bytes: &[u8], seed: u64) -> Vec<u8> {
 
 #[test]
 fn bounded_seeded_mutations_of_the_sourdough_fixture_never_panic() {
-    // A bounded, deterministic sweep: 1024 seeds over the committed real
-    // tile — each must end in Ok or Err, never a panic.
+    // A bounded, deterministic sweep: 1024 seeds over the committed
+    // synthetic tile — each must end in Ok or Err, never a panic.
     for seed in 0..1024u64 {
         let mutated = mutate_buffer_deterministically(SOURDOUGH_TILE_BYTES, seed);
         if mutated.is_empty() {

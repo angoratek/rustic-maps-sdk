@@ -79,42 +79,7 @@ const PROVIDER_STYLE_DOCUMENT_PATHS = [
  * by any committed style artifact. Each entry carries the decision's reason;
  * `run_style_layer_coverage_checks` fails when an entry stops being a gap.
  */
-const INTENTIONALLY_UNPAINTED_SOURCE_LAYERS = new Map([
-  [
-    'aeroways',
-    {
-      reason:
-        'The committed Carto-schema styles draw no aeroway geometry: runways and '
-        + 'taxiways describe an aerodrome rather than a label anchor, and the style '
-        + 'set carries no airport symbol layer.',
-    },
-  ],
-  [
-    'amenities',
-    {
-      reason:
-        'The Carto-schema style set has no amenity point-of-interest layer; point '
-        + 'labels are covered by the OpenMapTiles-schema styles and the committed '
-        + 'POI label fixture.',
-    },
-  ],
-  [
-    'military',
-    {
-      reason:
-        'Military land is outside the committed style cartography; no transcribed '
-        + 'upstream layer paints or labels it.',
-    },
-  ],
-  [
-    'power',
-    {
-      reason:
-        'Power lines and plants are infrastructure rather than map labels; the '
-        + 'committed style set paints no power geometry.',
-    },
-  ],
-]);
+const INTENTIONALLY_UNPAINTED_SOURCE_LAYERS = new Map([]);
 
 // --- Protobuf wire reader ---------------------------------------------------
 
