@@ -2,7 +2,8 @@
  * Jest-level unit tests of the reference application's provider-credential
  * decisions (docs/Providers.md (Credentials through the coverage matrix)):
  * descriptor validation, the apply/remember state machine, the explicit
- * apply plan, and the clear semantics — pure decisions, no native side.
+ * apply plan, the row's consumer-language status line, and the clear
+ * semantics — pure decisions, no native side.
  */
 
 import {
@@ -13,11 +14,14 @@ import {
   isProviderCredentialRegistrationAvailable,
   planProviderCredentialApply,
   providerCredentialReducer,
+  providerCredentialStatusText,
   usableProviderCredentialDescriptors,
   type ProviderCredentialAction,
+  type ProviderCredentialRowState,
   type ProviderCredentialsState,
 } from '../src/providerCredentials';
 import type { ProviderCredentialDescriptor } from '../src/providerRegistry';
+import { appStrings } from '../src/theme';
 
 const mapquestDescriptor: ProviderCredentialDescriptor = {
   provider_key: 'mapquest',
@@ -248,4 +252,57 @@ test('an unknown provider key leaves the state untouched', () => {
     providerKey: 'missing-provider',
   });
   expect(unchanged).toBe(initial);
+});
+
+test('the status line names the provider and the keyless, applied and refused states', () => {
+  const initial = createInitialProviderCredentialsState([mapquestDescriptor]);
+  const keylessRow = initial.rows.mapquest;
+  expect(providerCredentialStatusText('MapQuest', keylessRow)).toBe(
+    appStrings.providerCredentialKeylessStatusText.replace(
+      '{provider}',
+      'MapQuest',
+    ),
+  );
+
+  const rememberedRow: ProviderCredentialRowState = {
+    ...keylessRow,
+    statusKind: 'applied',
+    isRememberEnabled: true,
+  };
+  expect(providerCredentialStatusText('MapQuest', rememberedRow)).toBe(
+    'MapQuest key applied' +
+      appStrings.providerCredentialRememberedSuffixText,
+  );
+
+  const sessionOnlyRow: ProviderCredentialRowState = {
+    ...rememberedRow,
+    isRememberEnabled: false,
+  };
+  expect(providerCredentialStatusText('MapQuest', sessionOnlyRow)).toBe(
+    'MapQuest key applied' + appStrings.providerCredentialSessionOnlySuffixText,
+  );
+
+  const refusedRow: ProviderCredentialRowState = {
+    ...keylessRow,
+    statusKind: 'refused',
+    refusalDetailText: 'the provider refused the key',
+  };
+  expect(providerCredentialStatusText('MapQuest', refusedRow)).toBe(
+    appStrings.providerCredentialRefusedLeadInText +
+      'the provider refused the key',
+  );
+});
+
+test('the status line appends an honest secure-store failure to an applied key', () => {
+  const appliedRow: ProviderCredentialRowState = {
+    ...createInitialProviderCredentialsState([mapquestDescriptor]).rows.mapquest,
+    statusKind: 'applied',
+    isRememberEnabled: true,
+    storageFailureText: 'the secure store is unavailable',
+  };
+  expect(providerCredentialStatusText('MapQuest', appliedRow)).toBe(
+    'MapQuest key applied' +
+      appStrings.providerCredentialStorageFailureLeadInText +
+      'the secure store is unavailable',
+  );
 });

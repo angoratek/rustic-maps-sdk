@@ -19,6 +19,7 @@ import { ProviderContract } from 'maps-sdk-rn/src/generated/rustic_maps.ts';
 import type { ProviderRegistration } from 'maps-sdk-rn/MapsSdk';
 
 import type { ProviderCredentialDescriptor } from './providerRegistry';
+import { verbatimErrorText } from './sdkErrorText';
 import { appStrings } from './theme';
 
 /** One provider a capability row may select. */
@@ -289,7 +290,7 @@ export async function applyCapabilityProviderSelection(options: {
   } catch (selectionError) {
     return {
       isApplied: false,
-      detailText: failureText(selectionError),
+      detailText: verbatimErrorText(selectionError),
       nextStepText: choice.requiresCredential
         ? ''
         : appStrings.settingsRoutingUnreachableNextStepText,
@@ -301,11 +302,6 @@ export async function applyCapabilityProviderSelection(options: {
 /** The contract's enum name (`Routing`, `DistanceMatrix`). */
 function contractEnumName(contract: ProviderContract): string {
   return ProviderContract[contract] ?? '';
-}
-
-/** The verbatim text of a thrown selection error. */
-function failureText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 /** One row from the SDK's registration and the shared registry. */
