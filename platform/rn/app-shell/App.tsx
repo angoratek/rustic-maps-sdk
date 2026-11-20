@@ -141,6 +141,7 @@ import {
   isProviderCredentialRegistrationAvailable,
   planProviderCredentialApply,
   providerCredentialReducer,
+  providerCredentialStatusText,
   usableProviderCredentialDescriptors,
   type ProviderCredentialRowState,
 } from './src/providerCredentials';
@@ -159,11 +160,18 @@ import {
 import {
   applyCapabilityProviderSelection,
   buildCapabilityProviderRows,
-  capabilityContractForRegistryName,
   capabilityRegistryName,
   capabilityServingStatusText,
   type CapabilityProviderRow,
 } from './src/capabilityProviderState';
+import {
+  capabilityUnavailableText,
+  isProviderNotConfiguredFailure,
+  verbatimErrorText,
+} from './src/sdkErrorText';
+import {
+  registerProviderCredential as registerProviderCredentialInSdk,
+} from './src/providerRegistration';
 import {
   selectAutocompleteProvider,
   usePlanAutocomplete,
@@ -379,81 +387,6 @@ const initialPlaybackState: PlaybackStateEvent = {
  */
 const credentialDescriptors: ProviderCredentialDescriptor[] =
   usableProviderCredentialDescriptors(providerDescriptors);
-
-/** A thrown error's own text, without an `Error:` prefix (the SDK's verbatim words). */
-function verbatimErrorText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-/**
- * Whether a thrown error is the contract's missing-provider variant. The
- * generated binding's message carries the variant name, so the traffic layer
- * can turn its switch off with the capability's own reason.
- */
-function isProviderNotConfiguredFailure(error: unknown): boolean {
-  return /ProviderNotConfigured/.test(verbatimErrorText(error));
-}
-
-/**
- * The consumer sentence for a capability read that failed because no
- * provider serves it. The generated binding's message names the contract
- * (`ProviderNotConfigured(contractName=RoutingProvider)`); every surface
- * renders the shared `no '{provider}' provider is configured` sentence
- * instead of the binding's representation.
- */
-function capabilityUnavailableText(error: unknown): string {
-  const message = verbatimErrorText(error);
-  // The binding's message for this variant can be either the full
-  // `ProviderNotConfigured(contractName=…)` representation or just the
-  // `contractName=…` field list, so the field is the stable signal.
-  const contractName = /contractName=([^,)]+)/.exec(message)?.[1]?.trim();
-  if (contractName === undefined) {
-    return message;
-  }
-  return appStrings.providerNotConfiguredDetailTemplateText.replace(
-    '{provider}',
-    contractName,
-  );
-}
-
-/**
- * The row's consumer-language status line (never echoes the credential). The
- * canonical status templates carry a `{provider}` slot, filled with the
- * registry descriptor's display name here at the call site (§2.5).
- */
-function providerCredentialStatusText(
-  providerDisplayName: string,
-  rowState: ProviderCredentialRowState,
-): string {
-  if (rowState.statusKind === 'refused') {
-    return (
-      appStrings.providerCredentialRefusedLeadInText + rowState.refusalDetailText
-    );
-  }
-  if (rowState.statusKind === 'applied') {
-    const appliedStatusText = appStrings.providerCredentialAppliedStatusText.replace(
-      '{provider}',
-      providerDisplayName,
-    );
-    if (rowState.storageFailureText !== '') {
-      return (
-        appliedStatusText +
-        appStrings.providerCredentialStorageFailureLeadInText +
-        rowState.storageFailureText
-      );
-    }
-    return (
-      appliedStatusText +
-      (rowState.isRememberEnabled
-        ? appStrings.providerCredentialRememberedSuffixText
-        : appStrings.providerCredentialSessionOnlySuffixText)
-    );
-  }
-  return appStrings.providerCredentialKeylessStatusText.replace(
-    '{provider}',
-    providerDisplayName,
-  );
-}
 
 export default function App(): React.JSX.Element {
   return (
@@ -1047,59 +980,20 @@ function ReferenceAppScreen(): React.JSX.Element {
   }, [isSdkCreated, contentMode, capabilityProviderRows]);
 
   /**
-   * Registers one provider credential. A provider that declares a raster-tile
-   * caching ceiling installs its raster slot through the disk cache; every
-   * other provider registers one capability per call through the catalog, so
-   * the row's own key and served contracts decide what is installed.
+   * Registers one provider credential through the shared registration path,
+   * passing the native module and the running SDK handle it holds.
    */
   const registerProviderCredential = useCallback(
     async (
       descriptor: ProviderCredentialDescriptor,
       credential: string,
-    ): Promise<{ isApplied: boolean; detailText: string }> => {
-      if (descriptor.raster_tile_cache_ceiling_days !== undefined) {
-        if (refappMapModule === null) {
-          return {
-            isApplied: false,
-            detailText: 'the native module is unavailable',
-          };
-        }
-        return refappMapModule.setProviderCredential(
-          descriptor.provider_key,
-          credential,
-        );
-      }
-      const sdk = sdkInstanceRef.current;
-      if (sdk === null) {
-        return { isApplied: false, detailText: 'the SDK is not running' };
-      }
-      const servedContracts = (descriptor.served_contracts ?? [])
-        .map((registryName) =>
-          capabilityContractForRegistryName(registryName),
-        )
-        .filter(
-          (contract): contract is ProviderContract => contract !== null,
-        );
-      if (servedContracts.length === 0) {
-        return {
-          isApplied: false,
-          detailText:
-            `${descriptor.display_name} declares no capability this build can register.`,
-        };
-      }
-      try {
-        for (const contract of servedContracts) {
-          await sdk.configureProvider(
-            contract,
-            descriptor.provider_key,
-            credential,
-          );
-        }
-        return { isApplied: true, detailText: '' };
-      } catch (applyError) {
-        return { isApplied: false, detailText: String(applyError) };
-      }
-    },
+    ): Promise<{ isApplied: boolean; detailText: string }> =>
+      registerProviderCredentialInSdk({
+        descriptor,
+        credential,
+        nativeModule: refappMapModule,
+        sdk: sdkInstanceRef.current,
+      }),
     [],
   );
 

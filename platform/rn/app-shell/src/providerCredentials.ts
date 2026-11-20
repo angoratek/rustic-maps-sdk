@@ -1,11 +1,11 @@
 /**
  * The pure decisions of the reference application's provider-credential
  * settings surface (docs/Providers.md (Credentials through the coverage matrix)):
- * descriptor validation, the per-provider apply/remember state machine, and
- * the clear semantics. The React screen owns the effectful half (the bridge
- * call, the secure store and the event channel); this module stays free of
- * React and native imports so jest can pin every decision without a native
- * side.
+ * descriptor validation, the per-provider apply/remember state machine, the
+ * clear semantics and the row's consumer-language status line. The React
+ * screen owns the effectful half (the bridge call, the secure store and the
+ * event channel); this module stays free of React and native imports so jest
+ * can pin every decision without a native side.
  *
  * Security rules encoded here: a credential is only ever persisted when the
  * "Remember on this device" toggle is on (the default is off), and clearing a
@@ -13,6 +13,7 @@
  */
 
 import type { ProviderCredentialDescriptor } from './providerRegistry';
+import { appStrings } from './theme';
 
 /** The row's status: keyless (the honest first-class state), applied, refused. */
 export type ProviderCredentialStatusKind = 'keyless' | 'applied' | 'refused';
@@ -199,4 +200,48 @@ export function planProviderCredentialApply(
     return null;
   }
   return { credential, shouldPersist: row.isRememberEnabled };
+}
+
+/**
+ * The row's consumer-language status line (never echoes the credential). The
+ * canonical status templates carry a `{provider}` slot, filled with the
+ * registry descriptor's display name here at the call site (§2.5).
+ *
+ * A refused row leads in with the verbatim refusal detail; an applied row
+ * says whether the key was remembered or is session-only, and appends an
+ * honest secure-store failure when persistence did not work; a keyless row
+ * states the not-applied status.
+ */
+export function providerCredentialStatusText(
+  providerDisplayName: string,
+  rowState: ProviderCredentialRowState,
+): string {
+  if (rowState.statusKind === 'refused') {
+    return (
+      appStrings.providerCredentialRefusedLeadInText + rowState.refusalDetailText
+    );
+  }
+  if (rowState.statusKind === 'applied') {
+    const appliedStatusText = appStrings.providerCredentialAppliedStatusText.replace(
+      '{provider}',
+      providerDisplayName,
+    );
+    if (rowState.storageFailureText !== '') {
+      return (
+        appliedStatusText +
+        appStrings.providerCredentialStorageFailureLeadInText +
+        rowState.storageFailureText
+      );
+    }
+    return (
+      appliedStatusText +
+      (rowState.isRememberEnabled
+        ? appStrings.providerCredentialRememberedSuffixText
+        : appStrings.providerCredentialSessionOnlySuffixText)
+    );
+  }
+  return appStrings.providerCredentialKeylessStatusText.replace(
+    '{provider}',
+    providerDisplayName,
+  );
 }
