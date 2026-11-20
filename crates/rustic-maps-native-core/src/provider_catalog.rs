@@ -26,6 +26,7 @@ use rustic_maps_core::everymap_bridge::{
     EveryMapVectorTileProvider,
 };
 use rustic_maps_core::provider_observation::EveryMapRequestObserver;
+use rustic_maps_providers::{Contract, PROVIDER_ENTRIES, ProviderEntry};
 use std::sync::Arc;
 
 /// The MapQuest terms' imagery-caching ceiling: raster-tile responses may be
@@ -63,113 +64,184 @@ pub(crate) struct ProviderCatalogEntry {
     pub(crate) raster_tile_maximum_zoom_level: Option<u8>,
 }
 
+/// Compares two provider keys in a constant context, where `==` on strings is
+/// not available.
+const fn provider_keys_equal(left: &str, right: &str) -> bool {
+    let left = left.as_bytes();
+    let right = right.as_bytes();
+    if left.len() != right.len() {
+        return false;
+    }
+    let mut index = 0;
+    while index < left.len() {
+        if left[index] != right[index] {
+            return false;
+        }
+        index += 1;
+    }
+    true
+}
+
+/// The shared table's row for a provider key.
+///
+/// Every provider-facing string and flag the native catalog carries is read
+/// from this row, so one declaration in `PROVIDER_ENTRIES` describes a
+/// provider on every target. The lookup runs at compile time; a key with no
+/// shared row fails the build rather than advertising a provider this build
+/// cannot describe.
+const fn shared_provider_entry(provider_key: &str) -> &'static ProviderEntry {
+    let mut index = 0;
+    while index < PROVIDER_ENTRIES.len() {
+        let entry = &PROVIDER_ENTRIES[index];
+        if provider_keys_equal(entry.provider_key, provider_key) {
+            return entry;
+        }
+        index += 1;
+    }
+    panic!("the provider catalog names a key the shared provider table does not declare")
+}
+
+/// The native mirror of one shared capability contract.
+const fn native_contract(contract: Contract) -> ProviderContract {
+    match contract {
+        Contract::Geocoding => ProviderContract::Geocoding,
+        Contract::Routing => ProviderContract::Routing,
+        Contract::DistanceMatrix => ProviderContract::DistanceMatrix,
+        Contract::PlaceSearch => ProviderContract::PlaceSearch,
+        Contract::TrafficIncidents => ProviderContract::TrafficIncidents,
+        Contract::TrafficFlow => ProviderContract::TrafficFlow,
+        Contract::RasterTiles => ProviderContract::RasterTiles,
+        Contract::VectorTiles => ProviderContract::VectorTiles,
+    }
+}
+
+/// Maps a shared row's served-contract list to the native contract mirror.
+///
+/// The array length is the shared list's own length, supplied as the constant
+/// generic argument, so the catalog never restates how many capabilities a
+/// provider serves. The assertion turns a supplied length that disagrees with
+/// the shared row into a compile-time failure.
+const fn native_contracts<const CONTRACT_COUNT: usize>(
+    shared_contracts: &[Contract],
+) -> [ProviderContract; CONTRACT_COUNT] {
+    assert!(
+        shared_contracts.len() == CONTRACT_COUNT,
+        "the native contract list matches the shared row's length"
+    );
+    let mut contracts = [ProviderContract::Geocoding; CONTRACT_COUNT];
+    let mut index = 0;
+    while index < shared_contracts.len() {
+        contracts[index] = native_contract(shared_contracts[index]);
+        index += 1;
+    }
+    contracts
+}
+
 /// Every provider this build can construct.
 ///
-/// The order is the order a settings surface lists keys in when it offers a
+/// Each row reads its key, display name, credential requirement and served
+/// contracts from [`PROVIDER_ENTRIES`] at compile time; only the native
+/// construction dispatch and the raster-tile caching terms, which the shared
+/// table does not carry, are stated here. The rows follow the shared table's
+/// order, which is the order a settings surface lists keys in when it offers a
 /// choice: the full-service provider first, then the single-capability
 /// providers.
 pub(crate) const PROVIDER_CATALOG: &[ProviderCatalogEntry] = &[
     ProviderCatalogEntry {
-        provider_key: "mapquest",
-        display_name: "MapQuest",
-        credential_required: true,
-        served_contracts: &[
-            ProviderContract::Geocoding,
-            ProviderContract::Routing,
-            ProviderContract::DistanceMatrix,
-            ProviderContract::PlaceSearch,
-            ProviderContract::TrafficIncidents,
-            ProviderContract::TrafficFlow,
-            ProviderContract::RasterTiles,
-        ],
+        provider_key: shared_provider_entry("mapquest").provider_key,
+        display_name: shared_provider_entry("mapquest").display_name,
+        credential_required: shared_provider_entry("mapquest").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("mapquest").served_contracts.len() },
+        >(shared_provider_entry("mapquest").served_contracts),
         install: install_mapquest_contract,
         raster_tile_cache_ceiling_seconds: Some(MAPQUEST_RASTER_TILE_CACHE_CEILING_SECONDS),
         raster_tile_maximum_zoom_level: Some(MAPQUEST_RASTER_TILE_MAXIMUM_ZOOM_LEVEL),
     },
     ProviderCatalogEntry {
-        provider_key: "here",
-        display_name: "HERE",
-        credential_required: true,
-        served_contracts: &[
-            ProviderContract::Geocoding,
-            ProviderContract::Routing,
-            ProviderContract::TrafficIncidents,
-            ProviderContract::TrafficFlow,
-            ProviderContract::VectorTiles,
-        ],
+        provider_key: shared_provider_entry("here").provider_key,
+        display_name: shared_provider_entry("here").display_name,
+        credential_required: shared_provider_entry("here").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("here").served_contracts.len() },
+        >(shared_provider_entry("here").served_contracts),
         install: install_here_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
     },
     ProviderCatalogEntry {
-        provider_key: "google",
-        display_name: "Google Maps",
-        credential_required: true,
-        served_contracts: &[ProviderContract::Geocoding, ProviderContract::Routing],
+        provider_key: shared_provider_entry("google").provider_key,
+        display_name: shared_provider_entry("google").display_name,
+        credential_required: shared_provider_entry("google").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("google").served_contracts.len() },
+        >(shared_provider_entry("google").served_contracts),
         install: install_google_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
     },
     ProviderCatalogEntry {
-        provider_key: "tomtom",
-        display_name: "TomTom",
-        credential_required: true,
-        served_contracts: &[
-            ProviderContract::Geocoding,
-            ProviderContract::Routing,
-            ProviderContract::TrafficIncidents,
-            ProviderContract::TrafficFlow,
-            ProviderContract::RasterTiles,
-        ],
+        provider_key: shared_provider_entry("tomtom").provider_key,
+        display_name: shared_provider_entry("tomtom").display_name,
+        credential_required: shared_provider_entry("tomtom").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("tomtom").served_contracts.len() },
+        >(shared_provider_entry("tomtom").served_contracts),
         install: install_tomtom_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
     },
     ProviderCatalogEntry {
-        provider_key: "mapbox",
-        display_name: "Mapbox",
-        credential_required: true,
-        served_contracts: &[
-            ProviderContract::Geocoding,
-            ProviderContract::Routing,
-            ProviderContract::VectorTiles,
-        ],
+        provider_key: shared_provider_entry("mapbox").provider_key,
+        display_name: shared_provider_entry("mapbox").display_name,
+        credential_required: shared_provider_entry("mapbox").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("mapbox").served_contracts.len() },
+        >(shared_provider_entry("mapbox").served_contracts),
         install: install_mapbox_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
     },
     ProviderCatalogEntry {
-        provider_key: "radar",
-        display_name: "Radar",
-        credential_required: true,
-        served_contracts: &[ProviderContract::Geocoding, ProviderContract::Routing],
+        provider_key: shared_provider_entry("radar").provider_key,
+        display_name: shared_provider_entry("radar").display_name,
+        credential_required: shared_provider_entry("radar").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("radar").served_contracts.len() },
+        >(shared_provider_entry("radar").served_contracts),
         install: install_radar_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
     },
     ProviderCatalogEntry {
-        provider_key: "osrm",
-        display_name: "OSRM",
-        credential_required: false,
-        served_contracts: &[ProviderContract::Routing],
+        provider_key: shared_provider_entry("osrm").provider_key,
+        display_name: shared_provider_entry("osrm").display_name,
+        credential_required: shared_provider_entry("osrm").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("osrm").served_contracts.len() },
+        >(shared_provider_entry("osrm").served_contracts),
         install: install_osrm_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
     },
     ProviderCatalogEntry {
-        provider_key: "photon",
-        display_name: "Photon",
-        credential_required: false,
-        served_contracts: &[ProviderContract::Geocoding, ProviderContract::PlaceSearch],
+        provider_key: shared_provider_entry("photon").provider_key,
+        display_name: shared_provider_entry("photon").display_name,
+        credential_required: shared_provider_entry("photon").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("photon").served_contracts.len() },
+        >(shared_provider_entry("photon").served_contracts),
         install: install_photon_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
     },
     ProviderCatalogEntry {
-        provider_key: "valhalla",
-        display_name: "Valhalla",
-        credential_required: false,
-        served_contracts: &[ProviderContract::Routing],
+        provider_key: shared_provider_entry("valhalla").provider_key,
+        display_name: shared_provider_entry("valhalla").display_name,
+        credential_required: shared_provider_entry("valhalla").credential_required,
+        served_contracts: &native_contracts::<
+            { shared_provider_entry("valhalla").served_contracts.len() },
+        >(shared_provider_entry("valhalla").served_contracts),
         install: install_valhalla_contract,
         raster_tile_cache_ceiling_seconds: None,
         raster_tile_maximum_zoom_level: None,
@@ -270,7 +342,6 @@ fn install_osrm_contract(
     Ok(())
 }
 
-/// Registers the OSRM routing implementation for every capability it serves.
 /// Registers the Photon geocoding and place-search implementations for one
 /// capability each.
 ///
@@ -329,7 +400,6 @@ fn install_photon_contract(
     Ok(())
 }
 
-/// Registers the Photon implementations for every capability it serves.
 /// Registers the Valhalla routing implementation for its one capability.
 ///
 /// The credential, when non-empty, is the deployment's base URL; an empty one
@@ -362,8 +432,6 @@ fn install_valhalla_contract(
     Ok(())
 }
 
-/// Registers the Valhalla routing implementation for every capability it
-/// serves.
 /// Finds the catalog entry for a provider key.
 pub(crate) fn catalog_entry_for_key(provider_key: &str) -> Option<&'static ProviderCatalogEntry> {
     PROVIDER_CATALOG
@@ -387,8 +455,6 @@ fn install_mapquest_contract(
     )
 }
 
-/// Registers every capability the provider set serves from one shared client,
-/// so the set keeps one rate limiter and one request pipeline.
 /// Builds the provider set's client for one credential and one capability.
 ///
 /// Each capability gets its own client so its request observations carry the
@@ -745,6 +811,39 @@ mod tests {
                 catalog_entry_for_key(shared.provider_key).is_some(),
                 "{} is not catalogued by this build",
                 shared.provider_key
+            );
+        }
+    }
+
+    #[test]
+    fn the_catalog_derives_every_row_from_the_shared_provider_table() {
+        let shared_entries = rustic_maps_providers::PROVIDER_ENTRIES;
+        assert_eq!(
+            PROVIDER_CATALOG.len(),
+            shared_entries.len(),
+            "the catalog declares one row per shared provider entry"
+        );
+        for (catalog_entry, shared_entry) in PROVIDER_CATALOG.iter().zip(shared_entries) {
+            assert_eq!(catalog_entry.provider_key, shared_entry.provider_key);
+            assert_eq!(catalog_entry.display_name, shared_entry.display_name);
+            assert_eq!(
+                catalog_entry.credential_required,
+                shared_entry.credential_required
+            );
+            let catalog_contracts: Vec<&str> = catalog_entry
+                .served_contracts
+                .iter()
+                .map(|contract| contract.registry_name())
+                .collect();
+            let shared_contracts: Vec<&str> = shared_entry
+                .served_contracts
+                .iter()
+                .map(|contract| contract.registry_name())
+                .collect();
+            assert_eq!(
+                catalog_contracts, shared_contracts,
+                "{} derives exactly the shared row's served contracts",
+                catalog_entry.provider_key
             );
         }
     }
