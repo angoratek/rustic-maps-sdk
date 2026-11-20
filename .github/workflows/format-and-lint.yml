@@ -35,6 +35,7 @@ on:
       - "platform/rn/app-shell/src/sheetLayout.ts"
       - "platform/web/index.html"
       - "platform/web/map_controls.mjs"
+      - "platform/web/playground*.mjs"
       - ".github/workflows/format-and-lint.yml"
   pull_request:
     paths:
@@ -69,6 +70,7 @@ on:
       - "platform/rn/app-shell/src/sheetLayout.ts"
       - "platform/web/index.html"
       - "platform/web/map_controls.mjs"
+      - "platform/web/playground*.mjs"
       - ".github/workflows/format-and-lint.yml"
 
 concurrency:

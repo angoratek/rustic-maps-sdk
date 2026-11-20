@@ -32,8 +32,9 @@
 // canonical module (M28 slice 5 fixed that blind spot): every
 // `data-ui-label` / `data-ui-label-aria` element in index.html contributes its
 // rendered text or named attribute, and every `ui_label_text('<id>')` /
-// `ui_label_text_with_values('<id>', …)` call in playground.mjs contributes
-// its dynamic label. What is still not covered: the gate does not execute the
+// `ui_label_text_with_values('<id>', …)` call in the playground controller's
+// entry and concern modules contributes its dynamic label. What is still not
+// covered: the gate does not execute the
 // page, so placeholder substitution (a provider name, a readiness detail) and
 // the wording of strings that are neither marked nor read from the module
 // (the v1 developer-panel vocabulary below) are not evaluated here. The
@@ -47,7 +48,8 @@
 //   - React Native stores the CSS strings verbatim (`'rgba(…)'`, `'#rrggbb'`);
 //   - the web playground stores the CSS custom properties verbatim in
 //     `platform/web/styles/playground.css`, and the §2.2 canvas mirror
-//     constants as literal JavaScript in `platform/web/playground.mjs`.
+//     constants as literal JavaScript in the playground controller's entry
+//     and concern modules under `platform/web/`.
 //
 // Run directly:
 //   node scripts/check_ux_parity.mjs
@@ -55,7 +57,9 @@
 // drift class, so it cannot pass vacuously):
 //   node scripts/check_ux_parity.mjs --self-test
 
-import { mkdtempSync, mkdirSync, copyFileSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync, mkdirSync, copyFileSync, readFileSync, readdirSync, rmSync, writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,6 +68,20 @@ import { scrubPublicCommentSources } from './check-public-comment-scrub.mjs';
 // --- File locations ---------------------------------------------------------
 
 const ARTIFACT_PATH = 'platform/reference-tokens.json';
+const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * The browser playground controller's entry and concern modules. The adapters
+ * read them as one text so a constant or a dynamic label stays covered after
+ * the controller is split by concern.
+ */
+const WEB_CONTROLLER_FILES = [
+  'platform/web/playground.mjs',
+  ...readdirSync(path.join(SOURCE_ROOT, 'platform', 'web'))
+    .filter((file_name) => /^playground_.*\.mjs$/.test(file_name))
+    .sort()
+    .map((file_name) => `platform/web/${file_name}`),
+];
 
 /** Every file the mirror adapters read, relative to the repository root. */
 const MIRROR_FILES = {
@@ -83,7 +101,7 @@ const MIRROR_FILES = {
   rnSheetLayout: 'platform/rn/app-shell/src/sheetLayout.ts',
   webPage: 'platform/web/styles/playground.css',
   webMapControls: 'platform/web/map_controls.mjs',
-  webCanvas: 'platform/web/playground.mjs',
+  webCanvas: WEB_CONTROLLER_FILES,
 };
 
 /**
@@ -107,7 +125,7 @@ const STRING_MIRROR_FILES = {
     'platform/rn/app-shell/ios/MapsSdkRefappRn/RefappConstants.swift',
   webStrings: 'platform/web/ui_strings.mjs',
   webPageMarkup: 'platform/web/index.html',
-  webPageController: 'platform/web/playground.mjs',
+  webPageController: WEB_CONTROLLER_FILES,
 };
 
 /** The document whose §2.5 table must match the artifact. */
@@ -1912,8 +1930,13 @@ function readWebMirror(read) {
   }
 
   // The camera framing constant lives with the canvas controller module.
+  // The controller is split by concern, so a constant may be declared at the
+  // module scope or on the shared runtime object.
   const canvasText = read(MIRROR_FILES.webCanvas);
-  const fieldOfView = /const FIELD_OF_VIEW_DEGREES\s*=\s*([\d.]+);/.exec(canvasText);
+  const constantDeclarationPattern = (constant) =>
+    `(?:const |runtime\\.shared\\.)${constant}\\s*=`;
+  const fieldOfView = new RegExp(`${constantDeclarationPattern('FIELD_OF_VIEW_DEGREES')}\\s*([\\d.]+);`)
+    .exec(canvasText);
   if (fieldOfView !== null) {
     values.set('behavior/field-of-view-degrees', parseNumber(fieldOfView[1]));
   }
@@ -1923,7 +1946,8 @@ function readWebMirror(read) {
     AUTOCOMPLETE_MAXIMUM_RESULTS: 'behavior/autocomplete-maximum-results',
   };
   for (const [constant, token] of Object.entries(autocompleteBehaviorKeys)) {
-    const match = new RegExp(`const ${constant}\\s*=\\s*([\\d.]+);`).exec(canvasText);
+    const match = new RegExp(`${constantDeclarationPattern(constant)}\\s*([\\d.]+);`)
+      .exec(canvasText);
     if (match !== null) {
       values.set(token, parseNumber(match[1]));
     }
@@ -2029,8 +2053,12 @@ function applyWebVariable(variable, value, themeName, values) {
 function checkWebCanvasMirrors(read, expectations) {
   const failures = [];
   const pageText = read(MIRROR_FILES.webCanvas);
+  // A mirror constant may be declared at the module scope or on the shared
+  // runtime object, depending on the concern module that owns it.
+  const constantDeclarationPattern = (constant) =>
+    `(?:const |runtime\\.shared\\.)${constant}\\s*=`;
   for (const constantName of WEB_CANVAS_MIRROR_CONSTANT_NAMES) {
-    if (!new RegExp(`const ${constantName}\\s*=`).test(pageText)) {
+    if (!new RegExp(constantDeclarationPattern(constantName)).test(pageText)) {
       failures.push(`[web canvas] the §2.2 mirror constant "${constantName}" is missing`);
     }
   }
@@ -2041,7 +2069,8 @@ function checkWebCanvasMirrors(read, expectations) {
     return failures;
   }
   for (const constantName of ['TILE_FILL_BY_THEME', 'TILE_STROKE_BY_THEME']) {
-    const blockMatch = new RegExp(`const ${constantName} = \\{([\\s\\S]*?)\\};`).exec(pageText);
+    const blockMatch = new RegExp(`${constantDeclarationPattern(constantName)} \\{([\\s\\S]*?)\\};`)
+      .exec(pageText);
     if (blockMatch === null) {
       failures.push(`[web canvas] could not parse the "${constantName}" theme map`);
       continue;
@@ -2128,8 +2157,12 @@ const OMISSION_NOTES = {
  * @returns {ParityReport}
  */
 function runChecks(rootDirectory) {
-  const read = (relativePath) =>
-    readFileSync(path.join(rootDirectory, relativePath), 'utf8');
+  const read = (relativePath) => {
+    const relativePaths = Array.isArray(relativePath) ? relativePath : [relativePath];
+    return relativePaths
+      .map((one_path) => readFileSync(path.join(rootDirectory, one_path), 'utf8'))
+      .join('\n');
+  };
   const failures = [];
   const summary = [];
   const labelDivergences = [];
@@ -2322,6 +2355,32 @@ function printLabelReport(report) {
 
 // --- Self-test --------------------------------------------------------------
 
+/** Flattens a mirror-file value that may be a path or a list of paths. */
+function sourcePaths(source) {
+  return Array.isArray(source) ? source : [source];
+}
+
+/**
+ * Applies one textual mutation to the first file in `source` that contains
+ * `from`. Returns false when no file contains it.
+ * @param {string} rootDirectory
+ * @param {string|string[]} source
+ * @param {string} from
+ * @param {string} to
+ * @returns {boolean}
+ */
+function mutateFirstSource(rootDirectory, source, from, to) {
+  for (const relativePath of sourcePaths(source)) {
+    const filePath = path.join(rootDirectory, relativePath);
+    const text = readFileSync(filePath, 'utf8');
+    if (text.includes(from)) {
+      writeFileSync(filePath, text.replace(from, to));
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Copies the artifact, the §2.5 document and every mirror file into a
  * throwaway tree so a mutation can be injected without touching the checkout.
@@ -2333,8 +2392,8 @@ function createTemporaryCopy(rootDirectory) {
   const relativePaths = new Set([
     ARTIFACT_PATH,
     CONSUMER_COPY_DOCUMENT,
-    ...Object.values(MIRROR_FILES),
-    ...Object.values(STRING_MIRROR_FILES),
+    ...Object.values(MIRROR_FILES).flatMap(sourcePaths),
+    ...Object.values(STRING_MIRROR_FILES).flatMap(sourcePaths),
   ]);
   for (const relativePath of relativePaths) {
     const destination = path.join(temporaryRoot, relativePath);
@@ -2422,10 +2481,10 @@ function runSelfTest() {
     // Class 2c: a §2.2 canvas-mirror constant drifts from the accent token.
     const canvasCopy = createTemporaryCopy(rootDirectory);
     try {
-      const pagePath = path.join(canvasCopy, MIRROR_FILES.webCanvas);
-      const pageText = readFileSync(pagePath, 'utf8')
-        .replace("'rgba(76, 141, 255, 0.70)'", "'rgba(0, 0, 0, 0.70)'");
-      writeFileSync(pagePath, pageText);
+      mutateFirstSource(
+        canvasCopy, MIRROR_FILES.webCanvas,
+        "'rgba(76, 141, 255, 0.70)'", "'rgba(0, 0, 0, 0.70)'",
+      );
       const report = runChecks(canvasCopy);
       cases.push({
         name: 'canvas mirror drift (TILE_STROKE_BY_THEME)',
@@ -2508,17 +2567,20 @@ function runSelfTest() {
     const pageMarkupCopy = createTemporaryCopy(rootDirectory);
     try {
       const pagePath = path.join(pageMarkupCopy, STRING_MIRROR_FILES.webPageMarkup);
+      // The element carries the same label twice (placeholder and
+      // accessible name); the accessible name is the value the adapter keeps,
+      // so it is the one the drift class mutates.
       const pageText = readFileSync(pagePath, 'utf8')
-        .replace('placeholder="Where to?"', 'placeholder="Destination"');
+        .replace('aria-label="Search a destination"', 'aria-label="Destination"');
       writeFileSync(pagePath, pageText);
       const report = runChecks(pageMarkupCopy);
       cases.push({
-        name: 'web page markup drift (destination hint)',
+        name: 'web page markup drift (destination placeholder)',
         expectation: 'report',
         report,
         ok: report.labelDivergences.some(
           (divergence) => divergence.includes('[web]')
-            && divergence.includes('plan.destination_hint'),
+            && divergence.includes('plan.destination_placeholder'),
         ),
       });
     } finally {
@@ -2528,14 +2590,11 @@ function runSelfTest() {
     // Class 8: a dynamic label stops reading the shared module.
     const pageControllerCopy = createTemporaryCopy(rootDirectory);
     try {
-      const controllerPath =
-        path.join(pageControllerCopy, STRING_MIRROR_FILES.webPageController);
-      const controllerText = readFileSync(controllerPath, 'utf8')
-        .replace(
-          "ui_label_text('settings.keyless_status')",
-          "'Set a provider key to load live map data'",
-        );
-      writeFileSync(controllerPath, controllerText);
+      mutateFirstSource(
+        pageControllerCopy, STRING_MIRROR_FILES.webPageController,
+        "ui_label_text('settings.keyless_status')",
+        "'Set a provider key to load live map data'",
+      );
       const report = runChecks(pageControllerCopy);
       cases.push({
         name: 'web dynamic label unwired (keyless status)',

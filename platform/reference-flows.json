@@ -216,7 +216,14 @@
       "hook_kind": "css_selector",
       "source_paths": [
         "platform/web/index.html",
-        "platform/web/playground.mjs"
+        "platform/web/playground.mjs",
+        "platform/web/playground_preferences.mjs",
+        "platform/web/playground_provider_settings.mjs",
+        "platform/web/playground_base_map.mjs",
+        "platform/web/playground_overlays.mjs",
+        "platform/web/playground_navigation.mjs",
+        "platform/web/playground_diagnostics.mjs",
+        "platform/web/playground_map_surface.mjs"
       ],
       "build_input": {
         "path": "platform/web/serve.mjs",
