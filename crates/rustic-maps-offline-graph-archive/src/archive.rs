@@ -614,6 +614,10 @@ fn index_out_of_range_error() -> SDKError {
     SDKError::OfflineRoutingFailure(OfflineGraphInvalidReason::IndexOutOfRange)
 }
 
+fn archive_malformed_error() -> SDKError {
+    SDKError::OfflineRoutingFailure(OfflineGraphInvalidReason::ArchiveMalformed)
+}
+
 /// Serializes the archive in canonical resource order (see module docs).
 fn encode_bytes(
     nodes: &[NodeRecord],
@@ -786,6 +790,33 @@ pub struct OfflineRoutingNetworkGraph {
     turn_restrictions: Vec<TurnRestrictionRecord>,
 }
 
+/// Byte offset and length of one resource payload inside an archive.
+#[derive(Debug, Clone, Copy)]
+struct ResourceSpan {
+    /// Offset of the payload's first byte from the start of the archive.
+    offset: usize,
+    /// Payload length in bytes, exactly as the table of contents states it.
+    length: usize,
+}
+
+/// Payload spans of the canonical resources, read from a validated table of
+/// contents.
+#[derive(Debug, Clone, Copy)]
+struct ArchiveResourceTable {
+    /// Span of the `nodes` resource.
+    nodes: ResourceSpan,
+    /// Span of the `edges` resource.
+    edges: ResourceSpan,
+    /// Span of the `lane_guidances` resource.
+    lane_guidances: ResourceSpan,
+    /// Span of the `instruction_strings` resource.
+    instruction_strings: ResourceSpan,
+    /// Span of the `instruction_lookup_indices` resource.
+    instruction_lookup_indices: ResourceSpan,
+    /// Span of the `turn_restrictions` resource.
+    turn_restrictions: ResourceSpan,
+}
+
 impl OfflineRoutingNetworkGraph {
     /// Parses and fully validates archive bytes.
     ///
@@ -799,12 +830,28 @@ impl OfflineRoutingNetworkGraph {
     /// - `OfflineGraphInvalidReason::IndexOutOfRange` — any record
     ///   references an out-of-range node, edge or instruction offset.
     pub fn from_bytes(archive_bytes: &[u8]) -> Result<Self, SDKError> {
+        Self::validate_file_header(archive_bytes)?;
+        let resource_table = Self::read_resource_table(archive_bytes)?;
+        let graph = Self::decode_resources(archive_bytes, resource_table)?;
+        graph.validate_decoded_graph()?;
+        Ok(graph)
+    }
+
+    /// Validates the fixed file header: the archive is at least
+    /// [`FILE_HEADER_BYTES`] long, starts with [`ARCHIVE_MAGIC`], declares
+    /// [`ARCHIVE_FORMAT_VERSION`] and exactly [`RESOURCE_COUNT`]
+    /// table-of-contents entries.
+    ///
+    /// # Errors
+    /// - `OfflineGraphInvalidReason::ArchiveMalformed` — short header,
+    ///   foreign magic or a mismatched entry count.
+    /// - `OfflineGraphInvalidReason::VersionUnsupported` — magic recognized
+    ///   but the format version is not this crate's.
+    fn validate_file_header(archive_bytes: &[u8]) -> Result<(), SDKError> {
         if archive_bytes.len() < FILE_HEADER_BYTES
             || archive_bytes.get(..ARCHIVE_MAGIC.len()) != Some(ARCHIVE_MAGIC.as_slice())
         {
-            return Err(SDKError::OfflineRoutingFailure(
-                OfflineGraphInvalidReason::ArchiveMalformed,
-            ));
+            return Err(archive_malformed_error());
         }
         if read_u32(archive_bytes, 4) != ARCHIVE_FORMAT_VERSION {
             return Err(SDKError::OfflineRoutingFailure(
@@ -812,28 +859,37 @@ impl OfflineRoutingNetworkGraph {
             ));
         }
         if read_u32(archive_bytes, 8) != RESOURCE_COUNT as u32 {
-            return Err(SDKError::OfflineRoutingFailure(
-                OfflineGraphInvalidReason::ArchiveMalformed,
-            ));
+            return Err(archive_malformed_error());
         }
+        Ok(())
+    }
 
+    /// Walks the table of contents in canonical resource order and validates
+    /// every entry: the archive holds the complete entry table, each stored
+    /// name matches its canonical name, each payload offset is
+    /// [`ARCHIVE_RESOURCE_ALIGNMENT`]-aligned, no payload precedes or
+    /// overlaps its predecessor, and every payload ends inside the archive.
+    ///
+    /// # Errors
+    /// `OfflineGraphInvalidReason::ArchiveMalformed` for any entry that
+    /// breaks one of those invariants.
+    fn read_resource_table(archive_bytes: &[u8]) -> Result<ArchiveResourceTable, SDKError> {
         let resources_start =
             FILE_HEADER_BYTES + CANONICAL_RESOURCE_NAMES.len() * TABLE_OF_CONTENTS_ENTRY_BYTES;
         if archive_bytes.len() < resources_start {
-            return Err(SDKError::OfflineRoutingFailure(
-                OfflineGraphInvalidReason::ArchiveMalformed,
-            ));
+            return Err(archive_malformed_error());
         }
 
-        let mut resource_spans = [[0usize; 2]; CANONICAL_RESOURCE_NAMES.len()];
+        let mut resource_spans = [ResourceSpan {
+            offset: 0,
+            length: 0,
+        }; RESOURCE_COUNT];
         let mut previous_resource_end = resources_start;
         for (resource_index, &resource_name) in CANONICAL_RESOURCE_NAMES.iter().enumerate() {
             let entry_offset = FILE_HEADER_BYTES + resource_index * TABLE_OF_CONTENTS_ENTRY_BYTES;
             let stored_name = read_resource_name(archive_bytes, entry_offset)?;
             if stored_name != resource_name {
-                return Err(SDKError::OfflineRoutingFailure(
-                    OfflineGraphInvalidReason::ArchiveMalformed,
-                ));
+                return Err(archive_malformed_error());
             }
             let resource_offset =
                 read_u64(archive_bytes, entry_offset + RESOURCE_NAME_BYTES) as usize;
@@ -847,20 +903,51 @@ impl OfflineRoutingNetworkGraph {
                     .checked_add(resource_length)
                     .is_none_or(|resource_end| resource_end > archive_bytes.len())
             {
-                return Err(SDKError::OfflineRoutingFailure(
-                    OfflineGraphInvalidReason::ArchiveMalformed,
-                ));
+                return Err(archive_malformed_error());
             }
-            resource_spans[resource_index] = [resource_offset, resource_length];
+            resource_spans[resource_index] = ResourceSpan {
+                offset: resource_offset,
+                length: resource_length,
+            };
             previous_resource_end = resource_offset + resource_length;
         }
 
-        let node_bytes = resource_payload(archive_bytes, resource_spans[0]);
-        let edge_bytes = resource_payload(archive_bytes, resource_spans[1]);
-        let lane_guidance_bytes = resource_payload(archive_bytes, resource_spans[2]);
-        let instruction_blob = resource_payload(archive_bytes, resource_spans[3]);
-        let lookup_bytes = resource_payload(archive_bytes, resource_spans[4]);
-        let restriction_bytes = resource_payload(archive_bytes, resource_spans[5]);
+        let [
+            nodes,
+            edges,
+            lane_guidances,
+            instruction_strings,
+            instruction_lookup_indices,
+            turn_restrictions,
+        ] = resource_spans;
+        Ok(ArchiveResourceTable {
+            nodes,
+            edges,
+            lane_guidances,
+            instruction_strings,
+            instruction_lookup_indices,
+            turn_restrictions,
+        })
+    }
+
+    /// Extracts each validated resource payload, requires every payload to
+    /// be a whole number of records of its resource's record width, and
+    /// decodes the rows into typed records.
+    ///
+    /// # Errors
+    /// `OfflineGraphInvalidReason::ArchiveMalformed` when a payload length is
+    /// not a multiple of its record width.
+    fn decode_resources(
+        archive_bytes: &[u8],
+        resource_table: ArchiveResourceTable,
+    ) -> Result<Self, SDKError> {
+        let node_bytes = resource_payload(archive_bytes, resource_table.nodes);
+        let edge_bytes = resource_payload(archive_bytes, resource_table.edges);
+        let lane_guidance_bytes = resource_payload(archive_bytes, resource_table.lane_guidances);
+        let instruction_blob = resource_payload(archive_bytes, resource_table.instruction_strings);
+        let lookup_bytes =
+            resource_payload(archive_bytes, resource_table.instruction_lookup_indices);
+        let restriction_bytes = resource_payload(archive_bytes, resource_table.turn_restrictions);
 
         expect_record_multiple(node_bytes, NODE_RECORD_BYTES)?;
         expect_record_multiple(edge_bytes, EDGE_RECORD_BYTES)?;
@@ -916,59 +1003,6 @@ impl OfflineRoutingNetworkGraph {
             })
             .collect();
 
-        // Packed-value enums and reserved bits: corruption checks keeping
-        // the accessors honest afterwards.
-        for edge in &edges {
-            if edge.encoded_value >> RESERVED_BIT_OFFSET != 0 || edge.road_class().is_none() {
-                return Err(SDKError::OfflineRoutingFailure(
-                    OfflineGraphInvalidReason::ArchiveMalformed,
-                ));
-            }
-        }
-        for restriction in &turn_restrictions {
-            if restriction.restriction_kind().is_none() {
-                return Err(SDKError::OfflineRoutingFailure(
-                    OfflineGraphInvalidReason::ArchiveMalformed,
-                ));
-            }
-        }
-
-        // Cross-references.
-        for edge in &edges {
-            if edge.source_node_index as usize >= nodes.len()
-                || edge.target_node_index as usize >= nodes.len()
-            {
-                return Err(index_out_of_range_error());
-            }
-        }
-        for restriction in &turn_restrictions {
-            if restriction.from_edge_index() as usize >= edges.len()
-                || restriction.to_edge_index() as usize >= edges.len()
-                || restriction.via_node_index() as usize >= nodes.len()
-            {
-                return Err(index_out_of_range_error());
-            }
-        }
-        for lane_guidance in &lane_guidances {
-            if lane_guidance.edge_index() as usize >= edges.len() {
-                return Err(index_out_of_range_error());
-            }
-        }
-        if instruction_lookup_indices.len() != turn_restrictions.len() {
-            return Err(index_out_of_range_error());
-        }
-        let instruction_text = std::str::from_utf8(instruction_blob).map_err(|_| {
-            SDKError::OfflineRoutingFailure(OfflineGraphInvalidReason::ArchiveMalformed)
-        })?;
-        for &lookup_index in &instruction_lookup_indices {
-            if lookup_index != INSTRUCTION_ABSENT_INDEX {
-                let offset = lookup_index as usize;
-                if offset > instruction_text.len() || !instruction_text.is_char_boundary(offset) {
-                    return Err(index_out_of_range_error());
-                }
-            }
-        }
-
         Ok(Self {
             nodes,
             edges,
@@ -977,6 +1011,70 @@ impl OfflineRoutingNetworkGraph {
             instruction_lookup_indices,
             turn_restrictions,
         })
+    }
+
+    /// Validates the decoded graph independently of the container: every
+    /// edge's encoded value leaves the reserved bits clear and carries a
+    /// known road class, every turn restriction carries a known restriction
+    /// kind, every node/edge reference indexes an existing record, the
+    /// lookup table is parallel to the turn restrictions, and the
+    /// instruction blob is UTF-8 with every non-absent lookup offset on a
+    /// character boundary.
+    ///
+    /// # Errors
+    /// - `OfflineGraphInvalidReason::ArchiveMalformed` — an unknown enum
+    ///   value, a set reserved bit or a non-UTF-8 instruction blob.
+    /// - `OfflineGraphInvalidReason::IndexOutOfRange` — a reference or
+    ///   instruction offset outside its collection.
+    fn validate_decoded_graph(&self) -> Result<(), SDKError> {
+        // Packed-value enums and reserved bits: corruption checks keeping
+        // the accessors honest afterwards.
+        for edge in &self.edges {
+            if edge.encoded_value >> RESERVED_BIT_OFFSET != 0 || edge.road_class().is_none() {
+                return Err(archive_malformed_error());
+            }
+        }
+        for restriction in &self.turn_restrictions {
+            if restriction.restriction_kind().is_none() {
+                return Err(archive_malformed_error());
+            }
+        }
+
+        // Cross-references.
+        for edge in &self.edges {
+            if edge.source_node_index as usize >= self.nodes.len()
+                || edge.target_node_index as usize >= self.nodes.len()
+            {
+                return Err(index_out_of_range_error());
+            }
+        }
+        for restriction in &self.turn_restrictions {
+            if restriction.from_edge_index() as usize >= self.edges.len()
+                || restriction.to_edge_index() as usize >= self.edges.len()
+                || restriction.via_node_index() as usize >= self.nodes.len()
+            {
+                return Err(index_out_of_range_error());
+            }
+        }
+        for lane_guidance in &self.lane_guidances {
+            if lane_guidance.edge_index() as usize >= self.edges.len() {
+                return Err(index_out_of_range_error());
+            }
+        }
+        if self.instruction_lookup_indices.len() != self.turn_restrictions.len() {
+            return Err(index_out_of_range_error());
+        }
+        let instruction_text = std::str::from_utf8(&self.instruction_strings)
+            .map_err(|_| archive_malformed_error())?;
+        for &lookup_index in &self.instruction_lookup_indices {
+            if lookup_index != INSTRUCTION_ABSENT_INDEX {
+                let offset = lookup_index as usize;
+                if offset > instruction_text.len() || !instruction_text.is_char_boundary(offset) {
+                    return Err(index_out_of_range_error());
+                }
+            }
+        }
+        Ok(())
     }
 
     /// All node records.
@@ -1043,8 +1141,8 @@ impl OfflineRoutingNetworkGraph {
 }
 
 /// Slices a validated resource payload out of the archive.
-fn resource_payload(archive_bytes: &[u8], [resource_offset, resource_length]: [usize; 2]) -> &[u8] {
-    &archive_bytes[resource_offset..resource_offset + resource_length]
+fn resource_payload(archive_bytes: &[u8], span: ResourceSpan) -> &[u8] {
+    &archive_bytes[span.offset..span.offset + span.length]
 }
 
 fn read_resource_name(archive_bytes: &[u8], entry_offset: usize) -> Result<String, SDKError> {
@@ -1166,6 +1264,38 @@ mod tests {
         let truncated = &archive_bytes[..FILE_HEADER_BYTES + TABLE_OF_CONTENTS_ENTRY_BYTES];
         assert_eq!(
             OfflineRoutingNetworkGraph::from_bytes(truncated).unwrap_err(),
+            SDKError::OfflineRoutingFailure(OfflineGraphInvalidReason::ArchiveMalformed),
+        );
+    }
+
+    #[test]
+    fn reader_rejects_misaligned_resource_offset() {
+        // Table-of-contents phase: a payload offset that is in bounds and
+        // still follows its predecessor but breaks the archive's resource
+        // alignment invariant.
+        let mut archive_bytes = minimal_three_node_builder().encode_deterministic().unwrap();
+        let nodes_offset = read_u64(&archive_bytes, FILE_HEADER_BYTES + RESOURCE_NAME_BYTES);
+        write_u64(
+            &mut archive_bytes,
+            FILE_HEADER_BYTES + RESOURCE_NAME_BYTES,
+            nodes_offset + 1,
+        );
+        assert_eq!(
+            OfflineRoutingNetworkGraph::from_bytes(&archive_bytes).unwrap_err(),
+            SDKError::OfflineRoutingFailure(OfflineGraphInvalidReason::ArchiveMalformed),
+        );
+    }
+
+    #[test]
+    fn reader_rejects_payload_that_is_not_a_record_multiple() {
+        // Decoding phase: shorten the nodes payload by one byte so the span
+        // stays ordered and in bounds but no longer holds whole records.
+        let mut archive_bytes = minimal_three_node_builder().encode_deterministic().unwrap();
+        let nodes_length_offset = FILE_HEADER_BYTES + RESOURCE_NAME_BYTES + U64_BYTES;
+        let nodes_length = read_u64(&archive_bytes, nodes_length_offset);
+        write_u64(&mut archive_bytes, nodes_length_offset, nodes_length - 1);
+        assert_eq!(
+            OfflineRoutingNetworkGraph::from_bytes(&archive_bytes).unwrap_err(),
             SDKError::OfflineRoutingFailure(OfflineGraphInvalidReason::ArchiveMalformed),
         );
     }
