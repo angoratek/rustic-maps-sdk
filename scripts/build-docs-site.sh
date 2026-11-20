@@ -292,7 +292,7 @@ readonly GENERATED_API_REFERENCE_PAGE_NAMES=(
     "api-reference-wasm.md"
 )
 readonly GENERATED_BINDING_SURFACE_PATHS=(
-    "platform/android/map-sdk-native/src/main/kotlin/uniffi/rustic_maps/rustic_maps.kt"
+    "platform/android/maps-sdk-native/src/main/kotlin/uniffi/rustic_maps/rustic_maps.kt"
     "platform/ios/Sources/RusticMapsSDK/rustic_maps.swift"
     "platform/rn/src/generated/rustic_maps.ts"
     "platform/web/generated/index.js"

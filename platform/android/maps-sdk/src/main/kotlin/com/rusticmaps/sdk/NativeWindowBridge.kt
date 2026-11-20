@@ -10,7 +10,7 @@ import android.view.Surface
  * SDK ships the two-export shim compiled into the same `librustic_maps.so`
  * the UniFFI bindings load. The exported symbol names are bound to this
  * object's exact package and class name; renaming or moving it breaks the
- * link, which is why the `:map-sdk-native` AAR ships a consumer ProGuard keep
+ * link, which is why the `:maps-sdk-native` AAR ships a consumer ProGuard keep
  * rule for it.
  *
  * The returned pointer is opaque to Kotlin: it is passed to the native

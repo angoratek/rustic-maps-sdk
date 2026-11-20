@@ -140,7 +140,7 @@ const DEFAULT_SWIFT_BINDINGS = 'platform/ios/Sources/RusticMapsSDK/rustic_maps.s
 
 /** Generated Kotlin bindings installed by scripts/build-android.sh. */
 const DEFAULT_KOTLIN_BINDINGS =
-  'platform/android/map-sdk-native/src/main/kotlin/uniffi/rustic_maps/rustic_maps.kt';
+  'platform/android/maps-sdk-native/src/main/kotlin/uniffi/rustic_maps/rustic_maps.kt';
 
 /** Directory search roots for the FFI header/modulemap the Swift bindings import. */
 const SWIFT_HEADER_SEARCH_ROOTS = ['platform/ios/artifacts'];
