@@ -238,7 +238,7 @@ const DEVICE_NAVIGATION_SOURCES = [
     description: 'the iOS reference app navigates the planned route from device fixes',
   },
   {
-    source: 'platform/rn/app-shell/App.tsx',
+    source: 'platform/rn/app-shell/src/screens/ReferenceAppScreen.tsx',
     fragments: [
       'device-navigation-control',
       'startDeviceNavigation',
