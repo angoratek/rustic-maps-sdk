@@ -92,7 +92,7 @@ const MIRROR_FILES = {
   androidState:
     'platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationState.kt',
   iosTheme: 'platform/ios/reference-application/Sources/ReferenceAppUXTheme.swift',
-  iosLayout: 'platform/ios/Sources/MapNativeCoreUI/AppLayout.swift',
+  iosLayout: 'platform/ios/reference-application/Sources/AppLayout.swift',
   iosConfiguration:
     'platform/ios/reference-application/Sources/ReferenceApplicationConfiguration.swift',
   iosModel: 'platform/ios/reference-application/Sources/ReferenceApplicationModel.swift',

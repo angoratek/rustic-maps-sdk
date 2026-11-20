@@ -102,7 +102,8 @@ headers and modulemaps into `platform/ios/artifacts/rustic_mapsFFI.xcframework`.
 static archive is consumed by Swift Package Manager binary targets with no run-time
 framework embedding. `platform/ios/Package.swift` exposes the binary target from a local
 path, pins `swift-tools-version: 5.10` and `.iOS(.v17)`, and adds the `MapNativeCoreUI`
-wrapper with the shared registry as a `.copy` resource. For distribution, the
+target with the shipped map view, its SwiftUI wrapper and the device location source,
+plus the shared registry as a `.copy` resource. For distribution, the
 XCFramework is zipped with the `.xcframework` directory at the zip root, and the
 checksum is `swift package compute-checksum <zip>` (the same SHA-256 the workflow
 computes with `sha256sum`). `scripts/generate-swift-package-manifest.sh` emits a

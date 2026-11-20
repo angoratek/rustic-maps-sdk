@@ -1140,7 +1140,7 @@ final class ReferenceApplicationModel: ObservableObject {
         // artifact: one descriptor source for every refapp and the dev
         // server.
         let loadedProviderRegistry = try ProviderRegistryCatalog
-            .loadedFromPackageResource()
+            .loadedFromApplicationBundle()
         // A keyless descriptor (blank credential label) renders no settings
         // row, so a provider registered elsewhere never paints an empty field.
         providerDescriptors = loadedProviderRegistry.providers
