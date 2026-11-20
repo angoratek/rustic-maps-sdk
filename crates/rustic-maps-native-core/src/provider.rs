@@ -466,13 +466,41 @@ impl MapSdk {
     /// sink's severity gate, which starts the GPU-hot render path's
     /// fine-grained instrumentation (the gate never raises back). Duplicate
     /// registrations deliver duplicate events (the caller's subscription
-    /// lifecycle owns the listener).
+    /// lifecycle owns the listener). For a handle that removes its own
+    /// registration, use
+    /// [`MapSdk::subscribe_to_diagnostic_events_with_subscription`].
     pub fn subscribe_to_diagnostic_events(
         &self,
         listener: Arc<dyn crate::diagnostics::SdkDiagnosticEventListener>,
         minimum_severity: SdkLogSeverity,
     ) {
-        crate::diagnostics::DiagnosticsHandle::shared().subscribe(listener, minimum_severity);
+        let _ =
+            crate::diagnostics::DiagnosticsHandle::shared().subscribe(listener, minimum_severity);
+    }
+
+    /// Subscribes a listener to the diagnostics live stream and answers a
+    /// [`crate::diagnostics::DiagnosticSubscription`] that owns exactly this
+    /// registration: closing the handle removes the registration, so the
+    /// listener stops receiving live events, and closing an already closed
+    /// handle is a no-op.
+    ///
+    /// Registration and delivery behave exactly like
+    /// [`MapSdk::subscribe_to_diagnostic_events`]: only events at
+    /// `minimum_severity` or above are delivered, a subscription at Debug or
+    /// Trace lowers the sink's recording severity, and the severity never
+    /// raises back. Dropping the handle does not remove the registration; call
+    /// [`crate::diagnostics::DiagnosticSubscription::close`].
+    pub fn subscribe_to_diagnostic_events_with_subscription(
+        &self,
+        listener: Arc<dyn crate::diagnostics::SdkDiagnosticEventListener>,
+        minimum_severity: SdkLogSeverity,
+    ) -> Arc<crate::diagnostics::DiagnosticSubscription> {
+        let diagnostics_handle = crate::diagnostics::DiagnosticsHandle::shared();
+        let registration_id = diagnostics_handle.subscribe(listener, minimum_severity);
+        Arc::new(crate::diagnostics::DiagnosticSubscription::new(
+            registration_id,
+            diagnostics_handle,
+        ))
     }
 
     /// Replays the most recent events the diagnostics rings recorded: at

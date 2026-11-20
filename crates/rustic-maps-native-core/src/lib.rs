@@ -102,7 +102,7 @@ pub mod simulation;
 pub mod surface_view;
 
 pub use crate::camera::MapCamera;
-pub use crate::diagnostics::SdkDiagnosticEventListener;
+pub use crate::diagnostics::{DiagnosticSubscription, SdkDiagnosticEventListener};
 pub use crate::engines::{
     Diagnostics, OfflineManager, RegionDownloadProgressListener, RoutingEngine, SearchEngine,
 };

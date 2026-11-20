@@ -1840,6 +1840,23 @@ interface MapSdk {
     /// - `minimum_severity` — lowest severity delivered.
     void subscribe_to_diagnostic_events(SdkDiagnosticEventListener listener, SdkLogSeverity minimum_severity);
 
+    /// Subscribes `listener` to the SDK's structured log events and answers a
+    /// handle that owns exactly this registration: closing the handle removes
+    /// the registration, so the listener stops receiving live events. Only
+    /// events at `minimum_severity` or above are delivered.
+    ///
+    /// Listener callbacks run on the threads that produce the events and must
+    /// not block. A subscription at `Debug` or `Trace` also lowers the
+    /// recording severity, and that severity never raises back.
+    ///
+    /// # Parameters
+    /// - `listener` — the diagnostics listener.
+    /// - `minimum_severity` — lowest severity delivered.
+    ///
+    /// # Returns
+    /// The handle that owns the registration and removes it when closed.
+    DiagnosticSubscription subscribe_to_diagnostic_events_with_subscription(SdkDiagnosticEventListener listener, SdkLogSeverity minimum_severity);
+
     /// Delivers up to `maximum_count` of the most recent buffered events at
     /// `minimum_severity` or above to the listener, oldest first, and returns
     /// how many were delivered.
@@ -3294,6 +3311,17 @@ interface SdkDiagnosticEventListener {
     /// Receives one structured event, already gated by the subscription's
     /// minimum severity.
     void on_diagnostic_event(LogEvent event);
+};
+
+/// Handle for exactly one diagnostics listener registration. Cancelling it
+/// removes that registration; cancelling it again is a no-op, and dropping the
+/// handle does not remove the registration.
+interface DiagnosticSubscription {
+    /// Removes the registration this handle owns, so its listener stops
+    /// receiving live events from the next event on. Cancelling an already
+    /// cancelled subscription changes nothing. Named `cancel` because UniFFI
+    /// generates a `close` for the object handle itself.
+    void cancel();
 };
 
 // ---------------------------------------------------------------------------
