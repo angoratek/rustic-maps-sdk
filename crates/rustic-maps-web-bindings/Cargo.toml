@@ -86,3 +86,5 @@ rustic-maps-providers.workspace = true
 # The browser source tests read the shared provider registry at test time, so
 # they follow the OpenFreeMap declaration instead of naming a provider URL.
 serde_json.workspace = true
+# The shared coordinate and viewport fixtures.
+rustic-maps-test-support.workspace = true

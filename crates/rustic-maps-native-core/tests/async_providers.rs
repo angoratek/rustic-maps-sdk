@@ -9,6 +9,9 @@
 //! exported futures themselves are polled by the foreign event loop and
 //! need no Rust executor.
 
+mod common;
+
+use common::coordinate;
 use geospatial_traits::mock::{
     MockDistanceMatrixProvider, MockGeocodingProvider, MockRasterTileProvider, MockRoutingProvider,
     MockSearchPlaceProvider, MockTrafficFlowProvider, MockTrafficIncidentProvider,
@@ -17,14 +20,12 @@ use rustic_maps::{
     GeocodeQuality, MapSdk, Place, RasterImageFormat, RasterTileResolution, SdkError,
     TrafficFlowCongestionLevel, TrafficIncidentType, TransportationMode, UnitSystem,
 };
+use rustic_maps_test_support::{
+    SACRAMENTO_LATITUDE_DEGREES as TEST_LATITUDE_DEGREES,
+    SACRAMENTO_LONGITUDE_DEGREES as TEST_LONGITUDE_DEGREES,
+};
 use std::sync::Arc;
 
-/// Latitude of the test coordinates, in decimal degrees (the coordinate the
-/// geocoding mock answers with): the California State Capitol / Capitol Park,
-/// downtown Sacramento.
-const TEST_LATITUDE_DEGREES: f64 = 38.5766;
-/// Longitude of the test coordinates, in decimal degrees.
-const TEST_LONGITUDE_DEGREES: f64 = -121.4944;
 /// Latitude a distinct mock coordinate asserts; it must sit north-east of
 /// the mock's route/bounding-box anchor at `TEST_LATITUDE_DEGREES`: Reno,
 /// Nevada, north of and east of the anchor.
@@ -45,13 +46,6 @@ const TEST_ZOOM_LEVEL: u8 = 9;
 /// Edge of the standard-resolution mock tile payload, in pixels; the mock
 /// fills one byte per texel.
 const MOCK_STANDARD_TILE_EDGE_PIXELS: u32 = 256;
-
-fn coordinate(latitude: f64, longitude: f64) -> rustic_maps::GeographicCoordinate {
-    rustic_maps::GeographicCoordinate {
-        latitude,
-        longitude,
-    }
-}
 
 fn sdk_with_mock_providers() -> MapSdk {
     let map_sdk = MapSdk::new();

@@ -1162,10 +1162,7 @@ mod tests {
     };
     use geospatial_types::{BoundingBox, GeographicCoordinate};
     use proptest::prelude::*;
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude, longitude).unwrap()
-    }
+    use rustic_maps_test_support::validated_coordinate as coordinate;
 
     fn viewport() -> ViewportPixels {
         ViewportPixels::new(1024.0, 768.0).unwrap()

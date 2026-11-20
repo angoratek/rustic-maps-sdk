@@ -126,6 +126,8 @@ name = "rustic_maps"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [dev-dependencies]
+# The shared coordinate, viewport, camera and Sacramento fixtures.
+rustic-maps-test-support.workspace = true
 # Path conversions for `uniffi::generate` in the bindings-generation test.
 camino = "1"
 # The `record_demo_routes` example reads and merges the shared reference

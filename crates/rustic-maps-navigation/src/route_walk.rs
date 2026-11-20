@@ -416,6 +416,7 @@ mod tests {
     use geospatial_types::{
         BoundingBox, GeographicCoordinate, ManeuverType, RouteData, RouteLeg, RouteStep,
     };
+    use rustic_maps_test_support::coordinate;
 
     /// Tolerance, in meters, for distances that must equal a haversine
     /// computation exactly up to floating-point noise.
@@ -443,13 +444,6 @@ mod tests {
         env!("CARGO_MANIFEST_DIR"),
         "/../../platform/reference-scenes.json"
     );
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate {
-            latitude,
-            longitude,
-        }
-    }
 
     fn pace(speed_meters_per_second: f64, speed_multiplier: f64) -> SimulatedTripPace {
         SimulatedTripPace {

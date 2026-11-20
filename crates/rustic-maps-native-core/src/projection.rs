@@ -80,23 +80,11 @@ mod tests {
     };
     use crate::projection::tile_key_for_coordinate;
     use crate::records::{BoundingBox, GeographicCoordinate, TileKey, ViewportSize};
-
-    /// Sacramento's latitude in decimal degrees; the coordinate projection
-    /// tests anchor on its known normalized-world and tile addresses: the
-    /// California State Capitol / Capitol Park, downtown Sacramento.
-    const SACRAMENTO_LATITUDE: f64 = 38.5766;
-    /// Sacramento's longitude in decimal degrees.
-    const SACRAMENTO_LONGITUDE: f64 = -121.4944;
-    /// Known normalized-world x of Sacramento.
-    const SACRAMENTO_NORMALIZED_X: f64 = 0.162_515_556;
-    /// Known normalized-world y of Sacramento.
-    const SACRAMENTO_NORMALIZED_Y: f64 = 0.383_688_050;
-    /// Known tile column of Sacramento at zoom 14.
-    const SACRAMENTO_TILE_X: u32 = 2662;
-    /// Known tile row of Sacramento at zoom 14.
-    const SACRAMENTO_TILE_Y: u32 = 6286;
-    /// Zoom level of the known Sacramento tile address.
-    const SACRAMENTO_TILE_ZOOM_LEVEL: u8 = 14;
+    use rustic_maps_test_support::{
+        SACRAMENTO_LATITUDE_DEGREES as SACRAMENTO_LATITUDE,
+        SACRAMENTO_LONGITUDE_DEGREES as SACRAMENTO_LONGITUDE, SACRAMENTO_TILE_X, SACRAMENTO_TILE_Y,
+        SACRAMENTO_TILE_ZOOM_LEVEL,
+    };
 
     fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
         GeographicCoordinate {
@@ -104,6 +92,11 @@ mod tests {
             longitude,
         }
     }
+
+    /// Known normalized-world x of Sacramento.
+    const SACRAMENTO_NORMALIZED_X: f64 = 0.162_515_556;
+    /// Known normalized-world y of Sacramento.
+    const SACRAMENTO_NORMALIZED_Y: f64 = 0.383_688_050;
 
     #[test]
     fn validated_coordinate_accepts_canonical_degrees() {

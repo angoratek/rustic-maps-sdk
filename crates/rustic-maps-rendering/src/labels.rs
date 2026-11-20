@@ -3038,6 +3038,7 @@ mod tests {
         VECTOR_STYLE_ID_BRIGHT_LIGHT, vector_tile_style_from_id, vector_tile_style_from_json,
     };
     use rustic_maps_glyphs::{Glyph, decode_glyph_font_stack};
+    use rustic_maps_test_support::{SACRAMENTO_LATITUDE_DEGREES, SACRAMENTO_LONGITUDE_DEGREES};
     use rustic_maps_vector_tiles::decode_vector_tile;
 
     /// Compiles a small inline style document for the symbol-pass tests.
@@ -3062,8 +3063,6 @@ mod tests {
         tile_x: 2661,
         tile_y: 6286,
     };
-    const SACRAMENTO_LATITUDE_DEGREES: f64 = 38.5766;
-    const SACRAMENTO_LONGITUDE_DEGREES: f64 = -121.4944;
     /// The center of the sample tile (`2661.5`, `6286.5` in z14 tile units):
     /// a camera there shows the whole tile in the test viewport.
     const FIXTURE_TILE_CENTER_LATITUDE_DEGREES: f64 = 38.573_937_515_575_92;

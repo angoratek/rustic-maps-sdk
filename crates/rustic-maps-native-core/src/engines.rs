@@ -698,6 +698,10 @@ mod tests {
         RasterImageFormat as NativeRasterImageFormat, RasterTileData,
         RasterTileResolution as NativeRasterTileResolution,
     };
+    use rustic_maps_test_support::{
+        SACRAMENTO_LATITUDE_DEGREES as TEST_LATITUDE_DEGREES,
+        SACRAMENTO_LONGITUDE_DEGREES as TEST_LONGITUDE_DEGREES,
+    };
     use tokio::sync::Notify;
 
     use super::{
@@ -712,11 +716,6 @@ mod tests {
         RegionRecord, RouteOptions, RouteStrategy, SdkLogSeverity, TransportationMode, UnitSystem,
     };
 
-    /// Latitude of the test coordinates, in decimal degrees (the coordinate
-    /// the geocoding mock answers with): downtown Sacramento.
-    const TEST_LATITUDE_DEGREES: f64 = 38.5766;
-    /// Longitude of the test coordinates, in decimal degrees.
-    const TEST_LONGITUDE_DEGREES: f64 = -121.4944;
     /// Latitude of the second mock coordinate, north-east of the anchor.
     const OTHER_LATITUDE_DEGREES: f64 = 39.5296;
     /// Longitude of the second mock coordinate, north-east of the anchor.

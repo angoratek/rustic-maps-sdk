@@ -29,10 +29,8 @@ use rustic_maps_rendering::{
     CapturedFrame, DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer,
     MapCamera, TileKey, TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
 };
+use rustic_maps_test_support::square_viewport;
 use std::sync::Arc;
-
-/// Frame edge in pixels (the other golden scenes' extent).
-const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
 /// The committed OpenMapTiles z14 fixture's center: the camera keeps exactly
 /// the served tile in view.
 const TILE_CENTER_LATITUDE_DEGREES: f64 = 38.573_937_515_575_91;
@@ -137,8 +135,7 @@ async fn render_styled_base_scene(
     served_zoom_level: u8,
 ) -> Option<CapturedFrame> {
     let mut renderer = request_renderer_or_skip()?;
-    let viewport = ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the viewport extent is valid");
+    let viewport = square_viewport();
     let mut scheduler = VectorBaseScheduler::from_style_id(Arc::new(FixtureTileProvider), style_id)
         .expect("the committed style loads");
     let visible_tile_keys =
@@ -226,8 +223,7 @@ async fn the_regional_carto_base_draws_its_shields_and_matches_its_golden() {
 /// The regional Carto scene's placed label layer and its viewport, assembled
 /// through the same scheduler path the rendered golden uses.
 async fn regional_label_layer() -> (LabelLayer, ViewportPixels) {
-    let viewport = ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the viewport extent is valid");
+    let viewport = square_viewport();
     let camera = build_regional_camera();
     let mut scheduler = VectorBaseScheduler::from_style_id(
         Arc::new(FixtureTileProvider),

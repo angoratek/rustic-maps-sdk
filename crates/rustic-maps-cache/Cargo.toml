@@ -20,3 +20,5 @@ sha2.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+# The shared coordinate and viewport fixtures.
+rustic-maps-test-support.workspace = true

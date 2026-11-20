@@ -3044,6 +3044,9 @@ mod tests {
     };
     use async_trait::async_trait;
     use geospatial_types::{GeographicCoordinate, SDKError};
+    use rustic_maps_test_support::{
+        SACRAMENTO_CAMERA_ZOOM_LEVEL, SACRAMENTO_LATITUDE_DEGREES, SACRAMENTO_LONGITUDE_DEGREES,
+    };
     use std::collections::HashMap as StdHashMap;
     use std::sync::Mutex;
 
@@ -3341,12 +3344,6 @@ mod tests {
         tile_y: 6286,
         zoom_level: 14,
     };
-    /// Sacramento's latitude, the demo camera's center, in decimal degrees.
-    const SACRAMENTO_LATITUDE_DEGREES: f64 = 38.5766;
-    /// Sacramento's longitude, the demo camera's center, in decimal degrees.
-    const SACRAMENTO_LONGITUDE_DEGREES: f64 = -121.4944;
-    /// The zoom level the demo camera and its tile resolve at.
-    const SACRAMENTO_CAMERA_ZOOM_LEVEL: f64 = 14.0;
     /// Edge of the square viewport the label placement tests project into, in
     /// screen pixels.
     const LABEL_TEST_VIEWPORT_EDGE_PIXELS: f64 = 512.0;

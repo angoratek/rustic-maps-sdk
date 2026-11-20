@@ -30,14 +30,11 @@ use rustic_maps_rendering::vector_base::VectorBaseScheduler;
 use rustic_maps_rendering::vector_style::vector_tile_style_from_json;
 use rustic_maps_rendering::{
     DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer, MapCamera,
-    PreparedTile, TileKey, TileReadiness, TileTexturePool, ViewportPixels,
-    WgpuGraphicsContextSource,
+    PreparedTile, TileKey, TileReadiness, TileTexturePool, WgpuGraphicsContextSource,
 };
+use rustic_maps_test_support::square_viewport as golden_viewport;
 use std::path::PathBuf;
 use std::sync::Arc;
-
-/// Frame edge in pixels, the other goldens' extent.
-const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
 /// The fixture vector tile's center: the camera keeps that tile in view so
 /// the scheduler requests the address the fixture provider serves.
 const SCENE_CENTER_LATITUDE_DEGREES: f64 = 38.573_937_515_575_92;
@@ -150,11 +147,6 @@ fn build_camera() -> MapCamera {
         SCENE_BEARING_DEGREES,
         SCENE_PITCH_DEGREES,
     )
-}
-
-fn golden_viewport() -> ViewportPixels {
-    ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the viewport extent is valid")
 }
 
 fn recorded_tile_path(tile_key: TileKey) -> PathBuf {

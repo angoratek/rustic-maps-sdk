@@ -27,10 +27,8 @@ use rustic_maps_rendering::{
     MapCamera, TileKey, TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
 };
 use rustic_maps_style::CompiledStyle;
+use rustic_maps_test_support::square_viewport;
 use std::sync::Arc;
-
-/// Frame edge in pixels (the other golden scenes' extent).
-const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
 /// The committed OpenMapTiles z14 fixture's center: the camera keeps exactly
 /// the served tile in view.
 const TILE_CENTER_LATITUDE_DEGREES: f64 = 38.573_937_515_575_91;
@@ -148,8 +146,7 @@ fn render_frame(
 /// untimed path.
 async fn settled_frame(style: CompiledStyle) -> Option<(HeadlessTileRenderer, CapturedFrame)> {
     let mut renderer = request_renderer_or_skip()?;
-    let viewport = ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the viewport extent is valid");
+    let viewport = square_viewport();
     let camera = build_camera();
     let mut scheduler = VectorBaseScheduler::new(Arc::new(FixtureTileProvider), "settled", style);
     let visible_tile_keys = camera.visible_tile_keys(
@@ -172,8 +169,7 @@ async fn a_declared_style_transition_blends_between_the_two_settled_styles() {
     else {
         return;
     };
-    let viewport = ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the viewport extent is valid");
+    let viewport = square_viewport();
     let camera = build_camera();
     let visible_tile_keys = camera.visible_tile_keys(
         &viewport,

@@ -1,0 +1,12 @@
+[package]
+name = "rustic-maps-test-support"
+description = "Shared fixtures for the SDK's test suites"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+geospatial-types.workspace = true
+rustic-maps-rendering.workspace = true

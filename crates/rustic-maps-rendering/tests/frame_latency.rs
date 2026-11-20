@@ -301,26 +301,23 @@ mod split_path {
     use geospatial_types::RasterImageFormat;
     use geospatial_types::RasterTileResolution;
     use rustic_maps_rendering::TilePrefetchPlanner;
-    use rustic_maps_rendering::camera::{DEFAULT_FIELD_OF_VIEW_DEGREES, MapCamera, ViewportPixels};
+    use rustic_maps_rendering::camera::{DEFAULT_FIELD_OF_VIEW_DEGREES, MapCamera};
     use rustic_maps_rendering::projection::normalized_world_to_coordinate;
     use rustic_maps_rendering::tile_key::TileKey;
     use rustic_maps_rendering::tile_scheduler::{TileReadiness, TileScheduler};
     use rustic_maps_rendering::tile_texture_pool::TileTexturePool;
+    use rustic_maps_test_support::square_viewport as test_viewport;
     use std::time::{Duration, Instant};
     use tokio::time::sleep;
 
-    /// The test viewport: one square viewport over the synthetic grid.
+    /// The test viewport edge, in pixels: one square viewport over the
+    /// synthetic grid.
     const TEST_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
 
     /// How many resolve ticks the warm-run completion waits take at most.
     const WARM_COMPLETION_WAIT_TICKS: usize = 200;
     /// The completion-wait tick's duration: must cover one scripted fetch.
     const WARM_COMPLETION_WAIT_TICK: Duration = Duration::from_millis(10);
-
-    fn test_viewport() -> ViewportPixels {
-        ViewportPixels::new(TEST_VIEWPORT_EDGE_PIXELS, TEST_VIEWPORT_EDGE_PIXELS)
-            .expect("the test viewport is valid")
-    }
 
     fn grid_center_camera() -> MapCamera {
         let world_span = f64::from(1_u32 << FRAME_GRID_ZOOM_LEVEL);

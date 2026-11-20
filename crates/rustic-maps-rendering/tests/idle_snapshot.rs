@@ -16,11 +16,8 @@ use rustic_maps_rendering::{
     HeadlessTileRenderer, MapCamera, PreparedTile, TileKey, TileReadiness, TileScheduler,
     TileTexturePool, ViewportPixels, WgpuGraphicsContextSource, prepared_frame_is_idle,
 };
+use rustic_maps_test_support::square_viewport;
 use std::sync::{Arc, Mutex};
-
-/// Frame edge of the snapshot scene in pixels; a whole power of two so tile
-/// spans map cleanly.
-const SNAPSHOT_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
 /// Tile zoom of the snapshot scene: at this zoom the 512-pixel viewport
 /// spans two tiles per axis, so the scene carries several tiles whose fetch
 /// budget can split pending from ready.
@@ -114,9 +111,7 @@ fn snapshot_scene() -> (MapCamera, ViewportPixels, Vec<TileKey>) {
         SNAPSHOT_BEARING_DEGREES,
         SNAPSHOT_PITCH_DEGREES,
     );
-    let viewport =
-        ViewportPixels::new(SNAPSHOT_VIEWPORT_EDGE_PIXELS, SNAPSHOT_VIEWPORT_EDGE_PIXELS)
-            .expect("the snapshot viewport is a valid viewport");
+    let viewport = square_viewport();
     let scene_tile_keys = camera.visible_tile_keys(
         &viewport,
         DEFAULT_FIELD_OF_VIEW_DEGREES,

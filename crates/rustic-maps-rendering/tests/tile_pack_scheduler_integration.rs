@@ -7,8 +7,7 @@
 use async_trait::async_trait;
 use geospatial_traits::RasterTileProvider;
 use geospatial_types::{
-    BoundingBox, GeographicCoordinate, RasterImageFormat, RasterTileData, RasterTileResolution,
-    SDKError,
+    BoundingBox, RasterImageFormat, RasterTileData, RasterTileResolution, SDKError,
 };
 use rustic_maps_cache::{
     CachedRasterTileProvider, SqliteResponseCache, SqliteResponseCacheConfiguration,
@@ -16,15 +15,12 @@ use rustic_maps_cache::{
 };
 use rustic_maps_rendering::tile_scheduler::TileReadiness;
 use rustic_maps_rendering::{TileKey, TileScheduler, tile_texture_pool::TileTexturePool};
+use rustic_maps_test_support::validated_coordinate as coordinate;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 /// The namespace the cached wrapper and the pack manager share here.
 const TEST_TILE_SOURCE_NAMESPACE: &str = "test-provider";
-
-fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-    GeographicCoordinate::from_degrees(latitude, longitude).unwrap()
-}
 
 /// Region spanning two zoom-3 tile columns around tile (1, 3, 3).
 fn two_tile_region() -> BoundingBox {

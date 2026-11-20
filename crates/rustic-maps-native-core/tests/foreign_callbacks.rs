@@ -7,6 +7,9 @@
 //! failing callback contract must surface its `SdkError` variant after the
 //! round trip through the core error model.
 
+mod common;
+
+use common::coordinate;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -15,17 +18,17 @@ use rustic_maps::{
     GeocodeQuality, GeocodingProvider, MapSdk, Place, RasterImageFormat, RasterTileData,
     RasterTileProvider, RasterTileResolution, SdkError,
 };
+use rustic_maps_test_support::{
+    SACRAMENTO_LATITUDE_DEGREES as REQUEST_LATITUDE_DEGREES,
+    SACRAMENTO_LATITUDE_DEGREES as ROUTE_ORIGIN_LATITUDE_DEGREES,
+    SACRAMENTO_LONGITUDE_DEGREES as REQUEST_LONGITUDE_DEGREES,
+    SACRAMENTO_LONGITUDE_DEGREES as ROUTE_ORIGIN_LONGITUDE_DEGREES,
+};
 
 /// Latitude of the forward-geocode response place, in decimal degrees.
 const RESPONSE_LATITUDE_DEGREES: f64 = 38.57944;
 /// Longitude of the forward-geocode response place, in decimal degrees.
 const RESPONSE_LONGITUDE_DEGREES: f64 = -121.49085;
-/// Latitude the reverse-geocode request sends and the echo rounds back, in
-/// decimal degrees.
-const REQUEST_LATITUDE_DEGREES: f64 = 38.5766;
-/// Longitude the reverse-geocode request sends and the echo rounds back, in
-/// decimal degrees.
-const REQUEST_LONGITUDE_DEGREES: f64 = -121.4944;
 /// Address text the forward-geocode callback answers with.
 const RESPONSE_ADDRESS_TEXT: &str = "Tower Bridge, Sacramento";
 /// Reverse-geocode response address text composed from the echoed
@@ -41,13 +44,6 @@ const TEST_TILE_Y: u32 = 5721;
 const TEST_ZOOM_LEVEL: u8 = 12;
 /// Distinct texel count of the echoed tile payload.
 const TEST_IMAGE_BYTE_COUNT: usize = 2048;
-
-fn coordinate(latitude: f64, longitude: f64) -> rustic_maps::GeographicCoordinate {
-    rustic_maps::GeographicCoordinate {
-        latitude,
-        longitude,
-    }
-}
 
 fn response_places() -> Vec<Place> {
     vec![Place {
@@ -412,10 +408,6 @@ async fn foreign_callback_failures_accumulate_and_the_ring_is_per_map_sdk() {
 // elevation through the same registration seam and the same end-to-end path.
 // ---------------------------------------------------------------------------
 
-/// Latitude of the shared test anchor, in decimal degrees.
-const ROUTE_ORIGIN_LATITUDE_DEGREES: f64 = 38.5766;
-/// Longitude of the shared test anchor, in decimal degrees.
-const ROUTE_ORIGIN_LONGITUDE_DEGREES: f64 = -121.4944;
 /// Latitude of the shared test destination, in decimal degrees.
 const ROUTE_DESTINATION_LATITUDE_DEGREES: f64 = 38.5805;
 /// Longitude of the shared test destination, in decimal degrees.

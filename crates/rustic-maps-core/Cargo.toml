@@ -21,6 +21,8 @@ rustic-maps-offline-graph-archive.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+# The shared coordinate and viewport fixtures.
+rustic-maps-test-support.workspace = true
 
 # The PBF→archive compiler is a test-only fixture producer here: it stays
 # outside the SDK's production dependency graph on every target (its

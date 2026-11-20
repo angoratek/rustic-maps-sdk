@@ -18,6 +18,12 @@
 //! order, one per request, and the last one repeats. A request no scripted
 //! response matches is answered with `404 Not Found` and recorded, so a
 //! mismatched path fails a test instead of stalling it.
+//!
+//! The module also builds the binding-surface coordinate and viewport the
+//! contract tests share. These constructors live here rather than in
+//! `rustic-maps-test-support` because the exported `#[no_mangle]` symbols of
+//! this crate cannot be linked twice into one test target; the support crate
+//! stays free of a dependency on the binding crate.
 #![allow(dead_code)] // Each test target compiles this module; no target uses every helper.
 
 use std::io::{BufRead, BufReader, Read, Write};
@@ -28,6 +34,44 @@ use std::thread;
 
 /// The media type committed JSON payloads are served as.
 pub const JSON_CONTENT_TYPE: &str = "application/json";
+
+/// Width of the contract tests' viewport in pixels.
+const VIEWPORT_WIDTH_PIXELS: f64 = 1024.0;
+
+/// Height of the contract tests' viewport in pixels.
+const VIEWPORT_HEIGHT_PIXELS: f64 = 768.0;
+
+/// Builds a binding-surface coordinate without validating it.
+///
+/// The record is a plain FFI value, so a test can hand an out-of-range value
+/// to the validator under test instead of panicking in the fixture.
+///
+/// # Parameters
+/// - `latitude` — degrees north of the equator.
+/// - `longitude` — degrees east of the prime meridian.
+///
+/// # Returns
+/// The record carrying both values verbatim.
+pub fn coordinate(latitude: f64, longitude: f64) -> rustic_maps::GeographicCoordinate {
+    rustic_maps::GeographicCoordinate {
+        latitude,
+        longitude,
+    }
+}
+
+/// The binding-surface viewport the gesture and camera contract tests use.
+///
+/// The 1024 by 768 extent matches the camera tests' framing: wide enough for
+/// an off-centre focal pixel and tall enough to show a pitched horizon.
+///
+/// # Returns
+/// A 1024 by 768 pixel viewport.
+pub fn viewport() -> rustic_maps::ViewportSize {
+    rustic_maps::ViewportSize {
+        width_pixels: VIEWPORT_WIDTH_PIXELS,
+        height_pixels: VIEWPORT_HEIGHT_PIXELS,
+    }
+}
 
 /// The loopback bind address. Port zero asks the operating system for an
 /// unused ephemeral port, so tests can run in parallel.

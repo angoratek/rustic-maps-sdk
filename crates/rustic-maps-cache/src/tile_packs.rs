@@ -1190,18 +1190,15 @@ mod tests {
     use async_trait::async_trait;
     use geospatial_traits::RasterTileProvider;
     use geospatial_types::{
-        BoundingBox, CacheOperationFailureReason, GeographicCoordinate, MAXIMUM_TILE_ZOOM_LEVEL,
-        RasterImageFormat, RasterTileData, RasterTileResolution, SDKError,
+        BoundingBox, CacheOperationFailureReason, MAXIMUM_TILE_ZOOM_LEVEL, RasterImageFormat,
+        RasterTileData, RasterTileResolution, SDKError,
     };
     use rustic_maps_core::{BlockingWorkExecutor, CachedResponseStore};
+    use rustic_maps_test_support::validated_coordinate as coordinate;
     use std::collections::HashMap;
     use std::path::Path;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude, longitude).unwrap()
-    }
 
     fn sacramento_region() -> BoundingBox {
         BoundingBox::from_corners(coordinate(38.57, -121.5), coordinate(38.58, -121.49)).unwrap()

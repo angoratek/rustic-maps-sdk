@@ -1083,6 +1083,7 @@ dependencies = [
  "async-trait",
  "geospatial-types",
  "proptest",
+ "rustic-maps-test-support",
  "tokio",
 ]
 
@@ -2609,6 +2610,7 @@ dependencies = [
  "r2d2",
  "r2d2_sqlite",
  "rustic-maps-core",
+ "rustic-maps-test-support",
  "serde",
  "serde_json",
  "sha2",
@@ -2626,6 +2628,7 @@ dependencies = [
  "geospatial-types",
  "rustic-maps-offline-graph-archive",
  "rustic-maps-offline-graph-compiler",
+ "rustic-maps-test-support",
  "tokio",
  "tracing",
  "url",
@@ -2671,6 +2674,7 @@ dependencies = [
  "rustic-maps-positioning",
  "rustic-maps-providers",
  "rustic-maps-rendering",
+ "rustic-maps-test-support",
  "rustic-maps-web-bindings",
  "serde",
  "serde_json",
@@ -2691,6 +2695,7 @@ version = "0.1.0"
 dependencies = [
  "geospatial-types",
  "proptest",
+ "rustic-maps-test-support",
  "serde",
  "serde_json",
  "web-time",
@@ -2719,6 +2724,7 @@ version = "0.1.0"
 dependencies = [
  "geospatial-types",
  "rustic-maps-navigation",
+ "rustic-maps-test-support",
  "thiserror 2.0.21",
 ]
 
@@ -2760,6 +2766,7 @@ dependencies = [
  "rustic-maps-core",
  "rustic-maps-glyphs",
  "rustic-maps-style",
+ "rustic-maps-test-support",
  "rustic-maps-vector-tiles",
  "serde",
  "serde_json",
@@ -2776,6 +2783,14 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "rustic-maps-test-support"
+version = "0.1.0"
+dependencies = [
+ "geospatial-types",
+ "rustic-maps-rendering",
 ]
 
 [[package]]
@@ -2827,6 +2842,7 @@ dependencies = [
  "rustic-maps-providers",
  "rustic-maps-rendering",
  "rustic-maps-style",
+ "rustic-maps-test-support",
  "rustic-maps-vector-tiles",
  "serde_json",
  "tracing",

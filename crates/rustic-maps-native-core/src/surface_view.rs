@@ -2538,16 +2538,16 @@ mod tests {
         SurfaceFrameStatistics, SurfaceRenderError, TileKey, TileScheduler, TileTexturePool,
         VectorBaseScheduler, ViewportPixels, vector_style::VECTOR_STYLE_ID_BRIGHT_LIGHT,
     };
+    use rustic_maps_test_support::{
+        SACRAMENTO_LATITUDE_DEGREES as TEST_LATITUDE_DEGREES,
+        SACRAMENTO_LONGITUDE_DEGREES as TEST_LONGITUDE_DEGREES,
+    };
     use std::future::Future;
     use std::pin::Pin;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Condvar, Mutex};
     use std::task::{Context, Poll, Waker};
 
-    /// Latitude the overlay tests position at, in decimal degrees.
-    const TEST_LATITUDE_DEGREES: f64 = 38.5766;
-    /// Longitude the overlay tests position at, in decimal degrees.
-    const TEST_LONGITUDE_DEGREES: f64 = -121.4944;
     /// Latitude outside the canonical range the coordinate validation
     /// refuses.
     const INVALID_LATITUDE_DEGREES: f64 = 91.0;

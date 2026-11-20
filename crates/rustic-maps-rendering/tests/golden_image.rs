@@ -37,18 +37,12 @@ use rustic_maps_rendering::{
     TileTexturePool, ViewportPixels, WgpuGraphicsContextSource, label_candidates_for_vector_tile,
     normalized_world_to_coordinate,
 };
+use rustic_maps_test_support::{
+    SACRAMENTO_LATITUDE_DEGREES, SACRAMENTO_LONGITUDE_DEGREES, square_viewport as golden_viewport,
+};
 use rustic_maps_vector_tiles::decode_vector_tile;
 use std::path::PathBuf;
 
-/// Frame edge in pixels for both golden scenes; small enough for a fast test,
-/// and a whole power of two so tile spans map cleanly.
-const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
-
-/// Sacramento (California State Capitol) center, the fixed camera anchor of
-/// the golden scenes.
-const SACRAMENTO_LATITUDE_DEGREES: f64 = 38.5766;
-/// Sacramento center longitude.
-const SACRAMENTO_LONGITUDE_DEGREES: f64 = -121.4944;
 /// Tile zoom at which the scene's tiles are scheduled and rendered.
 const SCENE_TILE_ZOOM_LEVEL: u8 = 14;
 /// Bearing of both golden cameras: north up.
@@ -176,11 +170,6 @@ fn camera_at(latitude_degrees: f64, longitude_degrees: f64, pitch_degrees: f64) 
 }
 
 /// Builds the scene viewport.
-fn golden_viewport() -> ViewportPixels {
-    ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the golden viewport is a valid viewport")
-}
-
 /// Returns the file a recorded tile lives in, and the record command's
 /// workspace root the path is relative to.
 fn recorded_tile_path(tile_key: TileKey) -> PathBuf {

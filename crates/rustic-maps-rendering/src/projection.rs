@@ -134,12 +134,9 @@ mod tests {
         tile_key_for_coordinate, tiles_covering, zoom_scale_pixels,
     };
     use crate::tile_key::TileKey;
-    use geospatial_types::{BoundingBox, GeographicCoordinate};
+    use geospatial_types::BoundingBox;
     use proptest::prelude::*;
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude, longitude).unwrap()
-    }
+    use rustic_maps_test_support::validated_coordinate as coordinate;
 
     #[test]
     fn known_normalization_values() {

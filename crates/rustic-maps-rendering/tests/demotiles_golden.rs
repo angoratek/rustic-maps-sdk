@@ -22,12 +22,10 @@ mod common;
 use common::golden::{GoldenTolerance, compare_or_create_golden};
 use rustic_maps_rendering::{
     DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer, MapCamera,
-    TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
+    TileTexturePool, WgpuGraphicsContextSource,
 };
+use rustic_maps_test_support::square_viewport;
 use std::sync::Arc;
-
-/// Frame edge in pixels, the other goldens' extent.
-const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
 /// The camera's centre: the equator and prime meridian corner, so the four
 /// surrounding z2 tiles fill the frame.
 const SCENE_CENTER_LATITUDE_DEGREES: f64 = 0.0;
@@ -211,8 +209,7 @@ async fn the_maplibre_demotiles_style_renders_end_to_end() {
         return;
     };
     let camera = build_camera();
-    let viewport = ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the viewport extent is valid");
+    let viewport = square_viewport();
     let compiled_style =
         vector_tile_style_from_json(DEMOTILES_STYLE_JSON).expect("the demotiles style compiles");
     let mut scheduler = VectorBaseScheduler::new(

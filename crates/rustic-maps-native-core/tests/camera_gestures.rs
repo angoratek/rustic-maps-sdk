@@ -7,15 +7,16 @@
 //! the wrapper's viewport validation rejects unusable input with the
 //! verbatim message.
 
-use rustic_maps::{GeographicCoordinate, MapCamera, ScreenPoint, SdkError, ViewportSize};
+mod common;
 
-/// Latitude of the fixture camera's center, in decimal degrees: the
-/// California State Capitol / Capitol Park, downtown Sacramento.
-const FIXTURE_LATITUDE_DEGREES: f64 = 38.5766;
-/// Longitude of the fixture camera's center, in decimal degrees.
-const FIXTURE_LONGITUDE_DEGREES: f64 = -121.4944;
-/// Zoom level of the fixture camera.
-const FIXTURE_ZOOM_LEVEL: f64 = 14.0;
+use common::{coordinate, viewport};
+use rustic_maps::{MapCamera, ScreenPoint, SdkError, ViewportSize};
+use rustic_maps_test_support::{
+    SACRAMENTO_CAMERA_ZOOM_LEVEL as FIXTURE_ZOOM_LEVEL,
+    SACRAMENTO_LATITUDE_DEGREES as FIXTURE_LATITUDE_DEGREES,
+    SACRAMENTO_LONGITUDE_DEGREES as FIXTURE_LONGITUDE_DEGREES,
+};
+
 /// Bearing of the fixture camera, in degrees.
 const FIXTURE_BEARING_DEGREES: f64 = 25.0;
 /// Pitch of the fixture camera, in degrees: steep enough that the focal
@@ -61,20 +62,6 @@ const COORDINATE_TOLERANCE_DEGREES: f64 = 1e-6;
 /// Verbatim detail of the viewport reject the gesture members share, with
 /// the invalid zero width spelled as the validator formats it.
 const INVALID_VIEWPORT_DETAIL: &str = "viewport extent 0x768 must be positive";
-
-fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-    GeographicCoordinate {
-        latitude,
-        longitude,
-    }
-}
-
-fn viewport() -> ViewportSize {
-    ViewportSize {
-        width_pixels: VIEWPORT_WIDTH_PIXELS,
-        height_pixels: VIEWPORT_HEIGHT_PIXELS,
-    }
-}
 
 fn viewport_center() -> ScreenPoint {
     ScreenPoint {
