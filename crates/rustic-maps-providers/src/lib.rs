@@ -294,6 +294,30 @@ impl StyleResourceClient for MapBoxStyleResources {
     }
 }
 
+/// The query-parameter name HERE's APIs read the credential from.
+///
+/// This is the provider's wire contract: it must match the parameter name in
+/// HERE's published API documentation.
+pub const HERE_CREDENTIAL_PARAMETER: &str = "apiKey";
+
+/// The query-parameter name Google Maps APIs read the credential from.
+///
+/// This is the provider's wire contract: it must match the parameter name in
+/// Google's published API documentation.
+pub const GOOGLE_CREDENTIAL_PARAMETER: &str = "key";
+
+/// The query-parameter name TomTom's APIs read the credential from.
+///
+/// This is the provider's wire contract: it must match the parameter name in
+/// TomTom's published API documentation.
+pub const TOMTOM_CREDENTIAL_PARAMETER: &str = "key";
+
+/// The query-parameter name Mapbox's APIs read the credential from.
+///
+/// This is the provider's wire contract: it must match the parameter name in
+/// Mapbox's published API documentation.
+pub const MAPBOX_CREDENTIAL_PARAMETER: &str = "access_token";
+
 /// The query-parameter credential a credentialed vendor's client applies.
 fn api_key_auth(credential: &str, parameter: &str) -> Arc<dyn AuthProvider> {
     Arc::new(ApiKeyProvider::new(
@@ -366,7 +390,10 @@ fn here_implementations(
     override_base_url: Option<&str>,
     contract_name: &str,
 ) -> VendorImplementations {
-    let mut client = everymap_providers_here::HereClient::new(api_key_auth(credential, "apiKey"));
+    let mut client = everymap_providers_here::HereClient::new(api_key_auth(
+        credential,
+        HERE_CREDENTIAL_PARAMETER,
+    ));
     client.set_observer(contract_observer(contract_name, "here"));
     let client = Arc::new(client);
     let base_url = base_url_override(override_base_url);
@@ -414,7 +441,10 @@ fn google_implementations(
     override_base_url: Option<&str>,
     contract_name: &str,
 ) -> VendorImplementations {
-    let mut client = everymap_providers_google::GoogleClient::new(api_key_auth(credential, "key"));
+    let mut client = everymap_providers_google::GoogleClient::new(api_key_auth(
+        credential,
+        GOOGLE_CREDENTIAL_PARAMETER,
+    ));
     client.set_observer(contract_observer(contract_name, "google"));
     let client = Arc::new(client);
     let base_url = base_url_override(override_base_url);
@@ -448,7 +478,10 @@ fn tomtom_implementations(
     override_base_url: Option<&str>,
     contract_name: &str,
 ) -> VendorImplementations {
-    let mut client = everymap_providers_tomtom::TomTomClient::new(api_key_auth(credential, "key"));
+    let mut client = everymap_providers_tomtom::TomTomClient::new(api_key_auth(
+        credential,
+        TOMTOM_CREDENTIAL_PARAMETER,
+    ));
     client.set_observer(contract_observer(contract_name, "tomtom"));
     let client = Arc::new(client);
     let base_url = base_url_override(override_base_url);
@@ -496,8 +529,10 @@ fn mapbox_implementations(
     override_base_url: Option<&str>,
     contract_name: &str,
 ) -> VendorImplementations {
-    let mut client =
-        everymap_providers_mapbox::MapBoxClient::new(api_key_auth(credential, "access_token"));
+    let mut client = everymap_providers_mapbox::MapBoxClient::new(api_key_auth(
+        credential,
+        MAPBOX_CREDENTIAL_PARAMETER,
+    ));
     client.set_observer(contract_observer(contract_name, "mapbox"));
     let client = Arc::new(client);
     let base_url = base_url_override(override_base_url);
@@ -571,7 +606,18 @@ fn radar_implementations(
 
 #[cfg(test)]
 mod tests {
-    use super::{Contract, PROVIDER_ENTRIES, entry_for_key};
+    use super::{
+        Contract, GOOGLE_CREDENTIAL_PARAMETER, HERE_CREDENTIAL_PARAMETER,
+        MAPBOX_CREDENTIAL_PARAMETER, PROVIDER_ENTRIES, TOMTOM_CREDENTIAL_PARAMETER, entry_for_key,
+    };
+
+    #[test]
+    fn the_credential_parameters_pin_each_providers_wire_contract() {
+        assert_eq!(HERE_CREDENTIAL_PARAMETER, "apiKey");
+        assert_eq!(GOOGLE_CREDENTIAL_PARAMETER, "key");
+        assert_eq!(TOMTOM_CREDENTIAL_PARAMETER, "key");
+        assert_eq!(MAPBOX_CREDENTIAL_PARAMETER, "access_token");
+    }
 
     #[test]
     fn every_row_is_addressable_by_its_key() {
