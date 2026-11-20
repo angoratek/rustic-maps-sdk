@@ -1183,6 +1183,11 @@ export function installDiagnosticsPhase1(runtime) {
   runtime.shared.LOCAL_DEMO_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
   runtime.shared.LIVE_TILES_OPT_IN_PARAMETER = 'liveTiles';
+
+  // A local page serves the recorded tile fixtures; the harness disables
+  // them with `?noRecordedTileFixtures` to exercise the deployed page's
+  // capability-off path without leaving the local origin.
+  runtime.shared.RECORDED_TILE_FIXTURES_DISABLE_PARAMETER = 'noRecordedTileFixtures';
 }
 
 export function installDiagnosticsPhase2(runtime) {

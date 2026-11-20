@@ -204,12 +204,21 @@ slot. `registerUrlTemplateRasterTileSource` validates and stores the fallback on
 never replacing a configured raster provider; registering again replaces the previous
 fallback. The canvas resolves the raster provider in this order: the shared slot the
 contract registry mirrors, the configured `RasterTiles` provider, the page fallback,
-then the recorded-fixture provider for the demo area. `clearProviderRegistrations`
-clears configured providers but leaves the fallback, so a cleared page keeps drawing
-live tiles; `clearSharedProviderSlots` does the same for the mirrors;
-`clearUrlTemplateRasterTileSource` removes the fallback. The wasm façade
+then the recorded-fixture provider for the demo area when the page serves it.
+`clearProviderRegistrations` clears configured providers but leaves the fallback, so a
+cleared page keeps drawing live tiles; `clearSharedProviderSlots` does the same for the
+mirrors; `clearUrlTemplateRasterTileSource` removes the fallback. The wasm façade
 (`platform/web/main.mjs`) carries the clear call; `contract_sync.mjs` and the platform
 parity gate see it as an addition. The frozen UDL is unchanged.
+
+The recorded-fixture probe is a canvas construction capability.
+`new BrowserMapView(canvas, tileResolution, recordedTileFixturesAreServed)` defaults
+`recordedTileFixturesAreServed` to `true`, which is the local dev server and test
+harness behaviour. A page that stages no fixtures passes `false`: the raster fetch then
+asks the registered provider directly and records no fixture attempt, so the deployed
+page issues no `/tiles` 404 for an explicitly selected raster base. The playground
+derives the value from its host, and the harness drives the deployed behaviour from a
+local origin with `?noRecordedTileFixtures`.
 
 The registry's OpenStreetMap Standard raster base is live-only and commits no tile, so
 its descriptor records the served contract as fixtureless. The fallback case answers the
@@ -290,8 +299,10 @@ run unmarks everything it did not complete.
   `buffer_unordered(TILE_FETCH_CONCURRENCY)` and inserts results into the texture pool serially.
 - The browser canvas starts network fetches detached, up to `MAXIMUM_CONCURRENT_TILE_FETCHES` (32);
 the warm pass it awaits only moves staged payloads into the pool.
-- The per-tile fixture probe stays: it is the network-free test seam, runs once per address, and
-removing it would make every fixture-backed case depend on a live provider.
+- The per-tile fixture probe stays: it is the network-free test seam, runs once per
+address when the page's `recordedTileFixturesAreServed` capability is enabled, and
+removing it would make every fixture-backed case depend on a live provider. With the
+capability disabled the probe is skipped and the provider answers directly.
 
 ### Provider pacing and the zoom cross-fade
 

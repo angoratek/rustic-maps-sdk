@@ -891,9 +891,13 @@ export function installBaseMapPhase1(runtime) {
   // Whether this page answers the recorded raster tile fixtures. The dev
   // server serves them from the repository; a deployed site stages none, so
   // a fixture-backed raster base is demonstrated locally only and the
-  // keyless vector base is the first-run base elsewhere.
+  // keyless vector base is the first-run base elsewhere. The harness disables
+  // them on a local page with `?noRecordedTileFixtures` to exercise the
+  // deployed page's capability-off path without leaving the local origin.
   runtime.shared.recorded_tile_fixtures_are_served =
-    runtime.shared.LOCAL_DEMO_HOSTNAMES.has(window.location.hostname);
+    runtime.shared.LOCAL_DEMO_HOSTNAMES.has(window.location.hostname)
+    && !new URLSearchParams(window.location.search)
+      .has(runtime.shared.RECORDED_TILE_FIXTURES_DISABLE_PARAMETER);
 }
 
 export function installBaseMapPhase2(runtime) {

@@ -271,6 +271,14 @@ const DESIRED_MAXIMUM_FRAME_LATENCY: u32 = 2;
 /// its base layer through [`BrowserMapView::set_tile_layer_visible`].
 const TILE_LAYER_VISIBLE_BY_DEFAULT: bool = true;
 
+/// Whether the page serves the recorded PNG tile fixtures at the same-origin
+/// `/tiles` route, which decides whether a raster fetch may probe that route
+/// before falling through to a registered live source. The local dev server
+/// and the test harness serve the fixtures; a deployed page stages none and
+/// constructs the canvas with the capability off, so a raster request goes
+/// straight to its provider instead of issuing one 404 per tile.
+const RECORDED_TILE_FIXTURES_ARE_SERVED_BY_DEFAULT: bool = true;
+
 /// How many times one render frame tries to acquire the surface texture,
 /// reconfiguring between attempts; more attempts would fight a surface the
 /// browser keeps tearing down.
@@ -2251,6 +2259,11 @@ pub struct BrowserMapView {
     /// fixtures at, fixed for the canvas' lifetime (the page picks it from
     /// its device-pixel ratio at construction).
     tile_resolution: RasterTileResolution,
+    /// Whether a raster fetch may probe the same-origin recorded tile
+    /// fixtures before a registered live source, fixed for the canvas'
+    /// lifetime by the page's construction choice (see
+    /// [`RECORDED_TILE_FIXTURES_ARE_SERVED_BY_DEFAULT`]).
+    recorded_tile_fixtures_are_served: bool,
     /// Guards against (and reports) a second, racing `initialize`.
     initialization_claimed: Cell<bool>,
     /// Whether the raster tile base layer draws in every following
@@ -2380,19 +2393,29 @@ impl Drop for BrowserMapView {
 #[wasm_bindgen]
 impl BrowserMapView {
     /// Builds the canvas renderer over the page's canvas element
-    /// (`new BrowserMapView(canvas, tileResolution?)`). The tile pixel
-    /// resolution is optional: omitted, it follows the same
+    /// (`new BrowserMapView(canvas, tileResolution?, recordedTileFixturesAreServed?)`).
+    /// The tile pixel resolution is optional: omitted, it follows the same
     /// device-pixel-ratio rule as `retinaDevicePixelRatioThreshold()`;
-    /// supplied, it is honoured verbatim. Fails
-    /// when the element cannot host a GPU surface (for example after another
-    /// context already claimed the element). Call [`BrowserMapView::initialize`]
-    /// before the first [`BrowserMapView::render_frame`].
+    /// supplied, it is honoured verbatim.
+    ///
+    /// The recorded-fixture capability is optional and defaults to enabled.
+    /// Enabled, a raster fetch probes the same-origin `/tiles` fixtures before
+    /// a registered live source, which is what the local dev server and the
+    /// test harness serve. Disabled, the fetch goes straight to the registered
+    /// provider and records no fixture attempt, so a page that stages no
+    /// fixtures issues no 404 for them. Fails when the element cannot host a
+    /// GPU surface (for example after another context already claimed the
+    /// element). Call [`BrowserMapView::initialize`] before the first
+    /// [`BrowserMapView::render_frame`].
     #[wasm_bindgen(constructor)]
     pub fn new(
         canvas: HtmlCanvasElement,
         tile_resolution: Option<CanvasTileResolution>,
+        recorded_tile_fixtures_are_served: Option<bool>,
     ) -> Result<BrowserMapView, JsValue> {
         let tile_resolution = tile_resolution.unwrap_or_else(device_tile_resolution);
+        let recorded_tile_fixtures_are_served = recorded_tile_fixtures_are_served
+            .unwrap_or(RECORDED_TILE_FIXTURES_ARE_SERVED_BY_DEFAULT);
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
         let surface = instance
             .create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
@@ -2409,6 +2432,7 @@ impl BrowserMapView {
             instance,
             surface,
             tile_resolution: tile_resolution.into(),
+            recorded_tile_fixtures_are_served,
             initialization_claimed: Cell::new(false),
             tile_layer_visible: Cell::new(TILE_LAYER_VISIBLE_BY_DEFAULT),
             clear_color: Cell::new([
@@ -4171,6 +4195,10 @@ impl BrowserMapView {
     /// the caller wants the fallback imagery or nothing. The parent coordinates
     /// must describe the fallback tile's direct parent.
     ///
+    /// A page that serves no recorded fixtures has no parent fixture to stage,
+    /// so this returns an unsupported-capability failure instead of issuing a
+    /// request the page cannot answer.
+    ///
     /// The draw state is borrowed only to read the tile resolution and again
     /// after the fetch; the parent fetch itself runs outside any borrow, so a
     /// concurrent frame can draw while the payload is in flight.
@@ -4184,6 +4212,12 @@ impl BrowserMapView {
         parent_tile_y: u32,
         parent_zoom_level: u8,
     ) -> Result<(), JsValue> {
+        if !self.recorded_tile_fixtures_are_served {
+            return Err(failure_with_code(
+                ERROR_CODE_UNSUPPORTED_CAPABILITY,
+                "this page does not serve the recorded tile fixtures",
+            ));
+        }
         let fallback_tile_key = TileKey::new(fallback_tile_x, fallback_tile_y, fallback_zoom_level)
             .map_err(|sdk_error| sdk_error_failure(&sdk_error))?;
         let parent_tile_key = TileKey::new(parent_tile_x, parent_tile_y, parent_zoom_level)
@@ -5618,6 +5652,7 @@ impl BrowserMapView {
     fn start_tile_prefetches(&self, draw_state: &CanvasDrawState, requested_tiles: &[TileKey]) {
         let tile_provider = draw_state.tile_provider.clone();
         let tile_resolution = draw_state.tile_provider.tile_resolution;
+        let recorded_tile_fixtures_are_served = self.recorded_tile_fixtures_are_served;
         let canvas = self.canvas.clone();
         // The revision of the pool this fetch belongs to. A result that
         // resolves after a provider change must not stage a payload, mark a
@@ -5642,7 +5677,12 @@ impl BrowserMapView {
             let tile_fetches_in_flight = self.tile_fetches_in_flight.clone();
             let canvas = canvas.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let fetched_payload = fetch_tile_payload_bytes(tile_key, tile_resolution).await;
+                let fetched_payload = fetch_tile_payload_bytes(
+                    tile_key,
+                    tile_resolution,
+                    recorded_tile_fixtures_are_served,
+                )
+                .await;
                 // The provider changed while the fetch ran: the pooled state
                 // and the new provider own the tile now, so this result is
                 // dropped silently.
@@ -5682,24 +5722,34 @@ impl BrowserMapView {
     }
 }
 
-/// Fetches one tile's encoded payload: the same-origin recorded fixture
-/// first, then the installed raster-tile provider (a registered credential or
-/// a URL-template source), so panning anywhere in the world still draws
-/// imagery. `None` means the tile has no payload at this address.
+/// Fetches one tile's encoded payload: when the page serves them, the
+/// same-origin recorded fixture first, then the installed raster-tile provider
+/// (a registered credential or a URL-template source), so panning anywhere in
+/// the world still draws imagery. A page that serves no fixtures skips the
+/// fixture probe and asks the provider directly, issuing no `/tiles` request.
+/// `Failed` means the tile has no payload at this address.
 async fn fetch_tile_payload_bytes(
     tile_key: TileKey,
     tile_resolution: RasterTileResolution,
+    recorded_tile_fixtures_are_served: bool,
 ) -> TilePayloadFetch {
-    let payload_url = tile_fixture_url(&tile_key, tile_resolution);
-    let fixture_outcome = fetch_same_origin_bytes(&payload_url).await;
-    let fixture_has_no_record =
-        matches!(fixture_outcome, Err(SameOriginTileFetchError::NotRecorded));
-    if let Ok(encoded_image_bytes) = fixture_outcome {
-        return TilePayloadFetch::Fetched(encoded_image_bytes);
-    }
+    let fixture_outcome = if recorded_tile_fixtures_are_served {
+        let payload_url = tile_fixture_url(&tile_key, tile_resolution);
+        match fetch_same_origin_bytes(&payload_url).await {
+            Ok(encoded_image_bytes) => return TilePayloadFetch::Fetched(encoded_image_bytes),
+            Err(fixture_error) => Some(fixture_error),
+        }
+    } else {
+        None
+    };
     let Some(provider) = registered_raster_tile_provider() else {
         // With no live source, only a definitive route answer is permanent:
         // a transient transport failure must be retried once it can succeed.
+        // A skipped probe is definitive by construction.
+        let fixture_has_no_record = matches!(
+            fixture_outcome,
+            None | Some(SameOriginTileFetchError::NotRecorded)
+        );
         return TilePayloadFetch::Failed(if fixture_has_no_record {
             TilePayloadFetchFailure::NoSource
         } else {

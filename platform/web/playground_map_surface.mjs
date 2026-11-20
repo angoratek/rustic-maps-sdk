@@ -844,9 +844,14 @@ export function defineMapSurface(runtime) {
         window.devicePixelRatio >= retina_threshold
           ? window.mapTest.TileResolution.Retina
           : window.mapTest.TileResolution.Standard;
+      // The recorded-fixture capability tells the canvas whether this page
+      // serves the same-origin `/tiles` fixtures: the dev server does, a
+      // deployed page stages none and must ask its provider directly rather
+      // than issue a 404 per tile.
       runtime.state.gpu_map_canvas = new window.mapTest.MapView(
         runtime.shared.map_canvas,
         tile_resolution,
+        runtime.shared.recorded_tile_fixtures_are_served,
       );
       runtime.state.renderer_detail = `GPU adapter ${await runtime.state.gpu_map_canvas.initialize()}`;
       // Fixtures cover the recorded demo area only. The registry's live

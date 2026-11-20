@@ -197,8 +197,11 @@ key per capability in a stable order. The wasm seam serves construction:
 `MapsSdk.create()` resolves the root (`maps.compiledVersion`),
 `new MapView(canvas, maps)` binds the canvas (`mapView.sdkCompiledVersion`), the
 optional `TileResolution.Retina` argument pins tile resolution for capture harnesses
-(default: the `devicePixelRatioThreshold()` rule), and `initializeSdk()` is the
-readiness alias.
+(default: the `devicePixelRatioThreshold()` rule), the optional
+`recordedTileFixturesAreServed` argument decides whether a raster request may probe the
+same-origin `/tiles` fixtures before a registered live source (default enabled for the
+dev server and test harness; a page that stages no fixtures disables it), and
+`initializeSdk()` is the readiness alias.
 
 ### Camera
 
