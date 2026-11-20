@@ -819,13 +819,14 @@ final class ReferenceApplicationModel: ObservableObject {
         buffer: diagnosticsEventsBuffer
     )
 
-    /// Whether the one live subscription is armed (the first sheet open arms
-    /// it; later opens reuse it — a second subscribe would double-deliver).
-    private var isDiagnosticsEventsSubscriptionArmed = false
+    /// The live subscription the sheet's feed holds, or nil while no feed is
+    /// open. Closing it removes exactly the SDK registration it owns; dropping
+    /// it does not, and the next open subscribes again.
+    private var diagnosticsSubscription: DiagnosticSubscription?
 
-    /// The severity the armed subscription currently gates at, so the
-    /// explicit Show debug events switch lowers it exactly once and the gate
-    /// is never raised back within the session.
+    /// The severity the live subscription gates at, so the explicit Show debug
+    /// events switch replaces it once at Debug and the gate is never raised
+    /// back within the session.
     private var diagnosticsEventsSubscriptionSeverity: SdkLogSeverity =
         ReferenceApplicationConfiguration.diagnosticsEventsMinimumSeverity
 
@@ -4929,33 +4930,34 @@ extension ReferenceApplicationModel {
         )
     }
 
-    /// Stops the sheet's feed: no later delivery is recorded and the merge
-    /// timer is invalidated. The frozen contract has no unsubscribe member, so
-    /// the registration itself stays on the SDK; the app-side feed — the
-    /// staging list and the timer — is what this releases.
+    /// Stops the sheet's feed: no later delivery is recorded, the merge timer
+    /// is invalidated and the subscription is closed so its SDK registration
+    /// does not outlive the sheet. The next open subscribes again.
     private func stopDiagnosticsEventsFeed() {
         diagnosticsEventsBuffer.stopRefreshCadence()
+        diagnosticsSubscription?.cancel()
+        diagnosticsSubscription = nil
     }
 
-    /// Arms the sheet's one live diagnostic subscription on its first open,
-    /// not at application start: an application that never opens the sheet
-    /// never subscribes. Later opens reuse the registration; the explicit
-    /// Show debug events switch re-subscribes once at Debug, and the gate is
-    /// never raised back.
+    /// Opens the sheet's live diagnostic subscription on the first open, not
+    /// at application start: an application that never opens the sheet never
+    /// subscribes. A later open subscribes again because the close removed the
+    /// previous subscription. The explicit Show debug events switch replaces
+    /// the subscription once at Debug, and the gate is never raised back.
     private func subscribeToDiagnosticEventsIfNeeded(
         mapSdk: MapSdk,
         minimumSeverity: SdkLogSeverity
     ) {
-        guard !isDiagnosticsEventsSubscriptionArmed
+        guard diagnosticsSubscription == nil
             || diagnosticsEventsSubscriptionSeverity != minimumSeverity
         else {
             return
         }
-        mapSdk.subscribeToDiagnosticEvents(
+        diagnosticsSubscription?.cancel()
+        diagnosticsSubscription = mapSdk.subscribeToDiagnosticEventsWithSubscription(
             listener: diagnosticsEventListener,
             minimumSeverity: minimumSeverity
         )
-        isDiagnosticsEventsSubscriptionArmed = true
         diagnosticsEventsSubscriptionSeverity = minimumSeverity
     }
 

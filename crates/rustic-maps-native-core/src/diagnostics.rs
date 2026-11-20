@@ -2,7 +2,8 @@
 //! foreign-callback contract foreign code implements to receive the SDK's
 //! structured internal log events, plus the ring-buffer `tracing` subscriber
 //! and the sink's privacy scrubbing behind
-//! `MapSdk::subscribe_to_diagnostic_events` and
+//! `MapSdk::subscribe_to_diagnostic_events`,
+//! `MapSdk::subscribe_to_diagnostic_events_with_subscription` and
 //! `MapSdk::flush_recent_diagnostic_events`.
 //!
 //! # Architecture
@@ -179,11 +180,15 @@ struct RecordedEvent {
     provider_request_trace: Option<ProviderRequestTrace>,
 }
 
-/// One live foreign diagnostics listener registration (the subscription
-/// `MapSdk::subscribe_to_diagnostic_events` created).
+/// One live foreign diagnostics listener registration (the registration a
+/// `MapSdk::subscribe_to_diagnostic_events` or
+/// `MapSdk::subscribe_to_diagnostic_events_with_subscription` call created).
 struct DiagnosticsListenerRegistration {
     listener: Arc<dyn SdkDiagnosticEventListener>,
     minimum_severity: SdkLogSeverity,
+    /// The process-wide id of this registration; the handle a
+    /// `subscribe_to_diagnostic_events_with_subscription` call answers owns it.
+    registration_id: u64,
 }
 
 /// The process-wide diagnostics state: the per-subsystem bounded rings, the
@@ -195,6 +200,9 @@ pub struct DiagnosticsHandle {
     gate: AtomicU8,
     listeners: Mutex<Vec<DiagnosticsListenerRegistration>>,
     ring_sequence: AtomicU64,
+    /// The next registration id a subscription handle owns; process-wide, so
+    /// a handle can only ever remove the registration it was created for.
+    next_registration_id: AtomicU64,
 }
 
 impl DiagnosticsHandle {
@@ -210,6 +218,7 @@ impl DiagnosticsHandle {
                 gate: AtomicU8::new(GATE_DEFAULT_RANK),
                 listeners: Mutex::new(Vec::new()),
                 ring_sequence: AtomicU64::new(1),
+                next_registration_id: AtomicU64::new(1),
             }));
             let _ = tracing::subscriber::set_global_default(DiagnosticsSubscriber {
                 handle,
@@ -219,15 +228,16 @@ impl DiagnosticsHandle {
         })
     }
 
-    /// Subscribes a listener to the live event stream; also lowers the
-    /// recording gate to the subscription's minimum severity (the gate never
-    /// raises back, so a later coarser subscription keeps recording the
-    /// finer-grained events).
+    /// Subscribes a listener to the live event stream and answers the new
+    /// registration's process-wide id; also lowers the recording gate to the
+    /// subscription's minimum severity (the gate never raises back, so a later
+    /// coarser subscription keeps recording the finer-grained events).
     pub(crate) fn subscribe(
         &'static self,
         listener: Arc<dyn SdkDiagnosticEventListener>,
         minimum_severity: SdkLogSeverity,
-    ) {
+    ) -> u64 {
+        let registration_id = self.next_registration_id.fetch_add(1, Ordering::Relaxed);
         crate::panic_boundary::state_lock_guard(
             &self.listeners,
             "the diagnostics listener registry",
@@ -235,8 +245,24 @@ impl DiagnosticsHandle {
         .push(DiagnosticsListenerRegistration {
             listener,
             minimum_severity,
+            registration_id,
         });
         self.lower_gate_to(severity_rank(minimum_severity));
+        registration_id
+    }
+
+    /// Removes the one registration a subscription handle owns, answering
+    /// whether it was still live. An unknown or already closed id is a no-op
+    /// (`false`), so closing a subscription twice is safe. The severity gate
+    /// is left where the subscription lowered it; the gate never raises back.
+    pub(crate) fn close_subscription(&self, registration_id: u64) -> bool {
+        let mut listeners = crate::panic_boundary::state_lock_guard(
+            &self.listeners,
+            "the diagnostics listener registry",
+        );
+        let registrations_before = listeners.len();
+        listeners.retain(|registration| registration.registration_id != registration_id);
+        listeners.len() != registrations_before
     }
 
     /// Lowers the gate to `rank` if it is finer than the current gate (the
@@ -637,6 +663,38 @@ pub trait SdkDiagnosticEventListener: Send + Sync {
     }
 }
 
+/// The exported [`DiagnosticSubscription`] contract: the handle one
+/// `MapSdk::subscribe_to_diagnostic_events_with_subscription` registration
+/// answers. The handle owns the registration's process-wide id and closes
+/// exactly that registration; closing an already closed or unknown
+/// subscription is a no-op. Dropping the handle does not remove the
+/// registration.
+pub struct DiagnosticSubscription {
+    /// The process-wide id of the registration this handle owns.
+    registration_id: u64,
+    /// The process-wide sink the registration was made on.
+    handle: &'static DiagnosticsHandle,
+}
+
+impl DiagnosticSubscription {
+    /// Wraps one registration id on `handle`.
+    pub(crate) fn new(registration_id: u64, handle: &'static DiagnosticsHandle) -> Self {
+        Self {
+            registration_id,
+            handle,
+        }
+    }
+
+    /// Removes the registration this handle owns, so its listener stops
+    /// receiving live events from the next event on. Cancelling an already
+    /// cancelled subscription changes nothing. The member is named `cancel`
+    /// rather than `close` because UniFFI already generates a `close` for an
+    /// object handle, and a same-named member collides in Kotlin.
+    pub fn cancel(&self) {
+        self.handle.close_subscription(self.registration_id);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -650,6 +708,7 @@ mod tests {
             gate: AtomicU8::new(GATE_DEFAULT_RANK),
             listeners: Mutex::new(Vec::new()),
             ring_sequence: AtomicU64::new(1),
+            next_registration_id: AtomicU64::new(1),
         }
     }
 
@@ -883,6 +942,26 @@ mod tests {
         }
     }
 
+    /// One Info event on the sink's test target.
+    fn diagnostic_event(message_line: &str) -> LogEvent {
+        LogEvent {
+            timestamp_milliseconds_since_epoch: 0,
+            severity: SdkLogSeverity::Info,
+            subsystem_target: "rustic_maps::tests".to_string(),
+            message_line: message_line.to_string(),
+            provider_request_trace: None,
+        }
+    }
+
+    /// The count of events the bridge listener received.
+    fn delivered_event_count(listener: &RecordingBridgeListener) -> usize {
+        listener
+            .events
+            .lock()
+            .expect("the bridge test's event list is never poisoned")
+            .len()
+    }
+
     impl RecordingBridgeListener {
         /// The provider-request observations the listener received for one
         /// probe provider.
@@ -1072,5 +1151,102 @@ mod tests {
             ["delivered"],
             "only severity-meeting events are dispatched"
         );
+    }
+
+    /// Closing a subscription removes its registration, so no later event
+    /// reaches its listener; closing it again is a no-op.
+    #[test]
+    fn closing_a_subscription_stops_its_live_delivery() {
+        let handle: &'static DiagnosticsHandle = Box::leak(Box::new(fresh_handle()));
+        let listener = Arc::new(RecordingBridgeListener::default());
+        let listener_as_contract = Arc::clone(&listener) as Arc<dyn SdkDiagnosticEventListener>;
+        let registration_id = handle.subscribe(listener_as_contract, SdkLogSeverity::Info);
+        let subscription = DiagnosticSubscription::new(registration_id, handle);
+        handle.dispatch_live(&diagnostic_event("before close"));
+        assert_eq!(
+            delivered_event_count(&listener),
+            1,
+            "the subscription delivers"
+        );
+
+        subscription.cancel();
+        handle.dispatch_live(&diagnostic_event("after close"));
+        assert_eq!(
+            delivered_event_count(&listener),
+            1,
+            "a closed subscription stops delivering"
+        );
+        subscription.cancel();
+        handle.dispatch_live(&diagnostic_event("after a second close"));
+        assert_eq!(
+            delivered_event_count(&listener),
+            1,
+            "closing twice is a no-op"
+        );
+    }
+
+    /// Two subscriptions deliver independently: closing one leaves the other
+    /// delivering, so a close removes exactly the registration it owns.
+    #[test]
+    fn closing_one_subscription_leaves_the_other_delivering() {
+        let handle: &'static DiagnosticsHandle = Box::leak(Box::new(fresh_handle()));
+        let first = Arc::new(RecordingBridgeListener::default());
+        let first_as_contract = Arc::clone(&first) as Arc<dyn SdkDiagnosticEventListener>;
+        let second = Arc::new(RecordingBridgeListener::default());
+        let second_as_contract = Arc::clone(&second) as Arc<dyn SdkDiagnosticEventListener>;
+        let first_subscription = DiagnosticSubscription::new(
+            handle.subscribe(first_as_contract, SdkLogSeverity::Info),
+            handle,
+        );
+        let _second_subscription = DiagnosticSubscription::new(
+            handle.subscribe(second_as_contract, SdkLogSeverity::Info),
+            handle,
+        );
+
+        first_subscription.cancel();
+        handle.dispatch_live(&diagnostic_event("after closing the first"));
+        assert_eq!(
+            delivered_event_count(&first),
+            0,
+            "the closed subscription does not deliver"
+        );
+        assert_eq!(
+            delivered_event_count(&second),
+            1,
+            "the other subscription still delivers"
+        );
+    }
+
+    /// Closing a subscription whose id is unknown changes nothing, so an
+    /// already closed or never created registration cannot remove another's.
+    #[test]
+    fn closing_an_unknown_subscription_is_a_no_op() {
+        let handle: &'static DiagnosticsHandle = Box::leak(Box::new(fresh_handle()));
+        let listener = Arc::new(RecordingBridgeListener::default());
+        let listener_as_contract = Arc::clone(&listener) as Arc<dyn SdkDiagnosticEventListener>;
+        handle.subscribe(listener_as_contract, SdkLogSeverity::Info);
+
+        DiagnosticSubscription::new(u64::MAX, handle).cancel();
+        handle.dispatch_live(&diagnostic_event("after closing an unknown subscription"));
+        assert_eq!(
+            delivered_event_count(&listener),
+            1,
+            "the live registration is untouched"
+        );
+    }
+
+    /// The exported `MapSdk` member answers a handle that closes its
+    /// registration; closing it twice is safe. This is the registration path
+    /// the generated bindings call, over the process-wide sink.
+    #[test]
+    fn the_map_sdk_member_answers_a_closable_subscription() {
+        let map_sdk = crate::provider::MapSdk::new();
+        let listener = Arc::new(RecordingBridgeListener::default());
+        let subscription = map_sdk.subscribe_to_diagnostic_events_with_subscription(
+            Arc::clone(&listener) as Arc<dyn SdkDiagnosticEventListener>,
+            SdkLogSeverity::Info,
+        );
+        subscription.cancel();
+        subscription.cancel();
     }
 }
