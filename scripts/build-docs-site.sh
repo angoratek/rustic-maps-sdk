@@ -47,7 +47,6 @@ GENERATED_API_REFERENCE_REVISION=""
 readonly GITHUB_MAXIMUM_FILE_BYTES_IN_REPOSITORY=$((100 * 1024 * 1024))
 readonly PUBLIC_PAGES_REPOSITORY_NAME="rustic-maps-sdk-docs"
 readonly WEB_HARNESS_DIRECTORY="${REPO_ROOT}/platform/web"
-readonly TILE_FIXTURES_DIRECTORY="${REPO_ROOT}/crates/rustic-maps-rendering/fixtures/render/tiles"
 # The committed Latin glyph range the demo's label pass draws with. The page
 # requests it at `/glyphs/{fontStack}/{range}.pbf`, so the staged tree must
 # carry exactly that path or every label silently disappears in production
@@ -455,7 +454,10 @@ stage_navigation_traces() {
 # copy plan rather than a Node server. The harness files are copied 1:1
 # (asserted below); `overlay_scenes.mjs` imports `../reference-scenes.json`,
 # so the shared artifact is staged beside the demo directory, and the page's
-# relative tile/registry URLs (`tiles/…`, `providers.json`) resolve inside it.
+# relative registry URL (`providers.json`) resolves inside it. The recorded
+# raster tile fixtures stay in the repository for the dev server and the test
+# harness and are never staged: the provider's terms cap how long its imagery
+# may be stored.
 stage_live_demo() {
     local stage_root="$1"
     log_step "staging the live wasm demo at /demo"
@@ -476,7 +478,6 @@ stage_live_demo() {
     [ -f "${GLYPH_FIXTURES_DIRECTORY}/${GLYPH_FIXTURE_FILE_NAME}" ] \
         || fail "the committed glyph range ${GLYPH_FIXTURES_DIRECTORY}/${GLYPH_FIXTURE_FILE_NAME} is missing; the live demo's labels would silently disappear"
     mkdir -p "${demo_directory}/generated" "${demo_directory}/generated-runtime" \
-        "${demo_directory}/tiles" \
         "${demo_directory}/offline-graph" "${demo_directory}/styles" \
         "${demo_directory}/glyphs/${GLYPH_SERVED_FONT_STACK}"
     cp "${WEB_HARNESS_DIRECTORY}/index.html" "${WEB_HARNESS_DIRECTORY}/playground.mjs" \
@@ -501,7 +502,6 @@ stage_live_demo() {
     # The generated package's player runtime ships beside the page so the
     # relative import map resolves inside the staged demo.
     cp -R "${WEB_HARNESS_DIRECTORY}/node_modules/@ubjs" "${demo_directory}/generated-runtime/"
-    cp "${TILE_FIXTURES_DIRECTORY}/"* "${demo_directory}/tiles/"
     cp "${GLYPH_FIXTURES_DIRECTORY}/${GLYPH_FIXTURE_FILE_NAME}" \
         "${demo_directory}/glyphs/${GLYPH_SERVED_FONT_STACK}/${GLYPH_SERVED_RANGE}.pbf"
     cp "$OFFLINE_GRAPH_FIXTURE_PATH" "${demo_directory}/offline-graph/routing_grid.rmog"
@@ -632,6 +632,22 @@ if total_bytes > maximum_bytes:
     )
     sys.exit(1)
 DEMO_SIZE_EOF
+}
+
+# The recorded raster tile fixtures are test data. The dev server answers them
+# from the repository, but the published site must carry no directory the demo
+# could serve as tile imagery: the provider's terms cap how long its imagery
+# may be stored, so a published tile copy is refused. The rustdoc tree is
+# pruned because a crate module may legitimately be named `tiles`.
+verify_no_served_tile_directory() {
+    local stage_root="$1"
+    log_step "verifying the staged site carries no recorded tile directory"
+    local served_tile_directories
+    served_tile_directories="$(find "${stage_root}/site" \
+        -path "${stage_root}/site/api" -prune \
+        -o -type d -name tiles -print)"
+    [ -z "$served_tile_directories" ] \
+        || fail "the staged site must not serve a recorded tile directory: ${served_tile_directories}"
 }
 
 # The UDL contract reaches the site through two generated copies: the
@@ -1040,6 +1056,7 @@ main() {
     stage_release_downloads "$STAGE_ROOT"
     verify_staged_render_fidelity "$STAGE_ROOT"
     verify_staged_demo "$STAGE_ROOT"
+    verify_no_served_tile_directory "$STAGE_ROOT"
     run_prepublish_scrub "$STAGE_ROOT/site"
     # mdBook clears its destination, so the provenance stamp lands after the
     # build; the publish step then appends the publisher's gate assertion.
