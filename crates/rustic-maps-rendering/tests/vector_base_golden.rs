@@ -11,7 +11,12 @@
 //! in sampler behavior. A missing golden is written deliberately with
 //! `UPDATE_GOLDENS=1`; the test skips when no graphics adapter exists.
 
+mod common;
+
 use async_trait::async_trait;
+use common::golden::{
+    GoldenTolerance, compare_or_create_golden, golden_path, golden_regeneration_is_requested,
+};
 use geospatial_traits::{VectorTileProvider, VectorTileSourceDescriptor};
 use geospatial_types::{GeographicCoordinate, SDKError, VectorTileData};
 use rustic_maps_rendering::labels::LabelLayer;
@@ -24,7 +29,6 @@ use rustic_maps_rendering::{
     CapturedFrame, DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer,
     MapCamera, TileKey, TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
 };
-use std::path::PathBuf;
 use std::sync::Arc;
 
 /// Frame edge in pixels (the other golden scenes' extent).
@@ -62,11 +66,6 @@ const REGIONAL_CENTER_LATITUDE_DEGREES: f64 = 38.554_8;
 const REGIONAL_CENTER_LONGITUDE_DEGREES: f64 = -121.289_062_5;
 /// The golden file the Carto regional scene pins.
 const REGIONAL_CARTO_GOLDEN_FILE: &str = "sacramento_region_zoom9_carto_light.png";
-/// Tolerances mirrored from `golden_image.rs`.
-const MEAN_ABSOLUTE_ERROR_TOLERANCE: f64 = 2.0;
-const OUTLIER_CHANNEL_ERROR: f64 = 24.0;
-const OUTLIER_PIXEL_FRACTION_LIMIT: f64 = 0.02;
-
 /// A provider serving the one committed tile; any other address fails, so
 /// only the fixture contributes geometry.
 struct FixtureTileProvider;
@@ -183,7 +182,12 @@ async fn the_bright_styled_base_matches_its_golden() {
     else {
         return;
     };
-    compare_or_create_golden(&captured_frame, STYLED_BASE_GOLDEN_FILE);
+    compare_or_create_golden(
+        &captured_frame,
+        STYLED_BASE_GOLDEN_FILE,
+        "the Bright vector base scene",
+        GoldenTolerance::STANDARD,
+    );
 }
 
 /// Builds the regional scene's camera (top-down, north up at zoom 9).
@@ -211,7 +215,12 @@ async fn the_regional_carto_base_draws_its_shields_and_matches_its_golden() {
     else {
         return;
     };
-    compare_or_create_golden(&captured_frame, REGIONAL_CARTO_GOLDEN_FILE);
+    compare_or_create_golden(
+        &captured_frame,
+        REGIONAL_CARTO_GOLDEN_FILE,
+        "the regional Carto vector base scene",
+        GoldenTolerance::STANDARD,
+    );
 }
 
 /// The regional Carto scene's placed label layer and its viewport, assembled
@@ -376,21 +385,20 @@ async fn the_regional_badge_vertex_stream_is_byte_exact() {
         "the regional badge clip extent changed"
     );
     let bytes = badge_vertex_bytes(&vertices);
-    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("fixtures/render/golden")
-        .join(BADGE_VERTEX_GOLDEN_FILE);
-    if !golden_path.exists() {
-        if std::env::var("UPDATE_GOLDENS").is_err() {
+    let badge_golden_path = golden_path(BADGE_VERTEX_GOLDEN_FILE);
+    if !badge_golden_path.exists() {
+        if !golden_regeneration_is_requested() {
             panic!(
-                "badge vertex golden is missing at {golden_path:?}; regenerate deliberately \
+                "badge vertex golden is missing at {badge_golden_path:?}; regenerate deliberately \
                  with UPDATE_GOLDENS=1 and commit the result"
             );
         }
-        std::fs::write(&golden_path, &bytes).expect("the badge vertex golden is written");
-        println!("wrote {golden_path:?}; review and commit it");
+        std::fs::write(&badge_golden_path, &bytes).expect("the badge vertex golden is written");
+        println!("wrote {badge_golden_path:?}; review and commit it");
         return;
     }
-    let golden_bytes = std::fs::read(&golden_path).expect("the badge vertex golden is readable");
+    let golden_bytes =
+        std::fs::read(&badge_golden_path).expect("the badge vertex golden is readable");
     if bytes != golden_bytes {
         let first_difference = bytes
             .iter()
@@ -398,8 +406,8 @@ async fn the_regional_badge_vertex_stream_is_byte_exact() {
             .position(|(captured, golden)| captured != golden)
             .unwrap_or(bytes.len().min(golden_bytes.len()));
         panic!(
-            "the regional badge vertex stream drifted from {golden_path:?}: {} captured bytes, \
-             {} golden bytes, first difference at byte {first_difference}",
+            "the regional badge vertex stream drifted from {badge_golden_path:?}: {} captured \
+             bytes, {} golden bytes, first difference at byte {first_difference}",
             bytes.len(),
             golden_bytes.len()
         );
@@ -413,7 +421,12 @@ async fn the_openmaptiles_styled_base_draws_its_labels_and_matches_its_golden() 
     else {
         return;
     };
-    compare_or_create_golden(&captured_frame, OPENMAPTILES_STYLED_BASE_GOLDEN_FILE);
+    compare_or_create_golden(
+        &captured_frame,
+        OPENMAPTILES_STYLED_BASE_GOLDEN_FILE,
+        "the OpenMapTiles vector base scene",
+        GoldenTolerance::STANDARD,
+    );
 }
 
 /// Acquires the renderer or prints why the CPU-only environment skips.
@@ -428,63 +441,4 @@ fn request_renderer_or_skip() -> Option<HeadlessTileRenderer> {
             None
         }
     }
-}
-
-/// Compares against (or deliberately writes) the scene's golden.
-fn compare_or_create_golden(captured_frame: &CapturedFrame, golden_file_name: &str) {
-    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("fixtures/render/golden")
-        .join(golden_file_name);
-    if !golden_path.exists() {
-        if std::env::var("UPDATE_GOLDENS").is_err() {
-            panic!(
-                "golden fixture is missing at {golden_path:?}; regenerate deliberately with \
-                 UPDATE_GOLDENS=1 and commit the result"
-            );
-        }
-        image::save_buffer(
-            &golden_path,
-            &captured_frame.rgba_bytes,
-            captured_frame.width_pixels,
-            captured_frame.height_pixels,
-            image::ColorType::Rgba8,
-        )
-        .expect("the golden fixture is written");
-        println!("wrote {golden_path:?}; review and commit it");
-        return;
-    }
-    let golden_image = image::open(&golden_path)
-        .expect("the golden fixture is readable")
-        .to_rgba8();
-    let golden_bytes = golden_image.as_raw();
-    let pixel_count = captured_frame.width_pixels * captured_frame.height_pixels;
-    let mut absolute_error_sum = 0.0_f64;
-    let mut outlier_pixel_count = 0_u64;
-    for (captured_pixel, golden_pixel) in captured_frame
-        .rgba_bytes
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .zip(golden_bytes.as_chunks::<4>().0)
-    {
-        let mut pixel_maximum_error = 0.0_f64;
-        for channel in 0..4 {
-            let channel_error = f64::from(captured_pixel[channel].abs_diff(golden_pixel[channel]));
-            absolute_error_sum += channel_error;
-            pixel_maximum_error = pixel_maximum_error.max(channel_error);
-        }
-        if pixel_maximum_error > OUTLIER_CHANNEL_ERROR {
-            outlier_pixel_count += 1;
-        }
-    }
-    let mean_absolute_error = absolute_error_sum / (f64::from(pixel_count) * 4.0);
-    let outlier_pixel_fraction = outlier_pixel_count as f64 / f64::from(pixel_count);
-    assert!(
-        mean_absolute_error <= MEAN_ABSOLUTE_ERROR_TOLERANCE,
-        "the styled base drifted from {golden_path:?}: mean absolute error {mean_absolute_error}"
-    );
-    assert!(
-        outlier_pixel_fraction <= OUTLIER_PIXEL_FRACTION_LIMIT,
-        "the styled base drifted from {golden_path:?}: outlier fraction {outlier_pixel_fraction}"
-    );
 }

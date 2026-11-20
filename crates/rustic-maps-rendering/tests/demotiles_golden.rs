@@ -17,11 +17,13 @@ use geospatial_traits::{VectorTileProvider, VectorTileSourceDescriptor};
 use geospatial_types::{GeographicCoordinate, SDKError, VectorTileData};
 use rustic_maps_rendering::vector_base::VectorBaseScheduler;
 use rustic_maps_rendering::vector_style::vector_tile_style_from_json;
+mod common;
+
+use common::golden::{GoldenTolerance, compare_or_create_golden};
 use rustic_maps_rendering::{
-    CapturedFrame, DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer,
-    MapCamera, TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
+    DEFAULT_FIELD_OF_VIEW_DEGREES, GraphicsContextSource, HeadlessTileRenderer, MapCamera,
+    TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
 };
-use std::path::PathBuf;
 use std::sync::Arc;
 
 /// Frame edge in pixels, the other goldens' extent.
@@ -35,8 +37,6 @@ const SCENE_CENTER_LONGITUDE_DEGREES: f64 = 0.0;
 const SCENE_TILE_ZOOM_LEVEL: u8 = 2;
 /// The scene camera's zoom, equal to the served tile zoom.
 const SCENE_CAMERA_ZOOM_LEVEL: f64 = 2.0;
-/// Directory of the golden fixtures, relative to the crate manifest.
-const GOLDEN_DIRECTORY: &str = "fixtures/render/golden";
 /// Fixture of the demotiles scene.
 const DEMOTILES_GOLDEN_FILE: &str = "maplibre_demotiles_zoom2.png";
 /// The style id the scheduler reports for the scene.
@@ -205,80 +205,6 @@ fn request_renderer_or_skip() -> Option<HeadlessTileRenderer> {
     }
 }
 
-/// Whether this run may write a missing golden (a deliberate regeneration).
-fn golden_regeneration_is_requested() -> bool {
-    std::env::var("UPDATE_GOLDENS").is_ok_and(|value| value == "1")
-}
-
-/// Compares a captured frame against its golden, writing it when the
-/// regeneration flag is set and it is missing.
-fn compare_or_create_golden(captured_frame: &CapturedFrame, golden_file_name: &str) {
-    let golden_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join(GOLDEN_DIRECTORY)
-        .join(golden_file_name);
-    if !golden_path.exists() {
-        if !golden_regeneration_is_requested() {
-            panic!(
-                "golden fixture is missing at {golden_path:?}; regenerate deliberately with \
-                 UPDATE_GOLDENS=1 and commit the result"
-            );
-        }
-        image::save_buffer(
-            &golden_path,
-            &captured_frame.rgba_bytes,
-            captured_frame.width_pixels,
-            captured_frame.height_pixels,
-            image::ColorType::Rgba8,
-        )
-        .expect("the golden fixture is written on regeneration");
-        println!(
-            "golden fixture was missing; wrote {golden_path:?} - run the test again to verify"
-        );
-        return;
-    }
-    let golden_image = image::open(&golden_path)
-        .unwrap_or_else(|error| panic!("golden fixture {golden_path:?} is unreadable: {error}"))
-        .to_rgba8();
-    assert_eq!(
-        (golden_image.width(), golden_image.height()),
-        (captured_frame.width_pixels, captured_frame.height_pixels),
-        "golden fixture {golden_path:?} has a different size than the rendered frame"
-    );
-    let golden_bytes = golden_image.as_raw();
-    let pixel_count = captured_frame.width_pixels * captured_frame.height_pixels;
-    let mut absolute_error_sum: f64 = 0.0;
-    let mut outlier_pixel_count: u64 = 0;
-    for (captured_pixel, golden_pixel) in captured_frame
-        .rgba_bytes
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .zip(golden_bytes.as_chunks::<4>().0)
-    {
-        let mut pixel_maximum_error: f64 = 0.0;
-        for channel in 0..4 {
-            let channel_error = f64::from(captured_pixel[channel].abs_diff(golden_pixel[channel]));
-            absolute_error_sum += channel_error;
-            pixel_maximum_error = pixel_maximum_error.max(channel_error);
-        }
-        if pixel_maximum_error > 24.0 {
-            outlier_pixel_count += 1;
-        }
-    }
-    let mean_absolute_error = absolute_error_sum / (f64::from(pixel_count) * 4.0);
-    let outlier_pixel_fraction = outlier_pixel_count as f64 / f64::from(pixel_count);
-    assert!(
-        mean_absolute_error <= 2.0,
-        "the demotiles frame drifted from {golden_file_name}: mean channel error \
-         {mean_absolute_error:.3} exceeds 2.0"
-    );
-    assert!(
-        outlier_pixel_fraction <= 0.02,
-        "the demotiles frame drifted from {golden_file_name}: {outlier_pixel_fraction:.4} of \
-         pixels exceed the outlier error, above 0.02"
-    );
-}
-
 #[tokio::test]
 async fn the_maplibre_demotiles_style_renders_end_to_end() {
     let Some(mut renderer) = request_renderer_or_skip() else {
@@ -329,5 +255,10 @@ async fn the_maplibre_demotiles_style_renders_end_to_end() {
             label_layer.as_ref(),
         )
         .expect("the demotiles frame renders");
-    compare_or_create_golden(&captured_frame, DEMOTILES_GOLDEN_FILE);
+    compare_or_create_golden(
+        &captured_frame,
+        DEMOTILES_GOLDEN_FILE,
+        "the demotiles scene",
+        GoldenTolerance::STANDARD,
+    );
 }
