@@ -7,11 +7,12 @@
 //
 // M28 slice 1 adds the §2.5 consumer-copy check: the artifact's `ui_labels`
 // section is compared with each platform's string source (Android/iOS
-// constants, React Native's `theme.ts`/`App.tsx` and both native hosts, and
-// the web page). Interpolation is normalized (`%s`, `%@`, `${…}`, `\(…)`,
-// concatenated literals) before comparison. Platform divergences and the §2.5
-// document table are both BLOCKING (M28 slice 6): a label that drifts from the
-// artifact fails the run exactly as a token or error-sentence drift does.
+// constants, React Native's `theme.ts`, its navigation drawer module and both
+// native hosts, and the web page). Interpolation is normalized (`%s`, `%@`,
+// `${…}`, `\(…)`, concatenated literals) before comparison. Platform
+// divergences and the §2.5 document table are both BLOCKING (M28 slice 6): a
+// label that drifts from the artifact fails the run exactly as a token or
+// error-sentence drift does.
 // Omissions stay printed, never silently passed — they name roles a surface
 // genuinely does not have.
 //
@@ -118,7 +119,8 @@ const STRING_MIRROR_FILES = {
   iosConfiguration:
     'platform/ios/reference-application/Sources/ReferenceApplicationConfiguration.swift',
   reactNativeTheme: 'platform/rn/app-shell/src/theme.ts',
-  reactNativeAppShell: 'platform/rn/app-shell/App.tsx',
+  reactNativeNavigationDrawer:
+    'platform/rn/app-shell/src/components/NavigationDrawer.tsx',
   reactNativeAndroidHostConstants:
     'platform/rn/app-shell/android/app/src/main/java/com/rusticmaps/sdk/refapprn/RefappConstants.kt',
   reactNativeIosHostConstants:
@@ -951,9 +953,9 @@ function readIosStringMirror(read) {
 }
 
 /**
- * Reads the React Native JS shell (`theme.ts`, with `App.tsx` asserting the ETA
- * composition) and both native host constant files. The hosts must agree on
- * every value they both declare.
+ * Reads the React Native JS shell (`theme.ts`, with the navigation drawer
+ * asserting the ETA composition) and both native host constant files. The
+ * hosts must agree on every value they both declare.
  * @param {(relativePath: string) => string} read
  * @returns {Map<string, {value: string, source: string}>}
  */
@@ -973,10 +975,14 @@ function readReactNativeStringMirror(read) {
 
   // The drawer composes the ETA line from this label; a page that stops using
   // it would leave the mirror value dead, so assert the composition remains.
-  const appShellText = read(STRING_MIRROR_FILES.reactNativeAppShell);
-  if (!appShellText.includes('appStrings.navigationDrawerEtaLabelText')) {
+  const navigationDrawerText = read(
+    STRING_MIRROR_FILES.reactNativeNavigationDrawer,
+  );
+  if (
+    !navigationDrawerText.includes('appStrings.navigationDrawerEtaLabelText')
+  ) {
     throw new Error(
-      'App.tsx no longer composes the ETA line from appStrings.navigationDrawerEtaLabelText',
+      'NavigationDrawer.tsx no longer composes the ETA line from appStrings.navigationDrawerEtaLabelText',
     );
   }
 
