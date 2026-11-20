@@ -41,3 +41,9 @@ provider tile payloads.
   Regular stack is licensed under the SIL Open Font License 1.1 (Copyright
   2022 The Noto Project Authors); the licence text is committed at
   `docs/THIRD_PARTY_LICENSES/noto-sans-OFL-1.1.txt`.
+
+The sizes and SHA-256 values above are also the machine-checked record: both
+files and their per-range recording dates live in
+[`../provenance.json`](../provenance.json), and
+`platform/web/tests/fixture_provenance.mjs` fails if either file's bytes
+change without the manifest being updated.

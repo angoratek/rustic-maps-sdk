@@ -1,0 +1,2490 @@
+{
+  "schema": "fixture-provenance/v1",
+  "description": "Provenance of every committed test payload: source, recording or lifting date, and the SHA-256 of each file. Machine-checked by platform/web/tests/fixture_provenance.mjs; human-readable detail lives in the fixture READMEs.",
+  "providerLayer": {
+    "crate": "everymap-core",
+    "requirement": "0.4",
+    "resolvedVersion": "0.4.7",
+    "reviewedAt": "2026-11-19"
+  },
+  "groups": [
+    {
+      "directory": "fixtures/glyphs",
+      "source": {
+        "kind": "url",
+        "url": "https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/{range}.pbf",
+        "note": "Real Mapbox glyph-protocol ranges fetched from the OpenFreeMap glyph service; the address is the openfreemap descriptor's glyphs_url_template."
+      },
+      "recorded": "2026-10-30",
+      "files": [
+        {
+          "name": "noto_sans_regular_0-255.pbf",
+          "bytes": 76580,
+          "sha256": "ef1f38a3f1978591e846e9eaddf8a54f7047f546fc6aaed7872cc53151a5de78",
+          "source": {
+            "kind": "url",
+            "url": "https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/0-255.pbf"
+          },
+          "recorded": "2026-10-30"
+        },
+        {
+          "name": "noto_sans_regular_256-511.pbf",
+          "bytes": 127219,
+          "sha256": "992557f9e2574cfb9a75e16c7b52832578849772b7c9a6e480d6213fb008fe5d",
+          "source": {
+            "kind": "url",
+            "url": "https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/256-511.pbf"
+          },
+          "recorded": "2026-11-13"
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/google",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-google",
+        "version": "0.4.7",
+        "test": "tests/search_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "geocode_brandenburg_gate.json",
+          "bytes": 1333,
+          "sha256": "edf18e6c642cc386b0ee73d6733077570775f0cfb1a0b92101488d15f4f055f3",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-google",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "geocode_rate_limited.json",
+          "bytes": 73,
+          "sha256": "1d9ebf901a1ca63eda66840d8036f95babc075fdf79f33603ac06f76ef1dc318",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-google",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_rate_limited",
+            "note": "The 429 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_reverse_berlin.json",
+          "bytes": 721,
+          "sha256": "65b23fb89764754ae91138c7f66af11c9531ab881ccbc07271698647c5e4409a",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-google",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_reverse_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_unauthorized.json",
+          "bytes": 74,
+          "sha256": "56a0f27f4016a8c3873498e050128867143bda5638e279952f8bd628cf0f54b6",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-google",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_unauthorized",
+            "note": "The 401 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "route_berlin_paris.json",
+          "bytes": 1524,
+          "sha256": "90b580e7fcf580d13ce4925d25d594a4cab2511931fe1475258c977f0d6e0c5c",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-google",
+            "version": "0.4.7",
+            "test": "tests/routing_contract.rs::test_routing_contract (mock_route_response)",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "route_no_route.json",
+          "bytes": 19,
+          "sha256": "e88c0e7ed6d665ec175a908cbfaa1262893cbe3760c643faf24a04ebcff73e36",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-google",
+            "version": "0.4.7",
+            "test": "tests/routing_contract.rs::test_routing_zero_results",
+            "note": "The no-route body is the shape the provider crate's routing test records."
+          },
+          "recorded": "2026-11-19"
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/here",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-here",
+        "version": "0.4.7",
+        "test": "tests/search_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "geocode_brandenburg_gate.json",
+          "bytes": 252,
+          "sha256": "0845ece70b9f17e1aecb72ff8f660bcdfe0f185cb233f2ab7cceb2f4cb1ce801",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-here",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "geocode_rate_limited.json",
+          "bytes": 35,
+          "sha256": "4a827d065f7968a2e263a189bb3c3cd72f444c3902e91d4ca9733a121cdc4af1",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-here",
+            "version": "0.4.7",
+            "test": "tests/error_cases.rs::test_geocode_rate_limited",
+            "note": "The 429 body is verbatim from the provider crate's error-case test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_reverse_berlin.json",
+          "bytes": 132,
+          "sha256": "0e31acb70ec696981d8ee821caad37dff22d5c62cec39d7d82d522817296b7b8",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-here",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_reverse_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_unauthorized.json",
+          "bytes": 75,
+          "sha256": "0c21fd8b3bc554bbdd47011260b925ee1613708d708cdf5544bd3b2445d1dfb4",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-here",
+            "version": "0.4.7",
+            "test": "tests/error_cases.rs::test_geocode_unauthorized",
+            "note": "The 401 body is verbatim from the provider crate's error-case test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "route_no_route.json",
+          "bytes": 36,
+          "sha256": "2c57631dc735f19fe3f1930be0ecf4ff2ff211a76acf61aa86be32f41c9bfd03",
+          "source": {
+            "kind": "authored",
+            "note": "Hand-authored no-route body that empties the success envelope the committed route fixture declares; the provider crate's routing test records no no-route body."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "route_two_sections.json",
+          "bytes": 1179,
+          "sha256": "8f88343245ace0a1622755e1e95185c584450f08e670c3866c1fd45058a700bf",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-here",
+            "version": "0.4.7",
+            "test": "tests/fixtures/routing_two_sections.json, replayed by tests/routing_contract.rs::every_section_becomes_a_leg_with_geometry_and_actions",
+            "note": "Byte-identical copy of the provider crate fixture, which is a hand-authored minimal Routing API v8 document rather than a live recording."
+          }
+        },
+        {
+          "name": "traffic_flow_berlin.json",
+          "bytes": 313,
+          "sha256": "6298ab53661d8efe6cdb56f279c75cfc59bfd4629a60385f13aae97a9a0d1e10",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-here",
+            "version": "0.4.7",
+            "test": "tests/fixtures/traffic_flow_berlin.json, replayed by tests/traffic_contract.rs::test_traffic_contract",
+            "note": "Byte-identical copy of the provider crate fixture, which is a hand-authored minimal payload rather than a live recording."
+          }
+        },
+        {
+          "name": "traffic_incidents_berlin.json",
+          "bytes": 462,
+          "sha256": "82e9ae5fd0623b001b2bcd5a39fcd80a81185b1c160052b8faf6c9499349c2e6",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-here",
+            "version": "0.4.7",
+            "test": "tests/fixtures/traffic_incidents_berlin.json, replayed by tests/traffic_contract.rs::test_traffic_contract",
+            "note": "Byte-identical copy of the provider crate fixture, which is a hand-authored minimal payload rather than a live recording."
+          }
+        },
+        {
+          "name": "vendor_style_document.json",
+          "bytes": 1677,
+          "sha256": "3bed91014d897d2186a2b3083d2a852bd56ed8f2301bb10b0b98d02e1d2b0586",
+          "source": {
+            "kind": "authored",
+            "note": "Synthetic neutral MapLibre style document with the OMV schema's layer names, authored in this repository; the vendor prohibits redistributing its own style, so no vendor file is committed."
+          }
+        },
+        {
+          "name": "vendor_style_tile.mvt",
+          "bytes": 267,
+          "sha256": "b103ad5c2b2cc153ec3127330eed0f650c4410dc9e4181ae46b72c5631f80fcc",
+          "source": {
+            "kind": "authored",
+            "note": "Neutral authored MVT tile with the OMV schema's water, roads and places layers, authored in this repository; it carries no vendor material."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/mapbox",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-mapbox",
+        "version": "0.4.7",
+        "test": "tests/search_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "geocode_berlin.json",
+          "bytes": 1012,
+          "sha256": "8f18b979aa916bdc84a233a8f5264d6dd78f9914e5374e276b2551d3d15cc176",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapbox",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "geocode_rate_limited.json",
+          "bytes": 37,
+          "sha256": "44f2410e7980fe921338abe513598cfeda597e5629f36df5511dc1f22a3f48b0",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapbox",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_rate_limited",
+            "note": "The 429 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_reverse_berlin.json",
+          "bytes": 867,
+          "sha256": "170678092f5841157eefa1148750347df7257e1b0a084fe7e40dda5d08206559",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapbox",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_reverse_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_unauthorized.json",
+          "bytes": 50,
+          "sha256": "a994f75c387adaed08c138d38c070a179c04e480f36afb6706854e350b7cc0d5",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapbox",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_unauthorized",
+            "note": "The 401 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "route_berlin_paris.json",
+          "bytes": 755,
+          "sha256": "9bbdc384a394872e7c9b5e01a55a52b60d3ec07149eccacdf12008d8a28f849c",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapbox",
+            "version": "0.4.7",
+            "test": "tests/routing_contract.rs::test_routing_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "route_no_route.json",
+          "bytes": 59,
+          "sha256": "f09ce6b7f0433b374a304c4f87368cabd2bde04eaf8d4933d783ea784ff2acf9",
+          "source": {
+            "kind": "authored",
+            "note": "Hand-authored no-route body that empties the success envelope the committed route fixture declares; the provider crate's routing test records no no-route body."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "vendor_style_document.json",
+          "bytes": 2302,
+          "sha256": "497d47d1e7bd031bb9d40c18dfb9212c07cc48fd2a9bc93d28ffcc86c99fdebf",
+          "source": {
+            "kind": "authored",
+            "note": "Synthetic neutral MapLibre style document with the Streets schema's layer names, authored in this repository; the vendor prohibits redistributing its own style, so no vendor file is committed."
+          }
+        },
+        {
+          "name": "vendor_style_tile.pbf",
+          "bytes": 304,
+          "sha256": "633d4270c1425b64c25e7359e053445713d767b429c0378046f5120993cb66fc",
+          "source": {
+            "kind": "authored",
+            "note": "Neutral authored MVT tile with the Streets schema's road, water, place_label and poi_label layers, authored in this repository; it carries no vendor material."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/mapquest",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-mapquest",
+        "version": "0.4.7",
+        "test": "tests/common/mod.rs (committed test fixtures)",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "directions_route_invalid_coordinates.json",
+          "bytes": 409,
+          "sha256": "4f58e2970305f014e6fc3144b6fe949b59021911f93b2cd4e4072e2654534802",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/directions_route_invalid_coordinates.json, replayed by tests/errors_contract.rs",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "directions_route_two_waypoints.json",
+          "bytes": 11063,
+          "sha256": "8019b5c5e58f5cf56991ff4883ec4bf516a2ae30bf750489e6dad96df64c63d7",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/directions_route_two_waypoints.json, replayed by tests/routing_contract.rs::a_recorded_route_projects_legs_maneuvers_text_and_shapes",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "geocode_address_city.json",
+          "bytes": 1308,
+          "sha256": "e15444af8c699c2f85b88c2b9796cdad920546ca240279970fa1e430e995dfe9",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/geocode_address_city.json, replayed by tests/geocoding_contract.rs::forward_geocode_projects_the_recorded_city_location",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "geocode_reverse_capitol.json",
+          "bytes": 1373,
+          "sha256": "02881c7d9acf93c6f6282a52b68f346e3892028658b061a56d4b837ac66d61fd",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/geocode_reverse_capitol.json, replayed by tests/geocoding_contract.rs::reverse_geocode_projects_the_recorded_point_location",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "routematrix_three_locations_unit_k.json",
+          "bytes": 2933,
+          "sha256": "883c6609713d04223833e5fd014b11a7b9c96710681e78bf1f9b9e839930a0cb",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/routematrix_three_locations_unit_k.json, replayed by tests/matrix_contract.rs::a_recorded_matrix_projects_the_wanted_pair_measurements",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "search_prediction_denver.json",
+          "bytes": 2866,
+          "sha256": "e8383444c4b00a24fa33dd082b38eb78510ff43f785d8137aa557868f9fc621d",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/search_prediction_denver.json, replayed by tests/place_search_contract.rs::a_settled_search_asks_for_the_documented_cap_and_projects_results",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "traffic_flow_new_york.json",
+          "bytes": 2151,
+          "sha256": "c7aaaa131df904e9f35005f94eadad71dc44f25985ca8713a7ff28d30cbd5a2f",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/traffic_flow_new_york.json, replayed by tests/traffic_contract.rs::flow_and_incidents_honour_the_requested_bounding_box",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "traffic_incidents_denver.json",
+          "bytes": 2896,
+          "sha256": "684a9646c90a3d555865557ff293528eaa12eff66359707ac589d4e569e2b03b",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-mapquest",
+            "version": "0.4.7",
+            "test": "tests/fixtures/traffic_incidents_denver.json, replayed by tests/traffic_contract.rs::flow_and_incidents_honour_the_requested_bounding_box",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/openfreemap",
+      "source": {
+        "kind": "url",
+        "url": "https://tiles.openfreemap.org/planet/latest/14/2661/6286.pbf",
+        "note": "One real z14 OpenMapTiles-schema vector tile fetched from the OpenFreeMap planet service through the descriptor's url_template. The service's `latest` alias is a moving planet build and the committed bytes carry no build date, so the exact resolved build is not recorded; the committed bytes are the authority."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "openmaptiles_tile_z14_x2661_y6286.pbf",
+          "bytes": 114349,
+          "sha256": "3b010113d967be64f6fc236d5809215c6d4eeea1e2dc915b91e28b90e71cade0"
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/openstreetmap-us",
+      "source": {
+        "kind": "url",
+        "url": "https://tiles.openstreetmap.us/vector/sourdough/{z}/{x}/{y}.mvt",
+        "note": "Real tiles from the OpenStreetMap US Sourdough vector service."
+      },
+      "recorded": "2026-10-29",
+      "files": [
+        {
+          "name": "osmus_tile_z9_x83_y196.mvt",
+          "bytes": 116934,
+          "sha256": "b1624ae1e5c25f11d73b2df6aaa943028ae0af49c18c9c17574b9370f166cb12",
+          "source": {
+            "kind": "url",
+            "url": "https://tiles.openstreetmap.us/vector/sourdough/9/83/196.mvt",
+            "note": "The address is the service's published {z}/{x}/{y}.mvt template. No capture note records the original fetch date; the file was lifted into this repository with the initial public snapshot, so that date is recorded here."
+          },
+          "recorded": "2026-11-17"
+        },
+        {
+          "name": "sourdough_tile_z6_x18_y27.mvt",
+          "bytes": 28539,
+          "sha256": "66ff89167f317ffa461caafe54176d5a1cb3ecb73da0b53d426747f942bfa103",
+          "source": {
+            "kind": "url",
+            "url": "https://tiles.openstreetmap.us/vector/sourdough/6/18/27.mvt",
+            "note": "Fetched on 2026-10-29; the service delivered the tile gzip-wrapped and the fixture stores the gzip-decoded payload."
+          },
+          "recorded": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/osrm",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-osrm",
+        "version": "0.4.7",
+        "test": "tests/routing_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "sacramento_route.json",
+          "bytes": 4764,
+          "sha256": "f52f8d49ab5b8538392896b7123e63a842e2c48e36c575f2eaf367c3210fcff9",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-osrm",
+            "version": "0.4.7",
+            "test": "tests/fixtures/sacramento_route.json, replayed by tests/routing_contract.rs::successful_route_decodes_legs_steps_instructions_shapes_and_capabilities",
+            "note": "Byte-identical copy of the provider crate fixture, which records a GET /route/v1/driving response."
+          }
+        },
+        {
+          "name": "san_francisco_oakland_ferry_route.json",
+          "bytes": 3695,
+          "sha256": "feb7bdef078ef695908dbea6f88a899d4d1187d2e8037f0c4c15b79f46d65491",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-osrm",
+            "version": "0.4.7",
+            "test": "tests/fixtures/san_francisco_oakland_ferry_route.json, replayed by tests/routing_contract.rs::ferry_route_classifies_the_crossing_step_as_a_ferry",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/photon",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-photon",
+        "version": "0.4.7",
+        "test": "tests/photon_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "reverse_sacramento.json",
+          "bytes": 432,
+          "sha256": "a297013c92d7b4812de4aabba2477e8f9e313eee2030ed2115ea304d2766783b",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-photon",
+            "version": "0.4.7",
+            "test": "tests/fixtures/reverse_sacramento.json, replayed by tests/photon_contract.rs::a_reverse_query_keeps_the_leading_feature",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        },
+        {
+          "name": "search_sacramento.json",
+          "bytes": 838,
+          "sha256": "7190fc57a9895a7e7701ddfdbfdb5099d03a0f4455a6f3d730f622500a842813",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-photon",
+            "version": "0.4.7",
+            "test": "tests/fixtures/search_sacramento.json, replayed by tests/photon_contract.rs::a_forward_query_maps_features_onto_search_results",
+            "note": "Byte-identical copy of the provider crate fixture."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/radar",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-radar",
+        "version": "0.4.7",
+        "test": "tests/search_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "geocode_brandenburg_gate.json",
+          "bytes": 503,
+          "sha256": "f0a90e904f27effeaeaae1bb705ead5580b4121a11d4dfefbf7442aa5efbdbba",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-radar",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "geocode_rate_limited.json",
+          "bytes": 62,
+          "sha256": "6e1d628efdb917b322a372b9a7ef1db7828154181985301a9a3cefc48eac24af",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-radar",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_rate_limited",
+            "note": "The 429 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_reverse_berlin.json",
+          "bytes": 348,
+          "sha256": "3d09fc588d578eeb217bfe70b531a68d0e33d89f11e01b5736e9afe46b9e7214",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-radar",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_reverse_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_unauthorized.json",
+          "bytes": 60,
+          "sha256": "c4f05933d1c48bdc0f79c7039d4bda6df817bb8c477f729c893133f34908829b",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-radar",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_unauthorized",
+            "note": "The 401 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "route_berlin_paris.json",
+          "bytes": 1042,
+          "sha256": "42e2db3eb8fcc419306c5553f3eda1f3ac20799817ab255ea152efadddc90880",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-radar",
+            "version": "0.4.7",
+            "test": "tests/routing_contract.rs::test_routing_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "route_no_route.json",
+          "bytes": 46,
+          "sha256": "35f402d014d2084b6ee1b97d902785a66fae1c7702c503fdad857aeaddbf1859",
+          "source": {
+            "kind": "authored",
+            "note": "Hand-authored no-route body that empties the success envelope the committed route fixture declares; the provider crate's routing test records no no-route body."
+          },
+          "recorded": "2026-11-19"
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/tomtom",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-tomtom",
+        "version": "0.4.7",
+        "test": "tests/search_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "geocode_brandenburg_gate.json",
+          "bytes": 444,
+          "sha256": "8538ae72f4d95751543745c7376ff30c1694522cfbb0486f00fcd65a310e66d0",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-tomtom",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "geocode_rate_limited.json",
+          "bytes": 35,
+          "sha256": "4a827d065f7968a2e263a189bb3c3cd72f444c3902e91d4ca9733a121cdc4af1",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-tomtom",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_rate_limited",
+            "note": "The 429 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_reverse_berlin.json",
+          "bytes": 551,
+          "sha256": "80c3a7c7493ef491e9f25fdaa5fc7dece7e2187487498ddd3066b014f4271703",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-tomtom",
+            "version": "0.4.7",
+            "test": "tests/search_contract.rs::test_reverse_geocode_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "geocode_unauthorized.json",
+          "bytes": 75,
+          "sha256": "0c21fd8b3bc554bbdd47011260b925ee1613708d708cdf5544bd3b2445d1dfb4",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-tomtom",
+            "version": "0.4.7",
+            "test": "tests/http_errors.rs::test_geocode_unauthorized",
+            "note": "The 401 body is verbatim from the provider crate's HTTP error test."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "route_berlin_london.json",
+          "bytes": 464,
+          "sha256": "c40f1a13b3d01f385514fcfe71e4ccae0416c283367053fdcc2977e1f41c26af",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-tomtom",
+            "version": "0.4.7",
+            "test": "tests/routing_contract.rs::test_routing_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "route_no_route.json",
+          "bytes": 48,
+          "sha256": "99d37a2b5839ce30d6218d6655ffa25e9cd36ba19d060244ed68268280637f17",
+          "source": {
+            "kind": "authored",
+            "note": "Hand-authored no-route body that empties the success envelope the committed route fixture declares; the provider crate's routing test records no no-route body."
+          },
+          "recorded": "2026-11-19"
+        },
+        {
+          "name": "traffic_flow_berlin.json",
+          "bytes": 206,
+          "sha256": "68ec854f5891af88d6e3dba1baca6c45329d4b8a92dac2342dff1de7b638d76a",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-tomtom",
+            "version": "0.4.7",
+            "test": "tests/traffic_contract.rs::test_traffic_flow_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        },
+        {
+          "name": "traffic_incidents_berlin.json",
+          "bytes": 565,
+          "sha256": "37607c969aec26d929e85a995e4343042a2775d6a7d8f7a9c876c1fa53821286",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-tomtom",
+            "version": "0.4.7",
+            "test": "tests/traffic_contract.rs::test_traffic_incidents_contract",
+            "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "fixtures/valhalla",
+      "source": {
+        "kind": "provider-crate",
+        "crate": "everymap-providers-valhalla",
+        "version": "0.4.7",
+        "test": "tests/routing_contract.rs",
+        "note": "Hand-exported from the inline payload of the named provider-crate test, not a live recording; the upstream test drives the payload through a wiremock server."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "route_sacramento.json",
+          "bytes": 3329,
+          "sha256": "76efe6338d678fc59496f1f2209efa821b5e55f1b4dbdb2c5b998c2a87372275",
+          "source": {
+            "kind": "provider-crate",
+            "crate": "everymap-providers-valhalla",
+            "version": "0.4.7",
+            "test": "tests/fixtures/route_sacramento.json, replayed by tests/routing_contract.rs::successful_route_decodes_legs_steps_instructions_shapes_and_capabilities",
+            "note": "Byte-identical copy of the provider crate fixture, a recorded Valhalla /route response."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-navigation/fixtures/navigation/routes",
+      "source": {
+        "kind": "generated",
+        "generator": "crates/rustic-maps-native-core/examples/record_demo_routes.rs into platform/reference-scenes.json, stitched by crates/rustic-maps-navigation/src/trace_fixture.rs",
+        "note": "The provider's pedestrian route for each ordered demo place pair, recorded live into the shared scene artifact and lifted from its demo_routes member. No credential is written into the file."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "capitol_park_to_tower_bridge.json",
+          "bytes": 7201,
+          "sha256": "c4417e4b2659eadecb55e496eb586c319ed3ce2dad6e325398c0f87a6f558d72"
+        },
+        {
+          "name": "golden_1_center_to_capitol_park.json",
+          "bytes": 3287,
+          "sha256": "48bac67a242d4e2ecf3714b6f9bb16f15bb4b6d4ac436b7dedc96d788d1a4a4a"
+        },
+        {
+          "name": "tower_bridge_to_capitol_park.json",
+          "bytes": 7195,
+          "sha256": "53becda39c49a5850dc0e74bf00ea7869bb5e45c35a630131b1301303c3ea7cd"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-navigation/fixtures/navigation/traces",
+      "source": {
+        "kind": "generated",
+        "generator": "crates/rustic-maps-navigation/src/trace_fixture.rs",
+        "note": "Synthetic GPS fixes generated along a committed recorded route from the seed in metadata.generator_seed; never a live GPS capture. The byte-equality test regenerated_trace_bytes_match_the_committed_fixtures guards the generator seam."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "sacramento_clean_walk.json",
+          "bytes": 32431,
+          "sha256": "e9e97f68a143797380ce9cbb5badddded1f15f0788553797ba8cbe4bdd6311fd"
+        },
+        {
+          "name": "sacramento_deviation_recovery.json",
+          "bytes": 15011,
+          "sha256": "3415e80f78a3b8da58695fb4a6b1c3ed1b4d7288d2ffe880409844f7286dbdce"
+        },
+        {
+          "name": "sacramento_deviation_reroute.json",
+          "bytes": 37561,
+          "sha256": "91734280b729444499f5436d8cb78af440264128096c60af09fa80f893557ffc"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-offline-graph-compiler/fixtures/osm",
+      "source": {
+        "kind": "generated",
+        "generator": "crates/rustic-maps-offline-graph-compiler/tests/common/mod.rs (canonical_routing_grid_fixture)",
+        "note": "A hand-sized synthetic OSM extract produced by the crate's canonical generator; committed_osm_fixture_matches_canonical_generation guards it byte for byte."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "routing_grid.osm.pbf",
+          "bytes": 449,
+          "sha256": "c31065c7afd2098a07061c31c773dd7bb8806a90e674b2053d8cec113f1d1d0c"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-offline-graph-compiler/fixtures/rmog",
+      "source": {
+        "kind": "generated",
+        "generator": "compile_osm_extract_bytes over fixtures/osm/routing_grid.osm.pbf",
+        "note": "The compiled RMOG archive of the synthetic extract, checked in for the browser harness; committed_compiled_archive_fixture_matches_canonical_compilation guards it byte for byte."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "routing_grid.rmog",
+          "bytes": 552,
+          "sha256": "5a9d1a7ca1516502943fcf9d28d912c21614bfdeb24b9030b704c9d2a68f775e"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-rendering/fixtures/maplibre-demotiles",
+      "source": {
+        "kind": "url",
+        "url": "https://demotiles.maplibre.org/tiles/2/{x}/{y}.pbf",
+        "note": "Real MapLibre demotiles z2 vector tiles recorded on 2026-11-02."
+      },
+      "recorded": "2026-11-02",
+      "files": [
+        {
+          "name": "2_0_0.pbf",
+          "bytes": 24261,
+          "sha256": "418190657437bef15d4021aa9c70f4e7bda7db936e85df3d146ec23862f6b914"
+        },
+        {
+          "name": "2_0_1.pbf",
+          "bytes": 24852,
+          "sha256": "34ab64442a780abc03c28494013c24b6941176251043784500414cf952884d48"
+        },
+        {
+          "name": "2_0_2.pbf",
+          "bytes": 5975,
+          "sha256": "963238b71fdd54a76f9e3415a617520303e304801f62821ce99bc35f16d5a5ae"
+        },
+        {
+          "name": "2_0_3.pbf",
+          "bytes": 5701,
+          "sha256": "aab0fce922626fb4b61ec1bea6d71e49c4fe728e7c88737e8c6f4b604c3a7afa"
+        },
+        {
+          "name": "2_1_0.pbf",
+          "bytes": 22911,
+          "sha256": "e23db6f6ebf0fcc1ad5c61dbe71b81b07517488f2b7baec0946bbd9fdfd83094"
+        },
+        {
+          "name": "2_1_1.pbf",
+          "bytes": 52949,
+          "sha256": "9b8fee59908a2834f0fe4670c09a1863457968924fe37ec8623615a669dbf162"
+        },
+        {
+          "name": "2_1_2.pbf",
+          "bytes": 24101,
+          "sha256": "dd8e3189e36b737f6d95cbb33559c1c541843791c888dce7408f826180fb6bc3"
+        },
+        {
+          "name": "2_1_3.pbf",
+          "bytes": 15996,
+          "sha256": "4c7c1b17e961ecc947fb50e6dbb37f7f339de4c7952b69b1b268deabf4b5883f"
+        },
+        {
+          "name": "2_2_0.pbf",
+          "bytes": 22048,
+          "sha256": "99665d3b54a567297d3660d801d1152c4c674643db4d5003bfb4cd1e67f6ab99"
+        },
+        {
+          "name": "2_2_1.pbf",
+          "bytes": 69624,
+          "sha256": "3a3ef4f62a616ad4cba73d68c2e7dfb16e3f15bafee594a36e41862042359764"
+        },
+        {
+          "name": "2_2_2.pbf",
+          "bytes": 13153,
+          "sha256": "a30b2af2619cee6883ac201b97d7a239b230659061089f278cc4fc5b65657e75"
+        },
+        {
+          "name": "2_2_3.pbf",
+          "bytes": 7218,
+          "sha256": "4a8606e5e1f8fbab19e049028a07604fda5779f3f55d6c087d0fbe993c21bf37"
+        },
+        {
+          "name": "2_3_0.pbf",
+          "bytes": 7892,
+          "sha256": "7fbcbc86ff4083b5f1c58c408566012c8c9327b692f97888b31a591abd007f9c"
+        },
+        {
+          "name": "2_3_1.pbf",
+          "bytes": 38201,
+          "sha256": "b8082fed6ec57d460d4a2f3ab8d8a0150acb333e6afacc47316907b9329eacfd"
+        },
+        {
+          "name": "2_3_2.pbf",
+          "bytes": 31034,
+          "sha256": "92a2b8372be411ce70a125eab443360635b241524838a4937462d030560f7282"
+        },
+        {
+          "name": "2_3_3.pbf",
+          "bytes": 3914,
+          "sha256": "9410b206c5b8344065d0817a1f23df78b86fd7f89a983a9264ba7d428d85213b"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-rendering/fixtures/poi-labels",
+      "source": {
+        "kind": "generated",
+        "generator": "extracted from fixtures/openfreemap/openmaptiles_tile_z14_x2661_y6286.pbf by pruning the tile to its poi layer and the name/class/rank attributes",
+        "note": "A derived fixture: each point keeps its original geometry and tile-local coordinates; no feature was invented."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "openmaptiles_poi_z14_x2661_y6286.pbf",
+          "bytes": 466,
+          "sha256": "295af94204fe7e2a7aab233f93ec0242d117dc317fbcc2bc543ba86253bf1d22"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-rendering/fixtures/render/golden",
+      "source": {
+        "kind": "generated",
+        "generator": "the rustic-maps-rendering golden tests (golden_image.rs, demotiles_golden.rs, vector_base_golden.rs, overlay_golden.rs, icon_sprite_golden.rs, poi_labels_golden.rs, location_indicator_golden.rs, style_transition_golden.rs)",
+        "note": "Reference captures rendered in this repository from the committed tiles, styles and glyphs. The harness compares within its documented sampler tolerance and rewrites a golden only when deliberately asked."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "fill_and_circle_paint.png",
+          "bytes": 12318,
+          "sha256": "0fcb702b73f938f889ccae7856df25f35a5b5ec00292e38c85fb9852bfb69db9"
+        },
+        {
+          "name": "line_semantics_strokes.png",
+          "bytes": 28348,
+          "sha256": "d78618305f90408146b1ba01b0401d845a0bd6dccc4bcf800f8d776f790636d1"
+        },
+        {
+          "name": "maplibre_demotiles_zoom2.png",
+          "bytes": 53748,
+          "sha256": "d0b07fed0dcc9e59bdd336e45fcf1f6857fc3f786967acfe5a926503b113b43b"
+        },
+        {
+          "name": "sacramento_region_zoom13_labels.png",
+          "bytes": 30484,
+          "sha256": "df3a28cb8d97b24830259b97d608fe5a4d1a2b665566c81280163e85f9929bae"
+        },
+        {
+          "name": "sacramento_region_zoom8_labels.png",
+          "bytes": 7644,
+          "sha256": "eda1f15072956b9174d04551f3bc80675019df4e3b78053023e92c93e4432a4f"
+        },
+        {
+          "name": "sacramento_region_zoom9_carto_light.png",
+          "bytes": 147784,
+          "sha256": "9a9cdacedd32963fa00ff43a1c885497ea1340525d69ed7747ff813ae35727d5"
+        },
+        {
+          "name": "sacramento_region_zoom9_carto_light_badges.bin",
+          "bytes": 73728,
+          "sha256": "d8481ffd6febc624f7a4b23b5e53e998cdf67edfdd6b9fb7a4a1593ad51fe5da"
+        },
+        {
+          "name": "sacramento_region_zoom9_carto_light_browser.png",
+          "bytes": 99741,
+          "sha256": "f51385686a579b85750980a011102e6c06e52b727502615bf1e8d8f0cb2eaecc"
+        },
+        {
+          "name": "sacramento_zoom14_bright_light.png",
+          "bytes": 169894,
+          "sha256": "0f5446b01f8aaf7f93cc1c6c73d92566327a9af985949a411ffe5fa4649854e3"
+        },
+        {
+          "name": "sacramento_zoom14_bright_vector_base.png",
+          "bytes": 270215,
+          "sha256": "aa44cec024e92406a40958fafb38644b3fe22dfc27cd0b6f3f6e06faee05c649"
+        },
+        {
+          "name": "sacramento_zoom14_fiord_dark.png",
+          "bytes": 165660,
+          "sha256": "56c3842a9cad03128640028fb570a95870ab107376a152d60d7467ff1a6f8cc9"
+        },
+        {
+          "name": "sacramento_zoom14_icon_sprites.png",
+          "bytes": 212509,
+          "sha256": "597c1095628c1443f9f3f32cc3b2f481e63a851988ee7dc40239bb2f0c04f0a4"
+        },
+        {
+          "name": "sacramento_zoom14_location_indicator_dot.png",
+          "bytes": 269920,
+          "sha256": "e3de1eec5dec1b3b91e2308a89d334e92ffedf1255fd9c32aa204c546531a634"
+        },
+        {
+          "name": "sacramento_zoom14_location_indicator_dot_heading.png",
+          "bytes": 269920,
+          "sha256": "e3de1eec5dec1b3b91e2308a89d334e92ffedf1255fd9c32aa204c546531a634"
+        },
+        {
+          "name": "sacramento_zoom14_location_indicator_guided.png",
+          "bytes": 270297,
+          "sha256": "4c37fd6e6dea1a797b2b361879702fc797b3355b63fb96b591252fbdae8af34f"
+        },
+        {
+          "name": "sacramento_zoom14_markers.png",
+          "bytes": 266288,
+          "sha256": "234329a774e788a383b5ae30a69768385a2867c4b4a06a91538223b68fc12310"
+        },
+        {
+          "name": "sacramento_zoom14_openmaptiles_light_vector_base.png",
+          "bytes": 203408,
+          "sha256": "0a3671e4260435e1ddc3a72a8dbc34476796967a231f329175f4e0f87b0accbe"
+        },
+        {
+          "name": "sacramento_zoom14_pins.png",
+          "bytes": 266109,
+          "sha256": "008e66942fe1fc21abd12ce13379f176382de91f827849f248029b951a8db3c3"
+        },
+        {
+          "name": "sacramento_zoom14_pitched45.png",
+          "bytes": 277792,
+          "sha256": "0a8a28cd8f95a47743526ad65482fdbfee8397bcce1016f3d952d8778473146f"
+        },
+        {
+          "name": "sacramento_zoom14_place_labels.png",
+          "bytes": 281645,
+          "sha256": "38f2c9aa40ccfdd20bfbfe90ee54df96d7b757743dd39bb153f87cf95ebf1209"
+        },
+        {
+          "name": "sacramento_zoom14_poi_labels.png",
+          "bytes": 218477,
+          "sha256": "0a8af028827c54778506d5fb0fc15da6897f0de468f2021556fd6cbe9e104260"
+        },
+        {
+          "name": "sacramento_zoom14_polygon_fill.png",
+          "bytes": 258956,
+          "sha256": "597443df637dfe60d1469688836e9b88ac368763216d6404006edae55dd70b20"
+        },
+        {
+          "name": "sacramento_zoom14_positron_light.png",
+          "bytes": 141717,
+          "sha256": "52471cc85c88f884a0576057a6d6f9468420efd7dd3cbb3481a78d46fb43c00d"
+        },
+        {
+          "name": "sacramento_zoom14_road_names.png",
+          "bytes": 242262,
+          "sha256": "593078041aa4ba63766faf5d7f5ac48582e15f3836c28f409e759d3318fdb895"
+        },
+        {
+          "name": "sacramento_zoom14_route_line.png",
+          "bytes": 265992,
+          "sha256": "468d0a17188e71f7a825e749cca90911880994c78bfd874828abdc141ec726a8"
+        },
+        {
+          "name": "sacramento_zoom14_top_down.png",
+          "bytes": 266281,
+          "sha256": "3a1c36e30147488a30beaec3f4fa87aef840a31ee308fdce88f3d8903bf7a390"
+        },
+        {
+          "name": "sacramento_zoom14_traffic_flow.png",
+          "bytes": 262396,
+          "sha256": "6b7b545e7b1baa7a5489366feceaa77c627b159eee60fea8873fedf08c5c636d"
+        },
+        {
+          "name": "sacramento_zoom15_cross_fade_half.png",
+          "bytes": 255925,
+          "sha256": "c6bda804d00f6cf7de2591686fcef064226d934b72288ec86ce53bf6dee379dd"
+        },
+        {
+          "name": "style_transition_cross_fade_half.png",
+          "bytes": 10668,
+          "sha256": "9ebb7a025a29c5197ed0d3258cb3e1fedf6d15d6d8ba85c79a41ef9bbaa94378"
+        },
+        {
+          "name": "world_zoom0_route_antimeridian.png",
+          "bytes": 6607,
+          "sha256": "d70e5acdc70fdc426b64425e94deba85334f8430807f0ed69d4f7610d2f94453"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-rendering/fixtures/render/styles",
+      "source": {
+        "kind": "authored",
+        "note": "Style documents maintained in this repository. Bright, Fiord and Positron are transcribed from hyperknot/openfreemap-styles with MIT / BSD-3-Clause / CC BY 4.0 attribution and a change statement (PRD.md section 6 item 8); the CarTo-like and OpenMapTiles documents are authored here; the label-coverage probe is a test document. The upstream commit each transcription started from is not recorded."
+      },
+      "recorded": "2026-10-30",
+      "files": [
+        {
+          "name": "vector-style-bright-light.json",
+          "bytes": 36264,
+          "sha256": "6afaaa112a7a13a3f1e8e313b68df45ee113505bc63463636c5bb3f243a5df4c"
+        },
+        {
+          "name": "vector-style-dark.json",
+          "bytes": 46731,
+          "sha256": "9f0989d1219e681d095d91776be41bc79959d953ebce2e2ec9e40f73d54fe1aa",
+          "source": {
+            "kind": "authored",
+            "note": "The OSM-Carto-like dark palette, authored in this repository."
+          }
+        },
+        {
+          "name": "vector-style-fiord-dark.json",
+          "bytes": 31565,
+          "sha256": "aee5f10fd725a8a02a31186039ddf0262d38434544b161c9e400dd205df6cf31"
+        },
+        {
+          "name": "vector-style-label-coverage-probe.json",
+          "bytes": 847,
+          "sha256": "68fcb65d17fc33bb4541ebc1adee5fd7b9c97836b2250566661c12b057e2c25b",
+          "source": {
+            "kind": "authored",
+            "note": "Test-only coverage probe authored in this repository: one white \"I\" at 48 point pixels on black over the committed OpenMapTiles fixture. It is not a cartographic base map."
+          },
+          "recorded": "2026-11-17"
+        },
+        {
+          "name": "vector-style-openmaptiles-dark.json",
+          "bytes": 36424,
+          "sha256": "a217755788ef9b7f4a6553bc8a83251e8f22fbe89f7d0e6218009e37ce083303",
+          "source": {
+            "kind": "authored",
+            "note": "The OpenMapTiles-schema dark palette, authored in this repository."
+          }
+        },
+        {
+          "name": "vector-style-openmaptiles-light.json",
+          "bytes": 36378,
+          "sha256": "0db8fb8fc348ca930661bbb4ea368447126ff7c6f91da4648e5b067e203e44ac",
+          "source": {
+            "kind": "authored",
+            "note": "The OpenMapTiles-schema light palette, authored in this repository."
+          }
+        },
+        {
+          "name": "vector-style-positron-light.json",
+          "bytes": 31774,
+          "sha256": "262db62b404dee5e89a40605ef2b3bc33214c06bcea58a08956dd3003ba3e4da"
+        },
+        {
+          "name": "vector-style.json",
+          "bytes": 46459,
+          "sha256": "035015269510962e50460885c84a84483bdd311cbb5e9cf223b6bac91eb5e5a1",
+          "source": {
+            "kind": "authored",
+            "note": "The default OSM-Carto-like light palette, authored in this repository."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-rendering/fixtures/render",
+      "source": {
+        "kind": "authored",
+        "note": "Legacy in-repository style artifacts retained for the pre-compiler parity tests; each is derived from the same-named document under render/styles. No external source is recorded for these copies."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "vector-style-bright-light.json",
+          "bytes": 12562,
+          "sha256": "ac550ebd3426164a429be8165ee95ef6b10ee97d7f5de868e975c478475bfd17"
+        },
+        {
+          "name": "vector-style-dark.json",
+          "bytes": 18299,
+          "sha256": "a03476471be1550cf936cef9966e2cadb6bfc9a39950070a1f6f1925c6ccdbda"
+        },
+        {
+          "name": "vector-style-fiord-dark.json",
+          "bytes": 10669,
+          "sha256": "e6a838198d5d6ee9166a6015f6163b9debc0ec93914fe6a6c0b3d3db60c3d1e7"
+        },
+        {
+          "name": "vector-style-openmaptiles-dark.json",
+          "bytes": 12499,
+          "sha256": "e7ac90c76bb987a7271174644eae387af5014ef7bad3d93cfb27bb795b4d5734"
+        },
+        {
+          "name": "vector-style-openmaptiles-light.json",
+          "bytes": 12421,
+          "sha256": "b1be1d8cceaad42d02014d23892b212b42cd3ad62ca25ef2a5fa0b9b3af02e59"
+        },
+        {
+          "name": "vector-style-positron-light.json",
+          "bytes": 10517,
+          "sha256": "87195877836c80d21c80b9756f2adafe3733f891ef621909c4627498e1cc83d5"
+        },
+        {
+          "name": "vector-style.json",
+          "bytes": 18195,
+          "sha256": "c9834e5a382b2069124705ce6e2b26d977f140ba89a78c1e2b5a1eee95b90da8"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-rendering/fixtures/render/tiles",
+      "source": {
+        "kind": "recorded",
+        "recorder": "crates/rustic-maps-rendering/examples/record_golden_tiles.rs, record_playground_tiles.rs and record_navigation_corridor_tiles.rs",
+        "note": "MapQuest Tiles API raster tiles recorded live with a runtime credential. The recorder examples cover z14-z15 (golden and playground scenes) and z16-z17 (navigation corridor); the live capture date is not recorded, so the date is the initial public snapshot. No credential is stored in the fixtures."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "13_1331_3143.png",
+          "bytes": 66822,
+          "sha256": "7b014ea4653f58e7546d3376ea99effc954e6ddf2bed9dd6ef9d3c48068adb75",
+          "source": {
+            "kind": "unrecorded",
+            "note": "A committed MapQuest raster tile shared as the TomTom raster fixture. It is part of the live-recorded raster set re-recorded with the rotated key at the Sacramento re-anchor (CHANGELOG), but no recorder example in this repository produces this z13 address and its original capture command and date are not recorded."
+          }
+        },
+        {
+          "name": "14_2660_6284.png",
+          "bytes": 28643,
+          "sha256": "4164302b992f0fe3f6f02a74251d59c8b4235ae868a182bebfd2ab794f9b9263"
+        },
+        {
+          "name": "14_2660_6285.png",
+          "bytes": 31416,
+          "sha256": "b1889d0b0662656f3101b9cfd2b497eb36028a8a34e612de1df10826adeac508"
+        },
+        {
+          "name": "14_2660_6286.png",
+          "bytes": 28409,
+          "sha256": "8225b4d0263ecded5ae4f61bcde91f7368b82b39009c4508d028dff888bed70f"
+        },
+        {
+          "name": "14_2660_6287.png",
+          "bytes": 29714,
+          "sha256": "b48323e06efca48e48d2fd0d0abf9549efd4dbdd6c7d234786ec3fac79ee6965"
+        },
+        {
+          "name": "14_2660_6288.png",
+          "bytes": 19566,
+          "sha256": "4a47e6b2f715e995cc9dc00b0b79b764222ff246d5fbd2c8784930f38d37de79"
+        },
+        {
+          "name": "14_2661_6284.png",
+          "bytes": 35637,
+          "sha256": "8de14e29e646d646400b784aab8284146f45b192a5cbc6f45250ccaf39f8ae59"
+        },
+        {
+          "name": "14_2661_6285.png",
+          "bytes": 31987,
+          "sha256": "e85c475c9911394ccc868458bd48ed61df6bc99b6c697693a8429d3765d0696b"
+        },
+        {
+          "name": "14_2661_6285@2x.png",
+          "bytes": 81958,
+          "sha256": "17bde787c301e20bb18f01f538772ef66c98c14488150017b2bc63c5d491209a"
+        },
+        {
+          "name": "14_2661_6286.png",
+          "bytes": 44036,
+          "sha256": "43291212d84be26ba8f8c6c0f12bc981b9bf1c022306851a0f61c8b909e1a038"
+        },
+        {
+          "name": "14_2661_6286@2x.png",
+          "bytes": 111671,
+          "sha256": "aad7359363d775bdacc60e5e65957833cd1c798f5630eb5c86278defdf1bb8fc"
+        },
+        {
+          "name": "14_2661_6287.png",
+          "bytes": 37614,
+          "sha256": "452570c0aeddeb1c611a6fa5a68c760117586367c7b2ddc70860da01c8f5280a"
+        },
+        {
+          "name": "14_2661_6287@2x.png",
+          "bytes": 95007,
+          "sha256": "63234b9711102380dbc34847da71982fd39e056ff26e547ebec79be6c33936d8"
+        },
+        {
+          "name": "14_2661_6288.png",
+          "bytes": 32876,
+          "sha256": "346a52c823044e7a569b88c38b4a5536fcad8007d112f6da589ca57a4eaf4f51"
+        },
+        {
+          "name": "14_2662_6284.png",
+          "bytes": 31249,
+          "sha256": "625d7485874427828da4b10b66bb579e606c00a54da142aacdc47c35a5cfb99b"
+        },
+        {
+          "name": "14_2662_6285.png",
+          "bytes": 35168,
+          "sha256": "3635c125c1d6fb127860d3387f0659e78b6eae06658e4f9a1010344e39fb8c7b"
+        },
+        {
+          "name": "14_2662_6285@2x.png",
+          "bytes": 88778,
+          "sha256": "d4f44c2134931f014dd0ac875df9150d61625bc1006ed2da4520db5fb8d4605e"
+        },
+        {
+          "name": "14_2662_6286.png",
+          "bytes": 43669,
+          "sha256": "cd7439a5402b63587c957988789b2d99c9a20ddfb8ffaf806d2ac8062bcd46d8"
+        },
+        {
+          "name": "14_2662_6286@2x.png",
+          "bytes": 107456,
+          "sha256": "74c42faae0c290f211f3fe026e4713c4d9d8b78c34c95ad481070f6b9555d031"
+        },
+        {
+          "name": "14_2662_6287.png",
+          "bytes": 39192,
+          "sha256": "bee710a5d2e781a3bf426ab397c4a5999944a7f3c8193c91359e8a8f96b55c6f"
+        },
+        {
+          "name": "14_2662_6287@2x.png",
+          "bytes": 98497,
+          "sha256": "75590766b9ca58a7a5c3ef0082d740e0af6ce78dd4b32338f96006c871106e6f"
+        },
+        {
+          "name": "14_2662_6288.png",
+          "bytes": 37137,
+          "sha256": "7bb7a1f2f3426788c3d7ce32d3e3c342b14855929e76bf69949a021f50d223bd"
+        },
+        {
+          "name": "14_2663_6284.png",
+          "bytes": 31466,
+          "sha256": "dcf0eb9a8240ad901ecbaea78d70ede4d933c61b5bf12df36f495a2bcdf916d0"
+        },
+        {
+          "name": "14_2663_6285.png",
+          "bytes": 31677,
+          "sha256": "b43973a055f4be00f2dacaf2e0c75df2e1aab738d3a22b46f99045db50dab673"
+        },
+        {
+          "name": "14_2663_6285@2x.png",
+          "bytes": 79548,
+          "sha256": "156140eda1a2b2d222eac0cdc465eefa3da9c908d412b81c424ec15e614cf318"
+        },
+        {
+          "name": "14_2663_6286.png",
+          "bytes": 45524,
+          "sha256": "c4cd80c6500d8f6e81b39cece44f31441a9cbe79044eac5a38e1569a89e4e234"
+        },
+        {
+          "name": "14_2663_6286@2x.png",
+          "bytes": 113959,
+          "sha256": "1f34c60810819adc7919a230a34ba02d06103e6f328ce4324af6954e98328542"
+        },
+        {
+          "name": "14_2663_6287.png",
+          "bytes": 47396,
+          "sha256": "94af51b29c4fd2eb4da80f7f582d0aaecbee1b1478405a9d69bc0e187ad503ae"
+        },
+        {
+          "name": "14_2663_6287@2x.png",
+          "bytes": 119374,
+          "sha256": "f68859d92746d2de9c1aaf29931546931943dc17e8af6f36865eb1790c3cca56"
+        },
+        {
+          "name": "14_2663_6288.png",
+          "bytes": 33713,
+          "sha256": "6db637ab3a1148ee5f51d5e83a666807c2d77001ce9d17006974f799affaaf34"
+        },
+        {
+          "name": "14_2664_6284.png",
+          "bytes": 32017,
+          "sha256": "3666454c14a2f1f12bfda6c21f0ec38fcae0dbc86132a4c19ad505528a6e7099"
+        },
+        {
+          "name": "14_2664_6285.png",
+          "bytes": 30446,
+          "sha256": "b3fd48e0baf13536562e98a94025ce3bcd2700488ed96e44acb94696c8a58362"
+        },
+        {
+          "name": "14_2664_6285@2x.png",
+          "bytes": 74682,
+          "sha256": "e6d5ce4394e250160b6c288c012b308a9c856e3a73bb213b6dba3ef79d8e4694"
+        },
+        {
+          "name": "14_2664_6286.png",
+          "bytes": 37270,
+          "sha256": "deaa56259a0caa1695dd0db7a184fa2b99ad1323a973628d2de341a91d3681a3"
+        },
+        {
+          "name": "14_2664_6286@2x.png",
+          "bytes": 94325,
+          "sha256": "880fd3e815443cf00c8939cb1b9ec7131dbfe280278dd2c692b03d82509c27e6"
+        },
+        {
+          "name": "14_2664_6287.png",
+          "bytes": 43066,
+          "sha256": "c8d0378a532f6f0b3f3773695e80c9c4c668befc21ff213b9d845238f41233a9"
+        },
+        {
+          "name": "14_2664_6287@2x.png",
+          "bytes": 107723,
+          "sha256": "a66397beef12c0b1ab80b77a1e6a031c53c2849208f603400449be09d306d4ed"
+        },
+        {
+          "name": "14_2664_6288.png",
+          "bytes": 28096,
+          "sha256": "6d33e520ae042d1a18b8d44c16f62d9b7b0ed055653ae7e59c0e4f220386a9c5"
+        },
+        {
+          "name": "14_2665_6284.png",
+          "bytes": 38382,
+          "sha256": "07ebac39c77cee826f86001d1b3a86bb3041b4516c68ede78b8cf0d7ae0b6c57"
+        },
+        {
+          "name": "14_2665_6285.png",
+          "bytes": 17631,
+          "sha256": "527e8aa5bf3a90f142003576e2d80ad96ad802131a78be18bd9c1bb71dfb7135"
+        },
+        {
+          "name": "14_2665_6286.png",
+          "bytes": 35829,
+          "sha256": "b7cf79331325adeff367c4ce25f87527af619427ffcac92ae0ba133f1e8d4e38"
+        },
+        {
+          "name": "14_2665_6287.png",
+          "bytes": 36572,
+          "sha256": "6f7330642f9ded0e76d6c1201dda5aba11e7e0a9b59bcb77387bee9440d34ab2"
+        },
+        {
+          "name": "14_2665_6288.png",
+          "bytes": 26416,
+          "sha256": "8a801c0e2e6397f81e1adc98b225a7674b090a2953429335d014b4ca78c79b83"
+        },
+        {
+          "name": "15_5323_12571.png",
+          "bytes": 31205,
+          "sha256": "43f804661600b79054de725e5c6ae109d154cf89123d428793445eb346f7f469"
+        },
+        {
+          "name": "15_5323_12572.png",
+          "bytes": 37520,
+          "sha256": "8d1ccda5560458bf6d482b470b2bdcbe836c0dc41efd1fb467f725d267c89a99"
+        },
+        {
+          "name": "15_5323_12573.png",
+          "bytes": 40129,
+          "sha256": "2fbf125dd3cace511e4aec8811cf919a44ccc69e1fcbed1f0095701f56bcad80"
+        },
+        {
+          "name": "15_5323_12574.png",
+          "bytes": 34891,
+          "sha256": "f45556261ebe590db49587cd96ffcd84f7a1eccfc2fee50f687f6b11d5a1818d"
+        },
+        {
+          "name": "15_5324_12570.png",
+          "bytes": 32971,
+          "sha256": "569f8ecb45607fbc688bcd45ad9066c2a15e392a787cbc87a3f085c3984bca6f"
+        },
+        {
+          "name": "15_5324_12571.png",
+          "bytes": 31250,
+          "sha256": "e15aaebefa74eb512ec20f698a0ea13b031aa25fe75d0f8fafa9a524ac3146a6"
+        },
+        {
+          "name": "15_5324_12571@2x.png",
+          "bytes": 78577,
+          "sha256": "c0fad4d1dba9048a6f1bb46afe107d692107814ea0e50b54dd1708088e27a54d"
+        },
+        {
+          "name": "15_5324_12572.png",
+          "bytes": 36620,
+          "sha256": "8731d27414fbafada13c9369da0c2507fabc206aab133e53ddefdc12974a52e4"
+        },
+        {
+          "name": "15_5324_12572@2x.png",
+          "bytes": 92272,
+          "sha256": "8fa446a33718960aa866cc4c674ac764d4eeab528d36492750a6651caffe9f86"
+        },
+        {
+          "name": "15_5324_12573.png",
+          "bytes": 37390,
+          "sha256": "dac7b455c2b35c6cc5f7feb50494936bea8902da3f2e6a835e311a483317fe3b"
+        },
+        {
+          "name": "15_5324_12573@2x.png",
+          "bytes": 94395,
+          "sha256": "8b028ac2f7710e8f57104cc33aedb29e32a34780ac8e6c3c8ff7f02411297791"
+        },
+        {
+          "name": "15_5324_12574.png",
+          "bytes": 28451,
+          "sha256": "d396f8acf4785a9be6929992af05caa31be7bb7979129bf22c18c09f9aa3ce65"
+        },
+        {
+          "name": "15_5324_12574@2x.png",
+          "bytes": 71977,
+          "sha256": "b86ef9665b6513913657d842b2b1d039e8bf16e055537f51678d83c6919c7c97"
+        },
+        {
+          "name": "15_5325_12570.png",
+          "bytes": 30266,
+          "sha256": "c3b378341e10f00ff48624f62d8ad959ca66f9dc0958afc543a3f56147e3342b"
+        },
+        {
+          "name": "15_5325_12571.png",
+          "bytes": 32256,
+          "sha256": "5f2aee7b3f4e69c06f8a3b23a9c8b65c304c89977ceaef5ae88aabda7017ffb2"
+        },
+        {
+          "name": "15_5325_12571@2x.png",
+          "bytes": 83475,
+          "sha256": "be77215fdd8bbe9e9d717688a720be1077353b67e16a2ddadff3a818e9b32d9c"
+        },
+        {
+          "name": "15_5325_12572.png",
+          "bytes": 32199,
+          "sha256": "1f278a7f22a01d2ebe668a2cc7305fa1faa43401ae4c602cc7dd0f8077aa8ad0"
+        },
+        {
+          "name": "15_5325_12572@2x.png",
+          "bytes": 82413,
+          "sha256": "f2af004b48b82c9428c4d9ff6ad25df10a5e7597f67f739bece7181eb032ee47"
+        },
+        {
+          "name": "15_5325_12573.png",
+          "bytes": 35247,
+          "sha256": "977a4449d357223fdc2d8709d476d8289ac51e7e44a8303522e0941e630bf639"
+        },
+        {
+          "name": "15_5325_12573@2x.png",
+          "bytes": 89891,
+          "sha256": "e1e15467bb79ba7b4f28aaff42663f50eaea09227547be3d71c2698b383298ee"
+        },
+        {
+          "name": "15_5325_12574.png",
+          "bytes": 34885,
+          "sha256": "1c6986b88ef8354fd47e47272db55fafed2d973ff4dd0f0dcd95716b66ddbc6d"
+        },
+        {
+          "name": "15_5325_12574@2x.png",
+          "bytes": 89224,
+          "sha256": "04abf02891469a06f2a8d70b1f4181578cbc38e8a107e25badd14607fa03d2cd"
+        },
+        {
+          "name": "15_5326_12570.png",
+          "bytes": 38396,
+          "sha256": "65dd93623ff72da587b4f3788ada8599a46c18211ffcc8440a02848bd780947e"
+        },
+        {
+          "name": "15_5326_12571.png",
+          "bytes": 34960,
+          "sha256": "082bed2e43db2d7ae5c1269ed199c67f2fe5a4edd46a98b32002208ba6488ddc"
+        },
+        {
+          "name": "15_5326_12571@2x.png",
+          "bytes": 89276,
+          "sha256": "a9dfe995b0cd23c7e505fff776569d7db6532154412522d53241961e1358e1bc"
+        },
+        {
+          "name": "15_5326_12572.png",
+          "bytes": 38675,
+          "sha256": "8a0458769cb6ac812606cce2354fea74d6105dbbacd4f1a90f0895d4b2bc31fe"
+        },
+        {
+          "name": "15_5326_12572@2x.png",
+          "bytes": 99943,
+          "sha256": "5f6197757a52ea897580cd54fd6b0c4a0467beaebd5941a1fc43b08e6e9715a8"
+        },
+        {
+          "name": "15_5326_12573.png",
+          "bytes": 38433,
+          "sha256": "bec407bc97f4a63633cdd02b1d4a38b32facb84e59296f0a20358a446ad258ed"
+        },
+        {
+          "name": "15_5326_12573@2x.png",
+          "bytes": 99452,
+          "sha256": "1e17b8330f96e43cbce0bd64041e3a7a073c665b04b3a5d6c7f0b3531af5e4ab"
+        },
+        {
+          "name": "15_5326_12574.png",
+          "bytes": 38151,
+          "sha256": "4739735d9d66fd4b146f9203c4aff8ac3ca898f6032145ddfa53d6fad436eba4"
+        },
+        {
+          "name": "15_5326_12574@2x.png",
+          "bytes": 95936,
+          "sha256": "479103e2621fdcfa770385120846f90cdf06f963251e08778285ce6bbb5abfd8"
+        },
+        {
+          "name": "15_5327_12570.png",
+          "bytes": 14199,
+          "sha256": "50b4a113fa3113cf732f54bc06c40f62bd4a74fcf2e1f232f198938a8ae26999"
+        },
+        {
+          "name": "15_5327_12571.png",
+          "bytes": 17582,
+          "sha256": "142b28c65dec09b98881cd74d6b7aabcbd08613f138b13b64385ebe4ea105ecf"
+        },
+        {
+          "name": "15_5327_12571@2x.png",
+          "bytes": 44938,
+          "sha256": "c6acdeb4fa22ee80d7a321fd8d77f94db4e3cdc9e03fdef22b7ae51e2c5db073"
+        },
+        {
+          "name": "15_5327_12572.png",
+          "bytes": 35212,
+          "sha256": "8f3a8069c25ed54a6567a79a5962cd3fff0d14235d3e9da08d000168a26266f6"
+        },
+        {
+          "name": "15_5327_12572@2x.png",
+          "bytes": 91439,
+          "sha256": "2286007f9b2e99083cb59e8b8d3b8e2038bdd65a36be3d73cb635119bf48e3c3"
+        },
+        {
+          "name": "15_5327_12573.png",
+          "bytes": 42773,
+          "sha256": "f509ee90a35b19742ce7324485de9b5cc25587ce8209dd1dd37d742250a9bcee"
+        },
+        {
+          "name": "15_5327_12573@2x.png",
+          "bytes": 108060,
+          "sha256": "5ff72087ee6535698a406ac8572e3c8513f702369a1df8ca8780b791715b4905"
+        },
+        {
+          "name": "15_5327_12574.png",
+          "bytes": 46240,
+          "sha256": "8d71150d4fd307621395ff64714f1bc547f5ea90be3a5c3b6bfa1e0adc7decf5"
+        },
+        {
+          "name": "15_5327_12574@2x.png",
+          "bytes": 115335,
+          "sha256": "fdff35d93cfa6fb395ceced5c1741eb6e6e1ad44097cafcf3a2c3f31376ca822"
+        },
+        {
+          "name": "16_10647_25144.png",
+          "bytes": 28278,
+          "sha256": "30a4a8d6927221877faf69196adf8da73688ea494b6852cae9d7595a1d376975"
+        },
+        {
+          "name": "16_10647_25145.png",
+          "bytes": 18312,
+          "sha256": "3fd8d00f4199651f0161f4c21c226f211fc209fbf11d8fa1579f3b1d5ddcfa9a"
+        },
+        {
+          "name": "16_10647_25146.png",
+          "bytes": 28398,
+          "sha256": "f2b6f8ff9f0b255b11f26556fb30487900825645dc29b63165f4d88c03b54bff"
+        },
+        {
+          "name": "16_10647_25147.png",
+          "bytes": 46103,
+          "sha256": "d78fc1ece198f37f0aae258f1676040b0292c763f7cf046c0fb51c43d229808c"
+        },
+        {
+          "name": "16_10648_25143.png",
+          "bytes": 31972,
+          "sha256": "1f0058d0ee8b68bf62f8bbb27f04361215dc88af8f9a829a91be2288f5c02c1f"
+        },
+        {
+          "name": "16_10648_25144.png",
+          "bytes": 39298,
+          "sha256": "2cd3539fa2434cdaf208017571878724b27d0db8ed773beeba75a78a421cfb8a"
+        },
+        {
+          "name": "16_10648_25145.png",
+          "bytes": 38515,
+          "sha256": "9b5b61757bee56752481055005f30a088f5cf8db83d896e3026e6ed637d57e32"
+        },
+        {
+          "name": "16_10648_25146.png",
+          "bytes": 35073,
+          "sha256": "272083da9dd61bdcd5baf51b889e9b0c14c3289c6e9eac46461c78c5a3f31976"
+        },
+        {
+          "name": "16_10648_25147.png",
+          "bytes": 39359,
+          "sha256": "b7240b84df5709b6568b319162eaec1cbfdff415a5e22fc697e60cf6959583a9"
+        },
+        {
+          "name": "16_10649_25143.png",
+          "bytes": 33173,
+          "sha256": "03f8d52276ae92b3633e879dd161c3292f15ee8ae992847ab4980a01e27bae9a"
+        },
+        {
+          "name": "16_10649_25144.png",
+          "bytes": 29293,
+          "sha256": "dd13ab8112f487bdddd046e15fb0e53a5f77279a7855ea1eccc78ce0e9cca515"
+        },
+        {
+          "name": "16_10649_25144@2x.png",
+          "bytes": 76844,
+          "sha256": "bcecc818831fff7dbb76146858e378af63eea5e9767177c2ed9caed56019365e"
+        },
+        {
+          "name": "16_10649_25145.png",
+          "bytes": 32041,
+          "sha256": "ee8a95fddf15a9297dceda1e5060a6b5e3aa012830aeddc8a6e4fc0326057f76"
+        },
+        {
+          "name": "16_10649_25145@2x.png",
+          "bytes": 85896,
+          "sha256": "9f610917ad721be432f64cdf9c2dd73fd1a25fda5e00f6e190c1df197909352c"
+        },
+        {
+          "name": "16_10649_25146.png",
+          "bytes": 35932,
+          "sha256": "dee0bd9a21b751b3b9e4c84cf7bb3240312f4332180f82159538696fd78a781c"
+        },
+        {
+          "name": "16_10649_25146@2x.png",
+          "bytes": 97151,
+          "sha256": "362686fbf2b56f117bc4daf415dc5def8681ed9976dd240ec7cbf1067540322a"
+        },
+        {
+          "name": "16_10649_25147.png",
+          "bytes": 30882,
+          "sha256": "c5d58f76a14473d341ef72c5b2e65c620c226765a9d90ed8eb2dad421e86bed5"
+        },
+        {
+          "name": "16_10649_25147@2x.png",
+          "bytes": 82056,
+          "sha256": "e527879c8111315b93ecbed386aa1bfa0f7102f7de5cce3600e9057cce1b5b70"
+        },
+        {
+          "name": "16_10650_25142.png",
+          "bytes": 17373,
+          "sha256": "1a7c9e7b3dafdf9639619e3caae1bfa29647e3d8f6a2efb9581bae01637d561c"
+        },
+        {
+          "name": "16_10650_25143.png",
+          "bytes": 33007,
+          "sha256": "90c58bf29e2699d171670f460fe15440b8e94729b3b9ef615ba2e629020e0c5a"
+        },
+        {
+          "name": "16_10650_25144.png",
+          "bytes": 32473,
+          "sha256": "03714e5b6d54dd9a50a855e82cec98d93c9f7af9157977aba0c06a589fdbcae2"
+        },
+        {
+          "name": "16_10650_25144@2x.png",
+          "bytes": 85221,
+          "sha256": "820e54d896d3852c288d2501a9a66b1662d739aa0c302e72d4a6ee529ac0464c"
+        },
+        {
+          "name": "16_10650_25145.png",
+          "bytes": 29452,
+          "sha256": "fb5ff8cf3bc25f7ddf53002b9dafd61914055290048484e4203a9bf8aa80f2c3"
+        },
+        {
+          "name": "16_10650_25145@2x.png",
+          "bytes": 77157,
+          "sha256": "82d37502587df08f571507752f2f66abb1d39d489d0a193d6581999d821f6312"
+        },
+        {
+          "name": "16_10650_25146.png",
+          "bytes": 39918,
+          "sha256": "b77ca7bb12215f7f579d2c82715f1e013500592fe4070c8215cc475cc8096c83"
+        },
+        {
+          "name": "16_10650_25146@2x.png",
+          "bytes": 106272,
+          "sha256": "db97b78fd59da8b6d56cc054fe82953df789e78c35bec55835cfffa30d181ab4"
+        },
+        {
+          "name": "16_10650_25147.png",
+          "bytes": 34149,
+          "sha256": "818c83ff58802ca8ad4e12d4ec7f044774ba5d2babb089ae1f369bd68b430f9d"
+        },
+        {
+          "name": "16_10650_25147@2x.png",
+          "bytes": 93241,
+          "sha256": "ad76ffb7d46e8d2136b553dd03002d810d1056a4c3fc4c0bd3fc9d03a5d4148e"
+        },
+        {
+          "name": "16_10651_25142.png",
+          "bytes": 21736,
+          "sha256": "1793a426898f41b32945cef38e6fc82231df7c9704001cb785622e63af6c81ea"
+        },
+        {
+          "name": "16_10651_25143.png",
+          "bytes": 40255,
+          "sha256": "d152f4446d10e374dfa4e7995d86a80dc93df8a7023ca1b55ce0ee4a6ccc80f3"
+        },
+        {
+          "name": "16_10651_25144.png",
+          "bytes": 35123,
+          "sha256": "21aade69c391c066152dc32780fefeef1ae09d7c491fd6077f9ae39b9ab2f5e2"
+        },
+        {
+          "name": "16_10651_25144@2x.png",
+          "bytes": 93401,
+          "sha256": "1d25d5a28ffa0a5ddf8fbf16f386ee791efed8f2caf190bd93bc50d7e42c5833"
+        },
+        {
+          "name": "16_10651_25145.png",
+          "bytes": 25253,
+          "sha256": "7d1454163ae788fd3b9e44a20eb80ec56226ebe5399a3a4ef56a37573615059b"
+        },
+        {
+          "name": "16_10651_25145@2x.png",
+          "bytes": 68435,
+          "sha256": "7bbfb947853d7fda9e7142aff5238243435a74ad43379f973a24d2114bfe42fc"
+        },
+        {
+          "name": "16_10651_25146.png",
+          "bytes": 40528,
+          "sha256": "009b39274a6f36313eb6d58e16edcb272b67aa1adec96dbf936ba1d2c1947f32"
+        },
+        {
+          "name": "16_10651_25146@2x.png",
+          "bytes": 108360,
+          "sha256": "a40ccec9b1c7271a7b1a784e8c7f552e08e4bdec5683b607d02e32ca94366edd"
+        },
+        {
+          "name": "16_10651_25147.png",
+          "bytes": 38100,
+          "sha256": "19ebc4dbc85d1a1e9c0d8719557d51b820f1f2d0712e8f7d30538d841cfab9d6"
+        },
+        {
+          "name": "16_10651_25147@2x.png",
+          "bytes": 103527,
+          "sha256": "1f3370ca5b0d9a81c8eaf21905c5cbe3e42d57ffe9eea01dd3da70f0ed3b29af"
+        },
+        {
+          "name": "16_10652_25142.png",
+          "bytes": 30604,
+          "sha256": "51c14c56d0ae9b4641e37a92b156a519986fa51b1d2b2fd17d37a4c6848cbe98"
+        },
+        {
+          "name": "16_10652_25143.png",
+          "bytes": 35817,
+          "sha256": "2dedd535c1c52332cbdd7711c2e2dd9f08c87322b42f7be604ef8934775966af"
+        },
+        {
+          "name": "16_10652_25144.png",
+          "bytes": 37245,
+          "sha256": "f77bf287908c3907f29543bec5a79996753ee5c4695bcfdaf5822e51e55bcdf4"
+        },
+        {
+          "name": "16_10652_25144@2x.png",
+          "bytes": 100269,
+          "sha256": "a5a11635de244bfac0683846bb2b76826ac26bb669fcf1d49fd98e1587c482ee"
+        },
+        {
+          "name": "16_10652_25145.png",
+          "bytes": 39641,
+          "sha256": "1c9e458ba389ee592d1204da858ef3751127f14f25b0556ed25d88485fabc044"
+        },
+        {
+          "name": "16_10652_25145@2x.png",
+          "bytes": 106555,
+          "sha256": "67ebd9e5420452af75aa9061a46f859c042f46c0c37c239b9c3dc8b500ad5ccf"
+        },
+        {
+          "name": "16_10652_25146.png",
+          "bytes": 43779,
+          "sha256": "00a1e24abd52b204f17910a36456d661dccf6416e2ab27b74a935b6d8b9fd73b"
+        },
+        {
+          "name": "16_10652_25146@2x.png",
+          "bytes": 120289,
+          "sha256": "87629b56aae2efe8e800e42e0f29780cd4f1ff547f9152a8366077340ac5ea70"
+        },
+        {
+          "name": "16_10653_25142.png",
+          "bytes": 29076,
+          "sha256": "a38002dc3b0ac5988a8874096b3d8091e736da12477a13ca9bd2b4d08885d624"
+        },
+        {
+          "name": "16_10653_25143.png",
+          "bytes": 31930,
+          "sha256": "a2ad0ade4476f2efb8f9cd7105bc8a652e7ff7c4c581070e08550511227acbc2"
+        },
+        {
+          "name": "16_10653_25144.png",
+          "bytes": 40795,
+          "sha256": "0b13149bb7a8c87a854f712d507b3e435e5e97c8d9405b697f0b58b52214434f"
+        },
+        {
+          "name": "16_10653_25145.png",
+          "bytes": 42399,
+          "sha256": "3d6f73b252be29d7518989213f7d1015d776043bc7be57a2c1e4412570f44279"
+        },
+        {
+          "name": "16_10653_25146.png",
+          "bytes": 37913,
+          "sha256": "b9dcbe22e5ec01bf0e4a8252768613fe78d6224eb330ed2d0c9da6754dfc5be7"
+        },
+        {
+          "name": "17_21296_50290.png",
+          "bytes": 33745,
+          "sha256": "c9c533c6db6b0849df7a32ec1cbe8bbffb1483ec84c0313ed63d0f0b7f91a471"
+        },
+        {
+          "name": "17_21296_50291.png",
+          "bytes": 29034,
+          "sha256": "75327af3920296a335f94b885efc285eaabad50ca5b8353d0fb687214fcc306e"
+        },
+        {
+          "name": "17_21296_50292.png",
+          "bytes": 25065,
+          "sha256": "405fd2e8c23b91f2de519f8214b14b099ac9b8574359afa203eb80e6bb69f0f9"
+        },
+        {
+          "name": "17_21296_50293.png",
+          "bytes": 27612,
+          "sha256": "6552681bb8f5276bfd50950d6a61d4383dbe61ece799b6d8e0fe089a59c4bdd7"
+        },
+        {
+          "name": "17_21297_50290.png",
+          "bytes": 24886,
+          "sha256": "6405fdc72288cc593ecb6bbb8ff546031a6f5b6f6122268a89a98f0a9add0a72"
+        },
+        {
+          "name": "17_21297_50291.png",
+          "bytes": 15341,
+          "sha256": "37413ba0c9f30c75491616cb9deedfc4aa0849987630b761a30d55db9b9d52a2"
+        },
+        {
+          "name": "17_21297_50292.png",
+          "bytes": 24358,
+          "sha256": "669b64be4a13fbae982bce1fc2891a1a93aa20361da1385b531cf784005a5b9a"
+        },
+        {
+          "name": "17_21297_50293.png",
+          "bytes": 32634,
+          "sha256": "804c471bd4de3643f954010a08503f3e7332a6e5f108080afb5799faa36958b5"
+        },
+        {
+          "name": "17_21298_50289.png",
+          "bytes": 21516,
+          "sha256": "7acc5a5517e3d1226f481fd9c7e51673c6494e6321ef8ad93a7646b19dac508b"
+        },
+        {
+          "name": "17_21298_50289@2x.png",
+          "bytes": 54753,
+          "sha256": "af45ade5055c721ff73b2ce0adae819e6f71eeb63ff7cc5e34c3432359ddefc5"
+        },
+        {
+          "name": "17_21298_50290.png",
+          "bytes": 18889,
+          "sha256": "687cfa5d35da24a49a05031fe37494b529a1d7415e90f3a08227450bc131cb60"
+        },
+        {
+          "name": "17_21298_50290@2x.png",
+          "bytes": 48807,
+          "sha256": "0bdb840538fa568113952fa141783e4fa13b13211a2816f30919728db9bb5db8"
+        },
+        {
+          "name": "17_21298_50291.png",
+          "bytes": 21308,
+          "sha256": "3e1e2749a697cf4fee9491bb2be5381b0f58f47e47654e1c91066cfbd098e63d"
+        },
+        {
+          "name": "17_21298_50291@2x.png",
+          "bytes": 53399,
+          "sha256": "d6cb4d7a52f9dd66c67ae2ea935bf8a0f61621fb2a559d94ad742b41481dbdb0"
+        },
+        {
+          "name": "17_21298_50292.png",
+          "bytes": 23805,
+          "sha256": "c429b91b72c108a29a34882ea7ef34bd28ec57b72bbfac7f97619108fc0bf290"
+        },
+        {
+          "name": "17_21298_50292@2x.png",
+          "bytes": 63382,
+          "sha256": "4a41a2e64b7f4d2e9696e98615bd25b6ea1cc3e0763ed2c6da2f104016e1d634"
+        },
+        {
+          "name": "17_21298_50293.png",
+          "bytes": 27712,
+          "sha256": "d1b490d65c477c6c18f791eae1b8aeda50d0b1fe19147733d15a2be31b0e3024"
+        },
+        {
+          "name": "17_21299_50289.png",
+          "bytes": 20288,
+          "sha256": "c96fe9a5cb89256c0cb7a402055a940ba100d2c4c3e82c23abc40d6eb444abd3"
+        },
+        {
+          "name": "17_21299_50289@2x.png",
+          "bytes": 52874,
+          "sha256": "18e52060c183452f01ead5bcfd61631b494090f46aef8b030b224c173e27da89"
+        },
+        {
+          "name": "17_21299_50290.png",
+          "bytes": 21684,
+          "sha256": "19cd7edb8e600741342f9fdf6864ea0b168969965b6e0316e2e10551acc1c38e"
+        },
+        {
+          "name": "17_21299_50290@2x.png",
+          "bytes": 54579,
+          "sha256": "a40f19c1abff4886dfc00b82d575966100acbc183307dabfed2884e24baf32b5"
+        },
+        {
+          "name": "17_21299_50291.png",
+          "bytes": 20615,
+          "sha256": "bb5982aabcc9015338fdbf1d71826a94cf6808583a3d994866ecb305f5557287"
+        },
+        {
+          "name": "17_21299_50291@2x.png",
+          "bytes": 54840,
+          "sha256": "b38e163ea407fab8bbd8bceed070e63499adaaac1e1131bab03c34a93f676070"
+        },
+        {
+          "name": "17_21299_50292.png",
+          "bytes": 23947,
+          "sha256": "e9f2463be05ed2bf7a7c36dee9e284409870c7ba3e14294b6f8834b1c5052f38"
+        },
+        {
+          "name": "17_21299_50292@2x.png",
+          "bytes": 61639,
+          "sha256": "4e13fdeb9942730d121a0753613cd4e4a4d71f1720007ff6dc82a5ac6dc1ebb9"
+        },
+        {
+          "name": "17_21299_50293.png",
+          "bytes": 27701,
+          "sha256": "5c665287cf78375524de86162e1cc36f4bd8f17a489550546b255033fed9dc32"
+        },
+        {
+          "name": "17_21300_50288.png",
+          "bytes": 25946,
+          "sha256": "35ac0c41971075c9d20e5afbcc378e643d0036ec5992042e7046ac54a1e8bdec"
+        },
+        {
+          "name": "17_21300_50288@2x.png",
+          "bytes": 67499,
+          "sha256": "6a5dcab1e2fa29d9ab8b1f60ef1a6638f7dce8dfd319bec7a66adc21cbe5a2bb"
+        },
+        {
+          "name": "17_21300_50289.png",
+          "bytes": 24865,
+          "sha256": "9fe14942f1f66193376f85415678e5d0dcf0a71da3104548e48ed1bf9ea44d6e"
+        },
+        {
+          "name": "17_21300_50289@2x.png",
+          "bytes": 64239,
+          "sha256": "6a73f17feb8ef54c07c4b27219a8dcf31aeee369f12402e0376915995617cffd"
+        },
+        {
+          "name": "17_21300_50290.png",
+          "bytes": 25592,
+          "sha256": "8e018038e4e7d4ccaaf6750cfa05666c577fcc0c9266b1d07bfacdbf1530310e"
+        },
+        {
+          "name": "17_21300_50290@2x.png",
+          "bytes": 64911,
+          "sha256": "ecd5f4a3c25bd66cb5fb20853f3c7dc76cd334cf23d33def6995c3dbcdb15df1"
+        },
+        {
+          "name": "17_21300_50291.png",
+          "bytes": 20344,
+          "sha256": "6da402be86fb9374da1c7ba474e21c35130ee580696cb1bb60c78a417d1414a1"
+        },
+        {
+          "name": "17_21300_50291@2x.png",
+          "bytes": 52868,
+          "sha256": "dfc11d769353474c852fcf8be21a543a16393824a9356608748f4efe9bcc7737"
+        },
+        {
+          "name": "17_21300_50292.png",
+          "bytes": 28073,
+          "sha256": "d886f53a56e0c1e5795e47b0122f210d9ba0d2317dfa6d3c5968d339f525a9ad"
+        },
+        {
+          "name": "17_21300_50292@2x.png",
+          "bytes": 71269,
+          "sha256": "1d87d2465780cf84b3aac43d4fd2443d9a16663f2822b75289c93b69dae69edc"
+        },
+        {
+          "name": "17_21300_50293.png",
+          "bytes": 26360,
+          "sha256": "75021a8d00183d25da285fa6550a13fe4a010f8a0fac7aada2848dd1d10a43ab"
+        },
+        {
+          "name": "17_21301_50287.png",
+          "bytes": 22258,
+          "sha256": "b24df7436b702f08b08adf3362b1f970358b65725ec94d64f0022da286084915"
+        },
+        {
+          "name": "17_21301_50288.png",
+          "bytes": 26101,
+          "sha256": "fdebd93a9bdb1b82c5dc54bc5401131159e341a221aacf6e99245cfaf4805782"
+        },
+        {
+          "name": "17_21301_50288@2x.png",
+          "bytes": 67280,
+          "sha256": "b96e49b171dc96740f08a573970c73984cb4bac298dcf8972c00f5791b2b1a8d"
+        },
+        {
+          "name": "17_21301_50289.png",
+          "bytes": 22245,
+          "sha256": "71bed3ac12f1ee73dc67953e922c76d0e02c844b13cb45219f276c63bf2d823c"
+        },
+        {
+          "name": "17_21301_50289@2x.png",
+          "bytes": 58119,
+          "sha256": "710cf7262cc65638559cd21073825c9b0415514306286f3867b4b03502a2de91"
+        },
+        {
+          "name": "17_21301_50290.png",
+          "bytes": 21760,
+          "sha256": "480eed4d133c4f9cfc197fa32dd39dbee0dfc2b8f79e80a6c5b5a9897fce7c44"
+        },
+        {
+          "name": "17_21301_50290@2x.png",
+          "bytes": 59066,
+          "sha256": "42dd38cc15648d0f0d6d0af4461f2c9a5711791d08cf27dcbfc79c9ed16132e9"
+        },
+        {
+          "name": "17_21301_50291.png",
+          "bytes": 20809,
+          "sha256": "eebbf9dff25c8b24879b31847ce36eedbd940b439103d023362c0e2e8e2e3a46"
+        },
+        {
+          "name": "17_21301_50291@2x.png",
+          "bytes": 56057,
+          "sha256": "3abf5abf768538deec78cc50aaeb09e42ccea780230cdd36bea5bd892de3d745"
+        },
+        {
+          "name": "17_21301_50292.png",
+          "bytes": 28449,
+          "sha256": "4ed72b8f4620c2144bf4eeced5495d2d0bce82da3ce1388bb801017896a06ff0"
+        },
+        {
+          "name": "17_21301_50292@2x.png",
+          "bytes": 73278,
+          "sha256": "55e5fd7b0e7e54367c2fb2fb889139cfe3309795d1d24ebe1ce78860da3728ea"
+        },
+        {
+          "name": "17_21301_50293.png",
+          "bytes": 29284,
+          "sha256": "68e3463bace5e1e926855fdf34560e70552203a32ff9d6dd8224cc9026b01aa3"
+        },
+        {
+          "name": "17_21302_50287.png",
+          "bytes": 27742,
+          "sha256": "c23ac098e75f04a77341a141b15d335c8c6a92af3642924fe059f9b2113953df"
+        },
+        {
+          "name": "17_21302_50288.png",
+          "bytes": 30172,
+          "sha256": "856a6b170c2c7f9f82668e346aa282d448f0ae0e7419dc552ee2db311be35751"
+        },
+        {
+          "name": "17_21302_50288@2x.png",
+          "bytes": 77678,
+          "sha256": "87a620e3c7ed96b3527cd4117dd66008c2cff95c1eb1ff8aa1d17d59b08287e0"
+        },
+        {
+          "name": "17_21302_50289.png",
+          "bytes": 21690,
+          "sha256": "244ca0b7dbd2543a529866bcd36fde196a60bd8ade543493b6463eaa3f4396e4"
+        },
+        {
+          "name": "17_21302_50289@2x.png",
+          "bytes": 55834,
+          "sha256": "f9acd33694320d04fa7e320f142661145ac6343a6e5c285fcd404523c936f059"
+        },
+        {
+          "name": "17_21302_50290.png",
+          "bytes": 20401,
+          "sha256": "5ecdf4dfee5139df1fc0231ab133d9a8a3143dd2892ff44c95ca05d9064f091f"
+        },
+        {
+          "name": "17_21302_50290@2x.png",
+          "bytes": 54218,
+          "sha256": "f25e8c123c61bc7264788f4544881594c5ee063f023ba8bf46621546ab821416"
+        },
+        {
+          "name": "17_21302_50291.png",
+          "bytes": 23769,
+          "sha256": "7f20fafe4b2cb1fd546830667540f9ac87756bcc227bd5648dc4a30c125d9994"
+        },
+        {
+          "name": "17_21302_50291@2x.png",
+          "bytes": 64745,
+          "sha256": "bc8f6a605eed359185933a01c2839185c28062de7f5a3efb2866b1a61b0adb2e"
+        },
+        {
+          "name": "17_21302_50292.png",
+          "bytes": 28518,
+          "sha256": "153696db8ec0782b1c80f3532eaf21bc2e2b8597d430ba60475266164381334b"
+        },
+        {
+          "name": "17_21302_50292@2x.png",
+          "bytes": 73653,
+          "sha256": "ff516156d296b0f12c6da3538ff295397f4436bb7260bbea97ac98fbdedb8ba3"
+        },
+        {
+          "name": "17_21303_50287.png",
+          "bytes": 32168,
+          "sha256": "c44138a8a88a710a33ec95d27070a9a5dd20643e46c8c6d6c9a8c7df9cdba44c"
+        },
+        {
+          "name": "17_21303_50288.png",
+          "bytes": 28054,
+          "sha256": "0322dc1090824c6144f83f6f480a6293b11feb7e6d73a35283f4baaf16265663"
+        },
+        {
+          "name": "17_21303_50288@2x.png",
+          "bytes": 72360,
+          "sha256": "ebaebbfb214adcfcf729b46d0edaba01f550d9772b4abc45775f6047393398d2"
+        },
+        {
+          "name": "17_21303_50289.png",
+          "bytes": 19963,
+          "sha256": "df4097eeb7acf3e78a125bf7d81eb3333871de719884229fab3b37702af3da9d"
+        },
+        {
+          "name": "17_21303_50289@2x.png",
+          "bytes": 52895,
+          "sha256": "a04460989034e857b320ba764b69e29e4acc9490a815e572a1e6f140f37c59ac"
+        },
+        {
+          "name": "17_21303_50290.png",
+          "bytes": 22828,
+          "sha256": "3917d02e5f7761e03c4971360e96c1b91afbd157b0091251d08de66f84bd568b"
+        },
+        {
+          "name": "17_21303_50290@2x.png",
+          "bytes": 58517,
+          "sha256": "4fa6de194d3697c6a093b6429fe235fc0ddeb283dba8e5a62b2fd38aff4ba17c"
+        },
+        {
+          "name": "17_21303_50291.png",
+          "bytes": 29485,
+          "sha256": "a3113201308872e65a4112784f9e04f498d15ce2663c3b20488dcbd4f3e095a3"
+        },
+        {
+          "name": "17_21303_50291@2x.png",
+          "bytes": 79874,
+          "sha256": "ed305378fc9758f8164c21cb9ff05c3f11c8647343e466128a65f750e1780d3d"
+        },
+        {
+          "name": "17_21304_50287.png",
+          "bytes": 33088,
+          "sha256": "baddd34941f593fecbec15f86226cdca113a4731aa9c59ffebd08e4af420ff4c"
+        },
+        {
+          "name": "17_21304_50288.png",
+          "bytes": 26227,
+          "sha256": "c8ed55811ce69ad2785256fb869aa04b712c2a4fabcec51c504c17c9ae17c9dd"
+        },
+        {
+          "name": "17_21304_50288@2x.png",
+          "bytes": 66859,
+          "sha256": "d98a145642b394514b86177a9bb8067189e4d6c5bf3fc5a1aa8a0302696e92b6"
+        },
+        {
+          "name": "17_21304_50289.png",
+          "bytes": 27940,
+          "sha256": "e37d40e4657607ed192619cd5cce07ce0dbbb4dd0a21950050d27a39a85b5dd9"
+        },
+        {
+          "name": "17_21304_50289@2x.png",
+          "bytes": 70396,
+          "sha256": "9901557bdeed24afbdbcbce4725d35a0bd2baf14f98c69360d56d1d163a789f8"
+        },
+        {
+          "name": "17_21304_50290.png",
+          "bytes": 28497,
+          "sha256": "0050f9a29eaee610b305b61534a8ee9f838d4f4b261960e5ef864313feb41392"
+        },
+        {
+          "name": "17_21304_50290@2x.png",
+          "bytes": 73326,
+          "sha256": "67534b2a800133d9a8e9e0d67d102d714cb2f2986b33ac53c09b1472c303a93b"
+        },
+        {
+          "name": "17_21304_50291.png",
+          "bytes": 26150,
+          "sha256": "49d198e734438a889cc2a5306c323ea193cd5e763b83431edcb17367505d4f2f"
+        },
+        {
+          "name": "17_21304_50291@2x.png",
+          "bytes": 67008,
+          "sha256": "35abf45739b96cb1b964ee4f21ae9e2f34548af577ba2d4b664ecee54cb4a71e"
+        },
+        {
+          "name": "17_21305_50287.png",
+          "bytes": 28891,
+          "sha256": "2dcdb5f2f40ce08823bcb94c430b457476dc7bba7a721aae1de9c5a397c376b7"
+        },
+        {
+          "name": "17_21305_50288.png",
+          "bytes": 30038,
+          "sha256": "3c3baf8e7001dcdda7836cfaf5ac8fe6585c135c15508705335f4873bd40a530"
+        },
+        {
+          "name": "17_21305_50289.png",
+          "bytes": 29689,
+          "sha256": "19f6a3885e7ebbd5376f71e7369ce695e80e7c2a8e6e531af298d5c80d3d3eca"
+        },
+        {
+          "name": "17_21305_50290.png",
+          "bytes": 27353,
+          "sha256": "26b8e6844b4edfebbbef15e32f923f6cd18dee12d79b8509f7cce8b09a127140"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-style/fixtures/sprites",
+      "source": {
+        "kind": "generated",
+        "generator": "drawn from geometric primitives in this repository",
+        "note": "A four-icon sprite atlas with no third-party asset or licence."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "icon-sprite.json",
+          "bytes": 305,
+          "sha256": "a005552a56c53e40865ffc5ee1b1d3794796b3d0be3136c2ef2958d298a65006"
+        },
+        {
+          "name": "icon-sprite.png",
+          "bytes": 245,
+          "sha256": "63846535d246e88c07c3c2df7c1b2879a28d53dc7471f63ed2a0f66d6109580c"
+        }
+      ]
+    },
+    {
+      "directory": "crates/rustic-maps-style/fixtures/styles",
+      "source": {
+        "kind": "authored",
+        "note": "Test style documents authored or fetched for the style-crate tests."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "demotiles-style.json",
+          "bytes": 77224,
+          "sha256": "dd86fd257f9895da23b7da5dac62829a0b25ab458f71b06a3e06857b076caf06",
+          "source": {
+            "kind": "url",
+            "url": "https://demotiles.maplibre.org/style.json",
+            "note": "Fetched 2026-11-02, byte-for-byte as served; BSD 3-Clause, Copyright (c) 2021 MapLibre. Test data only."
+          },
+          "recorded": "2026-11-02"
+        },
+        {
+          "name": "icon-sprite-style.json",
+          "bytes": 990,
+          "sha256": "9883d99316ce10d75a022c8815f22cfccff0777f4685191c06afa055b70f4cb1",
+          "source": {
+            "kind": "authored",
+            "note": "Synthetic style that resolves the committed fixture://icon-sprite atlas; authored in this repository."
+          }
+        },
+        {
+          "name": "poi-labels-style.json",
+          "bytes": 1377,
+          "sha256": "311bfb41c87bcba1542b35494ba1e9649cfcb6a43a0fa90048d25437574d61d6",
+          "source": {
+            "kind": "authored",
+            "note": "Synthetic style that paints the committed POI label tile as a symbol layer; authored in this repository."
+          }
+        }
+      ]
+    },
+    {
+      "directory": "platform/web/perf/fixtures/vector",
+      "source": {
+        "kind": "copied",
+        "from": "fixtures/openstreetmap-us/osmus_tile_z9_x83_y196.mvt"
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "z7.mvt",
+          "bytes": 116934,
+          "sha256": "b1624ae1e5c25f11d73b2df6aaa943028ae0af49c18c9c17574b9370f166cb12"
+        },
+        {
+          "name": "z8.mvt",
+          "bytes": 116934,
+          "sha256": "b1624ae1e5c25f11d73b2df6aaa943028ae0af49c18c9c17574b9370f166cb12"
+        }
+      ]
+    },
+    {
+      "directory": "platform/ios/reference-application/Tests/ReferenceApplicationUITests/Fixtures",
+      "source": {
+        "kind": "authored",
+        "note": "Hand-authored GeoJSON FeatureCollections for the type-ahead UI cases. The names and coordinates are illustrative test data, not a provider recording."
+      },
+      "recorded": "2026-11-17",
+      "files": [
+        {
+          "name": "type_ahead_alternate.json",
+          "bytes": 754,
+          "sha256": "ab2d612e193d087381f89d230c2d0ac45264b327ebf2b2a8feb62db958528965"
+        },
+        {
+          "name": "type_ahead_default.json",
+          "bytes": 750,
+          "sha256": "eecf2124e76095538b80f27f4e32324ad4f3f3d4c494528d9b52ef37158f3a6a"
+        },
+        {
+          "name": "type_ahead_empty.json",
+          "bytes": 52,
+          "sha256": "b3049ad7a1062091e169bd352424d59721a26b8b6229942aef26d11b0c6a96e1"
+        },
+        {
+          "name": "type_ahead_seven_rows.json",
+          "bytes": 1544,
+          "sha256": "077e88c70613fca594a0cb005e68206cf3d7ba37c765282fa28ffb40b7e16111"
+        }
+      ]
+    }
+  ]
+}
