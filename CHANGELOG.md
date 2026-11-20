@@ -4,6 +4,39 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-20 — the hosted demo is a recorded walkthrough, not a streamed session)
+
+- New `rustic-maps-walkthrough` crate, publish-disabled and free of any SDK dependency so it can be extracted later: it validates one flow contract, builds a self-contained site with a SHA-256 manifest, serves it with a dev-only authoring overlay, and slices recordings with `ffmpeg`. `capture` and `slice` refuse to start when any known credential variable is set.
+- `platform/reference-walkthrough.json` seeds six screens per platform from the published stills at one shared 2.1667 ratio, with normalised copies under the crate; the browser global setup validates the contract before the suite runs.
+- The player double-buffers the next still under an opaque video layer before hiding it, falls back to an instant swap under `prefers-reduced-motion`, and supports tap and swipe hotspots, keyboard traversal, progress and hash deep links.
+- The docs site stages `/demo/walkthrough/` (22 files) and byte-checks the player and every still against the crate.
+- Appetize is retired: the claim endpoint, uploader, hosted-demo workflow, build manifest, mobile-demo page, credential-injection script and its environment variables are deleted. `PRD.md` decision 79 retires the hosted-build credential exception, and `CLAUDE.md` now states that no build, hosted or distributed, carries a provider credential under any exception.
+
+### Fixed (2026-11-20 — the walkthrough manifest ignores a hook's git environment)
+
+- The manifest check runs `git -C <directory>` with `GIT_DIR`, `GIT_WORK_TREE` and `GIT_COMMON_DIR` cleared, so the repository a pre-push hook exports no longer makes an unrelated directory look like a repository.
+
+### Changed (2026-11-20 — one tile-zoom bound, and limits named for what they bound)
+
+- `MAXIMUM_TILE_ZOOM_LEVEL` (63) in `geospatial-types` is the one tile-grid bound read by `TileKey::new`, projection and the camera. Zoom 64 previously panicked in debug and silently collapsed the grid to 1×1 in release.
+- The cache's 31, the fixture server's 30 and the demo's 24 are renamed `MAXIMUM_REPRESENTABLE_TILE_ZOOM_LEVEL`, `FIXTURE_TILE_MAXIMUM_ZOOM_LEVEL` and `DEMO_DISPLAY_MAXIMUM_ZOOM_LEVEL`, each documented, and the cache bound is asserted not to exceed the shared grid bound.
+
+### Fixed (2026-11-20 — a deployed page stops probing for fixtures it does not serve)
+
+- The browser canvas takes one optional capability deciding whether it may request a recorded-fixture URL. A page that serves none asks the registered raster provider directly, so an explicitly selected raster base no longer issues one 404 per tile before the live source answers. Local behaviour is unchanged.
+
+### Changed (2026-11-20 — one golden-image harness)
+
+- The eight rendering golden suites share one harness with one tolerance and one failure message naming the golden, the differing-pixel count and the limits. The original update semantics stand: `UPDATE_GOLDENS=1` writes only a missing fixture. No tolerance or baseline changed, and the suites report the same 32 tests.
+
+### Changed (2026-11-20 — the demo helpers leave the published iOS package)
+
+- `AppLayout`, `NavigationInstructionPresentation`, `NavigationStateCardStore` and `ProviderRegistryCatalog` move from `MapNativeCoreUI` into the reference application. The published package now carries the map view, its SwiftUI wrapper, the device location source and the registry resource; the registry loader reads `Bundle.main`, and the parity gate reads the new path.
+
+### Changed (2026-11-20 — the repeated test fixtures live in one crate)
+
+- A publish-disabled `rustic-maps-test-support` crate owns the coordinate, viewport, Sacramento and camera fixtures, adopted as a dev-dependency by eight crates. Copies whose values genuinely differ stay local and are named. The crate deliberately has no binding-surface constructors: a test target that links the crate under test twice duplicates its `#[no_mangle]` FFI symbols, which Linux rejects at link time.
+
 ### Changed (2026-11-19 — the recorded tiles stop being published)
 
 - The docs site no longer stages or publishes the 216 recorded MapQuest raster tiles, and the build fails if a served tile directory reappears. On a deployed page the first-run base is the registry's keyless vector base and a fixture-backed raster row waits for that provider's credential; the local dev server and the Playwright suite keep serving the fixtures unchanged.
