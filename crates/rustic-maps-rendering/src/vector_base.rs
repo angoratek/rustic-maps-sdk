@@ -2999,9 +2999,14 @@ mod gzip_bomb_tests {
         };
         let decoded = decode_wire_vector_tile(&tile_data)
             .expect("a gzip-wrapped tile is unwrapped and decoded");
-        assert!(
-            !decoded.layers.is_empty(),
-            "the unwrapped fixture decodes to its layers"
+        assert_eq!(
+            decoded.layers.len(),
+            11,
+            "the unwrapped fixture decodes to its Sourdough layers"
+        );
+        assert_eq!(
+            decoded.layers[0].name, "aeroways",
+            "the unwrapped fixture keeps its wire order"
         );
     }
 

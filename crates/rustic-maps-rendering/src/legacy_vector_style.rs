@@ -2258,8 +2258,8 @@ mod tests {
     #[test]
     fn the_legacy_carto_model_reads_route_references_as_plain_text_at_regional_zooms() {
         use super::legacy_label_candidates_for_vector_tile;
-        // The recorded z9 OpenStreetMap US tile over the demo's region: its
-        // `routes` layer carries road and transit refs (5, 80, 99, Gold, ...).
+        // The synthetic z9 OpenStreetMap US-schema tile over the demo's
+        // region: its `routes` layer carries road and transit refs (80, Gold).
         // The legacy model predates badges, so it reads those refs as plain
         // text; the compiled Carto style turns the same candidates into
         // badges, which the parity harness and goldens verify.

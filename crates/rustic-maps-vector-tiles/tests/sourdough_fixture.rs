@@ -1,8 +1,8 @@
-//! Decode of the committed real osmus Sourdough fixture tile
+//! Decode of the committed synthetic Sourdough fixture tile
 //! (`fixtures/openstreetmap-us/sourdough_tile_z6_x18_y27.mvt`), checked
 //! against the Sourdough schema's published layer names
-//! (https://sourdough.osm.fyi/schema/ — fetched once on 2026-10-29: the
-//! tileset's 32 `vector_layers` ids are `advertising`, `aerialways`,
+//! (https://sourdough.osm.fyi/schema/ — the tileset's 32 `vector_layers` ids
+//! are `advertising`, `aerialways`,
 //! `aeroways`, `amenities`, `barriers`, `boundaries`, `buildings`,
 //! `clubs`, `craft`, `education`, `emergency`, `geological`,
 //! `healthcare`, `highways`, `historic`, `landcover`, `landuse`,
@@ -12,14 +12,15 @@
 //!
 //! The fixture envelope pin (from the fixture README): the Tile message
 //! leads with the repeated `layers` field (wire key `0x1a`) and the first
-//! layer is `aeroways`. The bytes are the gzip-decoded MVT protobuf
-//! payload. The test never touches the network.
+//! layer is `aeroways`. The bytes are a plain MVT protobuf payload the
+//! repository generates with `node scripts/generate-openstreetmap-us-fixtures.mjs`;
+//! the test never touches the network.
 
 use rustic_maps_vector_tiles::{
     VectorTileAttributeValue, VectorTileGeometry, VectorTileGeometryType, decode_vector_tile,
 };
 
-/// The committed gzip-decoded Sourdough MVT protobuf tile.
+/// The committed synthetic Sourdough MVT protobuf tile.
 const SOURDOUGH_TILE_BYTES: &[u8] =
     include_bytes!("../../../fixtures/openstreetmap-us/sourdough_tile_z6_x18_y27.mvt");
 
@@ -70,14 +71,13 @@ fn the_committed_sourdough_fixture_decodes_cleanly() {
 
 #[test]
 fn the_sourdough_tile_shape_matches_the_pinned_decode() {
-    // Pinned against this slice's own decode of the committed bytes
-    // (z6/x18/y27 covers the Bahamas area of the tileset): 11 layers in
-    // wire order, 115 features, and all three compliant geometry kinds in
+    // Pinned against the synthetic generator's own scene: 11 layers in wire
+    // order, one feature each, and all three compliant geometry kinds in
     // use. The layer set is exactly these Sourdough-schema layers.
     let tile = decode_vector_tile(SOURDOUGH_TILE_BYTES).unwrap();
     assert_eq!(tile.layers.len(), 11);
     let total_features: usize = tile.layers.iter().map(|layer| layer.features.len()).sum();
-    assert_eq!(total_features, 115);
+    assert_eq!(total_features, 11);
     let layer_names: Vec<&str> = tile
         .layers
         .iter()

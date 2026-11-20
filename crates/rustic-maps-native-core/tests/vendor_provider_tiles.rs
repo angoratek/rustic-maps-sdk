@@ -31,7 +31,7 @@ const TOMTOM_RASTER_TILE_Y: u32 = 3143;
 /// The zoom the recorded PNG was rendered at.
 const TOMTOM_RASTER_ZOOM_LEVEL: u8 = 13;
 
-/// The recorded vector tile HERE's request serves, shared with the other
+/// The synthetic vector tile HERE's request serves, shared with the other
 /// vector sources rather than duplicated.
 const HERE_VECTOR_FIXTURE: &str = "fixtures/openstreetmap-us/sourdough_tile_z6_x18_y27.mvt";
 /// The tile address the shared vector payload carries.

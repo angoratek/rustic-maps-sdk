@@ -48,9 +48,8 @@ const STYLED_BASE_GOLDEN_FILE: &str = "sacramento_zoom14_bright_vector_base.png"
 /// painted by the schema style, whose symbol layers must draw text.
 const OPENMAPTILES_STYLED_BASE_GOLDEN_FILE: &str =
     "sacramento_zoom14_openmaptiles_light_vector_base.png";
-/// The recorded OpenStreetMap US z9 tile over the demo's region: the frame the
-/// owner reported as thick and overlapping, pinned after the road hierarchy
-/// work.
+/// The synthetic OpenStreetMap US-schema z9 tile over the demo's region: the
+/// regional frame, pinned after the road hierarchy work.
 const REGIONAL_TILE_KEY: TileKey = TileKey {
     tile_x: 83,
     tile_y: 196,
@@ -309,10 +308,11 @@ async fn the_regional_carto_labels_place_a_road_ref_and_a_transit_ref_as_badges(
 /// even when the tolerant image compare absorbs it.
 const BADGE_VERTEX_GOLDEN_FILE: &str = "sacramento_region_zoom9_carto_light_badges.bin";
 /// The exact number of badge vertices the regional scene emits.
-const EXPECTED_BADGE_VERTEX_COUNT: usize = 2304;
+const EXPECTED_BADGE_VERTEX_COUNT: usize = 576;
 /// The exact clip-space extent of the badge stream, `[min x, min y, max x,
 /// max y]`.
-const EXPECTED_BADGE_CLIP_EXTENT: [f32; 4] = [-0.995_769_2, -1.088_066_2, 1.056_355, 1.057_235_2];
+const EXPECTED_BADGE_CLIP_EXTENT: [f32; 4] =
+    [-0.760_031_2, -0.373_952_5, 0.761_984_35, 0.154_146_97];
 
 /// Encodes badge vertices exactly as the renderers upload them: clip position
 /// then colour, each component little-endian.

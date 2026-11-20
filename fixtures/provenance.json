@@ -488,33 +488,21 @@
     {
       "directory": "fixtures/openstreetmap-us",
       "source": {
-        "kind": "url",
-        "url": "https://tiles.openstreetmap.us/vector/sourdough/{z}/{x}/{y}.mvt",
-        "note": "Real tiles from the OpenStreetMap US Sourdough vector service."
+        "kind": "generated",
+        "generator": "node scripts/generate-openstreetmap-us-fixtures.mjs",
+        "note": "Synthetic vector tiles authored in this repository: neutral geometry, no downloaded tile, Sourdough schema layer names so the decode and styling paths stay exercised."
       },
-      "recorded": "2026-10-29",
+      "recorded": "2026-11-19",
       "files": [
         {
           "name": "osmus_tile_z9_x83_y196.mvt",
-          "bytes": 116934,
-          "sha256": "b1624ae1e5c25f11d73b2df6aaa943028ae0af49c18c9c17574b9370f166cb12",
-          "source": {
-            "kind": "url",
-            "url": "https://tiles.openstreetmap.us/vector/sourdough/9/83/196.mvt",
-            "note": "The address is the service's published {z}/{x}/{y}.mvt template. No capture note records the original fetch date; the file was lifted into this repository with the initial public snapshot, so that date is recorded here."
-          },
-          "recorded": "2026-11-17"
+          "bytes": 1335,
+          "sha256": "af0d38b65b0a83a0fef6809a426f4319e151e5da4b5048ef55795d5b22ec8154"
         },
         {
           "name": "sourdough_tile_z6_x18_y27.mvt",
-          "bytes": 28539,
-          "sha256": "66ff89167f317ffa461caafe54176d5a1cb3ecb73da0b53d426747f942bfa103",
-          "source": {
-            "kind": "url",
-            "url": "https://tiles.openstreetmap.us/vector/sourdough/6/18/27.mvt",
-            "note": "Fetched on 2026-10-29; the service delivered the tile gzip-wrapped and the fixture stores the gzip-decoded payload."
-          },
-          "recorded": "2026-10-29"
+          "bytes": 684,
+          "sha256": "56bbec1b7a53460223f8c1c647236e9f177c91e5b8e1a453db2c4491e42a0e37"
         }
       ]
     },
@@ -1040,18 +1028,18 @@
         },
         {
           "name": "sacramento_region_zoom9_carto_light.png",
-          "bytes": 147784,
-          "sha256": "9a9cdacedd32963fa00ff43a1c885497ea1340525d69ed7747ff813ae35727d5"
+          "bytes": 24267,
+          "sha256": "7e47f4e60e944dd77418ed2c3c6a677106e0a5d33297e99dc77820973956b316"
         },
         {
           "name": "sacramento_region_zoom9_carto_light_badges.bin",
-          "bytes": 73728,
-          "sha256": "d8481ffd6febc624f7a4b23b5e53e998cdf67edfdd6b9fb7a4a1593ad51fe5da"
+          "bytes": 18432,
+          "sha256": "9b71eeeec2e19bf7208129d766582ae60ac20a56aa2588acf51c91e93d65d111"
         },
         {
           "name": "sacramento_region_zoom9_carto_light_browser.png",
-          "bytes": 99741,
-          "sha256": "f51385686a579b85750980a011102e6c06e52b727502615bf1e8d8f0cb2eaecc"
+          "bytes": 23571,
+          "sha256": "3760e74bb80c146af596e9faa4c1e0beb08090642c1001feb533c2a107f2d14d"
         },
         {
           "name": "sacramento_zoom14_bright_light.png",
@@ -2439,20 +2427,21 @@
     {
       "directory": "platform/web/perf/fixtures/vector",
       "source": {
-        "kind": "copied",
-        "from": "fixtures/openstreetmap-us/osmus_tile_z9_x83_y196.mvt"
+        "kind": "generated",
+        "generator": "node scripts/generate-openstreetmap-us-fixtures.mjs",
+        "note": "Byte copies of the synthetic z9 tile, written by the same generator run for the fit-budget scene."
       },
-      "recorded": "2026-11-17",
+      "recorded": "2026-11-19",
       "files": [
         {
           "name": "z7.mvt",
-          "bytes": 116934,
-          "sha256": "b1624ae1e5c25f11d73b2df6aaa943028ae0af49c18c9c17574b9370f166cb12"
+          "bytes": 1335,
+          "sha256": "af0d38b65b0a83a0fef6809a426f4319e151e5da4b5048ef55795d5b22ec8154"
         },
         {
           "name": "z8.mvt",
-          "bytes": 116934,
-          "sha256": "b1624ae1e5c25f11d73b2df6aaa943028ae0af49c18c9c17574b9370f166cb12"
+          "bytes": 1335,
+          "sha256": "af0d38b65b0a83a0fef6809a426f4319e151e5da4b5048ef55795d5b22ec8154"
         }
       ]
     },
