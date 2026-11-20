@@ -17,6 +17,9 @@
 //! so their no-route payload empties the success envelope their routing
 //! response type and committed route fixture already declare.
 
+mod common;
+
+use common::{LoopbackFixtureServer, ScriptedResponse};
 use everymap_core::auth::header::HeaderAuthProvider;
 use everymap_core::auth::{ApiKeyProvider, AuthProvider};
 use geospatial_traits::{GeocodingProvider, RoutingProvider};
@@ -24,10 +27,7 @@ use geospatial_types::GeographicCoordinate;
 use geospatial_types::route::{RouteOptions, TransportationMode};
 use rustic_maps::SdkError;
 use rustic_maps_core::everymap_bridge::{EveryMapGeocoder, EveryMapRouter};
-use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::sync::Arc;
 
 /// The credential every case registers. It reaches the vendor request and
 /// must never reach the unified message.
@@ -44,8 +44,6 @@ const HTTP_RATE_LIMITED_STATUS: u16 = 429;
 /// client's retry ceiling, so the failing request returns at once instead of
 /// sleeping.
 const RETRY_AFTER_HEADER: (&str, &str) = ("Retry-After", "60");
-/// The media type every committed payload is served as.
-const CONTENT_TYPE_HEADER: (&str, &str) = ("Content-Type", "application/json");
 
 /// The unified detail a 401 produces: the shared client's status error, whose
 /// display is the only part the bridge carries into the SDK error.
@@ -56,135 +54,23 @@ const NO_ROUTE_UNIFIED_DETAIL: &str = "the provider returned no route for the re
 /// The unified message the rate-limit variant displays.
 const RATE_LIMIT_UNIFIED_MESSAGE: &str = "rate limit exhausted";
 
-/// A loopback server answering every request with one status, one set of
-/// headers and one committed payload, while recording the requests it served.
-struct FixtureServer {
-    base_url: String,
-    request_count: Arc<Mutex<usize>>,
-    received_requests: Arc<Mutex<Vec<String>>>,
+/// A server answering every request with one committed JSON payload at
+/// `status`.
+fn fixture_server(status: u16, payload: Vec<u8>) -> LoopbackFixtureServer {
+    LoopbackFixtureServer::start(vec![ScriptedResponse::json(status, payload)])
 }
 
-impl FixtureServer {
-    fn start(status: u16, headers: &[(&'static str, &'static str)], payload: Vec<u8>) -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("the loopback port binds");
-        let port = listener.local_addr().expect("the port is readable").port();
-        let request_count = Arc::new(Mutex::new(0));
-        let received_requests = Arc::new(Mutex::new(Vec::new()));
-        let served_count = Arc::clone(&request_count);
-        let recorded_requests = Arc::clone(&received_requests);
-        let response_headers: Vec<(String, String)> = headers
-            .iter()
-            .map(|(name, value)| ((*name).to_string(), (*value).to_string()))
-            .collect();
-        thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(stream) = stream else { continue };
-                serve_one(
-                    stream,
-                    status,
-                    &response_headers,
-                    &payload,
-                    &served_count,
-                    &recorded_requests,
-                );
-            }
-        });
-        Self {
-            base_url: format!("http://127.0.0.1:{port}"),
-            request_count,
-            received_requests,
-        }
-    }
-
-    fn base_url(&self) -> &str {
-        &self.base_url
-    }
-
-    fn request_count(&self) -> usize {
-        *self
-            .request_count
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
-
-    /// Every request head the server received, joined for the redaction
-    /// assertion.
-    fn received_requests(&self) -> String {
-        self.received_requests
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .join("\n")
-    }
-}
-
-fn serve_one(
-    mut stream: TcpStream,
-    status: u16,
-    response_headers: &[(String, String)],
-    payload: &[u8],
-    served_count: &Arc<Mutex<usize>>,
-    received_requests: &Arc<Mutex<Vec<String>>>,
-) {
-    let mut reader = BufReader::new(stream.try_clone().expect("the stream clones"));
-    let mut request_head = String::new();
-    let mut content_length = 0usize;
-    loop {
-        let mut line = String::new();
-        let Ok(bytes_read) = reader.read_line(&mut line) else {
-            break;
-        };
-        if bytes_read == 0 || line == "\r\n" || line == "\n" {
-            break;
-        }
-        if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
-            content_length = value.trim().parse().unwrap_or(0);
-        }
-        request_head.push_str(&line);
-    }
-    if content_length > 0 {
-        let mut body = vec![0u8; content_length];
-        let _ = reader.read_exact(&mut body);
-        request_head.push_str(&String::from_utf8_lossy(&body));
-    }
-    *served_count
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner()) += 1;
-    received_requests
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .push(request_head);
-
-    let mut response = format!("HTTP/1.1 {status} {}\r\n", reason_phrase(status));
-    for (name, value) in response_headers {
-        response.push_str(name);
-        response.push_str(": ");
-        response.push_str(value);
-        response.push_str("\r\n");
-    }
-    response.push_str(&format!(
-        "Content-Length: {}\r\nConnection: close\r\n\r\n",
-        payload.len()
-    ));
-    let _ = stream.write_all(response.as_bytes());
-    let _ = stream.write_all(payload);
-}
-
-fn reason_phrase(status: u16) -> &'static str {
-    match status {
-        HTTP_OK_STATUS => "OK",
-        HTTP_UNAUTHORIZED_STATUS => "Unauthorized",
-        HTTP_RATE_LIMITED_STATUS => "Too Many Requests",
-        _ => "Unknown",
-    }
+/// A server answering every request with the committed rate-limit payload
+/// and its retry hint.
+fn rate_limited_server(payload: Vec<u8>) -> LoopbackFixtureServer {
+    LoopbackFixtureServer::start(vec![
+        ScriptedResponse::json(HTTP_RATE_LIMITED_STATUS, payload)
+            .with_header(RETRY_AFTER_HEADER.0, RETRY_AFTER_HEADER.1),
+    ])
 }
 
 fn fixture_bytes(provider_key: &str, file_name: &str) -> Vec<u8> {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join("fixtures")
-        .join(provider_key)
-        .join(file_name);
-    std::fs::read(&path).unwrap_or_else(|error| panic!("{} is checked in: {error}", path.display()))
+    common::fixture_bytes(&format!("fixtures/{provider_key}/{file_name}"))
 }
 
 fn api_key_auth(parameter: &str) -> Arc<dyn AuthProvider> {
@@ -198,7 +84,7 @@ fn header_auth() -> Arc<dyn AuthProvider> {
     Arc::new(HeaderAuthProvider::new(REGISTERED_CREDENTIAL.to_string()))
 }
 
-fn here_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
+fn here_geocoder(server: &LoopbackFixtureServer) -> Arc<dyn GeocodingProvider> {
     let client = Arc::new(everymap_providers_here::HereClient::new(api_key_auth(
         "apiKey",
     )));
@@ -207,7 +93,7 @@ fn here_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
     )))
 }
 
-fn here_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
+fn here_router(server: &LoopbackFixtureServer) -> Arc<dyn RoutingProvider> {
     let client = Arc::new(everymap_providers_here::HereClient::new(api_key_auth(
         "apiKey",
     )));
@@ -219,7 +105,7 @@ fn here_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
     )))
 }
 
-fn google_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
+fn google_geocoder(server: &LoopbackFixtureServer) -> Arc<dyn GeocodingProvider> {
     let client = Arc::new(everymap_providers_google::GoogleClient::new(api_key_auth(
         "key",
     )));
@@ -231,7 +117,7 @@ fn google_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
     )))
 }
 
-fn google_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
+fn google_router(server: &LoopbackFixtureServer) -> Arc<dyn RoutingProvider> {
     let client = Arc::new(everymap_providers_google::GoogleClient::new(api_key_auth(
         "key",
     )));
@@ -243,7 +129,7 @@ fn google_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
     )))
 }
 
-fn tomtom_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
+fn tomtom_geocoder(server: &LoopbackFixtureServer) -> Arc<dyn GeocodingProvider> {
     let client = Arc::new(everymap_providers_tomtom::TomTomClient::new(api_key_auth(
         "key",
     )));
@@ -255,7 +141,7 @@ fn tomtom_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
     )))
 }
 
-fn tomtom_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
+fn tomtom_router(server: &LoopbackFixtureServer) -> Arc<dyn RoutingProvider> {
     let client = Arc::new(everymap_providers_tomtom::TomTomClient::new(api_key_auth(
         "key",
     )));
@@ -267,7 +153,7 @@ fn tomtom_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
     )))
 }
 
-fn mapbox_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
+fn mapbox_geocoder(server: &LoopbackFixtureServer) -> Arc<dyn GeocodingProvider> {
     let client = Arc::new(everymap_providers_mapbox::MapBoxClient::new(api_key_auth(
         "access_token",
     )));
@@ -279,7 +165,7 @@ fn mapbox_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
     )))
 }
 
-fn mapbox_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
+fn mapbox_router(server: &LoopbackFixtureServer) -> Arc<dyn RoutingProvider> {
     let client = Arc::new(everymap_providers_mapbox::MapBoxClient::new(api_key_auth(
         "access_token",
     )));
@@ -291,7 +177,7 @@ fn mapbox_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
     )))
 }
 
-fn radar_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
+fn radar_geocoder(server: &LoopbackFixtureServer) -> Arc<dyn GeocodingProvider> {
     let client = Arc::new(everymap_providers_radar::RadarClient::new(header_auth()));
     Arc::new(EveryMapGeocoder::new(Arc::new(
         everymap_providers_radar::RadarGeocoder::with_base_url(
@@ -301,7 +187,7 @@ fn radar_geocoder(server: &FixtureServer) -> Arc<dyn GeocodingProvider> {
     )))
 }
 
-fn radar_router(server: &FixtureServer) -> Arc<dyn RoutingProvider> {
+fn radar_router(server: &LoopbackFixtureServer) -> Arc<dyn RoutingProvider> {
     let client = Arc::new(everymap_providers_radar::RadarClient::new(header_auth()));
     Arc::new(EveryMapRouter::new(Arc::new(
         everymap_providers_radar::RadarRouter::with_base_url(client, server.base_url().to_string()),
@@ -369,9 +255,11 @@ fn assert_credential_redacted(error: &SdkError) {
 
 /// Proves the redaction assertion is not vacuous: the vendor request really
 /// carried the credential before the unified message omitted it.
-fn assert_credential_reached_the_vendor(server: &FixtureServer) {
+fn assert_credential_reached_the_vendor(server: &LoopbackFixtureServer) {
     assert!(
-        server.received_requests().contains(REGISTERED_CREDENTIAL),
+        server
+            .received_requests_text()
+            .contains(REGISTERED_CREDENTIAL),
         "the vendor request carried the registered credential"
     );
 }
@@ -382,9 +270,8 @@ fn assert_credential_reached_the_vendor(server: &FixtureServer) {
 
 #[tokio::test]
 async fn here_unauthorized_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_UNAUTHORIZED_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("here", "geocode_unauthorized.json"),
     );
     let error = geocoding_failure(here_geocoder(&server)).await;
@@ -395,11 +282,7 @@ async fn here_unauthorized_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn here_rate_limited_payload_maps_to_rate_limit_exhausted() {
-    let server = FixtureServer::start(
-        HTTP_RATE_LIMITED_STATUS,
-        &[CONTENT_TYPE_HEADER, RETRY_AFTER_HEADER],
-        fixture_bytes("here", "geocode_rate_limited.json"),
-    );
+    let server = rate_limited_server(fixture_bytes("here", "geocode_rate_limited.json"));
     let error = geocoding_failure(here_geocoder(&server)).await;
     assert_rate_limit_exhausted(&error);
     assert_credential_reached_the_vendor(&server);
@@ -408,11 +291,7 @@ async fn here_rate_limited_payload_maps_to_rate_limit_exhausted() {
 
 #[tokio::test]
 async fn here_no_route_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
-        HTTP_OK_STATUS,
-        &[CONTENT_TYPE_HEADER],
-        fixture_bytes("here", "route_no_route.json"),
-    );
+    let server = fixture_server(HTTP_OK_STATUS, fixture_bytes("here", "route_no_route.json"));
     let error = routing_failure(here_router(&server)).await;
     assert_provider_request_rejected(&error, NO_ROUTE_UNIFIED_DETAIL);
     assert_credential_reached_the_vendor(&server);
@@ -425,9 +304,8 @@ async fn here_no_route_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn google_unauthorized_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_UNAUTHORIZED_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("google", "geocode_unauthorized.json"),
     );
     let error = geocoding_failure(google_geocoder(&server)).await;
@@ -438,11 +316,7 @@ async fn google_unauthorized_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn google_rate_limited_payload_maps_to_rate_limit_exhausted() {
-    let server = FixtureServer::start(
-        HTTP_RATE_LIMITED_STATUS,
-        &[CONTENT_TYPE_HEADER, RETRY_AFTER_HEADER],
-        fixture_bytes("google", "geocode_rate_limited.json"),
-    );
+    let server = rate_limited_server(fixture_bytes("google", "geocode_rate_limited.json"));
     let error = geocoding_failure(google_geocoder(&server)).await;
     assert_rate_limit_exhausted(&error);
     assert_credential_reached_the_vendor(&server);
@@ -451,9 +325,8 @@ async fn google_rate_limited_payload_maps_to_rate_limit_exhausted() {
 
 #[tokio::test]
 async fn google_no_route_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_OK_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("google", "route_no_route.json"),
     );
     let error = routing_failure(google_router(&server)).await;
@@ -468,9 +341,8 @@ async fn google_no_route_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn tomtom_unauthorized_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_UNAUTHORIZED_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("tomtom", "geocode_unauthorized.json"),
     );
     let error = geocoding_failure(tomtom_geocoder(&server)).await;
@@ -481,11 +353,7 @@ async fn tomtom_unauthorized_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn tomtom_rate_limited_payload_maps_to_rate_limit_exhausted() {
-    let server = FixtureServer::start(
-        HTTP_RATE_LIMITED_STATUS,
-        &[CONTENT_TYPE_HEADER, RETRY_AFTER_HEADER],
-        fixture_bytes("tomtom", "geocode_rate_limited.json"),
-    );
+    let server = rate_limited_server(fixture_bytes("tomtom", "geocode_rate_limited.json"));
     let error = geocoding_failure(tomtom_geocoder(&server)).await;
     assert_rate_limit_exhausted(&error);
     assert_credential_reached_the_vendor(&server);
@@ -494,9 +362,8 @@ async fn tomtom_rate_limited_payload_maps_to_rate_limit_exhausted() {
 
 #[tokio::test]
 async fn tomtom_no_route_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_OK_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("tomtom", "route_no_route.json"),
     );
     let error = routing_failure(tomtom_router(&server)).await;
@@ -511,9 +378,8 @@ async fn tomtom_no_route_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn mapbox_unauthorized_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_UNAUTHORIZED_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("mapbox", "geocode_unauthorized.json"),
     );
     let error = geocoding_failure(mapbox_geocoder(&server)).await;
@@ -524,11 +390,7 @@ async fn mapbox_unauthorized_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn mapbox_rate_limited_payload_maps_to_rate_limit_exhausted() {
-    let server = FixtureServer::start(
-        HTTP_RATE_LIMITED_STATUS,
-        &[CONTENT_TYPE_HEADER, RETRY_AFTER_HEADER],
-        fixture_bytes("mapbox", "geocode_rate_limited.json"),
-    );
+    let server = rate_limited_server(fixture_bytes("mapbox", "geocode_rate_limited.json"));
     let error = geocoding_failure(mapbox_geocoder(&server)).await;
     assert_rate_limit_exhausted(&error);
     assert_credential_reached_the_vendor(&server);
@@ -537,9 +399,8 @@ async fn mapbox_rate_limited_payload_maps_to_rate_limit_exhausted() {
 
 #[tokio::test]
 async fn mapbox_no_route_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_OK_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("mapbox", "route_no_route.json"),
     );
     let error = routing_failure(mapbox_router(&server)).await;
@@ -554,9 +415,8 @@ async fn mapbox_no_route_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn radar_unauthorized_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_UNAUTHORIZED_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("radar", "geocode_unauthorized.json"),
     );
     let error = geocoding_failure(radar_geocoder(&server)).await;
@@ -567,11 +427,7 @@ async fn radar_unauthorized_payload_maps_to_provider_request_rejected() {
 
 #[tokio::test]
 async fn radar_rate_limited_payload_maps_to_rate_limit_exhausted() {
-    let server = FixtureServer::start(
-        HTTP_RATE_LIMITED_STATUS,
-        &[CONTENT_TYPE_HEADER, RETRY_AFTER_HEADER],
-        fixture_bytes("radar", "geocode_rate_limited.json"),
-    );
+    let server = rate_limited_server(fixture_bytes("radar", "geocode_rate_limited.json"));
     let error = geocoding_failure(radar_geocoder(&server)).await;
     assert_rate_limit_exhausted(&error);
     assert_credential_reached_the_vendor(&server);
@@ -580,9 +436,8 @@ async fn radar_rate_limited_payload_maps_to_rate_limit_exhausted() {
 
 #[tokio::test]
 async fn radar_no_route_payload_maps_to_provider_request_rejected() {
-    let server = FixtureServer::start(
+    let server = fixture_server(
         HTTP_OK_STATUS,
-        &[CONTENT_TYPE_HEADER],
         fixture_bytes("radar", "route_no_route.json"),
     );
     let error = routing_failure(radar_router(&server)).await;

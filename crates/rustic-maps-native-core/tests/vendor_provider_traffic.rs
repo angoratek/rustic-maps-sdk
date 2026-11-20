@@ -8,129 +8,33 @@
 //! and the bridge converts both into the SDK's records. The vendor request
 //! shapes stay covered by the provider layer's own suites.
 
+mod common;
+
+use common::{LoopbackFixtureServer, ScriptedResponse};
 use everymap_core::auth::ApiKeyProvider;
 use geospatial_traits::{TrafficFlowProvider, TrafficIncidentProvider};
 use geospatial_types::{BoundingBox, GeographicCoordinate};
 use rustic_maps_core::everymap_bridge::EveryMapTrafficProvider;
-use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::sync::Arc;
 
 /// HTTP status the scripted server returns for a payload.
 const HTTP_OK_STATUS: u16 = 200;
 
-/// HTTP status the scripted server returns for a request no route answers,
-/// so a mismatched path fails the case instead of stalling it.
-const HTTP_NOT_FOUND_STATUS: u16 = 404;
-
-/// One request-path fragment and the committed payload it answers with.
-struct ScriptedRoute {
-    path_fragment: &'static str,
-    payload: Vec<u8>,
-}
-
-/// A loopback server answering each request with the payload whose path
-/// fragment the request line carries, counting the requests it served and
-/// recording any request no scripted route answers.
-struct FixtureServer {
-    base_url: String,
-    request_count: Arc<Mutex<usize>>,
-    unmatched_requests: Arc<Mutex<Vec<String>>>,
-}
-
-impl FixtureServer {
-    fn start(routes: Vec<ScriptedRoute>) -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("the loopback port binds");
-        let port = listener.local_addr().expect("the port is readable").port();
-        let request_count = Arc::new(Mutex::new(0));
-        let unmatched_requests = Arc::new(Mutex::new(Vec::new()));
-        let served_count = Arc::clone(&request_count);
-        let unmatched = Arc::clone(&unmatched_requests);
-        thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(stream) = stream else { continue };
-                serve_one(stream, &routes, &served_count, &unmatched);
-            }
-        });
-        Self {
-            base_url: format!("http://127.0.0.1:{port}"),
-            request_count,
-            unmatched_requests,
-        }
-    }
-
-    fn base_url(&self) -> &str {
-        &self.base_url
-    }
-
-    fn request_count(&self) -> usize {
-        *self
-            .request_count
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
-
-    fn unmatched_requests(&self) -> Vec<String> {
-        self.unmatched_requests
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone()
-    }
-}
-
-fn serve_one(
-    mut stream: TcpStream,
-    routes: &[ScriptedRoute],
-    served_count: &Arc<Mutex<usize>>,
-    unmatched_requests: &Arc<Mutex<Vec<String>>>,
-) {
-    let mut reader = BufReader::new(stream.try_clone().expect("the stream clones"));
-    let mut request_line = String::new();
-    let _ = reader.read_line(&mut request_line);
-    for line in reader.lines() {
-        let Ok(line) = line else { break };
-        if line.is_empty() {
-            break;
-        }
-    }
-    *served_count
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner()) += 1;
-    let scripted_payload = routes
-        .iter()
-        .find(|route| request_line.contains(route.path_fragment))
-        .map(|route| route.payload.as_slice());
-    let (status, payload) = match scripted_payload {
-        Some(payload) => (HTTP_OK_STATUS, payload),
-        None => {
-            unmatched_requests
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .push(request_line.trim_end().to_string());
-            (HTTP_NOT_FOUND_STATUS, b"{}".as_slice())
-        }
-    };
-    let reason = if status == HTTP_OK_STATUS {
-        "OK"
-    } else {
-        "Not Found"
-    };
-    let header = format!(
-        "HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        payload.len()
-    );
-    let _ = stream.write_all(header.as_bytes());
-    let _ = stream.write_all(payload);
+/// A server answering each request path fragment with its committed JSON
+/// payload.
+fn fixture_server(routes: Vec<(&str, Vec<u8>)>) -> LoopbackFixtureServer {
+    LoopbackFixtureServer::start(
+        routes
+            .into_iter()
+            .map(|(path_fragment, payload)| {
+                ScriptedResponse::json(HTTP_OK_STATUS, payload).for_path_fragment(path_fragment)
+            })
+            .collect(),
+    )
 }
 
 fn fixture_bytes(provider_key: &str, file_name: &str) -> Vec<u8> {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join("fixtures")
-        .join(provider_key)
-        .join(file_name);
-    std::fs::read(&path).unwrap_or_else(|error| panic!("{} is checked in: {error}", path.display()))
+    common::fixture_bytes(&format!("fixtures/{provider_key}/{file_name}"))
 }
 
 fn api_key_auth(credential: &str, parameter: &str) -> Arc<ApiKeyProvider> {
@@ -153,15 +57,12 @@ fn berlin_box() -> BoundingBox {
 
 #[tokio::test]
 async fn here_traffic_crosses_the_bridge_with_flow_and_incidents() {
-    let server = FixtureServer::start(vec![
-        ScriptedRoute {
-            path_fragment: "/flow",
-            payload: fixture_bytes("here", "traffic_flow_berlin.json"),
-        },
-        ScriptedRoute {
-            path_fragment: "/incidents",
-            payload: fixture_bytes("here", "traffic_incidents_berlin.json"),
-        },
+    let server = fixture_server(vec![
+        ("/flow", fixture_bytes("here", "traffic_flow_berlin.json")),
+        (
+            "/incidents",
+            fixture_bytes("here", "traffic_incidents_berlin.json"),
+        ),
     ]);
     let client = Arc::new(everymap_providers_here::HereClient::new(api_key_auth(
         "placeholder-key",
@@ -205,15 +106,15 @@ async fn here_traffic_crosses_the_bridge_with_flow_and_incidents() {
 
 #[tokio::test]
 async fn tomtom_traffic_crosses_the_bridge_with_flow_and_incidents() {
-    let server = FixtureServer::start(vec![
-        ScriptedRoute {
-            path_fragment: "flowSegmentData",
-            payload: fixture_bytes("tomtom", "traffic_flow_berlin.json"),
-        },
-        ScriptedRoute {
-            path_fragment: "incidentDetails",
-            payload: fixture_bytes("tomtom", "traffic_incidents_berlin.json"),
-        },
+    let server = fixture_server(vec![
+        (
+            "flowSegmentData",
+            fixture_bytes("tomtom", "traffic_flow_berlin.json"),
+        ),
+        (
+            "incidentDetails",
+            fixture_bytes("tomtom", "traffic_incidents_berlin.json"),
+        ),
     ]);
     let client = Arc::new(everymap_providers_tomtom::TomTomClient::new(api_key_auth(
         "placeholder-key",
@@ -259,15 +160,15 @@ async fn tomtom_traffic_crosses_the_bridge_with_flow_and_incidents() {
 
 #[tokio::test]
 async fn mapquest_traffic_crosses_the_bridge_with_flow_and_incidents() {
-    let server = FixtureServer::start(vec![
-        ScriptedRoute {
-            path_fragment: "/traffic/v2/flow",
-            payload: fixture_bytes("mapquest", "traffic_flow_new_york.json"),
-        },
-        ScriptedRoute {
-            path_fragment: "/traffic/v2/incidents",
-            payload: fixture_bytes("mapquest", "traffic_incidents_denver.json"),
-        },
+    let server = fixture_server(vec![
+        (
+            "/traffic/v2/flow",
+            fixture_bytes("mapquest", "traffic_flow_new_york.json"),
+        ),
+        (
+            "/traffic/v2/incidents",
+            fixture_bytes("mapquest", "traffic_incidents_denver.json"),
+        ),
     ]);
     let configuration = everymap_providers_mapquest::MapQuestProviderConfiguration {
         api_key: "placeholder-key".to_string(),

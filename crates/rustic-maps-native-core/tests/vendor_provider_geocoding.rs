@@ -7,14 +7,14 @@
 //! with a base URL, the provider layer parses its payload, and the bridge
 //! converts the result into the SDK's `PlaceResult`.
 
+mod common;
+
+use common::{LoopbackFixtureServer, ScriptedResponse};
 use everymap_core::auth::header::HeaderAuthProvider;
 use everymap_core::auth::{ApiKeyProvider, AuthProvider};
 use geospatial_traits::GeocodingProvider;
 use rustic_maps_core::everymap_bridge::EveryMapGeocoder;
-use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::sync::Arc;
 
 /// The latitude every vendor fixture answers for the Brandenburg Gate query,
 /// with the tolerance a provider's own coordinate rounding may introduce.
@@ -28,69 +28,13 @@ const REVERSE_GEOCODE_LONGITUDE: f64 = 13.405;
 /// HTTP status the scripted server returns for a payload.
 const HTTP_OK_STATUS: u16 = 200;
 
-/// A loopback server answering every request with one committed payload and
-/// counting the requests it served.
-struct FixtureServer {
-    base_url: String,
-    request_count: Arc<Mutex<usize>>,
-}
-
-impl FixtureServer {
-    fn start(payload: Vec<u8>) -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("the loopback port binds");
-        let port = listener.local_addr().expect("the port is readable").port();
-        let request_count = Arc::new(Mutex::new(0));
-        let served_count = Arc::clone(&request_count);
-        thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(stream) = stream else { continue };
-                serve_one(stream, &payload, &served_count);
-            }
-        });
-        Self {
-            base_url: format!("http://127.0.0.1:{port}"),
-            request_count,
-        }
-    }
-
-    fn base_url(&self) -> &str {
-        &self.base_url
-    }
-
-    fn request_count(&self) -> usize {
-        *self
-            .request_count
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
-}
-
-fn serve_one(mut stream: TcpStream, payload: &[u8], served_count: &Arc<Mutex<usize>>) {
-    let reader = BufReader::new(stream.try_clone().expect("the stream clones"));
-    for line in reader.lines() {
-        let Ok(line) = line else { break };
-        if line.is_empty() {
-            break;
-        }
-    }
-    *served_count
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner()) += 1;
-    let header = format!(
-        "HTTP/1.1 {HTTP_OK_STATUS} OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        payload.len()
-    );
-    let _ = stream.write_all(header.as_bytes());
-    let _ = stream.write_all(payload);
+/// A server answering every request with one committed JSON payload.
+fn fixture_server(payload: Vec<u8>) -> LoopbackFixtureServer {
+    LoopbackFixtureServer::start(vec![ScriptedResponse::json(HTTP_OK_STATUS, payload)])
 }
 
 fn fixture_bytes(provider_key: &str, file_name: &str) -> Vec<u8> {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join("fixtures")
-        .join(provider_key)
-        .join(file_name);
-    std::fs::read(&path).unwrap_or_else(|error| panic!("{} is checked in: {error}", path.display()))
+    common::fixture_bytes(&format!("fixtures/{provider_key}/{file_name}"))
 }
 
 fn api_key_auth(credential: &str, parameter: &str) -> Arc<dyn AuthProvider> {
@@ -168,7 +112,7 @@ fn assert_reverse_place(
 
 #[tokio::test]
 async fn here_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("here", "geocode_brandenburg_gate.json"));
+    let server = fixture_server(fixture_bytes("here", "geocode_brandenburg_gate.json"));
     let client = Arc::new(everymap_providers_here::HereClient::new(api_key_auth(
         "placeholder-key",
         "apiKey",
@@ -183,7 +127,7 @@ async fn here_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn google_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("google", "geocode_brandenburg_gate.json"));
+    let server = fixture_server(fixture_bytes("google", "geocode_brandenburg_gate.json"));
     let client = Arc::new(everymap_providers_google::GoogleClient::new(api_key_auth(
         "placeholder-key",
         "key",
@@ -200,7 +144,7 @@ async fn google_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn tomtom_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("tomtom", "geocode_brandenburg_gate.json"));
+    let server = fixture_server(fixture_bytes("tomtom", "geocode_brandenburg_gate.json"));
     let client = Arc::new(everymap_providers_tomtom::TomTomClient::new(api_key_auth(
         "placeholder-key",
         "key",
@@ -217,7 +161,7 @@ async fn tomtom_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn mapbox_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("mapbox", "geocode_berlin.json"));
+    let server = fixture_server(fixture_bytes("mapbox", "geocode_berlin.json"));
     let client = Arc::new(everymap_providers_mapbox::MapBoxClient::new(api_key_auth(
         "placeholder-key",
         "access_token",
@@ -234,7 +178,7 @@ async fn mapbox_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn radar_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("radar", "geocode_brandenburg_gate.json"));
+    let server = fixture_server(fixture_bytes("radar", "geocode_brandenburg_gate.json"));
     let auth: Arc<dyn AuthProvider> =
         Arc::new(HeaderAuthProvider::new("placeholder-key".to_string()));
     let client = Arc::new(everymap_providers_radar::RadarClient::new(auth));
@@ -250,7 +194,7 @@ async fn radar_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn here_reverse_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("here", "geocode_reverse_berlin.json"));
+    let server = fixture_server(fixture_bytes("here", "geocode_reverse_berlin.json"));
     let client = Arc::new(everymap_providers_here::HereClient::new(api_key_auth(
         "placeholder-key",
         "apiKey",
@@ -270,7 +214,7 @@ async fn here_reverse_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn google_reverse_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("google", "geocode_reverse_berlin.json"));
+    let server = fixture_server(fixture_bytes("google", "geocode_reverse_berlin.json"));
     let client = Arc::new(everymap_providers_google::GoogleClient::new(api_key_auth(
         "placeholder-key",
         "key",
@@ -292,7 +236,7 @@ async fn google_reverse_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn tomtom_reverse_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("tomtom", "geocode_reverse_berlin.json"));
+    let server = fixture_server(fixture_bytes("tomtom", "geocode_reverse_berlin.json"));
     let client = Arc::new(everymap_providers_tomtom::TomTomClient::new(api_key_auth(
         "placeholder-key",
         "key",
@@ -314,7 +258,7 @@ async fn tomtom_reverse_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn mapbox_reverse_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("mapbox", "geocode_reverse_berlin.json"));
+    let server = fixture_server(fixture_bytes("mapbox", "geocode_reverse_berlin.json"));
     let client = Arc::new(everymap_providers_mapbox::MapBoxClient::new(api_key_auth(
         "placeholder-key",
         "access_token",
@@ -336,7 +280,7 @@ async fn mapbox_reverse_geocoding_crosses_the_bridge() {
 
 #[tokio::test]
 async fn radar_reverse_geocoding_crosses_the_bridge() {
-    let server = FixtureServer::start(fixture_bytes("radar", "geocode_reverse_berlin.json"));
+    let server = fixture_server(fixture_bytes("radar", "geocode_reverse_berlin.json"));
     let auth: Arc<dyn AuthProvider> =
         Arc::new(HeaderAuthProvider::new("placeholder-key".to_string()));
     let client = Arc::new(everymap_providers_radar::RadarClient::new(auth));

@@ -7,14 +7,14 @@
 //! a base URL, the provider layer fetches its tile, and the bridge hands the
 //! bytes and address back unchanged.
 
+mod common;
+
+use common::{LoopbackFixtureServer, ScriptedResponse};
 use everymap_core::auth::{ApiKeyProvider, AuthProvider};
 use geospatial_traits::{RasterTileProvider, VectorTileProvider};
 use geospatial_types::{RasterImageFormat, RasterTileResolution};
 use rustic_maps_core::everymap_bridge::{EveryMapRasterTileProvider, EveryMapVectorTileProvider};
-use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::sync::Arc;
 
 /// HTTP status the scripted server returns for a payload.
 const HTTP_OK_STATUS: u16 = 200;
@@ -51,67 +51,17 @@ const MAPBOX_VECTOR_TILE_Y: u32 = 6286;
 /// The zoom the Mapbox payload carries.
 const MAPBOX_VECTOR_ZOOM_LEVEL: u8 = 14;
 
-/// A loopback server answering every request with one committed payload and
-/// counting the requests it served.
-struct FixtureServer {
-    base_url: String,
-    request_count: Arc<Mutex<usize>>,
-}
-
-impl FixtureServer {
-    fn start(payload: Vec<u8>) -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("the loopback port binds");
-        let port = listener.local_addr().expect("the port is readable").port();
-        let request_count = Arc::new(Mutex::new(0));
-        let served_count = Arc::clone(&request_count);
-        thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(stream) = stream else { continue };
-                serve_one(stream, &payload, &served_count);
-            }
-        });
-        Self {
-            base_url: format!("http://127.0.0.1:{port}"),
-            request_count,
-        }
-    }
-
-    fn base_url(&self) -> &str {
-        &self.base_url
-    }
-
-    fn request_count(&self) -> usize {
-        *self
-            .request_count
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
-}
-
-fn serve_one(mut stream: TcpStream, payload: &[u8], served_count: &Arc<Mutex<usize>>) {
-    let reader = BufReader::new(stream.try_clone().expect("the stream clones"));
-    for line in reader.lines() {
-        let Ok(line) = line else { break };
-        if line.is_empty() {
-            break;
-        }
-    }
-    *served_count
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner()) += 1;
-    let header = format!(
-        "HTTP/1.1 {HTTP_OK_STATUS} OK\r\nContent-Type: {TILE_CONTENT_TYPE}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        payload.len()
-    );
-    let _ = stream.write_all(header.as_bytes());
-    let _ = stream.write_all(payload);
+/// A server answering every request with one committed tile payload.
+fn fixture_server(payload: Vec<u8>) -> LoopbackFixtureServer {
+    LoopbackFixtureServer::start(vec![ScriptedResponse::with_content_type(
+        HTTP_OK_STATUS,
+        TILE_CONTENT_TYPE,
+        payload,
+    )])
 }
 
 fn fixture_bytes(relative_path: &str) -> Vec<u8> {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join(relative_path);
-    std::fs::read(&path).unwrap_or_else(|error| panic!("{} is checked in: {error}", path.display()))
+    common::fixture_bytes(relative_path)
 }
 
 fn api_key_auth(credential: &str, parameter: &str) -> Arc<dyn AuthProvider> {
@@ -124,7 +74,7 @@ fn api_key_auth(credential: &str, parameter: &str) -> Arc<dyn AuthProvider> {
 #[tokio::test]
 async fn tomtom_raster_tiles_carry_the_recorded_png() {
     let recorded_png = fixture_bytes(TOMTOM_RASTER_FIXTURE);
-    let server = FixtureServer::start(recorded_png.clone());
+    let server = fixture_server(recorded_png.clone());
     let client = Arc::new(everymap_providers_tomtom::TomTomClient::new(api_key_auth(
         "placeholder-key",
         "key",
@@ -161,7 +111,7 @@ async fn tomtom_raster_tiles_carry_the_recorded_png() {
 #[tokio::test]
 async fn here_vector_tiles_carry_the_recorded_tile() {
     let recorded_tile = fixture_bytes(HERE_VECTOR_FIXTURE);
-    let server = FixtureServer::start(recorded_tile.clone());
+    let server = fixture_server(recorded_tile.clone());
     let client = Arc::new(everymap_providers_here::HereClient::new(api_key_auth(
         "placeholder-key",
         "apiKey",
@@ -202,7 +152,7 @@ async fn here_vector_tiles_carry_the_recorded_tile() {
 #[tokio::test]
 async fn mapbox_vector_tiles_carry_the_recorded_tile() {
     let recorded_tile = fixture_bytes(MAPBOX_VECTOR_FIXTURE);
-    let server = FixtureServer::start(recorded_tile.clone());
+    let server = fixture_server(recorded_tile.clone());
     let client = Arc::new(everymap_providers_mapbox::MapBoxClient::new(api_key_auth(
         "placeholder-key",
         "access_token",
