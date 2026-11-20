@@ -576,4 +576,26 @@ fn normalises_a_published_still_with_a_real_ffmpeg() {
         read_png_dimensions(&bytes).expect("the output should be a PNG"),
         (1080, 2340)
     );
+    // The committed asset must be this recipe's own output: decode both to
+    // raw RGB and compare channel by channel, so a regenerated still cannot
+    // differ from the one the walkthrough ships.
+    let committed = repository_root()
+        .join("crates/rustic-maps-walkthrough/assets/normalised/android-plan-sheet.png");
+    assert_eq!(
+        decode_rgb24(&output),
+        decode_rgb24(&committed),
+        "the regenerated still matches the committed walkthrough asset pixel for pixel",
+    );
+}
+
+/// Decodes a PNG to raw RGB24 bytes with the same `ffmpeg` the pipeline uses.
+fn decode_rgb24(path: &Path) -> Vec<u8> {
+    let output = Command::new("ffmpeg")
+        .args(["-v", "error", "-i"])
+        .arg(path)
+        .args(["-f", "rawvideo", "-pix_fmt", "rgb24", "-"])
+        .output()
+        .expect("ffmpeg decodes the still");
+    assert!(output.status.success(), "ffmpeg decoded {path:?}");
+    output.stdout
 }
