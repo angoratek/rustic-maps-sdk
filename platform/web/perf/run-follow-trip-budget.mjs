@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The follow-trip tile budget runner (PLAN.md M71).
+// The follow-trip tile budget runner.
 //
 // Plans the recorded demo route, starts the simulated trip and samples the
 // page's own frame statistics once per interval. The readable report states,

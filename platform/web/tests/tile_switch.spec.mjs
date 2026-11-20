@@ -101,7 +101,7 @@ async function require_test_canvas(page) {
       document.body.append(canvas_element);
       try {
         // A frame starts its tile fetches and returns (a presenting frame
-        // never blocks on the network, PLAN.md M23), so the settle loop below
+        // never blocks on the network), so the settle loop below
         // yields between frames — the page's settled pump's same discipline.
         const settle_frame_delay_milliseconds = 30;
         const canvas = new window.mapTest.MapView(

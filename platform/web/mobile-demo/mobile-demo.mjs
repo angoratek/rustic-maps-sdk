@@ -1,4 +1,4 @@
-// The hosted mobile demo page (PLAN.md, M24).
+// The hosted mobile demo page.
 //
 // Nothing streams until a visitor presses Start. Start asks the claim endpoint
 // for a session — which enforces the month's streamed-minutes budget and the

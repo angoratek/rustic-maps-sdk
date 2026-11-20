@@ -33,7 +33,7 @@ export const FIT_BUDGET_FIT_ZOOM_LEVEL = 7;
 /** The highest zoom the committed fixtures serve; the source clamps to it. */
 export const FIT_BUDGET_MAXIMUM_ZOOM_LEVEL = 8;
 
-/** The budgets the scenario enforces (PLAN.md's M65 criteria). */
+/** The budgets the scenario enforces. */
 export const FIT_BUDGET_FIRST_FULL_FRAME_MILLISECONDS = 1500;
 export const FIT_BUDGET_OVERLAY_TRIANGLE_COUNT = 400_000;
 export const FIT_BUDGET_SETTLE_RENDER_P95_MILLISECONDS = 4;

@@ -2,7 +2,7 @@
   "name": "rustic-maps-demo-claim",
   "private": true,
   "version": "0.1.0",
-  "description": "The session-budget claim endpoint for the hosted mobile demo (PLAN.md, M24).",
+  "description": "The session-budget claim endpoint for the hosted mobile demo.",
   "type": "module",
   "dependencies": {
     "@vercel/kv": "^3.0.0"
