@@ -26,7 +26,15 @@ const TILE_FIXTURES_DIRECTORY = path.resolve(
   '../../crates/rustic-maps-rendering/fixtures/render/tiles',
 );
 const TILE_FIXTURE_URL_PATTERN = /^\/tiles\/(\d+)_(\d+)_(\d+)(@2x)?\.png$/;
-const MAXIMUM_TILE_ZOOM_LEVEL = 30;
+/**
+ * Highest zoom level the fixture tile route addresses. The route derives a
+ * zoom's tile count as `2 ** zoom` and reads only committed fixture files, so
+ * a deeper request can name no recorded tile. It must stay below the SDK's
+ * shared tile-grid bound (`MAXIMUM_TILE_ZOOM_LEVEL`, zoom 63 in
+ * `geospatial-types`): every fixture it serves was recorded from that grid,
+ * and addressing beyond the grid would describe a tile that cannot exist.
+ */
+const FIXTURE_TILE_MAXIMUM_ZOOM_LEVEL = 30;
 
 // The committed golden fixtures the browser canvas-vs-golden compare
 // (tests/golden_compare.spec.mjs) decodes and diffs in-page: the two tile
@@ -276,7 +284,7 @@ function tile_directory_fixture_path(fixture_route, fixture_match) {
     (size_segment === fixture_route.standard_size_segment ||
       size_segment === fixture_route.retina_size_segment) &&
     zoom_level >= 0 &&
-    zoom_level <= MAXIMUM_TILE_ZOOM_LEVEL &&
+    zoom_level <= FIXTURE_TILE_MAXIMUM_ZOOM_LEVEL &&
     tile_x >= 0 &&
     tile_y >= 0 &&
     tile_x < tile_count_at_zoom &&
@@ -425,7 +433,7 @@ function filesystem_path_of_request(request_path, request_method) {
     const tile_y = parseInt(tile_y_text, 10);
     const tile_count_at_zoom = 2 ** zoom_level;
     if (
-      zoom_level > MAXIMUM_TILE_ZOOM_LEVEL ||
+      zoom_level > FIXTURE_TILE_MAXIMUM_ZOOM_LEVEL ||
       tile_x >= tile_count_at_zoom ||
       tile_y >= tile_count_at_zoom
     ) {
