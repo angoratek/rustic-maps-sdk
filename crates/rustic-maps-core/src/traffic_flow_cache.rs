@@ -603,11 +603,8 @@ pub fn system_clock_time_seconds() -> u64 {
 mod tests {
     use super::*;
     use geospatial_types::TrafficFlowCongestionLevel;
+    use rustic_maps_test_support::validated_coordinate as coordinate;
     use std::sync::atomic::{AtomicU64, Ordering};
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude, longitude).expect("canonical coordinate")
-    }
 
     fn box_around(latitude: f64, longitude: f64, span: f64) -> BoundingBox {
         BoundingBox::from_corners(

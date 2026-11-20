@@ -11,14 +11,11 @@ use geospatial_traits::{
     OfflineRoutingProvider, RasterTileProvider, RoutingProvider, SearchPlaceProvider,
     TrafficFlowProvider, TrafficIncidentProvider,
 };
+use geospatial_types::BoundingBox;
 use geospatial_types::raster::{RasterImageFormat, RasterTileResolution};
 use geospatial_types::route::RouteOptions;
-use geospatial_types::{BoundingBox, GeographicCoordinate};
+use rustic_maps_test_support::validated_coordinate as coordinate;
 use std::sync::Arc;
-
-fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-    GeographicCoordinate::from_degrees(latitude, longitude).unwrap()
-}
 
 #[tokio::test]
 async fn every_mock_dispatches_through_a_trait_object() {

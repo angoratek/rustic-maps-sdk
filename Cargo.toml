@@ -19,6 +19,7 @@ members = [
     "crates/rustic-maps-providers",
     "crates/rustic-maps-web-bindings",
     "crates/rustic-maps-walkthrough",
+    "crates/rustic-maps-test-support",
 ]
 
 [workspace.package]
@@ -51,6 +52,9 @@ rustic-maps-positioning = { path = "crates/rustic-maps-positioning" }
 rustic-maps-offline-graph-archive = { path = "crates/rustic-maps-offline-graph-archive" }
 rustic-maps-providers = { path = "crates/rustic-maps-providers" }
 rustic-maps-rendering = { path = "crates/rustic-maps-rendering" }
+# Development-only fixtures shared by the test suites; never a published
+# crate's dependency.
+rustic-maps-test-support = { path = "crates/rustic-maps-test-support" }
 # The MVT v2.1 decoder the vector rendering pipeline consumes.
 rustic-maps-vector-tiles = { path = "crates/rustic-maps-vector-tiles" }
 # The MapLibre style-specification document model: sources, layers, typed

@@ -145,21 +145,8 @@ mod tests {
         DEFAULT_CAMERA_ZOOM_LEVEL, camera_geographic_bounds, fit_camera, interpolate_cameras,
         neutral_camera, rotate_camera_clockwise, viewport_center_pixels,
     };
-    use geospatial_types::GeographicCoordinate;
-    use rustic_maps_rendering::{EdgeInsetsPixels, MapCamera, ViewportPixels};
-
-    /// A coordinate at decimal degrees.
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate {
-            latitude,
-            longitude,
-        }
-    }
-
-    /// A viewport at 800 by 600 pixels.
-    fn viewport() -> ViewportPixels {
-        ViewportPixels::new(800.0, 600.0).expect("a canonical viewport")
-    }
+    use rustic_maps_rendering::{EdgeInsetsPixels, MapCamera};
+    use rustic_maps_test_support::{compact_viewport as viewport, coordinate};
 
     #[test]
     fn interpolation_answers_both_endpoints_verbatim() {

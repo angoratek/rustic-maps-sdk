@@ -292,12 +292,12 @@ mod tests {
     use crate::error::SdkError;
     use crate::get_sdk_compiled_version;
     use crate::records::{BoundingBox, EdgeInsets, GeographicCoordinate, ScreenPoint, TileKey};
+    use rustic_maps_test_support::{
+        SACRAMENTO_LATITUDE_DEGREES as SACRAMENTO_LATITUDE,
+        SACRAMENTO_LONGITUDE_DEGREES as SACRAMENTO_LONGITUDE, SACRAMENTO_TILE_X, SACRAMENTO_TILE_Y,
+        SACRAMENTO_TILE_ZOOM_LEVEL,
+    };
 
-    /// Sacramento's latitude in decimal degrees: the California State
-    /// Capitol / Capitol Park, downtown Sacramento.
-    const SACRAMENTO_LATITUDE: f64 = 38.5766;
-    /// Sacramento's longitude in decimal degrees.
-    const SACRAMENTO_LONGITUDE: f64 = -121.4944;
     /// Viewport width the camera tests use, in pixels.
     const VIEWPORT_WIDTH_PIXELS: f64 = 1024.0;
     /// Viewport height the camera tests use, in pixels.
@@ -306,12 +306,6 @@ mod tests {
     const CENTER_PIXEL_TOLERANCE: f64 = 1e-2;
     /// Tolerance for the screen-to-ground round trip, in degrees.
     const COORDINATE_TOLERANCE_DEGREES: f64 = 1e-6;
-    /// Known tile column of the Sacramento anchor at zoom 14.
-    const SACRAMENTO_TILE_X: u32 = 2662;
-    /// Known tile row of the Sacramento anchor at zoom 14.
-    const SACRAMENTO_TILE_Y: u32 = 6286;
-    /// Zoom level of the known Sacramento tile address.
-    const SACRAMENTO_TILE_ZOOM_LEVEL: u8 = 14;
     /// Rounding headroom for fitted corners hitting an inset edge, in pixels,
     /// mirroring the native `fit_bounds` camera tests' tolerance.
     const FIT_BOUNDS_CORNER_TOLERANCE_PIXELS: f64 = 0.5;

@@ -12,9 +12,7 @@ use rustic_maps_rendering::{
     GraphicsContextSource, HeadlessTileRenderer, MapCamera, PreparedTile, TileKey, TileReadiness,
     TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
 };
-
-/// Frame edge of the cache scenes in pixels.
-const CACHE_SCENE_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
+use rustic_maps_test_support::square_viewport;
 /// Tile zoom of the cache scenes: at this zoom a 512-pixel top-down viewport
 /// spans several tiles, so one frame exercises more than one upload.
 const CACHE_SCENE_TILE_ZOOM_LEVEL: u8 = 3;
@@ -58,11 +56,7 @@ fn a_repeated_frame_is_served_from_the_cache_without_reuploading() {
     let Some(mut renderer) = request_renderer_or_skip("cache hit") else {
         return;
     };
-    let viewport = ViewportPixels::new(
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the cache viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(CACHE_SCENE_TILE_ZOOM_LEVEL),
@@ -106,11 +100,7 @@ fn replacing_a_payload_uploads_again_instead_of_drawing_stale_pixels() {
     let Some(mut renderer) = request_renderer_or_skip("cache invalidation") else {
         return;
     };
-    let viewport = ViewportPixels::new(
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the cache viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(CACHE_SCENE_TILE_ZOOM_LEVEL),
@@ -156,11 +146,7 @@ fn the_byte_budget_evicts_least_recently_used_textures() {
     renderer
         .gpu_texture_cache_mut()
         .set_maximum_stored_bytes(EVICTION_TEST_BUDGET_BYTES);
-    let viewport = ViewportPixels::new(
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the cache viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(CACHE_SCENE_TILE_ZOOM_LEVEL),
@@ -211,11 +197,7 @@ fn cache_hit_draws_keep_the_pool_from_evicting_visible_tiles() {
     let Some(mut renderer) = request_renderer_or_skip("pool recency under cache hits") else {
         return;
     };
-    let viewport = ViewportPixels::new(
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the cache viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(CACHE_SCENE_TILE_ZOOM_LEVEL),
@@ -319,11 +301,7 @@ fn a_pool_evicted_payload_prunes_its_gpu_texture_without_reuploading() {
     let Some(mut renderer) = request_renderer_or_skip("pool eviction prune") else {
         return;
     };
-    let viewport = ViewportPixels::new(
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the cache viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(CACHE_SCENE_TILE_ZOOM_LEVEL),
@@ -403,11 +381,7 @@ fn a_corrupt_rerequested_payload_is_evicted_and_not_served_from_the_cache() {
     let Some(mut renderer) = request_renderer_or_skip("corrupt re-insert") else {
         return;
     };
-    let viewport = ViewportPixels::new(
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the cache viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(CACHE_SCENE_TILE_ZOOM_LEVEL),
@@ -468,11 +442,7 @@ fn shrinking_the_budget_evicts_immediately_not_on_the_next_insert() {
     let Some(mut renderer) = request_renderer_or_skip("budget shrink") else {
         return;
     };
-    let viewport = ViewportPixels::new(
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-        CACHE_SCENE_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the cache viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(CACHE_SCENE_TILE_ZOOM_LEVEL),

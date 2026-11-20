@@ -7,11 +7,9 @@
 
 use rustic_maps_rendering::{
     CLEAR_COLOR_RGBA, GraphicsContextSource, HeadlessTileRenderer, MapCamera, PreparedTile,
-    TileKey, TileReadiness, TileTexturePool, ViewportPixels, WgpuGraphicsContextSource,
+    TileKey, TileReadiness, TileTexturePool, WgpuGraphicsContextSource,
 };
-
-/// Frame edge of the degradation scene in pixels.
-const DEGRADATION_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
+use rustic_maps_test_support::square_viewport;
 /// Tile zoom of the degradation scene: at this zoom a 512-pixel viewport
 /// spans two tiles per axis, so one corrupt payload coexists with recoverable
 /// neighbors in one frame.
@@ -44,11 +42,7 @@ fn an_undecodable_tile_payload_skips_its_quad_and_evicts_the_bytes() {
 }
 
 fn exercise_corrupt_payload_degradation(renderer: &mut HeadlessTileRenderer) {
-    let viewport = ViewportPixels::new(
-        DEGRADATION_VIEWPORT_EDGE_PIXELS,
-        DEGRADATION_VIEWPORT_EDGE_PIXELS,
-    )
-    .expect("the degradation viewport is a valid viewport");
+    let viewport = square_viewport();
     let camera = MapCamera::new(
         rustic_maps_rendering::normalized_world_to_coordinate([0.25, 0.25]),
         f64::from(DEGRADATION_TILE_ZOOM_LEVEL),

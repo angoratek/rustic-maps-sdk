@@ -55,6 +55,8 @@ pollster = "0.4"
 proptest.workspace = true
 criterion = "0.5"
 tokio.workspace = true
+# The shared coordinate, viewport, camera and Sacramento fixtures.
+rustic-maps-test-support.workspace = true
 # The fixture-recording examples fetch live tiles through the same provider
 # layer the SDK registers at runtime.
 everymap-providers-mapquest.workspace = true

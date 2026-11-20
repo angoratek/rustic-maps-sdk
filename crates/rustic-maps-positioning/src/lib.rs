@@ -413,13 +413,7 @@ mod tests {
         BoundingBox, GeographicCoordinate, ManeuverType, RouteData, RouteLeg, RouteStep,
     };
     use rustic_maps_navigation::SimulatedTripPace;
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate {
-            latitude,
-            longitude,
-        }
-    }
+    use rustic_maps_test_support::coordinate;
 
     fn fix(latitude: f64, longitude: f64, course: Option<f64>) -> PositionFix {
         PositionFix {

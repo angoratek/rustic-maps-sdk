@@ -161,6 +161,7 @@ mod tests {
     use crate::tile_key::TileKey;
     use crate::tile_texture_pool::TileTexturePool;
     use geospatial_types::GeographicCoordinate;
+    use rustic_maps_test_support::validated_coordinate as coordinate;
     use std::collections::HashSet;
 
     /// The test zoom: fine enough for a multi-tile visible set, coarse
@@ -170,11 +171,6 @@ mod tests {
     /// The test viewport edge; a whole power of two so tile spans map
     /// cleanly.
     const TEST_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
-
-    fn coordinate(latitude_degrees: f64, longitude_degrees: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude_degrees, longitude_degrees)
-            .expect("the test coordinates are valid")
-    }
 
     fn square_viewport() -> ViewportPixels {
         ViewportPixels::new(TEST_VIEWPORT_EDGE_PIXELS, TEST_VIEWPORT_EDGE_PIXELS)

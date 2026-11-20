@@ -4568,6 +4568,7 @@ mod tests {
     };
     use glam::DVec4;
     use rustic_maps_style::{CirclePitchAlignment, LineCap, LineJoin, TranslateAnchor};
+    use rustic_maps_test_support::validated_coordinate as coordinate;
 
     /// Golden-scene tolerance of the exact screen-space expectations: the
     /// overlay math runs on the same `f64` matrix path as the camera
@@ -4576,11 +4577,6 @@ mod tests {
     /// Area tolerance of the triangulation coverage assertions, in doubled
     /// area units of the test rings (integer-valued areas).
     const TRIANGULATION_AREA_TOLERANCE: f64 = 1e-9;
-
-    fn coordinate(latitude_degrees: f64, longitude_degrees: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude_degrees, longitude_degrees)
-            .expect("the test coordinates are valid")
-    }
 
     fn square_viewport() -> ViewportPixels {
         ViewportPixels::new(512.0, 512.0).unwrap()

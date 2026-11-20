@@ -6,11 +6,12 @@
 
 use geospatial_traits::OfflineGraphSource;
 use geospatial_types::route::{RouteOptions, RouteStrategy, TransportationMode, UnitSystem};
-use geospatial_types::{GeographicCoordinate, OfflineGraphInvalidReason, SDKError};
+use geospatial_types::{OfflineGraphInvalidReason, SDKError};
 use rustic_maps_core::offline_routing::ArchiveOfflineRoutingProvider;
 use rustic_maps_core::registry::ProviderRegistry;
 use rustic_maps_offline_graph_archive::archive::OfflineRoutingNetworkGraph;
 use rustic_maps_offline_graph_compiler::compiler::compile_osm_extract_bytes;
+use rustic_maps_test_support::validated_coordinate as coordinate;
 use std::sync::Arc;
 
 /// The committed routing-grid fixture extract (relative to the compiler
@@ -22,11 +23,6 @@ const COMMITTED_FIXTURE_PATH: &str =
 const GRID_SEGMENT_METERS: f64 = 111.0;
 /// `GRID_SEGMENT_METERS` at the quantized 30 km/h residential speed.
 const RESIDENTIAL_SEGMENT_DURATION_SECONDS: f64 = 13.32;
-
-fn coordinate(latitude_degrees: f64, longitude_degrees: f64) -> GeographicCoordinate {
-    GeographicCoordinate::from_degrees(latitude_degrees, longitude_degrees)
-        .expect("test coordinates are within the canonical ranges")
-}
 
 fn fastest_options() -> RouteOptions {
     RouteOptions {

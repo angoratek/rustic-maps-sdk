@@ -1182,6 +1182,7 @@ mod tests {
         OfflineRoutingNetworkGraph, OfflineRoutingNetworkGraphBuilder, TurnRestrictionRecord,
     };
     use rustic_maps_offline_graph_compiler::compile_osm_extract_bytes;
+    use rustic_maps_test_support::validated_coordinate as coordinate;
 
     /// Grid spacing of the hand-built test graphs: 0.001 degrees latitude,
     /// about 111 m along a meridian (the fixture's segment distance).
@@ -1191,11 +1192,6 @@ mod tests {
     /// The travel duration the test segments' duration column stores, in
     /// seconds (13,320 ms at the 30 km/h residential default).
     const GRID_SEGMENT_DURATION_SECONDS: f64 = 13.32;
-
-    fn coordinate(latitude_degrees: f64, longitude_degrees: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude_degrees, longitude_degrees)
-            .expect("test coordinates are within the canonical ranges")
-    }
 
     fn automobile_options(route_strategy: RouteStrategy) -> RouteOptions {
         RouteOptions {

@@ -9,3 +9,7 @@ license.workspace = true
 geospatial-types.workspace = true
 rustic-maps-navigation.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+# The shared coordinate and viewport fixtures.
+rustic-maps-test-support.workspace = true

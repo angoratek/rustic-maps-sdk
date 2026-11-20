@@ -27,21 +27,13 @@ use common::golden::{GoldenTolerance, compare_or_create_golden};
 use rustic_maps_rendering::{
     CapturedFrame, DEFAULT_ROUTE_LINE_RGBA, FilledPolygonOverlay, GraphicsContextSource,
     HeadlessTileRenderer, MapCamera, MapOverlay, PointMarkersOverlay, PolylineStroke, PreparedTile,
-    RoutePolylineOverlay, TileKey, TileReadiness, TileTexturePool, ViewportPixels,
-    WgpuGraphicsContextSource, overlay_triangle_vertices,
+    RoutePolylineOverlay, TileKey, TileReadiness, TileTexturePool, WgpuGraphicsContextSource,
+    overlay_triangle_vertices,
 };
 use rustic_maps_style::{LineCap, LineJoin};
+use rustic_maps_test_support::{sacramento_camera, square_viewport as golden_viewport};
 use std::path::PathBuf;
 
-/// Frame edge in pixels for every golden scene; small enough for a fast test,
-/// and a whole power of two so tile spans map cleanly.
-const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
-
-/// Sacramento (California State Capitol) center, the fixed camera anchor of
-/// the Sacramento scenes.
-const SACRAMENTO_LATITUDE_DEGREES: f64 = 38.5766;
-/// Sacramento center longitude.
-const SACRAMENTO_LONGITUDE_DEGREES: f64 = -121.4944;
 /// Tile zoom at which the Sacramento scenes' tiles are scheduled and rendered.
 const SCENE_TILE_ZOOM_LEVEL: u8 = 14;
 /// Bearing of the Sacramento scene camera: north up.
@@ -109,20 +101,6 @@ const ANTIMERIDIAN_ROUTE_LATITUDES_DEGREES: [f64; 3] = [20.0, 20.0, 20.0];
 /// other through the wrapped world copy.
 const ANTIMERIDIAN_ROUTE_LONGITUDES_DEGREES: [f64; 3] = [100.0, 170.0, -160.0];
 
-/// Scene camera over Sacramento, shared by every Sacramento overlay scene.
-fn sacramento_camera() -> MapCamera {
-    MapCamera::new(
-        geospatial_types::GeographicCoordinate::from_degrees(
-            SACRAMENTO_LATITUDE_DEGREES,
-            SACRAMENTO_LONGITUDE_DEGREES,
-        )
-        .expect("the golden scene anchor is a valid coordinate"),
-        f64::from(SCENE_TILE_ZOOM_LEVEL),
-        GOLDEN_BEARING_DEGREES,
-        TOP_DOWN_PITCH_DEGREES,
-    )
-}
-
 /// Scene camera over the antimeridian at zoom zero.
 fn antimeridian_camera() -> MapCamera {
     MapCamera::new(
@@ -135,11 +113,6 @@ fn antimeridian_camera() -> MapCamera {
 }
 
 /// Builds the scene viewport.
-fn golden_viewport() -> ViewportPixels {
-    ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the golden viewport is a valid viewport")
-}
-
 /// Builds a coordinate from a latitude/longitude pair of one scene constant.
 fn scene_coordinate(
     latitude_degrees: f64,

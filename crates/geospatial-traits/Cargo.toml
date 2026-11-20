@@ -13,3 +13,5 @@ async-trait.workspace = true
 [dev-dependencies]
 proptest.workspace = true
 tokio.workspace = true
+# The shared coordinate and viewport fixtures.
+rustic-maps-test-support.workspace = true

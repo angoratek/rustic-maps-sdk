@@ -174,6 +174,7 @@ fn union_bounding_boxes(first_box: &BoundingBox, second_box: &BoundingBox) -> Bo
 mod tests {
     use super::*;
     use geospatial_types::route::{AvoidOptions, RouteStrategy, TransportationMode, UnitSystem};
+    use rustic_maps_test_support::validated_coordinate as coordinate;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[tokio::test]
@@ -289,11 +290,6 @@ mod tests {
     const PRIMARY_LEG_DISTANCE_METERS: f64 = 42.0;
     const OFFLINE_LEG_DISTANCE_METERS: f64 = 500.0;
     const OFFLINE_LEG_DURATION_SECONDS: f64 = 60.0;
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude, longitude)
-            .expect("the test coordinates are canonical")
-    }
 
     fn test_waypoints() -> Vec<GeographicCoordinate> {
         vec![

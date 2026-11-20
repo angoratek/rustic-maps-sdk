@@ -31,25 +31,16 @@ use rustic_maps_rendering::{
     DEFAULT_FIELD_OF_VIEW_DEGREES, DEFAULT_LOCATION_DISC_RGBA, GraphicsContextSource,
     HeadlessTileRenderer, LocationIndicatorLayer, LocationIndicatorState, LocationIndicatorStyle,
     LocationIndicatorVisualKind, MapCamera, MapOverlay, PreparedTile, TileTexturePool,
-    ViewportPixels, WgpuGraphicsContextSource,
+    WgpuGraphicsContextSource,
+};
+use rustic_maps_test_support::{
+    SACRAMENTO_LATITUDE_DEGREES, SACRAMENTO_LONGITUDE_DEGREES, sacramento_camera,
+    square_viewport as golden_viewport,
 };
 use std::path::PathBuf;
 
-/// Frame edge in pixels for every golden scene; small enough for a fast test,
-/// and a whole power of two so tile spans map cleanly.
-const GOLDEN_VIEWPORT_EDGE_PIXELS: f64 = 512.0;
-
-/// Sacramento (California State Capitol) center, the fixed camera anchor of
-/// the Sacramento scenes.
-const SACRAMENTO_LATITUDE_DEGREES: f64 = 38.5766;
-/// Sacramento center longitude.
-const SACRAMENTO_LONGITUDE_DEGREES: f64 = -121.4944;
 /// Tile zoom at which the Sacramento scenes' tiles are scheduled and rendered.
 const SCENE_TILE_ZOOM_LEVEL: f64 = 14.0;
-/// Bearing of the Sacramento scene camera: north up.
-const GOLDEN_BEARING_DEGREES: f64 = 0.0;
-/// Pitch of the Sacramento scene camera: straight down.
-const TOP_DOWN_PITCH_DEGREES: f64 = 0.0;
 
 /// Fixture of the guided-course indicator scene (the overlay-and-indicator
 /// composition).
@@ -89,15 +80,6 @@ const FIX_HORIZONTAL_ACCURACY_METERS: f64 = 40.0;
 const ROUTE_LINE_HALF_SPAN_DEGREES: f64 = 0.0015;
 
 /// Scene camera over Sacramento, shared by every Sacramento indicator scene.
-fn sacramento_camera() -> MapCamera {
-    MapCamera::new(
-        scene_coordinate(SACRAMENTO_LATITUDE_DEGREES, SACRAMENTO_LONGITUDE_DEGREES),
-        SCENE_TILE_ZOOM_LEVEL,
-        GOLDEN_BEARING_DEGREES,
-        TOP_DOWN_PITCH_DEGREES,
-    )
-}
-
 /// Builds a coordinate from a latitude/longitude pair of one scene constant.
 fn scene_coordinate(
     latitude_degrees: f64,
@@ -108,11 +90,6 @@ fn scene_coordinate(
 }
 
 /// Builds the scene viewport.
-fn golden_viewport() -> ViewportPixels {
-    ViewportPixels::new(GOLDEN_VIEWPORT_EDGE_PIXELS, GOLDEN_VIEWPORT_EDGE_PIXELS)
-        .expect("the golden viewport is a valid viewport")
-}
-
 /// The indicator scenes' fix state: the camera's center, with the course and
 /// accuracy the scene constants carry.
 fn fix_state(

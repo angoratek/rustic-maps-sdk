@@ -637,6 +637,7 @@ mod tests {
     use crate::overlay::{ClipSpaceOverlayVertex, clip_position_to_screen_pixels};
     use geospatial_types::GeographicCoordinate;
     use glam::DVec4;
+    use rustic_maps_test_support::validated_coordinate as coordinate;
     use std::f64::consts::TAU;
 
     /// Screen-space tolerance of the exact expectations: the assembly runs
@@ -657,11 +658,6 @@ mod tests {
     /// two triangles per side, and the outline and fill darts' two triangles
     /// each.
     const NAVIGATION_PUCK_TRIANGLE_COUNT: usize = LOCATION_DISC_FAN_SIDES * 3 + 4;
-
-    fn coordinate(latitude_degrees: f64, longitude_degrees: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude_degrees, longitude_degrees)
-            .expect("the test coordinates are valid")
-    }
 
     fn square_viewport() -> ViewportPixels {
         ViewportPixels::new(512.0, 512.0).expect("the test viewport is valid")

@@ -233,11 +233,7 @@ mod tests {
         DEFAULT_FIELD_OF_VIEW_DEGREES, MAXIMUM_PITCH_DEGREES, MAXIMUM_ZOOM_LEVEL,
         MINIMUM_ZOOM_LEVEL, MapCamera, ViewportPixels,
     };
-    use geospatial_types::GeographicCoordinate;
-
-    fn coordinate(latitude: f64, longitude: f64) -> GeographicCoordinate {
-        GeographicCoordinate::from_degrees(latitude, longitude).unwrap()
-    }
+    use rustic_maps_test_support::validated_coordinate as coordinate;
 
     fn viewport() -> ViewportPixels {
         ViewportPixels::new(1024.0, 768.0).unwrap()
