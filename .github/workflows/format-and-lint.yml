@@ -16,6 +16,9 @@ on:
       - "platform/android/maps-sdk/build.gradle.kts"
       - "platform/ios/Package.swift"
       - "platform/reference-tokens.json"
+      - "platform/reference-flows.json"
+      - "platform/reference-walkthrough.json"
+      - "site/book-src/img/**"
       - "scripts/check_ux_parity.mjs"
       - "scripts/check-style-layer-coverage.mjs"
       - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/ux/**"
@@ -51,6 +54,9 @@ on:
       - "platform/android/maps-sdk/build.gradle.kts"
       - "platform/ios/Package.swift"
       - "platform/reference-tokens.json"
+      - "platform/reference-flows.json"
+      - "platform/reference-walkthrough.json"
+      - "site/book-src/img/**"
       - "scripts/check_ux_parity.mjs"
       - "scripts/check-style-layer-coverage.mjs"
       - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/ux/**"
@@ -109,6 +115,11 @@ jobs:
         run: cargo fmt --all --check
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Walkthrough contract validation
+        # Validates the committed contract, its references to the reference
+        # flow steps and every published image it names. Reads local files
+        # only; no network access.
+        run: cargo run --quiet -p rustic-maps-walkthrough -- validate
       # The unit/integration suite runs in this job instead of a separate
       # workflow: clippy and nextest both compile the workspace, and a
       # second workflow paid for a cold target directory every time

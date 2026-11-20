@@ -2787,6 +2787,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustic-maps-walkthrough"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "rustic-maps-web-bindings"
 version = "0.1.0"
 dependencies = [

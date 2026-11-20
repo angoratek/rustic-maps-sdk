@@ -18,6 +18,7 @@ members = [
     "crates/rustic-maps-native-core",
     "crates/rustic-maps-providers",
     "crates/rustic-maps-web-bindings",
+    "crates/rustic-maps-walkthrough",
 ]
 
 [workspace.package]
