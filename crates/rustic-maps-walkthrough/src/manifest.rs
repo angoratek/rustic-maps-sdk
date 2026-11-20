@@ -6,12 +6,14 @@
 //! for example in an extracted copy of the crate, the check is skipped with a
 //! report note instead of failing.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 
 use crate::error::WalkthroughError;
+use crate::normalise::PlatformNormalisation;
 
 /// The manifest schema version this build writes and reads.
 pub const MANIFEST_SCHEMA_VERSION: u32 = 1;
@@ -20,7 +22,7 @@ pub const MANIFEST_SCHEMA_VERSION: u32 = 1;
 pub const MANIFEST_FILE_NAME: &str = "manifest.json";
 
 /// The manifest a build writes into the output directory.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct BuiltManifest {
     /// The manifest schema version.
     pub schema_version: u32,
@@ -30,6 +32,9 @@ pub struct BuiltManifest {
     pub source_commit: Option<String>,
     /// The contract file the site was built from, with its hash.
     pub contract: ManifestSource,
+    /// The crop or pad that produced each platform's walkthrough stills.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub normalisation: BTreeMap<String, PlatformNormalisation>,
     /// The player files written by the build.
     pub player: Vec<ManifestFile>,
     /// The copied image and clip files, in build order.
