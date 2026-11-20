@@ -14,7 +14,9 @@ pub mod offline_routing;
 pub mod provider_observation;
 // Benchmark support for the offline routing engine (M7 slice 6): the
 // synthetic graphs, the Dijkstra baseline's harness and the coarse CI
-// budget alarm. Test/bench seam, never production routing surface.
+// budget alarm. Test/bench seam, never production routing surface; gated
+// behind the non-default `bench` feature so published builds never compile it.
+#[cfg(feature = "bench")]
 pub mod offline_routing_benchmark;
 pub mod registry;
 pub mod routing_fallback;
