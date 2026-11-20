@@ -173,7 +173,7 @@ recorders follow the same credential rule.
 - **Android**: one published AAR, `com.angoratek:rustic-maps-sdk`, assembled by
   `scripts/build-android.sh` from `:maps-sdk`, the Kotlin wrapper and `MapView`.
   The generated bindings and the per-ABI Rust libraries live in
-  `:map-sdk-native`, an internal source holder that compiles into that one
+  `:maps-sdk-native`, an internal source holder that compiles into that one
   artifact.
 - **iOS**: `platform/ios/Package.swift` builds `RusticMapsSDK` (the generated
   bindings over the `rustic_mapsFFI` XCFramework binary target) and
