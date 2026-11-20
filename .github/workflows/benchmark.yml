@@ -46,8 +46,10 @@ jobs:
         # Only the criterion bench target: plain `cargo bench -p rustic-maps-core`
         # also runs the libtest unit-test binary, which rejects the
         # criterion-only `--save-baseline` flag (seen on CI in the
-        # workflow's first run).
-        run: cargo bench -p rustic-maps-core --bench offline_search_benchmark -- --save-baseline ci-recorded-baseline
+        # workflow's first run). The named target requires the non-default
+        # `bench` feature, which gates the benchmark generators and the
+        # Dijkstra reference search.
+        run: cargo bench -p rustic-maps-core --features bench --bench offline_search_benchmark -- --save-baseline ci-recorded-baseline
       - name: Upload the criterion numbers
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

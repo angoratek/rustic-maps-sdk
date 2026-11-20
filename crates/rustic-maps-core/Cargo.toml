@@ -6,6 +6,14 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[features]
+# Offline-routing performance measurement: the deterministic synthetic-graph
+# generators of `offline_routing_benchmark` and the Dijkstra reference search
+# in `offline_routing`. Off by default, so published builds compile no
+# benchmark-only routing code. `cargo bench -p rustic-maps-core --features
+# bench` enables it; the criterion target declares it as a requirement.
+bench = []
+
 [dependencies]
 geospatial-types.workspace = true
 geospatial-traits.workspace = true
@@ -38,7 +46,10 @@ criterion = "0.5"
 
 # The A*-vs-Dijkstra reference benchmark; `harness = false` under the
 # criterion main. Informational — the numbers are the recorded baseline, the
-# CI alarm is the coarse budget test in `offline_routing_benchmark`.
+# CI alarm is the coarse budget test in `offline_routing_benchmark`. The
+# target requires the `bench` feature (its generators and reference search),
+# so requesting it without the feature fails with Cargo's own message.
 [[bench]]
 name = "offline_search_benchmark"
 harness = false
+required-features = ["bench"]

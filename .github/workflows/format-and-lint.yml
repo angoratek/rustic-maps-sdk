@@ -129,6 +129,11 @@ jobs:
         uses: taiki-e/install-action@e800962fea8b802cd1bd32c4e6f08fbda4bb0048 # nextest
       - name: Unit and integration tests
         run: cargo nextest run --all-features
+      - name: Offline routing benchmark budget alarm
+        # The benchmark support module and the Dijkstra reference search are
+        # behind the non-default `bench` feature; this keeps the coarse
+        # solve-budget test in the ordinary CI run.
+        run: cargo test -p rustic-maps-core --features bench
       # Runnable rustdoc examples are a standing convention; this step runs
       # them and fails on any broken one. It currently runs zero tests (no
       # `/// ``` ` fences exist yet) and is still a real gate: the first doc

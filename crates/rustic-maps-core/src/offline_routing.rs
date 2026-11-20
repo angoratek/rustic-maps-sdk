@@ -61,8 +61,9 @@
 //!
 //! # Search engine and performance measurement
 //!
-//! [`a_star_search`] and [`dijkstra_reference_search`] expose the search
-//! engine directly so performance can be measured over the same loaded graph.
+//! [`a_star_search`] exposes the search engine directly so performance can be
+//! measured over the same loaded graph; the Dijkstra reference search, its
+//! zero-heuristic twin, follows with the non-default `bench` feature.
 //! Dijkstra is a reference baseline only: production routing always goes
 //! through A*. Both searches expose [`ComputedRoute::settled_node_count`], a
 //! deterministic expansion metric for comparing them. These items are hidden
@@ -835,8 +836,8 @@ fn end_anchored_instruction_text(
 /// The optimal route chain, or `None` when the end node is unreachable.
 ///
 /// Hidden from generated documentation: public so performance measurement
-/// code can compare it with [`dijkstra_reference_search`]. It is not part of
-/// the supported API.
+/// code can compare it with the `dijkstra_reference_search` baseline. It is
+/// not part of the supported API.
 #[doc(hidden)]
 pub fn a_star_search(
     loaded_graph: &LoadedRoutingGraph,
@@ -873,6 +874,9 @@ pub fn a_star_search(
 /// Routing always uses [`a_star_search`]. The function is hidden from
 /// generated documentation and public only so measurement code in separate
 /// compilation units can call it; it is not part of the supported API.
+///
+/// Gated behind the non-default `bench` feature.
+#[cfg(feature = "bench")]
 #[doc(hidden)]
 pub fn dijkstra_reference_search(
     loaded_graph: &LoadedRoutingGraph,
@@ -890,6 +894,7 @@ pub fn dijkstra_reference_search(
 }
 
 /// The zero heuristic of the Dijkstra reference search.
+#[cfg(feature = "bench")]
 const ZERO_HEURISTIC: f64 = 0.0;
 
 /// The shared frontier search behind A* and its Dijkstra reference: one
