@@ -11,6 +11,14 @@
 #   scripts/generate-rn-bindings.sh                  # both steps
 #   scripts/generate-rn-bindings.sh --bindings       # JSI bindings only
 #   scripts/generate-rn-bindings.sh --turbo-module   # TurboModule glue only
+#   scripts/generate-rn-bindings.sh --check          # fail on drift
+#
+# `--check` requires a generation in the working tree, regenerates the
+# selected steps with the same post-generation patches into a temporary
+# directory outside the repository, and compares every generated file
+# byte-for-byte. It names each differing file and exits non-zero on any
+# difference. Combine it with `--bindings` or `--turbo-module` to check one
+# step only.
 #
 # Prerequisites: `npm ci` in `platform/rn` (the `ubrn` binary), a Rust
 # toolchain (ubrn resolves the crate through `cargo metadata`).
@@ -36,7 +44,8 @@ ensure_libandroid_link_line() {
     # cache can mask the gap for exactly one regeneration. The fix is
     # applied idempotently after every generation run so the tree is
     # reproducible without a hand edit.
-    local generated_cmake="${RN_PROJECT_ROOT}/android/CMakeLists.txt"
+    local project_root="${1:-$RN_PROJECT_ROOT}"
+    local generated_cmake="${project_root}/android/CMakeLists.txt"
     if [ ! -f "${generated_cmake}" ]; then
         printf 'generate-rn-bindings: the generated TurboModule CMakeLists.txt is missing: %s\n' \
             "${generated_cmake}" >&2
@@ -77,7 +86,8 @@ readonly CODEGEN_SPEC_INCLUDE_SELF_NAME='#import "MapsSdkRn.h"'
 readonly CODEGEN_SPEC_INCLUDE_REPOINTED='#import <ReactCodegen/MapsSdkRn/MapsSdkRn.h>'
 
 ensure_codegen_spec_include_on_ios() {
-    local module_header="${RN_PROJECT_ROOT}/ios/MapsSdkRn.h"
+    local project_root="${1:-$RN_PROJECT_ROOT}"
+    local module_header="${project_root}/ios/MapsSdkRn.h"
     if [ ! -f "${module_header}" ]; then
         printf 'generate-rn-bindings: the generated TurboModule iOS module header is missing: %s\n' \
             "${module_header}" >&2
@@ -104,7 +114,8 @@ ensure_generated_bindings_guard_in_cmake() {
     # is a runtime dependency of the package, so a normal `npm install`
     # provides it; the generated sources still have to be produced by a
     # generation step. Idempotent, re-applied after every generation run.
-    local generated_cmake="${RN_PROJECT_ROOT}/android/CMakeLists.txt"
+    local project_root="${1:-$RN_PROJECT_ROOT}"
+    local generated_cmake="${project_root}/android/CMakeLists.txt"
     if [ ! -f "${generated_cmake}" ]; then
         printf 'generate-rn-bindings: the generated TurboModule CMakeLists.txt is missing: %s\n' \
             "${generated_cmake}" >&2
@@ -168,7 +179,8 @@ ensure_curated_root_exports() {
     # generated contract, and a consumer could not import the package's own
     # `MapView` and `MapsSdk` from it. The generated namespace stays
     # exported beside them. Idempotent via the marker.
-    local generated_index="${RN_PROJECT_ROOT}/src/index.ts"
+    local project_root="${1:-$RN_PROJECT_ROOT}"
+    local generated_index="${project_root}/src/index.ts"
     if [ ! -f "${generated_index}" ]; then
         printf 'generate-rn-bindings: the generated TurboModule TypeScript entry is missing: %s\n' \
             "${generated_index}" >&2
@@ -225,12 +237,38 @@ CURATED_ROOT_EXPORTS
     printf '==> appended the curated root exports to src/index.ts\n'
 }
 
+readonly BINDING_OUTPUT_PATHS=(
+    "${GENERATED_TS_DIR}"
+    "${GENERATED_CPP_DIR}"
+)
+
+# Everything `generate jsi turbo-module` writes into the package root. The
+# list names each output so a drift report points at the file, not a
+# directory.
+readonly TURBO_MODULE_OUTPUT_PATHS=(
+    "MapsSdkRn.podspec"
+    "android/CMakeLists.txt"
+    "android/build.gradle"
+    "android/cpp-adapter.cpp"
+    "android/src/main/AndroidManifest.xml"
+    "android/src/main/java/com/mapssdkrn/MapsSdkRnModule.kt"
+    "android/src/main/java/com/mapssdkrn/MapsSdkRnPackage.kt"
+    "cpp/maps-sdk-rn.cpp"
+    "cpp/maps-sdk-rn.h"
+    "ios/MapsSdkRn.h"
+    "ios/MapsSdkRn.mm"
+    "src/NativeMapsSdkRn.ts"
+    "src/index.ts"
+)
+
 run_bindings=false
 run_turbo_module=false
+run_check=false
 for argument in "$@"; do
     case "$argument" in
         --bindings) run_bindings=true ;;
         --turbo-module) run_turbo_module=true ;;
+        --check) run_check=true ;;
         *) printf 'generate-rn-bindings: unknown argument %s\n' "$argument" >&2; exit 1 ;;
     esac
 done
@@ -244,34 +282,170 @@ if [ ! -x "$UBRN_COMMAND" ]; then
     exit 1
 fi
 
-if [ "$run_bindings" = true ]; then
+generate_bindings_into() {
+    local project_root="$1"
     # Both output directories hold nothing but generated sources, and their
     # file names derive from the contract namespace: wipe them so a namespace
     # from an earlier contract state cannot linger beside the current one.
-    rm -rf "${RN_PROJECT_ROOT}/${GENERATED_TS_DIR}" "${RN_PROJECT_ROOT}/${GENERATED_CPP_DIR}"
+    rm -rf "${project_root}/${GENERATED_TS_DIR}" "${project_root}/${GENERATED_CPP_DIR}"
     (
         cd "$BINDING_CRATE_DIR"
         "$UBRN_COMMAND" generate jsi bindings "$FROZEN_UDL_PATH" \
             --crate "$BINDING_CRATE_NAME" \
-            --ts-dir "${RN_PROJECT_ROOT}/${GENERATED_TS_DIR}" \
-            --cpp-dir "${RN_PROJECT_ROOT}/${GENERATED_CPP_DIR}"
+            --ts-dir "${project_root}/${GENERATED_TS_DIR}" \
+            --cpp-dir "${project_root}/${GENERATED_CPP_DIR}"
     )
-fi
+}
 
-if [ "$run_turbo_module" = true ]; then
+generate_turbo_module_into() {
+    local project_root="$1"
     (
-        cd "$RN_PROJECT_ROOT"
+        cd "$project_root"
         "$UBRN_COMMAND" generate jsi turbo-module "$UNIFFI_NAMESPACE_NAME" \
             --config ubrn.config.yaml
     )
     # The ubrn TurboModule output is a starting point, not an app-build
-    # input: two known gaps are re-applied here so every generation — the
-    # build script, the packaging script and a bare run — produces the same
-    # buildable tree.
-    ensure_libandroid_link_line
-    ensure_codegen_spec_include_on_ios
-    ensure_generated_bindings_guard_in_cmake
-    ensure_curated_root_exports
+    # input: the known gaps are re-applied here so every generation — the
+    # build script, the packaging script, a bare run and the drift check —
+    # produces the same buildable tree.
+    ensure_libandroid_link_line "$project_root"
+    ensure_codegen_spec_include_on_ios "$project_root"
+    ensure_generated_bindings_guard_in_cmake "$project_root"
+    ensure_curated_root_exports "$project_root"
+}
+
+# The temporary project needs a `package.json` for ubrn to resolve a project
+# root, and the config's Rust paths are relative to `platform/rn`, which is
+# not the temporary directory's parent, so they are rewritten absolute. The
+# TurboModule outputs themselves stay relative to the project root. ubrn
+# finds prettier by walking up from the output directory, so the package's
+# installed `node_modules` is linked in to keep TypeScript formatting
+# identical to an in-place generation.
+prepare_temporary_project() {
+    local project_root="$1"
+    cp "${RN_PROJECT_ROOT}/package.json" "${project_root}/package.json"
+    ln -s "${RN_PROJECT_ROOT}/node_modules" "${project_root}/node_modules"
+    local temporary_config="${project_root}/ubrn.config.yaml"
+    sed \
+        -e "s|^  src: .*crates/rustic-maps-native-core$|  src: ${BINDING_CRATE_DIR}|" \
+        -e "s|^  manifestPath: .*crates/rustic-maps-native-core/Cargo.toml$|  manifestPath: ${BINDING_CRATE_DIR}/Cargo.toml|" \
+        "${RN_PROJECT_ROOT}/ubrn.config.yaml" > "$temporary_config"
+    if ! grep -qF "src: ${BINDING_CRATE_DIR}" "$temporary_config"; then
+        printf 'generate-rn-bindings: could not point the temporary ubrn config at %s\n' \
+            "$BINDING_CRATE_DIR" >&2
+        exit 1
+    fi
+}
+
+require_working_tree_generation() {
+    local missing=false
+    if [ "$run_bindings" = true ]; then
+        if [ ! -d "${RN_PROJECT_ROOT}/${GENERATED_TS_DIR}" ] \
+            || [ ! -d "${RN_PROJECT_ROOT}/${GENERATED_CPP_DIR}" ]; then
+            printf 'generate-rn-bindings: no generated JSI bindings at %s; run the generation first\n' \
+                "$RN_PROJECT_ROOT" >&2
+            missing=true
+        fi
+    fi
+    if [ "$run_turbo_module" = true ] && [ ! -f "${RN_PROJECT_ROOT}/src/index.ts" ]; then
+        printf 'generate-rn-bindings: no generated TurboModule glue at %s; run the generation first\n' \
+            "$RN_PROJECT_ROOT" >&2
+        missing=true
+    fi
+    if [ "$missing" = true ]; then
+        exit 1
+    fi
+}
+
+drift_found=false
+
+compare_generated_file() {
+    local relative_path="$1"
+    local working_path="${RN_PROJECT_ROOT}/${relative_path}"
+    local comparison_path="${comparison_project_root}/${relative_path}"
+    if [ ! -e "$working_path" ] && [ ! -e "$comparison_path" ]; then
+        return
+    fi
+    if [ ! -e "$working_path" ]; then
+        printf 'generate-rn-bindings: stale: %s is absent from the working tree\n' \
+            "$relative_path" >&2
+        drift_found=true
+        return
+    fi
+    if [ ! -e "$comparison_path" ]; then
+        printf 'generate-rn-bindings: stale: %s is absent from a fresh generation\n' \
+            "$relative_path" >&2
+        drift_found=true
+        return
+    fi
+    if ! cmp -s "$working_path" "$comparison_path"; then
+        printf 'generate-rn-bindings: stale: %s differs from a fresh generation\n' \
+            "$relative_path" >&2
+        drift_found=true
+    fi
+}
+
+compare_generated_path() {
+    local relative_path="$1"
+    local working_path="${RN_PROJECT_ROOT}/${relative_path}"
+    local comparison_path="${comparison_project_root}/${relative_path}"
+    if [ ! -d "$working_path" ] && [ ! -d "$comparison_path" ]; then
+        compare_generated_file "$relative_path"
+        return
+    fi
+    local child_relative_path
+    while IFS= read -r child_relative_path; do
+        compare_generated_file "${relative_path}/${child_relative_path}"
+    done < <(
+        {
+            if [ -d "$working_path" ]; then
+                (cd "$working_path" && find . -type f | sed 's|^\./||')
+            fi
+            if [ -d "$comparison_path" ]; then
+                (cd "$comparison_path" && find . -type f | sed 's|^\./||')
+            fi
+        } | sort -u
+    )
+}
+
+if [ "$run_check" = true ]; then
+    require_working_tree_generation
+    comparison_root="$(mktemp -d "${TMPDIR:-/tmp}/rustic-maps-rn-bindings-check.XXXXXX")"
+    trap 'rm -rf "$comparison_root"' EXIT
+    comparison_project_root="${comparison_root}/project"
+    mkdir -p "$comparison_project_root"
+    prepare_temporary_project "$comparison_project_root"
+    if [ "$run_bindings" = true ]; then
+        generate_bindings_into "$comparison_project_root"
+    fi
+    if [ "$run_turbo_module" = true ]; then
+        generate_turbo_module_into "$comparison_project_root"
+    fi
+
+    if [ "$run_bindings" = true ]; then
+        for relative_path in "${BINDING_OUTPUT_PATHS[@]}"; do
+            compare_generated_path "$relative_path"
+        done
+    fi
+    if [ "$run_turbo_module" = true ]; then
+        for relative_path in "${TURBO_MODULE_OUTPUT_PATHS[@]}"; do
+            compare_generated_path "$relative_path"
+        done
+    fi
+    if [ "$drift_found" = true ]; then
+        printf 'generate-rn-bindings: the generated React Native bindings are stale; rerun scripts/generate-rn-bindings.sh and review the diff\n' >&2
+        exit 1
+    fi
+    printf 'react native bindings are current: every generated file matches a fresh generation\n'
+    exit 0
+fi
+
+if [ "$run_bindings" = true ]; then
+    generate_bindings_into "$RN_PROJECT_ROOT"
+fi
+
+if [ "$run_turbo_module" = true ]; then
+    generate_turbo_module_into "$RN_PROJECT_ROOT"
 fi
 
 printf 'react native bindings generated under %s\n' "$RN_PROJECT_ROOT"
