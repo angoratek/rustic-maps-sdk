@@ -2745,6 +2745,7 @@ dependencies = [
  "rustic-maps-rendering",
  "rustic-maps-style",
  "rustic-maps-vector-tiles",
+ "serde_json",
 ]
 
 [[package]]

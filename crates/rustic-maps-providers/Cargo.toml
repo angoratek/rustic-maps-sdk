@@ -39,3 +39,7 @@ geospatial-traits = { workspace = true, optional = true }
 rustic-maps-rendering = { workspace = true, optional = true }
 rustic-maps-style = { workspace = true, optional = true }
 rustic-maps-vector-tiles = { workspace = true, optional = true }
+
+[dev-dependencies]
+# The registry parity test reads `platform/providers.json` at test time.
+serde_json.workspace = true
