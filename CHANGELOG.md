@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-19 — Android and iOS accept the same location fixes)
+
+- Both device-location sources now apply one rule: a fix with negative horizontal accuracy, or one older than the controller's staleness bound, is dropped at the source, and every other fix is forwarded to `feedFix`, with a controller refusal reported through the same failure callback. The iOS side's ten-second literal is gone; the bound is the positioning crate's constant, exposed through an additive contract getter (`stale_after_seconds()`) that both sources read, and a fix exactly at the bound is accepted, matching the controller's comparison.
+- New unit cases pin the rule on each platform: negative accuracy dropped, stale fix dropped, a fix at the bound accepted, a fresh fix forwarded, and the refusal reported.
+
 ### Changed (2026-11-19 — one instruction-text composition for banner, then-line and speech)
 
 - `map-refapp-core` now owns the composition rule — composed text, then provider text, then the honest unavailable line on the display channel, with the roundabout exit suffix on the banner only — and the frozen contract exposes it as three additive functions. The iOS presentation, the Android Compose screen and both React Native demo sessions call them, and the three hand-written copies with their orphaned constants are gone. No user-visible string changed: the then-line stays suffix-free on iOS and keeps its suffix on Android and React Native, as before.

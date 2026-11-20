@@ -21,12 +21,14 @@ public enum LocationConsumerMode {
 /// failures are reported to the controller and to the optional failure
 /// closure, so the controller's state and the UI agree.
 ///
-/// The source refuses fixes the SDK's consumers cannot use: a negative
-/// horizontal accuracy (Core Location's "accuracy unknown" value) and a fix
-/// older than the SDK's documented ten-second staleness bound are dropped
-/// before they reach the controller. A `.locationUnknown` failure is
-/// transient — Core Location retries on its own — so it neither fails the
-/// session nor marks the source unavailable.
+/// The source accepts every fix whose horizontal accuracy is non-negative and
+/// whose age is at or below the controller's staleness bound. A fix with a
+/// negative horizontal accuracy, or one older than that bound, is dropped
+/// before it reaches the controller; every other fix is forwarded, and a
+/// controller refusal is reported through the failure callback.
+///
+/// A `.locationUnknown` failure is transient — Core Location retries on its
+/// own — so it neither fails the session nor marks the source unavailable.
 ///
 /// Background updates are opt-in through
 /// ``init(positionController:consumerMode:enablesBackgroundLocationUpdates:onPositioningFailure:onFix:onAuthorizationResolved:)``
@@ -279,12 +281,11 @@ public final class DeviceLocationSource: NSObject, CLLocationManagerDelegate {
         // Core Location uses a negative accuracy for "unknown"; such a fix has
         // no usable position envelope and is not a position report.
         guard location.horizontalAccuracy >= 0 else { return }
-        // A fix older than the SDK's staleness bound is already stale for
-        // every consumer (`PositionController.is_stale` uses the same
-        // ten-second threshold), so it is refused at the source instead of
-        // being fed and immediately discarded downstream.
+        // A fix older than the controller's staleness bound is already stale
+        // for every consumer, so it is refused at the source instead of being
+        // fed and immediately discarded downstream.
         let fixAgeSeconds = Date().timeIntervalSince(location.timestamp)
-        guard fixAgeSeconds <= Self.maximumAcceptedFixAgeSeconds else { return }
+        guard fixAgeSeconds <= positionController.staleAfterSeconds() else { return }
         let positionFix = PositionFix(
             coordinate: GeographicCoordinate(
                 latitude: location.coordinate.latitude,
@@ -372,11 +373,6 @@ public final class DeviceLocationSource: NSObject, CLLocationManagerDelegate {
 
     /// The shortest movement between delivered fixes, in meters.
     private static let minimumDistanceMeters: CLLocationDistance = 1
-
-    /// The age after which a delivered fix is refused, in seconds. It mirrors
-    /// the SDK position controller's documented staleness threshold: a fix
-    /// older than this is stale for every consumer.
-    private static let maximumAcceptedFixAgeSeconds: TimeInterval = 10
 
     /// The accuracy the idle consumer asks for: ten meters, enough for the
     /// map indicator and the route fields.

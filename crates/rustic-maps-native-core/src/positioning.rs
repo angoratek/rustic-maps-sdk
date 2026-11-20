@@ -74,6 +74,14 @@ impl PositionController {
             .smoothed_course_heading_degrees()
     }
 
+    /// The age after which the controller considers a fix stale, in seconds.
+    pub fn stale_after_seconds(&self) -> f64 {
+        self.controller
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .stale_after_seconds()
+    }
+
     /// Whether the latest fix is older than the staleness threshold at
     /// `now_seconds`. A fix without a timestamp is never stale.
     pub fn is_stale(&self, now_seconds: f64) -> bool {

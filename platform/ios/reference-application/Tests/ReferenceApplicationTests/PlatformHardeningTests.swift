@@ -266,15 +266,18 @@ private final class FakeLocationManager: CLLocationManager {
 /// consumer mode's accuracy, keeps a `.locationUnknown` failure transient and
 /// follows authorization changes while updates are active.
 final class DeviceLocationSourceTests: XCTestCase {
-    /// One fix at the demo coordinate with an adjustable age and accuracy.
+    /// One fix with an adjustable age, accuracy and coordinate; the defaults
+    /// are the demo coordinate and a fresh, accurate fix.
     private func makeLocation(
         ageSeconds: TimeInterval = 0,
-        horizontalAccuracy: CLLocationAccuracy = 5
+        horizontalAccuracy: CLLocationAccuracy = 5,
+        latitudeDegrees: CLLocationDegrees = 38.5766,
+        longitudeDegrees: CLLocationDegrees = -121.4944
     ) -> CLLocation {
         CLLocation(
             coordinate: CLLocationCoordinate2D(
-                latitude: 38.5766,
-                longitude: -121.4944
+                latitude: latitudeDegrees,
+                longitude: longitudeDegrees
             ),
             altitude: 0,
             horizontalAccuracy: horizontalAccuracy,
@@ -332,6 +335,72 @@ final class DeviceLocationSourceTests: XCTestCase {
         )
 
         XCTAssertNil(controller.latestFix())
+    }
+
+    /// The one acceptance rule both platform sources apply: negative accuracy
+    /// and fixes beyond the controller's staleness bound are dropped, a fresh
+    /// valid fix is forwarded, and a controller refusal reaches the failure
+    /// callback.
+    func testTheAcceptanceRuleDropsIneligibleFixesAndReportsControllerRefusals() {
+        let negativeAccuracyController = PositionController()
+        let negativeAccuracySource = DeviceLocationSource(
+            positionController: negativeAccuracyController
+        )
+        negativeAccuracySource.locationManager(
+            CLLocationManager(),
+            didUpdateLocations: [makeLocation(horizontalAccuracy: -1)]
+        )
+        XCTAssertNil(
+            negativeAccuracyController.latestFix(),
+            "a negative horizontal accuracy is dropped at the source"
+        )
+
+        let staleController = PositionController()
+        let staleSource = DeviceLocationSource(positionController: staleController)
+        staleSource.locationManager(
+            CLLocationManager(),
+            didUpdateLocations: [
+                makeLocation(
+                    ageSeconds: staleController.staleAfterSeconds() + 1
+                )
+            ]
+        )
+        XCTAssertNil(
+            staleController.latestFix(),
+            "a fix beyond the controller's staleness bound is dropped at the source"
+        )
+
+        let freshController = PositionController()
+        let freshSource = DeviceLocationSource(positionController: freshController)
+        freshSource.locationManager(
+            CLLocationManager(),
+            didUpdateLocations: [makeLocation()]
+        )
+        XCTAssertNotNil(
+            freshController.latestFix(),
+            "a fresh valid fix is forwarded to the controller"
+        )
+
+        let refusingController = PositionController()
+        var failures: [String] = []
+        let refusingSource = DeviceLocationSource(
+            positionController: refusingController,
+            onPositioningFailure: { detail in failures.append(detail) }
+        )
+        refusingSource.locationManager(
+            CLLocationManager(),
+            didUpdateLocations: [makeLocation(latitudeDegrees: 100)]
+        )
+        XCTAssertNil(
+            refusingController.latestFix(),
+            "the controller refuses an invalid coordinate"
+        )
+        XCTAssertEqual(
+            failures.count,
+            1,
+            "the controller refusal reaches the failure callback once"
+        )
+        XCTAssertFalse(failures.first?.isEmpty ?? true)
     }
 
     func testLocationUnknownIsTransientAndASubsequentFixIsAccepted() {
