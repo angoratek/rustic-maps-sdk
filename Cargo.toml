@@ -112,7 +112,7 @@ gloo-timers = { version = "0.3", features = ["futures"] }
 [profile.release]
 strip = true
 lto = true
-# One codegen unit per crate (PLAN.md, M23's build item): the browser bundle is
+# One codegen unit per crate: the browser bundle is
 # the artifact where the last percent of inlining shows, and release builds of
 # this workspace are not on anyone's critical path. Measured on the wasm
 # package: 4,137,073 → 3,699,665 bytes (-10.6 %).

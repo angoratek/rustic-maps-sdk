@@ -48,8 +48,12 @@ Out of scope:
 
 - vulnerabilities in third-party dependencies that are already public; report
   those upstream and open a dependency update here
-- the content of the committed recordings. They are synthetic payloads and
-  sample imagery created for tests and contain no live personal data
+- the content of the committed recordings. Synthetic payloads and style
+  documents created for tests contain no live personal data. Recorded provider
+  payloads and imagery, including the raster tiles and the OpenStreetMap US
+  vector tiles, are third-party data; the terms recorded for each provider are
+  in the Terms and vendored assets section of `docs/Providers.md` and in each
+  provider's `terms_note` in `platform/providers.json`
 - findings that require a credential the reporter does not own
 
 ## Accepted risks

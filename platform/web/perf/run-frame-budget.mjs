@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The browser frame-budget harness (PLAN.md, M23).
+// The browser frame-budget harness.
 //
 // WHAT IT MEASURES. A frozen scenario — the base map over the recorded tile
 // fixtures (vector by default, `--layer raster` for the tile path), a

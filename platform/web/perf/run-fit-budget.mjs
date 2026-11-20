@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The z14→z7 vector fit-budget harness (PLAN.md M65).
+// The z14→z7 vector fit-budget harness.
 //
 // WHAT IT MEASURES. A cold fit: one frame at z14 on the bare perf surface,
 // then the camera changes to z7 and the page renders at its default cadence

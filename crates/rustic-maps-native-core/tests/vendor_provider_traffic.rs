@@ -75,7 +75,7 @@ async fn here_traffic_crosses_the_bridge_with_flow_and_incidents() {
     // The provider layer parses HERE's incident payload but reports no
     // incident coordinate, and the SDK's incident record places every
     // incident on the map, so the bridge has nothing to convert. The
-    // provider-layer fix is recorded in PLAN.md (M76); this assertion is the
+    // provider-layer fix is recorded in the issue tracker; this assertion is the
     // tripwire that will fail once HERE reports coordinates.
     let incidents = provider
         .fetch_traffic_incidents(&berlin_box())
@@ -129,7 +129,7 @@ async fn tomtom_traffic_crosses_the_bridge_with_flow_and_incidents() {
     // TomTom's provider layer reports no incident coordinate and passes the
     // incident type through capitalised ("Accident"), which is outside the
     // contract's vocabulary, so the bridge keeps nothing here either. Both
-    // causes are recorded in PLAN.md (M76); this assertion fails once the
+    // causes are recorded in the issue tracker; this assertion fails once the
     // provider reports a typed, placed incident.
     let incidents = provider
         .fetch_traffic_incidents(&berlin_box())

@@ -1,4 +1,4 @@
-//! The low-zoom level-of-detail budget (PLAN.md M65).
+//! The low-zoom level-of-detail budget.
 //!
 //! One committed performance tile in the Carto light style is styled at
 //! the cold-fit zoom, tessellated with and without the screen-space

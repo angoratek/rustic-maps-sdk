@@ -1,4 +1,4 @@
-// UX-parity gate (audit C3, PLAN.md; M12 Phase 0): `platform/reference-tokens.json`
+// UX-parity gate: `platform/reference-tokens.json`
 // is the single source of the reference applications' design language
 // (docs/ReferenceAppUX.md §2) and of the unified SDK error-detail strings.
 // Every platform mirror — the Compose theme, the SwiftUI theme, the React

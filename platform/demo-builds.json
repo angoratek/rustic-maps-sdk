@@ -1,5 +1,5 @@
 {
-  "$comment": "Public identity of the Appetize-hosted demo builds (M24). Written by scripts/upload-demo-builds.mjs; read by the /demo/mobile page. Only public data: build ids, version codes, timestamps and the source commit. The Appetize API token never appears here.",
+  "$comment": "Public identity of the Appetize-hosted demo builds. Written by scripts/upload-demo-builds.mjs; read by the /demo/mobile page. Only public data: build ids, version codes, timestamps and the source commit. The Appetize API token never appears here.",
   "generatedAt": "2026-11-03T06:36:45.336Z",
   "sourceCommit": "4217bc7a25dd78dc6fc57f35c3067797829a6387",
   "builds": {

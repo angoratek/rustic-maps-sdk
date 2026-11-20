@@ -1,4 +1,4 @@
-// The session-budget claim endpoint for the hosted mobile demo (PLAN.md, M24).
+// The session-budget claim endpoint for the hosted mobile demo.
 //
 // The docs site's `/demo/mobile` page never embeds a stream on load. A visitor
 // who presses Start asks this endpoint for a session; the endpoint decides

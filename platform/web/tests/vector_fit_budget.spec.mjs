@@ -1,4 +1,4 @@
-// The z14→z7 vector fit smoke gate (PLAN.md M65).
+// The z14→z7 vector fit-budget smoke gate.
 //
 // This suite runs under the Playwright harness's SwiftShader renderer, so it
 // does not gate wall-clock frame time: `platform/web/perf/run-fit-budget.mjs`

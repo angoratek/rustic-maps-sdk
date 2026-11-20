@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Appetize build uploader (PLAN.md, M24).
+// Appetize build uploader.
 //
 // Builds nothing: it uploads artifacts the platform builds already produced,
 // updating each app in place so its public build id never changes, and writes

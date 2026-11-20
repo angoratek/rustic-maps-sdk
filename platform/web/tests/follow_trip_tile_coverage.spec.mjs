@@ -1,4 +1,4 @@
-// A simulated trip keeps the follow camera covered (PLAN.md M71).
+// A simulated trip keeps the follow camera covered.
 //
 // The trip is the hardest tile case: the camera follows a moving fix stream at
 // the recorded follow zoom, so every second asks the scheduler for addresses

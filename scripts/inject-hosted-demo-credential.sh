@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Writes the hosted demo's credential into a build, and nowhere else
-# (PLAN.md, M24 — owner ruling 2026-10-30, option b).
+# (the hosted-demo credential exception, 2026-10-30; see the issue tracker).
 #
 # The hosted demo runs on Appetize, where a visitor sees a live map instead
 # of a mock scene only if the build can reach a real provider. That calls for

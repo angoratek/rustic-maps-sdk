@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Documentation snippet-build check (PLAN.md, M18 residual).
+// Documentation snippet-build check.
 //
 // The tutorial chapters under `site/book-src/` claim that every snippet
 // compiles against the frozen FFI contract. This harness makes that claim

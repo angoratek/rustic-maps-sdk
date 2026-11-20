@@ -1,6 +1,6 @@
 # Hosted demo claim endpoint
 
-The one server-side piece of the hosted mobile demo (M24): it decides whether a
+The one server-side piece of the hosted mobile demo: it decides whether a
 visitor may start a streamed session, and it is the only thing standing between
 a crawler and the Appetize Free plan's 30 minutes a month.
 
@@ -55,11 +55,9 @@ origin: `https://angoratek.github.io` (what the Pages deployment publishes).
 
 An `address` refusal is the shared-address backstop, not the normal answer.
 While developing against the live endpoint, remember that a claim spends a
-session's minutes even when no stream starts; the counters live at
-`demo:budget:<year>-<month>` (reconciled against the report), `demo:grants:<year>-<month>-<day>`,
-`demo:visitor:<token>:<year>-<month>-<day>` and
-`demo:address:<address>:<year>-<month>-<day>` in the linked store and can be
-read, and cleared for a test day, through the Upstash REST API.
+session's minutes even when no stream starts; the endpoint keeps its counters
+in the linked store, and they can be read, and cleared for a test day,
+through the Upstash REST API.
 
 ## Reading the counters
 
@@ -105,11 +103,10 @@ page.
 ## The store, and what it costs
 
 Vercel's own KV product is retired; the CLI provisions **Upstash for Redis**
-through the marketplace. The endpoint runs on the account's **Free** Upstash
-store `upstash-kv-citrine-elephant` (`iad1`), the same store
-`mapquest-demo-studio` uses — it is connected to both projects, which is
-supported and costs nothing. The counters live under the `demo:` prefix, so the
-two applications never read each other's keys.
+through the marketplace. The endpoint runs on a **Free** Upstash store
+connected to both projects, which is supported and costs nothing. The
+counters use their own key namespace, so the two applications never read each
+other's keys.
 
 ```sh
 # What exists
