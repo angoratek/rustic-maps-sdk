@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-19 — the browser matrix exercises every served contract)
+
+- `platform/web/tests/provider_console_provider_matrix.spec.mjs` now derives the expected contracts from each descriptor's `served_contracts`, groups the fixture routes by the registry's `contract` field, and runs one case per route with the committed fixture bytes and the parsed result asserted. Thirty-three cases pass; six are explicit skips that name the contract and the reason (vector tiles are exercised by the canvas vector-source spec, the three tile-only sources are not registrable in the browser, and Google's reverse call shares its forward path).
+- The matrix found a registry defect: HERE's routing fixture route declared `POST` while the provider requests `GET /routes`, so the fixture server never served it. The route now declares `GET`, and its case passes.
+
 ### Fixed (2026-11-19 — Android and iOS accept the same location fixes)
 
 - Both device-location sources now apply one rule: a fix with negative horizontal accuracy, or one older than the controller's staleness bound, is dropped at the source, and every other fix is forwarded to `feedFix`, with a controller refusal reported through the same failure callback. The iOS side's ten-second literal is gone; the bound is the positioning crate's constant, exposed through an additive contract getter (`stale_after_seconds()`) that both sources read, and a fix exactly at the bound is accepted, matching the controller's comparison.

@@ -131,7 +131,7 @@
         {
           "purpose": "routing",
           "contract": "routing",
-          "method": "POST",
+          "method": "GET",
           "path_pattern": "^routes$",
           "fixture": "fixtures/here/route_two_sections.json"
         },
