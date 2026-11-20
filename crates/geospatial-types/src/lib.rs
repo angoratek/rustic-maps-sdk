@@ -22,7 +22,7 @@ pub use bounding_box::BoundingBox;
 pub use coordinate::GeographicCoordinate;
 pub use elevation::{ElevationPoint, ElevationProfile};
 pub use error::{CacheOperationFailureReason, OfflineGraphInvalidReason, SDKError};
-pub use mercator::MAXIMUM_MERCATOR_LATITUDE_DEGREES;
+pub use mercator::{MAXIMUM_MERCATOR_LATITUDE_DEGREES, MAXIMUM_TILE_ZOOM_LEVEL};
 pub use place::{GeocodeQuality, PlaceResult};
 pub use raster::{RasterImageFormat, RasterTileData, RasterTileResolution};
 pub use route::{
