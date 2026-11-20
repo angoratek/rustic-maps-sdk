@@ -10,11 +10,10 @@
 //! a style document the renderer compiles, which is what the vector base
 //! consumes.
 
+mod common;
+
+use common::{LoopbackFixtureServer, ScriptedResponse};
 use rustic_maps_providers::build_vendor;
-use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use std::thread;
 
 /// HTTP status the scripted server returns for a payload.
 const HTTP_OK_STATUS: u16 = 200;
@@ -39,72 +38,17 @@ const MAPBOX_STYLE_DOCUMENT_PATH: &str = "/styles/v1/mapbox/streets-v11";
 /// The query parameter Mapbox's client appends its credential as.
 const MAPBOX_CREDENTIAL_PARAMETER: &str = "access_token";
 
-/// A loopback server answering every request with one committed payload and
-/// recording each request target it received.
-struct FixtureServer {
-    base_url: String,
-    request_targets: Arc<Mutex<Vec<String>>>,
-}
-
-impl FixtureServer {
-    fn start(payload: Vec<u8>) -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("the loopback port binds");
-        let port = listener.local_addr().expect("the port is readable").port();
-        let request_targets = Arc::new(Mutex::new(Vec::new()));
-        let recorded_targets = Arc::clone(&request_targets);
-        thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(stream) = stream else { continue };
-                serve_one(stream, &payload, &recorded_targets);
-            }
-        });
-        Self {
-            base_url: format!("http://127.0.0.1:{port}"),
-            request_targets,
-        }
-    }
-
-    fn base_url(&self) -> &str {
-        &self.base_url
-    }
-
-    fn request_targets(&self) -> Vec<String> {
-        self.request_targets
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone()
-    }
-}
-
-fn serve_one(mut stream: TcpStream, payload: &[u8], recorded_targets: &Arc<Mutex<Vec<String>>>) {
-    let reader = BufReader::new(stream.try_clone().expect("the stream clones"));
-    for (line_index, line) in reader.lines().enumerate() {
-        let Ok(line) = line else { break };
-        if line.is_empty() {
-            break;
-        }
-        if line_index == 0 {
-            // The request line is `METHOD TARGET HTTP/1.1`.
-            let request_target = line.split(' ').nth(1).unwrap_or_default().to_string();
-            recorded_targets
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .push(request_target);
-        }
-    }
-    let header = format!(
-        "HTTP/1.1 {HTTP_OK_STATUS} OK\r\nContent-Type: {STYLE_DOCUMENT_CONTENT_TYPE}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        payload.len()
-    );
-    let _ = stream.write_all(header.as_bytes());
-    let _ = stream.write_all(payload);
+/// A server answering every request with one committed style document.
+fn fixture_server(payload: Vec<u8>) -> LoopbackFixtureServer {
+    LoopbackFixtureServer::start(vec![ScriptedResponse::with_content_type(
+        HTTP_OK_STATUS,
+        STYLE_DOCUMENT_CONTENT_TYPE,
+        payload,
+    )])
 }
 
 fn fixture_bytes(relative_path: &str) -> Vec<u8> {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join(relative_path);
-    std::fs::read(&path).unwrap_or_else(|error| panic!("{} is checked in: {error}", path.display()))
+    common::fixture_bytes(relative_path)
 }
 
 /// Asserts the fetched bytes are the committed document and that it compiles
@@ -122,7 +66,7 @@ fn assert_compiles_to_a_style_document(fetched: Vec<u8>, recorded_document: &[u8
 #[tokio::test]
 async fn here_style_resources_carry_the_registered_credential() {
     let recorded_document = fixture_bytes(HERE_STYLE_DOCUMENT_FIXTURE);
-    let server = FixtureServer::start(recorded_document.clone());
+    let server = fixture_server(recorded_document.clone());
     let implementations = build_vendor(
         "here",
         REGISTERED_CREDENTIAL,
@@ -154,7 +98,7 @@ async fn here_style_resources_carry_the_registered_credential() {
 #[tokio::test]
 async fn mapbox_style_resources_carry_the_registered_credential() {
     let recorded_document = fixture_bytes(MAPBOX_STYLE_DOCUMENT_FIXTURE);
-    let server = FixtureServer::start(recorded_document.clone());
+    let server = fixture_server(recorded_document.clone());
     let implementations = build_vendor(
         "mapbox",
         REGISTERED_CREDENTIAL,

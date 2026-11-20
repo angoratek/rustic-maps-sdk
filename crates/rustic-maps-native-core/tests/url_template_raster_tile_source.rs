@@ -1,25 +1,27 @@
 //! End-to-end tests for the provider-neutral base-map registration
-//! (`MapSdk::register_url_template_raster_tile_source`) against a local
-//! `std::net::TcpListener` HTTP server.
+//! (`MapSdk::register_url_template_raster_tile_source`) against the shared
+//! loopback fixture server, so no test reaches the network.
 //!
 //! They prove what the contract promises: a registered source serves the
 //! SDK's raster-tile slot with its own declared format and resolution, a
 //! refused registration leaves the previously serving source in place, and
 //! registering drops an installed tile-cache installation.
 
+mod common;
+
+use common::{LoopbackFixtureServer, ScriptedResponse};
 use rustic_maps::{
     MapSdk, RasterImageFormat, RasterTileResolution, SdkError, UrlTemplateRasterTileSource,
 };
-use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use std::thread;
 
 /// Smallest plausible PNG envelope (the 8-byte signature).
 const SAMPLE_TILE_BYTES: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
 
 /// HTTP status the scripted server returns for a successful tile.
 const HTTP_OK_STATUS: u16 = 200;
+
+/// The media type the sample tile is served as.
+const PNG_CONTENT_TYPE: &str = "image/png";
 
 /// The consumer key the tile-cache installation test registers MapQuest
 /// with: constructing the providers touches no network, and the test never
@@ -29,109 +31,39 @@ const MAPQUEST_TEST_CONSUMER_KEY: &str = "test-consumer-key";
 /// Byte budget of the tile-cache installation test's temp database.
 const TEST_TILE_CACHE_BUDGET_BYTES: u64 = 16 * 1024 * 1024;
 
-/// A local HTTP server bound to an ephemeral loopback port, answering every
-/// connection with the same tile and counting them.
-struct TiledHttpServer {
-    base_url: String,
-    request_count: Arc<Mutex<usize>>,
+/// A server answering every request with the sample tile.
+fn fixture_server() -> LoopbackFixtureServer {
+    LoopbackFixtureServer::start(vec![ScriptedResponse::with_content_type(
+        HTTP_OK_STATUS,
+        PNG_CONTENT_TYPE,
+        SAMPLE_TILE_BYTES.to_vec(),
+    )])
 }
 
-impl TiledHttpServer {
-    /// Starts a server answering any request with one PNG tile.
-    fn start() -> Self {
-        let listener =
-            TcpListener::bind("127.0.0.1:0").expect("the local test server must bind loopback");
-        let bound_address = listener
-            .local_addr()
-            .expect("the bound address must be readable");
-        let request_count = Arc::new(Mutex::new(0));
-        let counted_by_thread = Arc::clone(&request_count);
-        thread::spawn(move || {
-            loop {
-                let Ok((stream, _peer_address)) = listener.accept() else {
-                    break;
-                };
-                drain_request(&stream);
-                *counted_by_thread
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner()) += 1;
-                write_tile_response(stream);
-            }
-        });
-        Self {
-            base_url: format!("http://{bound_address}"),
-            request_count,
-        }
+/// A source declaration pointing at the server.
+fn raster_tile_source(
+    server: &LoopbackFixtureServer,
+    source_name: &str,
+) -> UrlTemplateRasterTileSource {
+    UrlTemplateRasterTileSource {
+        url_template: format!("{}/tiles/{{z}}/{{x}}/{{y}}.png", server.base_url()),
+        source_name: source_name.to_string(),
+        minimum_zoom_level: 0,
+        maximum_zoom_level: 19,
+        image_format: RasterImageFormat::Png,
+        tile_resolution: RasterTileResolution::Standard,
+        user_agent: "RusticMapsTest/1.0 (+https://example.test)".to_string(),
+        token_bucket_capacity_tokens: None,
+        refill_tokens_per_second: None,
     }
-
-    /// The number of requests the server has answered so far.
-    fn request_count(&self) -> usize {
-        *self
-            .request_count
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
-
-    /// A source declaration pointing at this server.
-    fn source(&self, source_name: &str) -> UrlTemplateRasterTileSource {
-        UrlTemplateRasterTileSource {
-            url_template: format!("{}/tiles/{{z}}/{{x}}/{{y}}.png", self.base_url),
-            source_name: source_name.to_string(),
-            minimum_zoom_level: 0,
-            maximum_zoom_level: 19,
-            image_format: RasterImageFormat::Png,
-            tile_resolution: RasterTileResolution::Standard,
-            user_agent: "RusticMapsTest/1.0 (+https://example.test)".to_string(),
-            token_bucket_capacity_tokens: None,
-            refill_tokens_per_second: None,
-        }
-    }
-}
-
-/// Drains one request's line and header block.
-fn drain_request(stream: &TcpStream) {
-    let mut reader = BufReader::new(
-        stream
-            .try_clone()
-            .expect("the test server must clone its stream"),
-    );
-    let mut request_line = String::new();
-    reader
-        .read_line(&mut request_line)
-        .expect("the request line must be readable");
-    let mut header_line = String::new();
-    loop {
-        header_line.clear();
-        let bytes_read = reader
-            .read_line(&mut header_line)
-            .expect("the header block must be readable");
-        if bytes_read == 0 || header_line == "\r\n" || header_line == "\n" {
-            break;
-        }
-    }
-}
-
-/// Writes one 200 response carrying the sample tile and closes.
-fn write_tile_response(mut stream: TcpStream) {
-    let response_head = format!(
-        "HTTP/1.1 {HTTP_OK_STATUS} OK\r\nContent-Type: image/png\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        SAMPLE_TILE_BYTES.len()
-    );
-    stream
-        .write_all(response_head.as_bytes())
-        .expect("the response head must be writable");
-    stream
-        .write_all(&SAMPLE_TILE_BYTES)
-        .expect("the response body must be writable");
-    stream.flush().expect("the response must flush");
 }
 
 #[tokio::test]
 async fn a_registered_source_serves_the_raster_tile_slot() {
-    let server = TiledHttpServer::start();
+    let server = fixture_server();
     let map_sdk = MapSdk::new();
     map_sdk
-        .register_url_template_raster_tile_source(server.source("test/base-map"))
+        .register_url_template_raster_tile_source(raster_tile_source(&server, "test/base-map"))
         .expect("a valid declaration registers");
 
     let tile = map_sdk
@@ -154,13 +86,13 @@ async fn a_registered_source_serves_the_raster_tile_slot() {
 
 #[tokio::test]
 async fn a_declared_pacing_reaches_the_registered_source() {
-    let server = TiledHttpServer::start();
+    let server = fixture_server();
     let map_sdk = MapSdk::new();
     map_sdk
         .register_url_template_raster_tile_source(UrlTemplateRasterTileSource {
             token_bucket_capacity_tokens: Some(1.0),
             refill_tokens_per_second: Some(0.001),
-            ..server.source("test/strict-pacing")
+            ..raster_tile_source(&server, "test/strict-pacing")
         })
         .expect("a strict but usable declaration registers");
 
@@ -201,11 +133,11 @@ async fn a_declared_pacing_reaches_the_registered_source() {
 
 #[test]
 fn an_unusable_declared_pacing_is_refused_at_registration() {
-    let server = TiledHttpServer::start();
+    let server = fixture_server();
     let map_sdk = MapSdk::new();
     match map_sdk.register_url_template_raster_tile_source(UrlTemplateRasterTileSource {
         token_bucket_capacity_tokens: Some(0.0),
-        ..server.source("test/strict-pacing")
+        ..raster_tile_source(&server, "test/strict-pacing")
     }) {
         Err(SdkError::InvalidCoordinateInput { detail }) => {
             assert!(
@@ -220,16 +152,16 @@ fn an_unusable_declared_pacing_is_refused_at_registration() {
 
 #[tokio::test]
 async fn a_refused_registration_leaves_the_previous_source_serving() {
-    let first_server = TiledHttpServer::start();
-    let second_server = TiledHttpServer::start();
+    let first_server = fixture_server();
+    let second_server = fixture_server();
     let map_sdk = MapSdk::new();
     map_sdk
-        .register_url_template_raster_tile_source(first_server.source("test/first"))
+        .register_url_template_raster_tile_source(raster_tile_source(&first_server, "test/first"))
         .expect("the first declaration registers");
 
     let refused = map_sdk.register_url_template_raster_tile_source(UrlTemplateRasterTileSource {
-        url_template: format!("{}/tiles/{{x}}/{{y}}.png", second_server.base_url),
-        ..second_server.source("test/second")
+        url_template: format!("{}/tiles/{{x}}/{{y}}.png", second_server.base_url()),
+        ..raster_tile_source(&second_server, "test/second")
     });
     match refused {
         Err(SdkError::InvalidCoordinateInput { detail }) => {
@@ -254,23 +186,23 @@ async fn a_refused_registration_leaves_the_previous_source_serving() {
 
 #[test]
 fn a_blank_source_name_is_refused() {
-    let server = TiledHttpServer::start();
+    let server = fixture_server();
     let map_sdk = MapSdk::new();
     assert!(matches!(
-        map_sdk.register_url_template_raster_tile_source(server.source(" ")),
+        map_sdk.register_url_template_raster_tile_source(raster_tile_source(&server, " ")),
         Err(SdkError::InvalidCoordinateInput { .. })
     ));
 }
 
 #[test]
 fn an_inverted_zoom_range_is_refused() {
-    let server = TiledHttpServer::start();
+    let server = fixture_server();
     let map_sdk = MapSdk::new();
     assert!(matches!(
         map_sdk.register_url_template_raster_tile_source(UrlTemplateRasterTileSource {
             minimum_zoom_level: 12,
             maximum_zoom_level: 8,
-            ..server.source("test/inverted")
+            ..raster_tile_source(&server, "test/inverted")
         }),
         Err(SdkError::InvalidCoordinateInput { .. })
     ));
@@ -278,7 +210,7 @@ fn an_inverted_zoom_range_is_refused() {
 
 #[test]
 fn registering_drops_the_installed_tile_cache() {
-    let server = TiledHttpServer::start();
+    let server = fixture_server();
     let cache_directory = std::env::temp_dir().join(format!(
         "rustic-maps-native-core-url-template-cache-{}",
         std::process::id()
@@ -298,7 +230,7 @@ fn registering_drops_the_installed_tile_cache() {
     assert!(map_sdk.raster_tile_cache_terms().is_ok());
 
     map_sdk
-        .register_url_template_raster_tile_source(server.source("test/base-map"))
+        .register_url_template_raster_tile_source(raster_tile_source(&server, "test/base-map"))
         .expect("a valid declaration registers");
 
     // The cache belonged to the provider that installed it: the settings
