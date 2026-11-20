@@ -260,9 +260,11 @@ public final class MapsSdkRusticMapView: UIView {
     /// a scale yet (the first ticks before the window scales resolve).
     private static let minimumDisplayScale: CGFloat = 1.0
 
-    /// The SDK renderer's default perspective field of view (the
-    /// `rustic-maps-rendering` default every shell passes).
-    private static let defaultFieldOfViewDegrees: Double = 60.0
+    /// The SDK renderer's default perspective field of view, read from the
+    /// contract so the host cannot drift from the renderer.
+    private nonisolated static var defaultCameraFieldOfViewDegrees: Double {
+        defaultFieldOfViewDegrees()
+    }
 
     /// One double tap's zoom step (the design language's §5.2): the gesture
     /// zooms exactly one level around the tapped point through the contract's
@@ -283,7 +285,9 @@ public final class MapsSdkRusticMapView: UIView {
     public nonisolated static let defaultCameraAnimationDurationMilliseconds: Double = 300
 
     /// The SDK's maximum zoom level, the default fit-bounds ceiling.
-    public nonisolated static let defaultFitBoundsMaximumZoomLevel: Double = 24.0
+    public nonisolated static var defaultFitBoundsMaximumZoomLevel: Double {
+        maximumZoomLevel()
+    }
 
     /// Milliseconds in one second (the animation duration's unit
     /// conversion).
@@ -547,7 +551,7 @@ public final class MapsSdkRusticMapView: UIView {
         do {
             return try currentCamera.groundMetersPerScreenPixel(
                 viewport: viewport,
-                fieldOfViewDegrees: MapsSdkRusticMapView.defaultFieldOfViewDegrees
+                fieldOfViewDegrees: MapsSdkRusticMapView.defaultCameraFieldOfViewDegrees
             )
         } catch {
             reportFailure(phase: .camera, cause: error)
@@ -1394,7 +1398,7 @@ public final class MapsSdkRusticMapView: UIView {
                     deltaXPixels: panXPixels,
                     deltaYPixels: panYPixels,
                     viewport: viewport,
-                    fieldOfViewDegrees: MapsSdkRusticMapView.defaultFieldOfViewDegrees
+                    fieldOfViewDegrees: MapsSdkRusticMapView.defaultCameraFieldOfViewDegrees
                 )
             }
             if hasZoom, let focalPoint {
@@ -1402,7 +1406,7 @@ public final class MapsSdkRusticMapView: UIView {
                     deltaZoomLevels: zoomLevels,
                     focalPoint: focalPoint,
                     viewport: viewport,
-                    fieldOfViewDegrees: MapsSdkRusticMapView.defaultFieldOfViewDegrees
+                    fieldOfViewDegrees: MapsSdkRusticMapView.defaultCameraFieldOfViewDegrees
                 )
             }
             if hasRotate, let focalPoint {
@@ -1410,7 +1414,7 @@ public final class MapsSdkRusticMapView: UIView {
                     deltaBearingDegrees: rotateDegrees,
                     focalPoint: focalPoint,
                     viewport: viewport,
-                    fieldOfViewDegrees: MapsSdkRusticMapView.defaultFieldOfViewDegrees
+                    fieldOfViewDegrees: MapsSdkRusticMapView.defaultCameraFieldOfViewDegrees
                 )
             }
             adoptCamera(workingCamera, isGestureDriven: isGestureDriven)
@@ -1667,7 +1671,7 @@ public final class MapsSdkRusticMapView: UIView {
             let coordinate = try camera.screenToGroundCoordinate(
                 screenPoint: renderPixelPoint(of: recognizer.location(in: self)),
                 viewport: viewport,
-                fieldOfViewDegrees: MapsSdkRusticMapView.defaultFieldOfViewDegrees
+                fieldOfViewDegrees: MapsSdkRusticMapView.defaultCameraFieldOfViewDegrees
             )
             if let coordinate {
                 delegate?.mapView(self, didClickCoordinate: coordinate)

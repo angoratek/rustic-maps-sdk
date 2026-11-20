@@ -198,6 +198,36 @@ namespace rustic_maps {
         string? provider_display_text,
         u8? roundabout_exit_index
     );
+
+    /// The renderer's default perspective field of view, in degrees.
+    ///
+    /// A camera call that does not configure a field of view uses this value.
+    /// Hosts read it from the contract instead of carrying their own copy, so
+    /// a renderer change reaches every target.
+    ///
+    /// # Returns
+    /// The default vertical field of view in degrees.
+    double default_field_of_view_degrees();
+
+    /// The camera's maximum zoom level.
+    ///
+    /// The contract clamps every camera to this ceiling. Hosts read it from
+    /// the contract instead of carrying their own copy, so a slider range or
+    /// fit-bounds ceiling follows the SDK.
+    ///
+    /// # Returns
+    /// The largest zoom level a camera accepts.
+    double maximum_zoom_level();
+
+    /// Meters covered by one degree of latitude on the WGS 84 mean sphere.
+    ///
+    /// Hosts that convert a ground distance into a latitude offset read this
+    /// value from the contract instead of carrying their own approximation,
+    /// so both sides use the same sphere.
+    ///
+    /// # Returns
+    /// The mean-sphere length of one degree of latitude in meters.
+    double meters_per_degree_latitude();
 };
 
 /// A position on the WGS 84 ellipsoid in decimal degrees.

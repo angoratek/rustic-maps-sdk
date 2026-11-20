@@ -48,6 +48,7 @@ import {
 import {
   ui_label_text,
 } from './ui_strings.mjs';
+import { defaultFieldOfViewDegrees } from './generated/index.js';
 
 export function defineMapSurface(runtime) {
   function prefers_reduced_motion() {
@@ -1001,7 +1002,8 @@ export function installMapSurfacePhase1(runtime) {
 
   runtime.shared.INITIAL_CAMERA_LONGITUDE_DEGREES = -121.4944;
 
-  runtime.shared.FIELD_OF_VIEW_DEGREES = 60;
+  /** The renderer's default field of view, read from the contract. */
+  runtime.shared.FIELD_OF_VIEW_DEGREES = defaultFieldOfViewDegrees();
 
   /** Characters a query needs before type-ahead asks the provider. */
   runtime.shared.AUTOCOMPLETE_MINIMUM_QUERY_CHARACTERS = 3;

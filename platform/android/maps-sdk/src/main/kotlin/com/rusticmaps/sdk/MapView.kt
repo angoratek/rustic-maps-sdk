@@ -39,6 +39,8 @@ import uniffi.rustic_maps.SurfaceHandle
 import uniffi.rustic_maps.UrlTemplateVectorTileSource
 import uniffi.rustic_maps.VectorTileSourceStatus
 import uniffi.rustic_maps.ViewportSize
+import uniffi.rustic_maps.defaultFieldOfViewDegrees
+import uniffi.rustic_maps.maximumZoomLevel
 import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.log2
@@ -1821,8 +1823,8 @@ class MapView @JvmOverloads constructor(
         /** The bundle key of the encoded camera pose. */
         const val CAMERA_POSE_STATE_KEY: String = "com.rusticmaps.sdk.MapView.camera-pose"
 
-        /** The SDK's default perspective field of view (`rustic-maps-rendering`). */
-        const val DEFAULT_FIELD_OF_VIEW_DEGREES: Double = 60.0
+        /** The SDK's default perspective field of view, read from the contract. */
+        val DEFAULT_FIELD_OF_VIEW_DEGREES: Double get() = defaultFieldOfViewDegrees()
 
         /**
          * `wgpu::Limits::downlevel_defaults()`'s `max_texture_dimension_2d`:
@@ -1859,7 +1861,7 @@ class MapView @JvmOverloads constructor(
         const val DOUBLE_TAP_ZOOM_STEP: Double = 1.0
 
         /** The SDK's maximum zoom level, the default fit-bounds ceiling. */
-        const val DEFAULT_FIT_BOUNDS_MAXIMUM_ZOOM_LEVEL: Double = 24.0
+        val DEFAULT_FIT_BOUNDS_MAXIMUM_ZOOM_LEVEL: Double get() = maximumZoomLevel()
 
         /** The initial pose before any host camera intent. */
         val DEFAULT_CAMERA_POSE: MapCameraPose = MapCameraPose(

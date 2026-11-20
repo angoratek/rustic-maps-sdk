@@ -512,10 +512,11 @@ enum ReferenceApplicationConfiguration {
     /// the sheet gutters so the sheet never covers the route).
     static let routePreviewEdgeInsetPoints: Double = 64
 
-    /// The meters in one degree of latitude (the spherical approximation
-    /// the demo's off-route offset uses — a demo-scale constant, not
-    /// navigation math).
-    static let metersPerDegreeLatitude: Double = 111_320
+    /// The meters in one degree of latitude, read from the contract so the
+    /// demo's off-route offset uses the same mean-sphere length as the
+    /// renderer.
+    static let metersPerDegreeLatitude: Double =
+        RusticMapsSDK.metersPerDegreeLatitude()
 
     // MARK: Draw delegate readback
 
