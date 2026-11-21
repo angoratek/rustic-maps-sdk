@@ -18,24 +18,6 @@ import Foundation
 import RusticMapsSDK
 import MapNativeCoreUI
 
-/// The readiness ladder's states, exactly the §6.1 table plus the neutral
-/// keyless state of §6.5: with no provider credential the application has
-/// not failed — it waits for a credential instead.
-enum ReadinessState: String {
-    /// SDK module/provider registration still resolving.
-    case loading
-    /// The GPU surface renderer is active.
-    case ready
-    /// A documented capability substitute fired (none exists on this
-    /// native path today; the state exists per the ladder).
-    case degraded
-    /// No provider credential is configured; the settings surface waits for
-    /// one (§6.5: a first-class state, never a renderer failure).
-    case keyless
-    /// The SDK failed to start; the report names the failure verbatim.
-    case failed
-}
-
 /// The applied status of one provider-credential row (§6.5): what the
 /// settings surface says after Apply and Clear.
 enum ProviderCredentialStatus: Equatable {
@@ -52,17 +34,6 @@ enum ProviderCredentialStatus: Equatable {
     /// The credential was cleared; the SDK registry has no unregister
     /// operation, so the running session keeps it until a restart.
     case clearedRestartRequired
-}
-
-/// One reported failure in the error report (§6.3): the provider-echoing
-/// label line (the `SdkError` variant name when the failure crossed the
-/// contract, the failure origin otherwise) and the verbatim detail.
-struct ReferenceApplicationErrorReport: Equatable {
-    /// The label line (variant name, or severity + origin).
-    let labelLine: String
-    /// The failure detail echoed verbatim — never paraphrased, truncated or
-    /// swallowed.
-    let detailText: String
 }
 
 /// The camera values the gestures and presets own; the shipped map view
@@ -125,6 +96,15 @@ final class ReferenceApplicationModel: ObservableObject {
     /// The device-local store of the explicit choices besides the theme.
     private let rememberedChoicesStore: RememberedChoicesStore
 
+    /// The readiness ladder and the error report, one domain
+    /// (docs/ReferenceAppUX.md §6.1, §6.3). The state type owns every
+    /// transition and the contract-error wording; the model forwards its
+    /// changes so the chip and the error strip follow.
+    let readinessReportState = ReadinessReportState()
+
+    /// Forwards the readiness state's changes into this model's object change.
+    private var readinessReportObservation: AnyCancellable?
+
     /// The debounce of a gesture-driven choice persistence: a drag changes the
     /// camera on every frame, and each of those changes is not a separate
     /// user choice. The record is written once the gesture has been still for
@@ -134,6 +114,10 @@ final class ReferenceApplicationModel: ObservableObject {
     /// Creates the model over one remembered-choice store.
     init(rememberedChoicesStore: RememberedChoicesStore = .standard) {
         self.rememberedChoicesStore = rememberedChoicesStore
+        readinessReportObservation = readinessReportState.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
     }
 
     /// Schedules one choice-record write after the camera gesture settles,
@@ -192,15 +176,18 @@ final class ReferenceApplicationModel: ObservableObject {
         }
     }
 
-    /// The readiness ladder state and its live text (the full text lives
-    /// in the diagnostics sheet; the chip carries the short line).
-    @Published private(set) var readinessState: ReadinessState = .loading
-    @Published private(set) var readinessText: String =
-        ReferenceApplicationConfiguration.startingReadinessText
+    /// The readiness ladder state (the full text lives in the diagnostics
+    /// sheet; the chip carries the short line).
+    var readinessState: ReadinessState { readinessReportState.readinessState }
+
+    /// The full readiness line the diagnostics sheet states.
+    var readinessText: String { readinessReportState.readinessText }
 
     /// The provider-echoing error report, visible until the next
     /// successful action clears it (§6.3).
-    @Published private(set) var errorReport: ReferenceApplicationErrorReport?
+    var errorReport: ReferenceApplicationErrorReport? {
+        readinessReportState.errorReport
+    }
 
     // MARK: Provider credentials (§6.5)
 
@@ -1197,8 +1184,7 @@ final class ReferenceApplicationModel: ObservableObject {
     }
 
     private func setReadiness(_ state: ReadinessState, _ text: String) {
-        readinessState = state
-        readinessText = text
+        readinessReportState.note(state, text)
     }
 
     // MARK: Remembered choices (PRD.md §6 item 67)
@@ -1387,22 +1373,7 @@ final class ReferenceApplicationModel: ObservableObject {
 
     /// The readiness chip's short line (§4.2: the four states; the full
     /// readiness text lives in the diagnostics sheet).
-    var readinessChipText: String {
-        switch readinessState {
-        case .loading:
-            return ReferenceApplicationConfiguration.readinessChipLoadingText
-        case .ready:
-            return ReferenceApplicationConfiguration.readinessChipReadyText
-        case .degraded:
-            return ReferenceApplicationConfiguration.readinessChipDegradedPrefix
-                + readinessText
-        case .keyless:
-            return ReferenceApplicationConfiguration.readinessChipKeylessText
-        case .failed:
-            return ReferenceApplicationConfiguration.readinessChipFailedPrefix
-                + readinessText
-        }
-    }
+    var readinessChipText: String { readinessReportState.readinessChipText }
 
     // MARK: Error report (§6.3)
 
@@ -1410,70 +1381,29 @@ final class ReferenceApplicationModel: ObservableObject {
     /// line of §6.3: "the error block's label line shows the variant name
     /// when one is available").
     private func sdkErrorVariantName(_ sdkError: SdkError) -> String {
-        switch sdkError {
-        case .InvalidCoordinateInput: return "InvalidCoordinateInput"
-        case .NetworkRequestFailed: return "NetworkRequestFailed"
-        case .ResponseParsingFailure: return "ResponseParsingFailure"
-        case .ProviderRequestRejected: return "ProviderRequestRejected"
-        case .RateLimitExhausted: return "RateLimitExhausted"
-        case .ProviderNotConfigured: return "ProviderNotConfigured"
-        case .InvalidNavigationInput: return "InvalidNavigationInput"
-        case .InvalidRenderInput: return "InvalidRenderInput"
-        case .RenderingSurfaceUnavailable: return "RenderingSurfaceUnavailable"
-        case .CacheOperationFailure: return "CacheOperationFailure"
-        case .OfflineRoutingFailure: return "OfflineRoutingFailure"
-        }
+        readinessReportState.sdkErrorVariantName(sdkError)
     }
 
     /// The verbatim detail text of a contract error (the detail string the
-    /// SDK contract carries across the binding unchanged). The two sentences
-    /// the contract does not carry as a detail string are the shared
-    /// reference-tokens artifact's `strings.rate_limit_exhausted_detail` and
-    /// `strings.provider_not_configured_detail_template`
-    /// (platform/reference-tokens.json); scripts/check_ux_parity.mjs gates the
-    /// text against that artifact.
+    /// SDK contract carries across the binding unchanged).
     func sdkFailureDetailText(_ sdkError: SdkError) -> String {
-        switch sdkError {
-        case .InvalidCoordinateInput(let detail): return detail
-        case .NetworkRequestFailed(let detail): return detail
-        case .ResponseParsingFailure(let detail): return detail
-        case .ProviderRequestRejected(let detail): return detail
-        // platform/reference-tokens.json strings.rate_limit_exhausted_detail
-        case .RateLimitExhausted: return "rate limit exhausted; retry after the next refill"
-        // platform/reference-tokens.json strings.provider_not_configured_detail_template
-        case .ProviderNotConfigured(let contractName):
-            return ReferenceApplicationConfiguration.providerNotConfiguredDetailText(
-                contractName: contractName
-            )
-        case .InvalidNavigationInput(let detail): return detail
-        case .InvalidRenderInput(let detail): return detail
-        case .RenderingSurfaceUnavailable(let detail): return detail
-        // The cache and offline variants carry their own verbatim reason.
-        case .CacheOperationFailure(let detail): return detail
-        case .OfflineRoutingFailure(let detail): return detail
-        }
+        readinessReportState.sdkFailureDetailText(sdkError)
     }
 
     /// Echoes a contract failure into the error report.
     func reportSdkError(_ sdkError: SdkError) {
-        errorReport = ReferenceApplicationErrorReport(
-            labelLine: sdkErrorVariantName(sdkError),
-            detailText: sdkFailureDetailText(sdkError)
-        )
+        readinessReportState.reportSdkError(sdkError)
     }
 
     /// Echoes a local (non-contract) failure into the error report: the
     /// label line names the origin, the detail echoes verbatim.
     func reportLocalError(origin: String, detail: String) {
-        errorReport = ReferenceApplicationErrorReport(
-            labelLine: origin,
-            detailText: detail
-        )
+        readinessReportState.reportLocalError(origin: origin, detail: detail)
     }
 
     /// Clears the error report on the next successful action (§6.3).
     private func clearErrorReport() {
-        errorReport = nil
+        readinessReportState.clearErrorReport()
     }
 }
 
@@ -3169,16 +3099,12 @@ extension ReferenceApplicationModel {
     /// serving and no fallback or recorded route replaces the failure.
     private func reportRoutingPlanError(_ sdkError: SdkError) {
         let isNetworkFailure = sdkErrorVariantName(sdkError) == "NetworkRequestFailed"
-        let detailText = sdkFailureDetailText(sdkError)
-            + (isNetworkFailure
-                ? " "
-                    + ReferenceApplicationConfiguration
-                        .routingUnreachableNextStepText
-                : "")
-        errorReport = ReferenceApplicationErrorReport(
-            labelLine: sdkErrorVariantName(sdkError),
-            detailText: detailText
-        )
+        let detailSuffix = isNetworkFailure
+            ? " "
+                + ReferenceApplicationConfiguration
+                    .routingUnreachableNextStepText
+            : ""
+        readinessReportState.reportSdkError(sdkError, detailSuffix: detailSuffix)
     }
 }
 
