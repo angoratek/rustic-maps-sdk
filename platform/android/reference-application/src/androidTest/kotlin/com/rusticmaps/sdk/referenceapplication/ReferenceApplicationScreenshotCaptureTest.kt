@@ -9,7 +9,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.HomeSheetState
-import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.ReadinessState
 import com.rusticmaps.sdk.referenceapplication.map.MapLayerBaseSelection
 import java.io.File
 import java.io.FileOutputStream
