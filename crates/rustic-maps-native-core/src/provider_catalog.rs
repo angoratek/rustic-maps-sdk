@@ -27,7 +27,7 @@ use rustic_maps_core::everymap_bridge::{
 };
 use rustic_maps_core::provider_observation::EveryMapRequestObserver;
 use rustic_maps_providers::{Contract, PROVIDER_ENTRIES, ProviderEntry};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// The MapQuest terms' imagery-caching ceiling: raster-tile responses may be
 /// stored for up to 30 calendar days.
@@ -248,27 +248,93 @@ pub(crate) const PROVIDER_CATALOG: &[ProviderCatalogEntry] = &[
     },
 ];
 
-/// The browser-only fixture-origin override for a provider key, when the page
-/// registered one with `setProviderBaseUrl`.
+/// The base URL a provider key was pointed at with
+/// `MapSdk::set_provider_base_url`, if any.
 ///
-/// The credential-only catalog installs carry no endpoint of their own, so a
-/// browser that serves a provider's routes itself would otherwise reach the
-/// public endpoint. On wasm the generated `MapSdk` consults the override the
-/// canvas keeps, which makes a generated `configure_provider` or
-/// `configure_provider_set` build the same fixture-backed provider the page's
-/// own registration does. A native build has no such seam and never calls it,
-/// so native registration behaviour is unchanged.
-#[cfg(target_arch = "wasm32")]
-fn browser_base_url_override(provider_key: &str) -> Option<String> {
-    crate::browser_canvas::live_providers::base_url_override(provider_key)
+/// The store is process-wide, like the diagnostics state: an application
+/// constructs one SDK per process, and the browser surface replaces its
+/// generated SDK object when it clears every provider, which must not forget
+/// an override a page set for its fixture routes. The credential-only catalog
+/// installs carry no endpoint of their own, so without an override they reach
+/// the provider's public default; the override redirects every later
+/// configuration of the key to another origin without changing that default.
+static PROVIDER_BASE_URL_OVERRIDES: Mutex<Vec<ProviderBaseUrlOverride>> = Mutex::new(Vec::new());
+
+/// One provider key's configured base URL.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ProviderBaseUrlOverride {
+    /// The provider key the override applies to.
+    pub(crate) provider_key: String,
+    /// The base URL every later configuration of the key addresses.
+    pub(crate) base_url: String,
 }
 
-/// The browser-only fixture-origin override for a provider key. A native
-/// build carries no override table, so this always answers `None` and every
-/// install path keeps the credential-only behaviour it had.
-#[cfg(not(target_arch = "wasm32"))]
-fn browser_base_url_override(_provider_key: &str) -> Option<String> {
-    None
+/// The base URL override in force for a provider key, if any.
+fn provider_base_url_override(provider_key: &str) -> Option<String> {
+    let overrides = crate::panic_boundary::state_lock_guard(
+        &PROVIDER_BASE_URL_OVERRIDES,
+        "the provider base URL overrides",
+    );
+    overrides
+        .iter()
+        .find(|override_entry| override_entry.provider_key == provider_key)
+        .map(|override_entry| override_entry.base_url.clone())
+}
+
+/// Records or clears the base URL a provider key is configured with.
+///
+/// A non-empty URL is validated before it replaces any earlier override, so a
+/// refused call leaves the previous value in force. An empty or absent URL
+/// clears the override and restores the provider's public default.
+pub(crate) fn record_provider_base_url(
+    provider_key: &str,
+    base_url: Option<&str>,
+) -> Result<(), SdkError> {
+    let trimmed_base_url = base_url.map(str::trim).filter(|url| !url.is_empty());
+    let validated_base_url = match trimmed_base_url {
+        Some(base_url) => Some(validated_provider_base_url(base_url)?),
+        None => None,
+    };
+    let mut overrides = crate::panic_boundary::state_lock_guard(
+        &PROVIDER_BASE_URL_OVERRIDES,
+        "the provider base URL overrides",
+    );
+    overrides.retain(|override_entry| override_entry.provider_key != provider_key);
+    if let Some(validated_base_url) = validated_base_url {
+        overrides.push(ProviderBaseUrlOverride {
+            provider_key: provider_key.to_string(),
+            base_url: validated_base_url,
+        });
+    }
+    Ok(())
+}
+
+/// Validates a base URL a provider key is configured with.
+///
+/// The credential travels in its own parameter, never in the address: the URL
+/// must be an absolute http or https URL with a host and no userinfo, query
+/// or fragment, each of which could smuggle a key into the endpoint. The
+/// detail names the reason and never echoes the value.
+fn validated_provider_base_url(base_url: &str) -> Result<String, SdkError> {
+    let parsed = url::Url::parse(base_url).map_err(|error| SdkError::ProviderRequestRejected {
+        detail: format!("the provider base URL is not a usable URL: {error}"),
+    })?;
+    if !matches!(parsed.scheme(), "http" | "https") || parsed.host_str().is_none() {
+        return Err(SdkError::ProviderRequestRejected {
+            detail: "the provider base URL must be an http or https URL with a host".to_string(),
+        });
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err(SdkError::ProviderRequestRejected {
+            detail: "the provider base URL must not carry credentials in its userinfo".to_string(),
+        });
+    }
+    if parsed.query().is_some() || parsed.fragment().is_some() {
+        return Err(SdkError::ProviderRequestRejected {
+            detail: "the provider base URL must not carry a query or a fragment".to_string(),
+        });
+    }
+    Ok(base_url.to_string())
 }
 
 /// The credential a keyless provider reads as an optional deployment address.
@@ -326,7 +392,7 @@ fn install_osrm_contract(
     }
     let configuration = everymap_providers_osrm::OsrmProviderConfiguration {
         base_url: validated_deployment_base_url(
-            &browser_base_url_override("osrm").unwrap_or_else(|| credential.to_string()),
+            &provider_base_url_override("osrm").unwrap_or_else(|| credential.to_string()),
             everymap_providers_osrm::DEFAULT_OSRM_BASE_URL,
         )?,
         ..Default::default()
@@ -364,7 +430,7 @@ fn install_photon_contract(
     }
     let configuration = everymap_providers_photon::PhotonProviderConfiguration {
         base_url: deployment_base_url_or_default(
-            &browser_base_url_override("photon").unwrap_or_else(|| credential.to_string()),
+            &provider_base_url_override("photon").unwrap_or_else(|| credential.to_string()),
             everymap_providers_photon::DEFAULT_PHOTON_BASE_URL,
         ),
         ..Default::default()
@@ -416,7 +482,7 @@ fn install_valhalla_contract(
     }
     let configuration = everymap_providers_valhalla::ValhallaProviderConfiguration {
         base_url: validated_deployment_base_url(
-            &browser_base_url_override("valhalla").unwrap_or_else(|| credential.to_string()),
+            &provider_base_url_override("valhalla").unwrap_or_else(|| credential.to_string()),
             everymap_providers_valhalla::DEFAULT_VALHALLA_BASE_URL,
         )?,
         ..Default::default()
@@ -455,19 +521,35 @@ fn install_mapquest_contract(
     )
 }
 
+/// Builds the full-service provider's client configuration.
+///
+/// The key travels in `api_key`; `base_url` stays the provider's public
+/// default unless an application set an override for the key, so the
+/// credential is never carried in the address.
+fn mapquest_provider_configuration(
+    credential: &str,
+    base_url_override: Option<&str>,
+) -> MapQuestProviderConfiguration {
+    let mut configuration = MapQuestProviderConfiguration {
+        api_key: credential.to_string(),
+        ..MapQuestProviderConfiguration::default()
+    };
+    if let Some(base_url) = base_url_override {
+        configuration.base_url = base_url.to_string();
+    }
+    configuration
+}
+
 /// Builds the provider set's client for one credential and one capability.
 ///
 /// Each capability gets its own client so its request observations carry the
 /// contract they served; the provider layer has no shared pacing state to
 /// lose by not sharing one.
 fn mapquest_provider_client(credential: &str, contract: ProviderContract) -> Arc<MapQuestClient> {
-    let mut configuration = MapQuestProviderConfiguration {
-        api_key: credential.to_string(),
-        ..MapQuestProviderConfiguration::default()
-    };
-    if let Some(base_url) = browser_base_url_override("mapquest") {
-        configuration.base_url = base_url;
-    }
+    let configuration = mapquest_provider_configuration(
+        credential,
+        provider_base_url_override("mapquest").as_deref(),
+    );
     let mut client = MapQuestClient::new(configuration);
     client.set_observer(Arc::new(EveryMapRequestObserver::new(
         &contract_name_of(contract),
@@ -559,7 +641,7 @@ fn install_shared_vendor(
     let implementations = rustic_maps_providers::build_vendor(
         provider_key,
         credential,
-        browser_base_url_override(provider_key).as_deref(),
+        provider_base_url_override(provider_key).as_deref(),
         &contract_name_of(contract),
     )
     .ok_or_else(|| contract_not_served(contract))?;
@@ -984,5 +1066,62 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// Serializes the cases that configure the process-wide base URL store,
+    /// so one case's override cannot reach another's assertion.
+    static BASE_URL_OVERRIDE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    #[test]
+    fn clearing_a_base_url_override_restores_the_public_default() {
+        let _test_lock = BASE_URL_OVERRIDE_TEST_LOCK
+            .lock()
+            .expect("the base URL store test lock is healthy");
+        const LOOPBACK_ORIGIN: &str = "http://127.0.0.1:9";
+        let map_sdk = crate::MapSdk::new();
+        map_sdk
+            .set_provider_base_url("mapquest".to_string(), Some(LOOPBACK_ORIGIN.to_string()))
+            .expect("the loopback origin is a valid base URL");
+        let overridden_configuration = super::mapquest_provider_configuration(
+            "placeholder-key",
+            super::provider_base_url_override("mapquest").as_deref(),
+        );
+        assert_eq!(
+            overridden_configuration.base_url, LOOPBACK_ORIGIN,
+            "an override redirects the client the catalog constructs"
+        );
+
+        map_sdk
+            .set_provider_base_url("mapquest".to_string(), None)
+            .expect("clearing the override succeeds");
+        let restored_configuration = super::mapquest_provider_configuration(
+            "placeholder-key",
+            super::provider_base_url_override("mapquest").as_deref(),
+        );
+        assert_eq!(
+            restored_configuration.base_url,
+            everymap_providers_mapquest::DEFAULT_MAPQUEST_BASE_URL,
+            "clearing the override restores the provider's public default"
+        );
+    }
+
+    #[test]
+    fn an_empty_base_url_clears_the_override() {
+        let _test_lock = BASE_URL_OVERRIDE_TEST_LOCK
+            .lock()
+            .expect("the base URL store test lock is healthy");
+        const LOOPBACK_ORIGIN: &str = "http://127.0.0.1:9";
+        let map_sdk = crate::MapSdk::new();
+        map_sdk
+            .set_provider_base_url("mapquest".to_string(), Some(LOOPBACK_ORIGIN.to_string()))
+            .expect("the loopback origin is a valid base URL");
+        map_sdk
+            .set_provider_base_url("mapquest".to_string(), Some(String::new()))
+            .expect("an empty base URL clears the override");
+        assert_eq!(
+            super::provider_base_url_override("mapquest"),
+            None,
+            "no override remains after an empty base URL"
+        );
     }
 }
