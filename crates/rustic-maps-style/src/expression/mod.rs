@@ -365,6 +365,35 @@ impl Expression {
         validate_zoom(self, false)
     }
 
+    /// The first operator in the expression tree this crate recognizes but
+    /// does not evaluate, in evaluation order.
+    ///
+    /// An unsupported operator evaluates to `null`, so a property built on one
+    /// would silently take its documented default. A caller names the operator
+    /// in its diagnostic instead.
+    pub fn first_unsupported_operator(&self) -> Option<&str> {
+        if let ExpressionKind::Unsupported { operator, .. } = &self.kind {
+            return Some(operator);
+        }
+        self.children()
+            .into_iter()
+            .find_map(Expression::first_unsupported_operator)
+    }
+
+    /// Whether the expression tree reads per-feature state through
+    /// `feature-state`.
+    ///
+    /// This renderer carries no per-feature state store, so a `feature-state`
+    /// expression evaluates to `null`; a caller reports the property rather
+    /// than letting it take a default unnoticed.
+    pub fn uses_feature_state(&self) -> bool {
+        matches!(&self.kind, ExpressionKind::FeatureState { .. })
+            || self
+                .children()
+                .into_iter()
+                .any(Expression::uses_feature_state)
+    }
+
     /// Every direct child expression, in evaluation order.
     pub fn children(&self) -> Vec<&Expression> {
         let mut children = Vec::new();
