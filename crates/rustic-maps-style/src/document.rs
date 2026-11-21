@@ -126,10 +126,11 @@ pub struct GeoJsonSourceSpec {
     pub tolerance: Option<f64>,
 }
 
-/// A source declaration of a type this phase models only as an opaque value.
+/// A source declaration of a type this crate does not model.
 #[derive(Debug, Clone, PartialEq)]
 pub struct OpaqueSourceSpec {
-    /// The source's declared type (`raster`, `raster-dem`, `image`, `video`).
+    /// The source's declared type (`raster-dem`, `image`, `video` or an
+    /// unrecognized name).
     pub source_type: String,
     /// The declaration as it appeared in the document.
     pub definition: JsonValue,
@@ -524,7 +525,17 @@ impl MapStyleDocument {
         })?;
         let mut layers = Vec::with_capacity(layers_array.len());
         for (layer_index, layer) in layers_array.iter().enumerate() {
-            layers.push(parse_layer(layer, layer_index, &mut unsupported)?);
+            let mut parsed_layer = parse_layer(layer, layer_index, &mut unsupported)?;
+            // A filter the engine cannot evaluate is reported once the layer
+            // is parsed. A filter that evaluates to `null` is false, so the
+            // layer admits every feature rather than rejecting all of them.
+            if let Some(filter) = parsed_layer.filter.take() {
+                let scope = UnsupportedScope::Layer {
+                    layer_id: parsed_layer.id.clone(),
+                };
+                parsed_layer.filter = usable_filter_expression(filter, &scope, &mut unsupported);
+            }
+            layers.push(parsed_layer);
         }
 
         let projection = parse_projection(object.get("projection"), &mut unsupported);
@@ -890,10 +901,24 @@ fn parse_source(
             }
             Ok(SourceSpec::GeoJson(specification))
         }
-        other => Ok(SourceSpec::Opaque(OpaqueSourceSpec {
-            source_type: other.to_string(),
-            definition: json_value.clone(),
-        })),
+        other => {
+            // `raster-dem`, `image` and `video` sources need terrain, image
+            // placement or video decoding this renderer does not perform; an
+            // unrecognized type is likewise carried only so its layers can be
+            // named. Either way the source paints nothing and says so.
+            unsupported.push(UnsupportedProperty::new(
+                scope.clone(),
+                "type",
+                format!(
+                    "the source type {other:?} is not rendered by this renderer; layers bound \
+                     to it paint nothing"
+                ),
+            ));
+            Ok(SourceSpec::Opaque(OpaqueSourceSpec {
+                source_type: other.to_string(),
+                definition: json_value.clone(),
+            }))
+        }
     }
 }
 
@@ -1621,6 +1646,38 @@ fn parse_translate_anchor(
         })
 }
 
+/// A filter this renderer can evaluate, or `None` when it names an
+/// unimplemented operator.
+///
+/// A filter that evaluates to `null` is false, so keeping an unimplemented
+/// filter would reject every feature and blank the layer. The diagnostic names
+/// the operator and the layer admits every feature instead.
+fn usable_filter_expression(
+    filter: Expression,
+    scope: &UnsupportedScope,
+    unsupported: &mut Vec<UnsupportedProperty>,
+) -> Option<Expression> {
+    if let Some(operator) = filter.first_unsupported_operator() {
+        unsupported.push(UnsupportedProperty::new(
+            scope.clone(),
+            "filter",
+            format!(
+                "the filter operator {operator:?} is not implemented; the layer admits every feature"
+            ),
+        ));
+        return None;
+    }
+    if filter.uses_feature_state() {
+        unsupported.push(UnsupportedProperty::new(
+            scope.clone(),
+            "filter",
+            "a feature-state filter is not implemented; the layer admits every feature",
+        ));
+        return None;
+    }
+    Some(filter)
+}
+
 fn parse_property<T: PropertyValue>(
     json_value: &JsonValue,
     scope: &UnsupportedScope,
@@ -1628,17 +1685,38 @@ fn parse_property<T: PropertyValue>(
     property_name: &str,
 ) -> Option<Property<T>> {
     match Property::parse(json_value) {
-        Ok(Property::Expression(expression)) => match expression.validate_zoom_placement() {
-            Ok(()) => Some(Property::Expression(expression)),
-            Err(zoom_error) => {
+        Ok(Property::Expression(expression)) => {
+            if let Some(operator) = expression.first_unsupported_operator() {
                 unsupported.push(UnsupportedProperty::new(
                     scope.clone(),
                     property_name,
-                    format!("expression disabled: {zoom_error}"),
+                    format!(
+                        "the expression operator {operator:?} is not implemented; the property \
+                         takes its default"
+                    ),
                 ));
-                None
+                return None;
             }
-        },
+            if expression.uses_feature_state() {
+                unsupported.push(UnsupportedProperty::new(
+                    scope.clone(),
+                    property_name,
+                    "feature-state styling is not implemented; the property takes its default",
+                ));
+                return None;
+            }
+            match expression.validate_zoom_placement() {
+                Ok(()) => Some(Property::Expression(expression)),
+                Err(zoom_error) => {
+                    unsupported.push(UnsupportedProperty::new(
+                        scope.clone(),
+                        property_name,
+                        format!("expression disabled: {zoom_error}"),
+                    ));
+                    None
+                }
+            }
+        }
         Ok(constant) => Some(constant),
         Err(parse_error) => {
             unsupported.push(UnsupportedProperty::new(
@@ -2000,6 +2078,128 @@ mod tests {
             property_names(&document.unsupported_properties_on_layer("broken")),
             ["line-width"]
         );
+    }
+
+    #[test]
+    fn an_unimplemented_expression_operator_disables_only_its_property() {
+        let document = MapStyleDocument::parse_json(
+            r##"{
+                "version": 8,
+                "layers": [{
+                    "id": "roads",
+                    "type": "line",
+                    "paint": {
+                        "line-width": ["distance", ["get", "width"]],
+                        "line-color": "#000000"
+                    }
+                }]
+            }"##,
+        )
+        .expect("the document still parses");
+        let layer = document.layer("roads").expect("the road layer parses");
+        assert!(layer.paint.line_width.is_none());
+        assert!(layer.paint.line_color.is_some());
+        assert_eq!(
+            property_names(&document.unsupported_properties_on_layer("roads")),
+            ["line-width"]
+        );
+        let diagnostic = document
+            .unsupported_properties_on_layer("roads")
+            .into_iter()
+            .next()
+            .expect("the operator is named");
+        assert!(
+            diagnostic.detail.contains("distance"),
+            "the diagnostic names the operator: {}",
+            diagnostic.detail
+        );
+    }
+
+    #[test]
+    fn a_feature_state_property_is_reported_and_takes_its_default() {
+        let document = MapStyleDocument::parse_json(
+            r##"{
+                "version": 8,
+                "layers": [{
+                    "id": "highlight",
+                    "type": "fill",
+                    "paint": {
+                        "fill-color": "red",
+                        "fill-opacity": ["case", ["feature-state", "hover"], 1, 0.2]
+                    }
+                }]
+            }"##,
+        )
+        .expect("the document still parses");
+        let layer = document.layer("highlight").expect("the layer parses");
+        assert!(layer.paint.fill_opacity.is_none());
+        assert!(layer.paint.fill_color.is_some());
+        let diagnostic = document
+            .unsupported_properties_on_layer("highlight")
+            .into_iter()
+            .next()
+            .expect("the property is reported");
+        assert_eq!(diagnostic.property_name, "fill-opacity");
+        assert!(diagnostic.detail.contains("feature-state"));
+    }
+
+    #[test]
+    fn an_unimplemented_filter_operator_admits_every_feature_and_is_reported() {
+        let document = MapStyleDocument::parse_json(
+            r##"{
+                "version": 8,
+                "layers": [{
+                    "id": "roads",
+                    "type": "line",
+                    "filter": ["within", ["literal", {"type": "Polygon", "coordinates": []}]],
+                    "paint": { "line-color": "#000000" }
+                }]
+            }"##,
+        )
+        .expect("the document still parses");
+        let layer = document.layer("roads").expect("the layer parses");
+        assert!(
+            layer.filter.is_none(),
+            "a filter the renderer cannot evaluate is dropped, not kept as a reject-all"
+        );
+        let diagnostics = property_names(&document.unsupported_properties_on_layer("roads"));
+        assert_eq!(diagnostics, ["filter"]);
+    }
+
+    #[test]
+    fn an_unrendered_source_type_is_reported_for_its_source_id() {
+        let document = MapStyleDocument::parse_json(
+            r##"{
+                "version": 8,
+                "sources": {
+                    "dem": { "type": "raster-dem", "url": "https://example.test/dem.json" },
+                    "photo": { "type": "image", "url": "https://example.test/a.png" },
+                    "clip": { "type": "video", "urls": [] }
+                },
+                "layers": []
+            }"##,
+        )
+        .expect("the document parses with diagnostics");
+        for (source_id, source_type) in
+            [("dem", "raster-dem"), ("photo", "image"), ("clip", "video")]
+        {
+            let diagnostic = document
+                .unsupported
+                .iter()
+                .find(|diagnostic| {
+                    matches!(
+                        &diagnostic.scope,
+                        UnsupportedScope::Source { source_id: scope_source_id }
+                            if scope_source_id == source_id
+                    ) && diagnostic.property_name == "type"
+                })
+                .unwrap_or_else(|| panic!("the {source_type} source is reported"));
+            assert!(
+                diagnostic.detail.contains(source_type),
+                "the diagnostic names the source type: {}",
+                diagnostic.detail
+            );
+        }
     }
 
     #[test]
