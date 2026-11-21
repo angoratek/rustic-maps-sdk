@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-20 — a docs publish keeps the published downloads)
+
+- `scripts/mirror-docs-site-tree.mjs` mirrors the staged site onto the pages checkout, prints every path it deletes, and keeps the checkout's `downloads/` unless the staged tree carries a complete replacement set: every version directory has a `SHA256SUMS.txt` and every file it lists is present. Publishing from a source checkout that never built the release artifacts no longer deletes them.
+- `scripts/mirror-docs-site-tree.test.mjs` pins the three outcomes — preserve, replace, preserve an incomplete set — and the docs-publication workflow runs it before the site build. `docs/Release.md` states how the downloads tree is produced and what a publish does to it.
+
 ### Changed (2026-11-20 — the React Native curated enums come from the generated layer)
 
 - `platform/rn/scripts/generate-contract-ordinals.mjs` reads the frozen UDL and emits `src/generated/rustic_maps-ordinals.ts`: for every enum the curated bridge re-exports, the TypeScript union and its ordinal lookup generated from the declaration. `scripts/generate-rn-bindings.sh` runs it with the other generation steps, and `--check` compares its output too.

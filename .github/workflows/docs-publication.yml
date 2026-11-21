@@ -17,6 +17,8 @@ on:
       - "docs/THIRD_PARTY_NOTICES.md"
       - "crates/rustic-maps-native-core/src/rustic_maps.udl"
       - "scripts/build-docs-site.sh"
+      - "scripts/mirror-docs-site-tree.mjs"
+      - "scripts/mirror-docs-site-tree.test.mjs"
       - ".github/workflows/docs-publication.yml"
 
 concurrency:
@@ -55,6 +57,12 @@ jobs:
           cache-dependency-path: |
             platform/web/package-lock.json
             platform/rn/package-lock.json
+
+      # The publisher's mirror keeps a checkout's downloads unless the staged
+      # tree carries a complete replacement set; the test pins that rule
+      # before the expensive site build.
+      - name: Test the publish mirror
+        run: node --test scripts/mirror-docs-site-tree.test.mjs
 
       - name: Install the generated-package toolchains
         run: |
