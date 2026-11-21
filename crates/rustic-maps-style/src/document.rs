@@ -1034,6 +1034,20 @@ fn parse_layer(
         Some(filter_json) => Some(parse_filter(filter_json)?),
     };
     let is_symbol_layer = layer_type == LayerType::Symbol;
+    let layout = parse_layout(object.get("layout"), &scope, unsupported);
+    let paint = parse_paint(object.get("paint"), &scope, unsupported);
+    // A line-placed symbol layer draws its text along the feature's geometry
+    // but places no icon: the renderer anchors icons at a point and has no
+    // run-relative anchor for them. The property is reported rather than
+    // dropped, so a style asking for an icon on a road still learns that only
+    // the road's name paints.
+    if is_symbol_layer && declares_a_line_placed_icon(&layout) {
+        unsupported.push(UnsupportedProperty::new(
+            scope.clone(),
+            "icon-image",
+            "a line-placed symbol layer draws no icon; the layer keeps its text",
+        ));
+    }
 
     Ok(StyleLayer {
         id,
@@ -1055,8 +1069,8 @@ fn parse_layer(
             .and_then(JsonValue::as_f64)
             .unwrap_or(DEFAULT_MAXIMUM_ZOOM),
         filter,
-        layout: parse_layout(object.get("layout"), &scope, unsupported),
-        paint: parse_paint(object.get("paint"), &scope, unsupported),
+        layout,
+        paint,
         shield: if is_symbol_layer {
             parse_shield(object.get("shield"), &scope, unsupported)
         } else {
@@ -1077,6 +1091,21 @@ fn parse_layer(
         },
         metadata: object.get("metadata").cloned(),
     })
+}
+
+/// Whether a symbol layer declares an icon under a constant line placement.
+///
+/// The renderer places icons at a point only. A placement expression may
+/// resolve to a point feature by feature, so only a constant line placement
+/// proves the icon is dropped.
+fn declares_a_line_placed_icon(layout: &LayerLayout) -> bool {
+    let line_placement = matches!(
+        &layout.symbol_placement,
+        Some(Property::Constant(
+            SymbolPlacement::Line | SymbolPlacement::LineCenter
+        ))
+    );
+    line_placement && layout.icon_image.is_some()
 }
 
 fn parse_layout(
@@ -1261,6 +1290,22 @@ fn parse_layout(
                 layout.icon_text_fit_padding =
                     parse_property(property_value, scope, unsupported, property_name)
             }
+            // `icon-optional` suppresses the whole symbol, text included, when
+            // its icon is missing. This renderer always places the text and
+            // skips only the icon, so the declared value is reported instead
+            // of applied.
+            "icon-optional" => unsupported.push(UnsupportedProperty::new(
+                scope.clone(),
+                property_name,
+                "icon-optional is not applied; a symbol without a served icon draws its text",
+            )),
+            // `icon-keep-upright` only governs line-placed icons, and a
+            // line-placed symbol layer draws no icon.
+            "icon-keep-upright" => unsupported.push(UnsupportedProperty::new(
+                scope.clone(),
+                property_name,
+                "icon-keep-upright applies to line-placed icons, which are not drawn",
+            )),
             _ => unsupported.push(UnsupportedProperty::new(
                 scope.clone(),
                 property_name,
@@ -1440,6 +1485,22 @@ fn parse_paint(
             "icon-opacity" => {
                 paint.icon_opacity =
                     parse_property(property_value, scope, unsupported, property_name)
+            }
+            // SDF tinting needs a distance-field sprite and a per-icon colour
+            // pass; this renderer samples the sprite sheet's own pixels, so
+            // these properties are named rather than silently dropped.
+            "icon-color" | "icon-halo-color" | "icon-halo-width" | "icon-halo-blur" => unsupported
+                .push(UnsupportedProperty::new(
+                    scope.clone(),
+                    property_name,
+                    "SDF icon tinting is not drawn; the sprite icon paints its own colours",
+                )),
+            "icon-translate" | "icon-translate-anchor" => {
+                unsupported.push(UnsupportedProperty::new(
+                    scope.clone(),
+                    property_name,
+                    "icon translations are not drawn; the icon sits at its anchor",
+                ))
             }
             _ => unsupported.push(UnsupportedProperty::new(
                 scope.clone(),
@@ -1847,6 +1908,59 @@ mod tests {
                     UnsupportedScope::Source { source_id } if source_id == "base"
                 )
         }));
+    }
+
+    #[test]
+    fn the_unpainted_icon_properties_are_named_rather_than_dropped() {
+        let document = MapStyleDocument::parse_json(
+            r##"{
+                "version": 8,
+                "sources": { "base": { "type": "vector" } },
+                "layers": [{
+                    "id": "route-icons",
+                    "type": "symbol",
+                    "source": "base",
+                    "source-layer": "routes",
+                    "layout": {
+                        "symbol-placement": "line",
+                        "icon-image": "route",
+                        "icon-text-fit": "both",
+                        "icon-optional": false,
+                        "icon-keep-upright": true
+                    },
+                    "paint": {
+                        "icon-color": "#ff0000",
+                        "icon-halo-color": "#ffffff",
+                        "icon-halo-width": 2,
+                        "icon-halo-blur": 1,
+                        "icon-translate": [1, 2],
+                        "icon-translate-anchor": "viewport"
+                    }
+                }]
+            }"##,
+        )
+        .expect("the document parses with diagnostics");
+        let reported = property_names(&document.unsupported_properties_on_layer("route-icons"));
+        assert_eq!(
+            reported,
+            [
+                "icon-color",
+                "icon-halo-blur",
+                "icon-halo-color",
+                "icon-halo-width",
+                "icon-image",
+                "icon-keep-upright",
+                "icon-optional",
+                "icon-translate",
+                "icon-translate-anchor",
+            ]
+        );
+        // The fitted-icon properties are painted, so they carry no diagnostic.
+        let layer = document
+            .layer("route-icons")
+            .expect("the symbol layer parses");
+        assert!(layer.layout.icon_text_fit.is_some());
+        assert!(layer.layout.icon_text_fit_padding.is_none());
     }
 
     #[test]
