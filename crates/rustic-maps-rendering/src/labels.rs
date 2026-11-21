@@ -76,8 +76,9 @@ use rustic_maps_glyphs::{
     PackedGlyph, PackedGlyphAtlas, decode_glyph_font_stack, pack_glyph_atlas,
 };
 use rustic_maps_style::{
-    CompiledLayerKind, CompiledStyle, IconTextFit, ResolvedPaint, ShieldShape, SymbolPlacement,
-    TextAnchor, TextJustify, TextPitchAlignment, TextRotationAlignment,
+    CompiledLayer, CompiledLayerKind, CompiledStyle, IconTextFit, ResolvedPaint, ShieldShape,
+    SymbolPlacement, TextAnchor, TextJustify, TextPitchAlignment, TextRotationAlignment,
+    TransitionSpec,
 };
 use rustic_maps_vector_tiles::{VectorTile, VectorTileFeature, VectorTileGeometry};
 use std::collections::HashMap;
@@ -2783,6 +2784,30 @@ pub fn label_candidates_for_compiled_layer_at_zoom(
     layer: &rustic_maps_style::CompiledLayer,
     style_zoom_level: f64,
 ) -> Vec<MapLabelCandidate> {
+    label_candidates_for_compiled_layer_at_zoom_with_transition(
+        tile,
+        tile_address,
+        layer,
+        style_zoom_level,
+        None,
+    )
+}
+
+/// [`label_candidates_for_compiled_layer_at_zoom`] with a style transition
+/// applied to each candidate's paint.
+///
+/// `transition` carries the same layer under the style being replaced, the
+/// document's root timing and the elapsed seconds since the change. Every
+/// candidate's text, halo and icon colours and opacities blend from the
+/// previous style's values, so a style change cross-fades its labels over the
+/// declared transition instead of swapping them at the first frame.
+pub fn label_candidates_for_compiled_layer_at_zoom_with_transition(
+    tile: &VectorTile,
+    tile_address: VectorTileAddress,
+    layer: &CompiledLayer,
+    style_zoom_level: f64,
+    transition: Option<(&CompiledLayer, Option<TransitionSpec>, f64)>,
+) -> Vec<MapLabelCandidate> {
     let mut candidates = Vec::new();
     if layer.kind != CompiledLayerKind::Symbol || !layer.is_visible_at_zoom(style_zoom_level) {
         return candidates;
@@ -2795,7 +2820,16 @@ pub fn label_candidates_for_compiled_layer_at_zoom(
                 continue;
             }
             let layout = layer.resolved_symbol_layout(&context);
-            let ResolvedPaint::Symbol(paint) = layer.resolved_paint(&context) else {
+            let resolved_paint = match transition {
+                Some((previous_layer, root_transition, elapsed_seconds)) => layer
+                    .resolved_transitioned_paint(
+                        &context,
+                        root_transition,
+                        Some((previous_layer, elapsed_seconds)),
+                    ),
+                None => layer.resolved_paint(&context),
+            };
+            let ResolvedPaint::Symbol(paint) = resolved_paint else {
                 continue;
             };
             let icon = layout
