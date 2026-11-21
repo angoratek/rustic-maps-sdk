@@ -331,6 +331,10 @@ pub struct LayerPaint {
     pub background_color: Option<Property<Color>>,
     /// The background opacity.
     pub background_opacity: Option<Property<f64>>,
+    /// The declared `background-color-transition`.
+    pub background_color_transition: Option<TransitionSpec>,
+    /// The declared `background-opacity-transition`.
+    pub background_opacity_transition: Option<TransitionSpec>,
     /// The fill colour.
     pub fill_color: Option<Property<Color>>,
     /// The fill opacity.
@@ -348,6 +352,10 @@ pub struct LayerPaint {
     pub fill_color_transition: Option<TransitionSpec>,
     /// The declared `fill-opacity-transition`.
     pub fill_opacity_transition: Option<TransitionSpec>,
+    /// The declared `fill-outline-color-transition`.
+    pub fill_outline_color_transition: Option<TransitionSpec>,
+    /// The declared `fill-translate-transition`.
+    pub fill_translate_transition: Option<TransitionSpec>,
     /// The line colour.
     pub line_color: Option<Property<Color>>,
     /// The line width, in screen pixels.
@@ -358,6 +366,16 @@ pub struct LayerPaint {
     pub line_color_transition: Option<TransitionSpec>,
     /// The declared `line-opacity-transition`.
     pub line_opacity_transition: Option<TransitionSpec>,
+    /// The declared `line-width-transition`.
+    pub line_width_transition: Option<TransitionSpec>,
+    /// The declared `line-blur-transition`.
+    pub line_blur_transition: Option<TransitionSpec>,
+    /// The declared `line-offset-transition`.
+    pub line_offset_transition: Option<TransitionSpec>,
+    /// The declared `line-gap-width-transition`.
+    pub line_gap_width_transition: Option<TransitionSpec>,
+    /// The declared `line-translate-transition`.
+    pub line_translate_transition: Option<TransitionSpec>,
     /// The line blur, in screen pixels.
     pub line_blur: Option<Property<f64>>,
     /// The distance the line is shifted perpendicular to its path, in screen
@@ -378,6 +396,18 @@ pub struct LayerPaint {
     pub circle_color_transition: Option<TransitionSpec>,
     /// The declared `circle-opacity-transition`.
     pub circle_opacity_transition: Option<TransitionSpec>,
+    /// The declared `circle-radius-transition`.
+    pub circle_radius_transition: Option<TransitionSpec>,
+    /// The declared `circle-blur-transition`.
+    pub circle_blur_transition: Option<TransitionSpec>,
+    /// The declared `circle-translate-transition`.
+    pub circle_translate_transition: Option<TransitionSpec>,
+    /// The declared `circle-stroke-color-transition`.
+    pub circle_stroke_color_transition: Option<TransitionSpec>,
+    /// The declared `circle-stroke-width-transition`.
+    pub circle_stroke_width_transition: Option<TransitionSpec>,
+    /// The declared `circle-stroke-opacity-transition`.
+    pub circle_stroke_opacity_transition: Option<TransitionSpec>,
     /// The colour of the circle's stroke; an absent value paints no stroke.
     pub circle_stroke_color: Option<Property<Color>>,
     /// The stroke width in screen pixels, drawn outside the circle radius.
@@ -400,6 +430,18 @@ pub struct LayerPaint {
     pub text_halo_blur: Option<Property<f64>>,
     /// The icon opacity.
     pub icon_opacity: Option<Property<f64>>,
+    /// The declared `text-color-transition`.
+    pub text_color_transition: Option<TransitionSpec>,
+    /// The declared `text-opacity-transition`.
+    pub text_opacity_transition: Option<TransitionSpec>,
+    /// The declared `text-halo-color-transition`.
+    pub text_halo_color_transition: Option<TransitionSpec>,
+    /// The declared `text-halo-width-transition`.
+    pub text_halo_width_transition: Option<TransitionSpec>,
+    /// The declared `text-halo-blur-transition`.
+    pub text_halo_blur_transition: Option<TransitionSpec>,
+    /// The declared `icon-opacity-transition`.
+    pub icon_opacity_transition: Option<TransitionSpec>,
     /// The line's displacement from its geometry, in screen pixels.
     pub line_translate: Option<Property<Vec<f64>>>,
     /// The frame of reference the line's displacement is measured against.
@@ -1298,6 +1340,14 @@ fn parse_paint(
                 paint.background_opacity =
                     parse_property(property_value, scope, unsupported, property_name)
             }
+            "background-color-transition" => {
+                paint.background_color_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "background-opacity-transition" => {
+                paint.background_opacity_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
             "fill-color" => {
                 paint.fill_color = parse_property(property_value, scope, unsupported, property_name)
             }
@@ -1337,6 +1387,14 @@ fn parse_paint(
                 paint.fill_opacity_transition =
                     parse_transition_block(property_value, scope, unsupported, property_name)
             }
+            "fill-outline-color-transition" => {
+                paint.fill_outline_color_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "fill-translate-transition" => {
+                paint.fill_translate_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
             "line-color" => {
                 paint.line_color = parse_property(property_value, scope, unsupported, property_name)
             }
@@ -1353,6 +1411,26 @@ fn parse_paint(
             }
             "line-opacity-transition" => {
                 paint.line_opacity_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "line-width-transition" => {
+                paint.line_width_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "line-blur-transition" => {
+                paint.line_blur_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "line-offset-transition" => {
+                paint.line_offset_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "line-gap-width-transition" => {
+                paint.line_gap_width_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "line-translate-transition" => {
+                paint.line_translate_transition =
                     parse_transition_block(property_value, scope, unsupported, property_name)
             }
             "line-blur" => {
@@ -1398,6 +1476,30 @@ fn parse_paint(
                 paint.circle_opacity_transition =
                     parse_transition_block(property_value, scope, unsupported, property_name)
             }
+            "circle-radius-transition" => {
+                paint.circle_radius_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "circle-blur-transition" => {
+                paint.circle_blur_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "circle-translate-transition" => {
+                paint.circle_translate_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "circle-stroke-color-transition" => {
+                paint.circle_stroke_color_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "circle-stroke-width-transition" => {
+                paint.circle_stroke_width_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "circle-stroke-opacity-transition" => {
+                paint.circle_stroke_opacity_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
             "circle-stroke-color" => {
                 paint.circle_stroke_color =
                     parse_property(property_value, scope, unsupported, property_name)
@@ -1436,6 +1538,30 @@ fn parse_paint(
             "text-halo-blur" => {
                 paint.text_halo_blur =
                     parse_property(property_value, scope, unsupported, property_name)
+            }
+            "text-color-transition" => {
+                paint.text_color_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "text-opacity-transition" => {
+                paint.text_opacity_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "text-halo-color-transition" => {
+                paint.text_halo_color_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "text-halo-width-transition" => {
+                paint.text_halo_width_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "text-halo-blur-transition" => {
+                paint.text_halo_blur_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
+            }
+            "icon-opacity-transition" => {
+                paint.icon_opacity_transition =
+                    parse_transition_block(property_value, scope, unsupported, property_name)
             }
             "icon-opacity" => {
                 paint.icon_opacity =

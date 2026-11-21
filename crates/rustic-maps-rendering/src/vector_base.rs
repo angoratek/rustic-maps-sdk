@@ -61,7 +61,7 @@
 use crate::camera::{MapCamera, ViewportPixels};
 use crate::labels::{
     LabelFont, LabelLayer, MapLabelCandidate, PlacedLabel, default_label_font,
-    label_candidates_for_compiled_layer_at_zoom,
+    label_candidates_for_compiled_layer_at_zoom_with_transition,
 };
 use crate::overlay::{MapOverlay, simplify_overlay_layers_for_style_zoom};
 use crate::source_binding::{BoundVectorSource, VectorSourceBinding, vector_binding_policy};
@@ -1213,15 +1213,26 @@ fn label_candidates_and_contributed_layers(
     tile_address: VectorTileAddress,
     style: &CompiledStyle,
     style_zoom_level: f64,
+    transition: Option<(&CompiledStyle, f64)>,
 ) -> (Vec<MapLabelCandidate>, Vec<bool>) {
     let mut candidates = Vec::new();
     let mut contributed_layers = vec![false; style.layers.len()];
     for (layer_index, layer) in style.layers.iter().enumerate() {
-        let layer_candidates = label_candidates_for_compiled_layer_at_zoom(
+        // A transitioning frame blends each symbol layer from its counterpart
+        // in the outgoing style, matched by layer id.
+        let layer_transition = transition.map(|(previous_style, elapsed_seconds)| {
+            (
+                previous_style.layer(&layer.id).unwrap_or(layer),
+                style.transition,
+                elapsed_seconds,
+            )
+        });
+        let layer_candidates = label_candidates_for_compiled_layer_at_zoom_with_transition(
             tile,
             tile_address,
             layer,
             style_zoom_level,
+            layer_transition,
         );
         if !layer_candidates.is_empty() {
             contributed_layers[layer_index] = true;
@@ -2383,7 +2394,15 @@ impl VectorBaseScheduler {
             failed_tile_count,
             pending_tile_count,
             style_id: self.style_id.clone(),
-            background: self.style.background_at(evaluated_style_zoom),
+            background: match effective_transition {
+                Some((previous_style, elapsed_seconds)) => {
+                    self.style.background_at_with_transition(
+                        evaluated_style_zoom,
+                        Some((previous_style, *elapsed_seconds)),
+                    )
+                }
+                None => self.style.background_at(evaluated_style_zoom),
+            },
             last_failure_detail,
             motion_graded,
             zoom_transition_running: transition_frame
@@ -2596,6 +2615,9 @@ impl VectorBaseScheduler {
                         tile_address,
                         &self.style,
                         styling.evaluated_style_zoom,
+                        styling.transition.map(|(previous_style, elapsed_seconds)| {
+                            (previous_style, *elapsed_seconds)
+                        }),
                     );
                 for (layer_index, contributed) in label_contributed_layers.into_iter().enumerate() {
                     if contributed {
@@ -2656,6 +2678,7 @@ impl VectorBaseScheduler {
                         tile_address,
                         &self.style,
                         styling.evaluated_style_zoom,
+                        None,
                     );
                 if let Some(styled_contents) = self.styled_tiles.get_mut(&styled_key) {
                     styled_contents.label_candidates = Some(label_candidates);
@@ -3236,6 +3259,66 @@ mod tests {
         assert!((end_rgba[2] - 1.0).abs() < 1e-6, "{end_rgba:?}");
         assert!((end_rgba[3] - 0.2).abs() < 1e-6, "{end_rgba:?}");
         assert!(!scheduler.style_transition_running());
+    }
+
+    /// A background-only style with an optional root transition block.
+    fn background_transition_style(
+        color: &str,
+        opacity: f64,
+        transition_milliseconds: Option<f64>,
+    ) -> CompiledStyle {
+        let transition = transition_milliseconds
+            .map(|duration| format!(r#", "transition": {{ "duration": {duration} }}"#))
+            .unwrap_or_default();
+        crate::vector_style::vector_tile_style_from_json(&format!(
+            r#"{{
+                "version": 8,
+                "sources": {{}}{transition},
+                "layers": [
+                    {{
+                        "id": "canvas",
+                        "type": "background",
+                        "paint": {{
+                            "background-color": "{color}",
+                            "background-opacity": {opacity}
+                        }}
+                    }}
+                ]
+            }}"#
+        ))
+        .expect("the background transition style parses")
+    }
+
+    #[tokio::test]
+    async fn a_background_transition_blends_from_the_previous_background() {
+        let provider = ScriptedVectorTileProvider::serving_tile(
+            OPENFREEMAP_TILE_KEY,
+            OPENFREEMAP_TILE_BYTES.to_vec(),
+        );
+        let mut scheduler = VectorBaseScheduler::new(
+            provider,
+            "background-a",
+            background_transition_style("#ff0000", 1.0, None),
+        );
+        let tile_keys = [OPENFREEMAP_TILE_KEY];
+        let settled = scheduler
+            .resolve_frame(&tile_keys, SACRAMENTO_CAMERA_ZOOM_LEVEL)
+            .await;
+        assert_eq!(settled.background, Some([1.0, 0.0, 0.0, 1.0]));
+        scheduler.set_compiled_style(
+            "background-b",
+            background_transition_style("#0000ff", 0.5, Some(400.0)),
+        );
+        // The first timed frame starts the clock; the next one is half way.
+        let _at_start = scheduler.cached_frame_at_time(&tile_keys, 14.0, 10.0);
+        let at_half = scheduler.cached_frame_at_time(&tile_keys, 14.0, 10.2);
+        let background = at_half
+            .background
+            .expect("the frame carries its canvas background");
+        assert!((background[0] - 0.5).abs() < 1e-6, "{background:?}");
+        assert!(background[1].abs() < 1e-6, "{background:?}");
+        assert!((background[2] - 0.5).abs() < 1e-6, "{background:?}");
+        assert!((background[3] - 0.75).abs() < 1e-6, "{background:?}");
     }
 
     #[tokio::test]

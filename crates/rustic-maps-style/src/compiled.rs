@@ -315,6 +315,33 @@ impl CompiledStyle {
         Some(background.resolved_rgba(&context))
     }
 
+    /// The background colour and opacity with a style transition applied, or
+    /// `None` when the style declares no background layer.
+    ///
+    /// `previous` carries the style being replaced and the elapsed seconds
+    /// since the change; its own background layer, when it has one, is the
+    /// value the blend starts from. `None` draws the settled background.
+    pub fn background_at_with_transition(
+        &self,
+        zoom: f64,
+        previous: Option<(&CompiledStyle, f64)>,
+    ) -> Option<[f32; 4]> {
+        let background = self.background.as_ref()?;
+        let context = EvaluationContext::at_zoom(zoom);
+        let (previous_background, elapsed_seconds) = match previous {
+            Some((previous_style, elapsed_seconds)) => {
+                (previous_style.background.as_ref(), elapsed_seconds)
+            }
+            None => (None, 0.0),
+        };
+        Some(background.resolved_transitioned_rgba(
+            &context,
+            previous_background,
+            self.transition,
+            elapsed_seconds,
+        ))
+    }
+
     /// The layer a document id names.
     pub fn layer(&self, layer_id: &str) -> Option<&CompiledLayer> {
         self.layers.iter().find(|layer| layer.id == layer_id)
@@ -363,6 +390,11 @@ impl CompiledStyle {
         let mut lifetime = self
             .transition
             .map_or(0.0, |transition| transition.lifetime_seconds());
+        if let Some(background) = &self.background {
+            for transition in background.transition_specs() {
+                lifetime = lifetime.max(transition.lifetime_seconds());
+            }
+        }
         for layer in &self.layers {
             for transition in layer.paint.transition_specs() {
                 lifetime = lifetime.max(transition.lifetime_seconds());
@@ -379,14 +411,65 @@ pub struct CompiledBackground {
     pub color: Property<Color>,
     /// The `background-opacity` property.
     pub opacity: Property<f64>,
+    /// The declared `background-color-transition`.
+    pub color_transition: Option<TransitionSpec>,
+    /// The declared `background-opacity-transition`.
+    pub opacity_transition: Option<TransitionSpec>,
 }
 
 impl CompiledBackground {
+    /// The declared per-property transitions this paint carries. The root
+    /// transition is not included; a caller combines the two per property.
+    pub fn transition_specs(&self) -> Vec<TransitionSpec> {
+        let mut transitions = Vec::new();
+        transitions.extend(self.color_transition);
+        transitions.extend(self.opacity_transition);
+        transitions
+    }
+
     /// The background as the renderer's RGBA components: the colour channels
     /// with the opacity folded into alpha.
     pub fn resolved_rgba(&self, context: &EvaluationContext<'_>) -> [f32; 4] {
         let color = resolve(&self.color, DEFAULT_BACKGROUND_COLOR, context);
         let opacity = resolve(&self.opacity, DEFAULT_BACKGROUND_OPACITY, context);
+        [
+            color.red as f32,
+            color.green as f32,
+            color.blue as f32,
+            (color.alpha * opacity) as f32,
+        ]
+    }
+
+    /// The background RGBA with a style transition applied: the colour and
+    /// opacity blend from `previous` toward this background over the declared
+    /// transition as `elapsed_seconds` advances. An absent previous background
+    /// or a property with no declared transition draws the new value.
+    pub fn resolved_transitioned_rgba(
+        &self,
+        context: &EvaluationContext<'_>,
+        previous: Option<&CompiledBackground>,
+        root_transition: Option<TransitionSpec>,
+        elapsed_seconds: f64,
+    ) -> [f32; 4] {
+        let Some(previous) = previous else {
+            return self.resolved_rgba(context);
+        };
+        let color_progress =
+            transition_progress(self.color_transition, root_transition, elapsed_seconds);
+        let opacity_progress =
+            transition_progress(self.opacity_transition, root_transition, elapsed_seconds);
+        let previous_color = resolve(&previous.color, DEFAULT_BACKGROUND_COLOR, context);
+        let previous_opacity = resolve(&previous.opacity, DEFAULT_BACKGROUND_OPACITY, context);
+        let color = Color::interpolate(
+            previous_color,
+            resolve(&self.color, DEFAULT_BACKGROUND_COLOR, context),
+            color_progress,
+        );
+        let opacity = blend(
+            previous_opacity,
+            resolve(&self.opacity, DEFAULT_BACKGROUND_OPACITY, context),
+            opacity_progress,
+        );
         [
             color.red as f32,
             color.green as f32,
@@ -584,10 +667,15 @@ impl CompiledLayer {
     /// The layer's paint resolved with a style transition applied.
     ///
     /// `previous` carries the same layer under the style being replaced and
-    /// the monotonic seconds elapsed since the change. The properties this
-    /// renderer paints are blended: fill, line and circle colour and opacity.
-    /// Everything else, a layer the previous style does not carry, and a
-    /// property with no declared transition take the new value immediately.
+    /// the monotonic seconds elapsed since the change. The painted colours,
+    /// opacities, sizes, strokes, displacements and halos blend over their
+    /// declared transitions: fill colour, opacity, outline and translate;
+    /// line colour, opacity, width, blur, offset, gap width and translate;
+    /// circle colour, opacity, radius, blur, translate and stroke; and symbol
+    /// text colour and opacity, halo colour, width and blur, and icon
+    /// opacity. A discrete value such as the dash pattern, a layer the
+    /// previous style does not carry, and a property with no declared
+    /// transition take the new value immediately.
     ///
     /// # Parameters
     /// - `context` — the feature and frame zoom both styles resolve against.
@@ -604,67 +692,186 @@ impl CompiledLayer {
         let Some((previous_layer, elapsed_seconds)) = previous else {
             return self.resolved_paint(context);
         };
+        // One progress fraction per declared property: its own transition
+        // block, else the document's root transition, else one.
+        let progress = |declared: Option<TransitionSpec>| {
+            transition_progress(declared, root_transition, elapsed_seconds)
+        };
         match (
             self.resolved_paint(context),
             previous_layer.resolved_paint(context),
         ) {
             (ResolvedPaint::Fill(new), ResolvedPaint::Fill(old)) => {
-                let (color_transition, opacity_transition) = match &self.paint {
-                    CompiledPaint::Fill(paint) => {
-                        (paint.color_transition, paint.opacity_transition)
-                    }
-                    _ => (None, None),
+                let (
+                    color_transition,
+                    opacity_transition,
+                    outline_transition,
+                    translate_transition,
+                ) = match &self.paint {
+                    CompiledPaint::Fill(paint) => (
+                        paint.color_transition,
+                        paint.opacity_transition,
+                        paint.outline_color_transition,
+                        paint.translate_transition,
+                    ),
+                    _ => (None, None, None, None),
                 };
-                let color_progress =
-                    transition_progress(color_transition, root_transition, elapsed_seconds);
-                let opacity_progress =
-                    transition_progress(opacity_transition, root_transition, elapsed_seconds);
                 ResolvedPaint::Fill(ResolvedFillPaint {
-                    color: Color::interpolate(old.color, new.color, color_progress),
-                    opacity: blend(old.opacity, new.opacity, opacity_progress),
+                    color: Color::interpolate(old.color, new.color, progress(color_transition)),
+                    opacity: blend(old.opacity, new.opacity, progress(opacity_transition)),
                     outline_color: match (old.outline_color, new.outline_color) {
-                        (Some(old_outline), Some(new_outline)) => {
-                            Some(Color::interpolate(old_outline, new_outline, color_progress))
-                        }
+                        (Some(old_outline), Some(new_outline)) => Some(Color::interpolate(
+                            old_outline,
+                            new_outline,
+                            progress(outline_transition),
+                        )),
                         (_, new_outline) => new_outline,
                     },
                     antialias: new.antialias,
-                    translate: new.translate,
+                    translate: blend_translate(
+                        old.translate,
+                        new.translate,
+                        progress(translate_transition),
+                    ),
                     translate_anchor: new.translate_anchor,
                 })
             }
             (ResolvedPaint::Line(new), ResolvedPaint::Line(old)) => {
-                let (color_transition, opacity_transition) = match &self.paint {
-                    CompiledPaint::Line(paint) => {
-                        (paint.color_transition, paint.opacity_transition)
-                    }
-                    _ => (None, None),
+                let (
+                    color_transition,
+                    opacity_transition,
+                    width_transition,
+                    blur_transition,
+                    offset_transition,
+                    gap_width_transition,
+                    translate_transition,
+                ) = match &self.paint {
+                    CompiledPaint::Line(paint) => (
+                        paint.color_transition,
+                        paint.opacity_transition,
+                        paint.width_transition,
+                        paint.blur_transition,
+                        paint.offset_transition,
+                        paint.gap_width_transition,
+                        paint.translate_transition,
+                    ),
+                    _ => (None, None, None, None, None, None, None),
                 };
-                let color_progress =
-                    transition_progress(color_transition, root_transition, elapsed_seconds);
-                let opacity_progress =
-                    transition_progress(opacity_transition, root_transition, elapsed_seconds);
                 ResolvedPaint::Line(ResolvedLinePaint {
-                    color: Color::interpolate(old.color, new.color, color_progress),
-                    opacity: blend(old.opacity, new.opacity, opacity_progress),
+                    color: Color::interpolate(old.color, new.color, progress(color_transition)),
+                    opacity: blend(old.opacity, new.opacity, progress(opacity_transition)),
+                    width: blend(old.width, new.width, progress(width_transition)),
+                    blur: blend(old.blur, new.blur, progress(blur_transition)),
+                    offset: blend(old.offset, new.offset, progress(offset_transition)),
+                    gap_width: blend(old.gap_width, new.gap_width, progress(gap_width_transition)),
+                    translate: blend_translate(
+                        old.translate,
+                        new.translate,
+                        progress(translate_transition),
+                    ),
                     ..new
                 })
             }
             (ResolvedPaint::Circle(new), ResolvedPaint::Circle(old)) => {
-                let (color_transition, opacity_transition) = match &self.paint {
-                    CompiledPaint::Circle(paint) => {
-                        (paint.color_transition, paint.opacity_transition)
-                    }
-                    _ => (None, None),
+                let (
+                    color_transition,
+                    opacity_transition,
+                    radius_transition,
+                    blur_transition,
+                    translate_transition,
+                    stroke_color_transition,
+                    stroke_width_transition,
+                    stroke_opacity_transition,
+                ) = match &self.paint {
+                    CompiledPaint::Circle(paint) => (
+                        paint.color_transition,
+                        paint.opacity_transition,
+                        paint.radius_transition,
+                        paint.blur_transition,
+                        paint.translate_transition,
+                        paint.stroke_color_transition,
+                        paint.stroke_width_transition,
+                        paint.stroke_opacity_transition,
+                    ),
+                    _ => (None, None, None, None, None, None, None, None),
                 };
-                let color_progress =
-                    transition_progress(color_transition, root_transition, elapsed_seconds);
-                let opacity_progress =
-                    transition_progress(opacity_transition, root_transition, elapsed_seconds);
+                let stroke_color = match (old.stroke_color, new.stroke_color) {
+                    (Some(old_stroke), Some(new_stroke)) => Some(Color::interpolate(
+                        old_stroke,
+                        new_stroke,
+                        progress(stroke_color_transition),
+                    )),
+                    (_, new_stroke) => new_stroke,
+                };
                 ResolvedPaint::Circle(ResolvedCirclePaint {
-                    color: Color::interpolate(old.color, new.color, color_progress),
-                    opacity: blend(old.opacity, new.opacity, opacity_progress),
-                    ..new
+                    color: Color::interpolate(old.color, new.color, progress(color_transition)),
+                    opacity: blend(old.opacity, new.opacity, progress(opacity_transition)),
+                    radius: blend(old.radius, new.radius, progress(radius_transition)),
+                    stroke_color,
+                    stroke_width: blend(
+                        old.stroke_width,
+                        new.stroke_width,
+                        progress(stroke_width_transition),
+                    ),
+                    stroke_opacity: blend(
+                        old.stroke_opacity,
+                        new.stroke_opacity,
+                        progress(stroke_opacity_transition),
+                    ),
+                    blur: blend(old.blur, new.blur, progress(blur_transition)),
+                    translate: blend_translate(
+                        old.translate,
+                        new.translate,
+                        progress(translate_transition),
+                    ),
+                })
+            }
+            (ResolvedPaint::Symbol(new), ResolvedPaint::Symbol(old)) => {
+                let (
+                    text_color_transition,
+                    text_opacity_transition,
+                    halo_color_transition,
+                    halo_width_transition,
+                    halo_blur_transition,
+                    icon_opacity_transition,
+                ) = match &self.paint {
+                    CompiledPaint::Symbol(paint) => (
+                        paint.text_color_transition,
+                        paint.text_opacity_transition,
+                        paint.halo_color_transition,
+                        paint.halo_width_transition,
+                        paint.halo_blur_transition,
+                        paint.icon_opacity_transition,
+                    ),
+                    _ => (None, None, None, None, None, None),
+                };
+                ResolvedPaint::Symbol(ResolvedSymbolPaint {
+                    text_color: Color::interpolate(
+                        old.text_color,
+                        new.text_color,
+                        progress(text_color_transition),
+                    ),
+                    text_opacity: blend(
+                        old.text_opacity,
+                        new.text_opacity,
+                        progress(text_opacity_transition),
+                    ),
+                    halo_color: Color::interpolate(
+                        old.halo_color,
+                        new.halo_color,
+                        progress(halo_color_transition),
+                    ),
+                    halo_width: blend(
+                        old.halo_width,
+                        new.halo_width,
+                        progress(halo_width_transition),
+                    ),
+                    halo_blur: blend(old.halo_blur, new.halo_blur, progress(halo_blur_transition)),
+                    icon_opacity: blend(
+                        old.icon_opacity,
+                        new.icon_opacity,
+                        progress(icon_opacity_transition),
+                    ),
                 })
             }
             (current, _) => current,
@@ -876,16 +1083,37 @@ impl CompiledPaint {
             Self::Fill(paint) => {
                 transitions.extend(paint.color_transition);
                 transitions.extend(paint.opacity_transition);
+                transitions.extend(paint.outline_color_transition);
+                transitions.extend(paint.translate_transition);
             }
             Self::Line(paint) => {
                 transitions.extend(paint.color_transition);
                 transitions.extend(paint.opacity_transition);
+                transitions.extend(paint.width_transition);
+                transitions.extend(paint.blur_transition);
+                transitions.extend(paint.offset_transition);
+                transitions.extend(paint.gap_width_transition);
+                transitions.extend(paint.translate_transition);
             }
             Self::Circle(paint) => {
                 transitions.extend(paint.color_transition);
                 transitions.extend(paint.opacity_transition);
+                transitions.extend(paint.radius_transition);
+                transitions.extend(paint.blur_transition);
+                transitions.extend(paint.translate_transition);
+                transitions.extend(paint.stroke_color_transition);
+                transitions.extend(paint.stroke_width_transition);
+                transitions.extend(paint.stroke_opacity_transition);
             }
-            Self::None | Self::Symbol(_) => {}
+            Self::Symbol(paint) => {
+                transitions.extend(paint.text_color_transition);
+                transitions.extend(paint.text_opacity_transition);
+                transitions.extend(paint.halo_color_transition);
+                transitions.extend(paint.halo_width_transition);
+                transitions.extend(paint.halo_blur_transition);
+                transitions.extend(paint.icon_opacity_transition);
+            }
+            Self::None => {}
         }
         transitions
     }
@@ -910,6 +1138,10 @@ pub struct CompiledFillPaint {
     pub color_transition: Option<TransitionSpec>,
     /// The declared `fill-opacity-transition`.
     pub opacity_transition: Option<TransitionSpec>,
+    /// The declared `fill-outline-color-transition`.
+    pub outline_color_transition: Option<TransitionSpec>,
+    /// The declared `fill-translate-transition`.
+    pub translate_transition: Option<TransitionSpec>,
 }
 
 /// Line paint properties.
@@ -925,6 +1157,16 @@ pub struct CompiledLinePaint {
     pub color_transition: Option<TransitionSpec>,
     /// The declared `line-opacity-transition`.
     pub opacity_transition: Option<TransitionSpec>,
+    /// The declared `line-width-transition`.
+    pub width_transition: Option<TransitionSpec>,
+    /// The declared `line-blur-transition`.
+    pub blur_transition: Option<TransitionSpec>,
+    /// The declared `line-offset-transition`.
+    pub offset_transition: Option<TransitionSpec>,
+    /// The declared `line-gap-width-transition`.
+    pub gap_width_transition: Option<TransitionSpec>,
+    /// The declared `line-translate-transition`.
+    pub translate_transition: Option<TransitionSpec>,
     /// The line blur in screen pixels.
     pub blur: Property<f64>,
     /// The perpendicular offset in screen pixels.
@@ -952,6 +1194,18 @@ pub struct CompiledCirclePaint {
     pub color_transition: Option<TransitionSpec>,
     /// The declared `circle-opacity-transition`.
     pub opacity_transition: Option<TransitionSpec>,
+    /// The declared `circle-radius-transition`.
+    pub radius_transition: Option<TransitionSpec>,
+    /// The declared `circle-blur-transition`.
+    pub blur_transition: Option<TransitionSpec>,
+    /// The declared `circle-translate-transition`.
+    pub translate_transition: Option<TransitionSpec>,
+    /// The declared `circle-stroke-color-transition`.
+    pub stroke_color_transition: Option<TransitionSpec>,
+    /// The declared `circle-stroke-width-transition`.
+    pub stroke_width_transition: Option<TransitionSpec>,
+    /// The declared `circle-stroke-opacity-transition`.
+    pub stroke_opacity_transition: Option<TransitionSpec>,
     /// The explicitly declared stroke colour; `None` paints no stroke.
     pub stroke_color: Option<Property<Color>>,
     /// The stroke width in screen pixels, drawn outside the radius.
@@ -979,6 +1233,18 @@ pub struct CompiledSymbolPaint {
     pub halo_blur: Property<f64>,
     /// The icon opacity; text opacity stays `text_opacity`.
     pub icon_opacity: Property<f64>,
+    /// The declared `text-color-transition`.
+    pub text_color_transition: Option<TransitionSpec>,
+    /// The declared `text-opacity-transition`.
+    pub text_opacity_transition: Option<TransitionSpec>,
+    /// The declared `text-halo-color-transition`.
+    pub halo_color_transition: Option<TransitionSpec>,
+    /// The declared `text-halo-width-transition`.
+    pub halo_width_transition: Option<TransitionSpec>,
+    /// The declared `text-halo-blur-transition`.
+    pub halo_blur_transition: Option<TransitionSpec>,
+    /// The declared `icon-opacity-transition`.
+    pub icon_opacity_transition: Option<TransitionSpec>,
 }
 
 /// A compiled route-reference badge.
@@ -1519,6 +1785,8 @@ fn compile_background(layer: &StyleLayer) -> CompiledBackground {
             .background_opacity
             .clone()
             .unwrap_or(Property::Constant(DEFAULT_BACKGROUND_OPACITY)),
+        color_transition: layer.paint.background_color_transition,
+        opacity_transition: layer.paint.background_opacity_transition,
     }
 }
 
@@ -1538,6 +1806,8 @@ fn compile_paint(kind: CompiledLayerKind, layer: &StyleLayer) -> CompiledPaint {
                 .unwrap_or(DEFAULT_FILL_TRANSLATE_ANCHOR),
             color_transition: paint.fill_color_transition,
             opacity_transition: paint.fill_opacity_transition,
+            outline_color_transition: paint.fill_outline_color_transition,
+            translate_transition: paint.fill_translate_transition,
         }),
         CompiledLayerKind::Line => CompiledPaint::Line(CompiledLinePaint {
             color: or_default(&paint.line_color, DEFAULT_LINE_COLOR),
@@ -1545,6 +1815,11 @@ fn compile_paint(kind: CompiledLayerKind, layer: &StyleLayer) -> CompiledPaint {
             opacity: or_default(&paint.line_opacity, DEFAULT_LINE_OPACITY),
             color_transition: paint.line_color_transition,
             opacity_transition: paint.line_opacity_transition,
+            width_transition: paint.line_width_transition,
+            blur_transition: paint.line_blur_transition,
+            offset_transition: paint.line_offset_transition,
+            gap_width_transition: paint.line_gap_width_transition,
+            translate_transition: paint.line_translate_transition,
             blur: or_default(&paint.line_blur, DEFAULT_LINE_BLUR),
             offset: or_default(&paint.line_offset, DEFAULT_LINE_OFFSET),
             gap_width: or_default(&paint.line_gap_width, DEFAULT_LINE_GAP_WIDTH),
@@ -1560,6 +1835,12 @@ fn compile_paint(kind: CompiledLayerKind, layer: &StyleLayer) -> CompiledPaint {
             opacity: or_default(&paint.circle_opacity, DEFAULT_CIRCLE_OPACITY),
             color_transition: paint.circle_color_transition,
             opacity_transition: paint.circle_opacity_transition,
+            radius_transition: paint.circle_radius_transition,
+            blur_transition: paint.circle_blur_transition,
+            translate_transition: paint.circle_translate_transition,
+            stroke_color_transition: paint.circle_stroke_color_transition,
+            stroke_width_transition: paint.circle_stroke_width_transition,
+            stroke_opacity_transition: paint.circle_stroke_opacity_transition,
             stroke_color: paint.circle_stroke_color.clone(),
             stroke_width: or_default(&paint.circle_stroke_width, DEFAULT_CIRCLE_STROKE_WIDTH),
             stroke_opacity: or_default(&paint.circle_stroke_opacity, DEFAULT_CIRCLE_STROKE_OPACITY),
@@ -1573,6 +1854,12 @@ fn compile_paint(kind: CompiledLayerKind, layer: &StyleLayer) -> CompiledPaint {
             halo_width: or_default(&paint.text_halo_width, DEFAULT_TEXT_HALO_WIDTH),
             halo_blur: or_default(&paint.text_halo_blur, DEFAULT_TEXT_HALO_BLUR),
             icon_opacity: or_default(&paint.icon_opacity, DEFAULT_ICON_OPACITY),
+            text_color_transition: paint.text_color_transition,
+            text_opacity_transition: paint.text_opacity_transition,
+            halo_color_transition: paint.text_halo_color_transition,
+            halo_width_transition: paint.text_halo_width_transition,
+            halo_blur_transition: paint.text_halo_blur_transition,
+            icon_opacity_transition: paint.icon_opacity_transition,
         }),
         CompiledLayerKind::Background | CompiledLayerKind::Other | CompiledLayerKind::Raster => {
             CompiledPaint::None
@@ -1678,6 +1965,14 @@ fn transition_progress(
 /// Linear interpolation between two scalars.
 fn blend(from: f64, to: f64, fraction: f64) -> f64 {
     from + (to - from) * fraction
+}
+
+/// Linear interpolation between two two-component displacements.
+fn blend_translate(from: [f64; 2], to: [f64; 2], fraction: f64) -> [f64; 2] {
+    [
+        blend(from[0], to[0], fraction),
+        blend(from[1], to[1], fraction),
+    ]
 }
 
 /// Resolves a property, substituting the documented default on failure.
@@ -2782,6 +3077,186 @@ mod tests {
             }
             other => panic!("expected fill paint, got {other:?}"),
         }
+    }
+
+    /// A one-layer line style with an optional root transition block.
+    fn line_transition_style(width: f64, translate: [f64; 2], transition: &str) -> CompiledStyle {
+        let document = MapStyleDocument::parse_json(&format!(
+            r#"{{
+                "version": 8,
+                "sources": {{ "base": {{ "type": "vector" }} }}{transition},
+                "layers": [
+                    {{
+                        "id": "roads",
+                        "type": "line",
+                        "source": "base",
+                        "source-layer": "roads",
+                        "paint": {{
+                            "line-width": {width},
+                            "line-translate": [{}, {}]
+                        }}
+                    }}
+                ]
+            }}"#,
+            translate[0], translate[1]
+        ))
+        .expect("the line transition style parses");
+        compile_style_document(&document)
+    }
+
+    /// A one-layer circle style with an optional root transition block.
+    fn circle_transition_style(radius: f64, stroke_width: f64, transition: &str) -> CompiledStyle {
+        let document = MapStyleDocument::parse_json(&format!(
+            r#"{{
+                "version": 8,
+                "sources": {{ "base": {{ "type": "vector" }} }}{transition},
+                "layers": [
+                    {{
+                        "id": "stops",
+                        "type": "circle",
+                        "source": "base",
+                        "source-layer": "stops",
+                        "paint": {{
+                            "circle-radius": {radius},
+                            "circle-stroke-width": {stroke_width}
+                        }}
+                    }}
+                ]
+            }}"#
+        ))
+        .expect("the circle transition style parses");
+        compile_style_document(&document)
+    }
+
+    /// A one-layer symbol style with an optional root transition block.
+    fn symbol_transition_style(
+        halo_width: f64,
+        icon_opacity: f64,
+        transition: &str,
+    ) -> CompiledStyle {
+        let document = MapStyleDocument::parse_json(&format!(
+            r#"{{
+                "version": 8,
+                "sources": {{ "base": {{ "type": "vector" }} }}{transition},
+                "layers": [
+                    {{
+                        "id": "labels",
+                        "type": "symbol",
+                        "source": "base",
+                        "source-layer": "place",
+                        "layout": {{ "text-field": "Place" }},
+                        "paint": {{
+                            "text-halo-width": {halo_width},
+                            "icon-opacity": {icon_opacity}
+                        }}
+                    }}
+                ]
+            }}"#
+        ))
+        .expect("the symbol transition style parses");
+        compile_style_document(&document)
+    }
+
+    /// A background-only style with an optional root transition block.
+    fn background_transition_style(color: &str, opacity: f64, transition: &str) -> CompiledStyle {
+        let document = MapStyleDocument::parse_json(&format!(
+            r#"{{
+                "version": 8,
+                "sources": {{}}{transition},
+                "layers": [
+                    {{
+                        "id": "canvas",
+                        "type": "background",
+                        "paint": {{
+                            "background-color": "{color}",
+                            "background-opacity": {opacity}
+                        }}
+                    }}
+                ]
+            }}"#
+        ))
+        .expect("the background transition style parses");
+        compile_style_document(&document)
+    }
+
+    #[test]
+    fn line_width_and_translate_transitions_blend_over_the_root() {
+        let previous = line_transition_style(2.0, [0.0, 0.0], "");
+        let current =
+            line_transition_style(6.0, [4.0, -8.0], r#", "transition": { "duration": 400 }"#);
+        let context = EvaluationContext::at_zoom(0.0);
+        let previous_layer = previous.layer("roads").expect("the previous line layer");
+        let current_layer = current.layer("roads").expect("the current line layer");
+        match current_layer.resolved_transitioned_paint(
+            &context,
+            current.transition,
+            Some((previous_layer, 0.2)),
+        ) {
+            ResolvedPaint::Line(paint) => {
+                assert!((paint.width - 4.0).abs() < 1e-12, "{:?}", paint.width);
+                assert!((paint.translate[0] - 2.0).abs() < 1e-12);
+                assert!((paint.translate[1] + 4.0).abs() < 1e-12);
+            }
+            other => panic!("expected line paint, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn circle_radius_and_stroke_width_transitions_blend_over_the_root() {
+        let previous = circle_transition_style(4.0, 1.0, "");
+        let current = circle_transition_style(10.0, 3.0, r#", "transition": { "duration": 400 }"#);
+        let context = EvaluationContext::at_zoom(0.0);
+        let previous_layer = previous.layer("stops").expect("the previous circle layer");
+        let current_layer = current.layer("stops").expect("the current circle layer");
+        match current_layer.resolved_transitioned_paint(
+            &context,
+            current.transition,
+            Some((previous_layer, 0.2)),
+        ) {
+            ResolvedPaint::Circle(paint) => {
+                assert!((paint.radius - 7.0).abs() < 1e-12, "{:?}", paint.radius);
+                assert!((paint.stroke_width - 2.0).abs() < 1e-12);
+            }
+            other => panic!("expected circle paint, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn symbol_halo_and_icon_opacity_transitions_blend_over_the_root() {
+        let previous = symbol_transition_style(0.0, 0.2, "");
+        let current = symbol_transition_style(4.0, 1.0, r#", "transition": { "duration": 400 }"#);
+        let context = EvaluationContext::at_zoom(0.0);
+        let previous_layer = previous.layer("labels").expect("the previous symbol layer");
+        let current_layer = current.layer("labels").expect("the current symbol layer");
+        match current_layer.resolved_transitioned_paint(
+            &context,
+            current.transition,
+            Some((previous_layer, 0.2)),
+        ) {
+            ResolvedPaint::Symbol(paint) => {
+                assert!(
+                    (paint.halo_width - 2.0).abs() < 1e-12,
+                    "{:?}",
+                    paint.halo_width
+                );
+                assert!((paint.icon_opacity - 0.6).abs() < 1e-12);
+            }
+            other => panic!("expected symbol paint, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn background_colour_and_opacity_transitions_blend_over_the_root() {
+        let previous = background_transition_style("#ff0000", 1.0, "");
+        let current =
+            background_transition_style("#0000ff", 0.5, r#", "transition": { "duration": 400 }"#);
+        let half = current
+            .background_at_with_transition(14.0, Some((&previous, 0.2)))
+            .expect("the background resolves");
+        assert!((half[0] - 0.5).abs() < 1e-6, "{half:?}");
+        assert!(half[1].abs() < 1e-6, "{half:?}");
+        assert!((half[2] - 0.5).abs() < 1e-6, "{half:?}");
+        assert!((half[3] - 0.75).abs() < 1e-6, "{half:?}");
     }
 
     #[test]

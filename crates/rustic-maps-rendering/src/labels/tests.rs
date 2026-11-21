@@ -158,6 +158,77 @@ fn the_demo_tile_reads_the_four_documented_place_names() {
 }
 
 #[test]
+fn a_style_transition_blends_the_candidate_paint() {
+    let tile = decode_vector_tile(OPENFREEMAP_TILE_BYTES).expect("the fixture decodes");
+    let previous = compiled_style(
+        r##"{
+            "version": 8,
+            "sources": { "base": { "type": "vector" } },
+            "layers": [{
+                "id": "places",
+                "type": "symbol",
+                "source": "base",
+                "source-layer": "place",
+                "layout": {
+                    "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]]
+                },
+                "paint": { "text-color": "#ff0000", "text-opacity": 1.0 }
+            }]
+        }"##,
+    );
+    let current = compiled_style(
+        r##"{
+            "version": 8,
+            "sources": { "base": { "type": "vector" } },
+            "transition": { "duration": 400 },
+            "layers": [{
+                "id": "places",
+                "type": "symbol",
+                "source": "base",
+                "source-layer": "place",
+                "layout": {
+                    "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]]
+                },
+                "paint": { "text-color": "#0000ff", "text-opacity": 0.5 }
+            }]
+        }"##,
+    );
+    let previous_layer = previous.layer("places").expect("the previous symbol layer");
+    let current_layer = current.layer("places").expect("the current symbol layer");
+    let candidates = label_candidates_for_compiled_layer_at_zoom_with_transition(
+        &tile,
+        TILE_ADDRESS,
+        current_layer,
+        14.0,
+        Some((previous_layer, current.transition, 0.2)),
+    );
+    let sacramento = candidates
+        .iter()
+        .find(|candidate| candidate.text == "Sacramento")
+        .expect("the demo tile names Sacramento");
+    assert!(
+        (sacramento.text_rgba[0] - 0.5).abs() < 1e-6,
+        "{:?}",
+        sacramento.text_rgba
+    );
+    assert!(
+        sacramento.text_rgba[1].abs() < 1e-6,
+        "{:?}",
+        sacramento.text_rgba
+    );
+    assert!(
+        (sacramento.text_rgba[2] - 0.5).abs() < 1e-6,
+        "{:?}",
+        sacramento.text_rgba
+    );
+    assert!(
+        (sacramento.text_rgba[3] - 0.75).abs() < 1e-6,
+        "{:?}",
+        sacramento.text_rgba
+    );
+}
+
+#[test]
 fn placing_the_frame_keeps_sacramento_and_its_font_is_available() {
     let font = fixture_font();
     assert!(font.glyph(u32::from('S')).is_some());
