@@ -4,6 +4,13 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-20 — the scripts directory states every tool's role)
+
+- `scripts/README.md` classifies each script as a gate, a pipeline step or a maintainer tool and names who runs it. `scripts/scripts-index.test.mjs` fails when a file is unclassified or a row names a script that is gone, so a new script has to state its role or be deleted instead of joining a pile.
+- Every `scripts/*.test.mjs` suite now runs in CI: the DCO, publish-mirror, release-plan and index suites in `format-and-lint`, and the API-reference generator's in `docs-publication` after it builds the wasm package. Two of them had never run in CI. The lint job's path filter covers `scripts/**` rather than naming individual scripts.
+- The review found no dead script: each of the fifty is reachable from a workflow, a hook, another script or a documented maintainer procedure. `convert-vector-style-artifacts.mjs --check` fails on the committed style documents and is recorded as an issue rather than wired into a gate, because regenerating them changes rendered filters.
+
+
 ### Changed (2026-11-20 — one tile GPU pipeline for the three hosts)
 
 - `rustic-maps-rendering::tile_pipeline` owns the textured-quad WGSL, the tile sampler constants, and the pipeline and sampler builders. The native headless renderer, the native surface renderer and the WebAssembly canvas each build the same pipeline and keep only their own upload and draw methods, so the three can no longer drift: before this, the 30-line shader, the vertex layout, the blend state and the sampler descriptor each existed three times.

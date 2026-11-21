@@ -19,8 +19,7 @@ on:
       - "platform/reference-flows.json"
       - "platform/reference-walkthrough.json"
       - "site/book-src/img/**"
-      - "scripts/check_ux_parity.mjs"
-      - "scripts/check-style-layer-coverage.mjs"
+      - "scripts/**"
       - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/ux/**"
       - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationState.kt"
       - "platform/ios/Sources/MapNativeCoreUI/**"
@@ -57,8 +56,7 @@ on:
       - "platform/reference-flows.json"
       - "platform/reference-walkthrough.json"
       - "site/book-src/img/**"
-      - "scripts/check_ux_parity.mjs"
-      - "scripts/check-style-layer-coverage.mjs"
+      - "scripts/**"
       - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/ux/**"
       - "platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationState.kt"
       - "platform/ios/Sources/MapNativeCoreUI/**"
@@ -102,6 +100,18 @@ jobs:
         # for the §2 design tokens and the unified SDK error details; this gate
         # fails when any platform mirror drifts. Node only, no toolchain needed.
         run: node scripts/check_ux_parity.mjs
+      - name: Script tests
+        # The scripts directory's own unit suites: the DCO checker, the
+        # publish mirror, the release plan and the index that keeps every
+        # script classified. Node only. The API reference generator's suite
+        # needs the generated declaration mirror, so it runs in
+        # `docs-publication` after that package is built.
+        run: >-
+          node --test
+          scripts/check-dco-signoff.test.mjs
+          scripts/mirror-docs-site-tree.test.mjs
+          scripts/release-plan.test.mjs
+          scripts/scripts-index.test.mjs
       - name: Style layer coverage
         # Every committed vector-tile fixture's name/ref-bearing source layers
         # must be painted by a committed style artifact or documented in the
