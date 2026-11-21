@@ -40,6 +40,7 @@ mod style_resource_address;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod surface;
 pub mod tile_key;
+pub mod tile_pipeline;
 pub mod tile_scheduler;
 pub mod tile_texture_pool;
 pub mod vector_base;

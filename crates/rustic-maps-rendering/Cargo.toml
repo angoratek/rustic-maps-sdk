@@ -46,9 +46,13 @@ url.workspace = true
 # builds on wasm too, so the browser install decodes the sheet the same way
 # the native install does.
 image.workspace = true
+# The shared tile-quad pipeline definition ([`tile_pipeline`]) compiles on
+# every target: the native headless and surface renderers build it against
+# their device, and the wasm canvas builds the same one through the bindings.
+# The native-only renderers themselves stay behind the target gate below.
+wgpu.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-wgpu.workspace = true
 pollster = "0.4"
 
 [dev-dependencies]

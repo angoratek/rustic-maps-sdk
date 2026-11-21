@@ -160,19 +160,6 @@ const VIEWPORT_SIZE_FIELD_WIDTH_PIXELS: &str = "widthPixels";
 /// The `heightPixels` field of the viewport extent readback.
 const VIEWPORT_SIZE_FIELD_HEIGHT_PIXELS: &str = "heightPixels";
 
-/// Filter mode of the tile sampler: linear, giving smooth minification and
-/// smoothly-upscaled recorded texels, mirroring the native headless renderer.
-const TILE_TEXTURE_FILTER: wgpu::FilterMode = wgpu::FilterMode::Linear;
-
-/// Interpolation between mip levels. The uploaded textures carry no mip
-/// chain, so the mode never applies; linear keeps the sampler consistent
-/// if mip chains are added.
-const TILE_TEXTURE_MIPMAP_FILTER: wgpu::MipmapFilterMode = wgpu::MipmapFilterMode::Linear;
-
-/// Clamp sampler addressing: quads sample exactly their declared sub-window
-/// of the texture, so edge behavior never triggers.
-const TILE_TEXTURE_ADDRESS_MODE: wgpu::AddressMode = wgpu::AddressMode::ClampToEdge;
-
 /// GPU format of the glyph atlas: one signed-distance byte per pixel, which
 /// the label shader thresholds into text coverage. Mirror of the native
 /// `rustic-maps-rendering` glyph renderer's format.

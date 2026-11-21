@@ -2,40 +2,7 @@
 //! and the vertex encoders that write their upload buffers.
 
 use super::*;
-
-/// WGSL pipeline of the textured tile quads, copied verbatim from the native
-/// `rustic-maps-rendering` headless renderer: vertex positions arrive in clip space
-/// and the fragment stage samples the tile texture.
-const TILE_QUAD_SHADER_SOURCE: &str = "
-struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>,
-    @location(0) texture_coordinates: vec2<f32>,
-    @location(1) opacity: f32,
-};
-
-@group(0)
-@binding(0)
-var tile_texture: texture_2d<f32>;
-
-@group(0)
-@binding(1)
-var tile_sampler: sampler;
-
-@vertex
-fn vertex_main(@location(0) clip_position: vec4<f32>, @location(1) texture_coordinates: vec2<f32>, @location(2) opacity: f32) -> VertexOutput {
-    var output: VertexOutput;
-    output.clip_position = clip_position;
-    output.texture_coordinates = texture_coordinates;
-    output.opacity = opacity;
-    return output;
-}
-
-@fragment
-fn fragment_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
-    let sampled = textureSample(tile_texture, tile_sampler, vertex.texture_coordinates);
-    return vec4<f32>(sampled.rgb, sampled.a * vertex.opacity);
-}
-";
+use rustic_maps_rendering::tile_pipeline::{create_tile_render_pipeline, create_tile_sampler};
 
 /// WGSL pipeline of the solid-color overlay triangles, copied verbatim from
 /// the native `rustic-maps-rendering` headless renderer's overlay layer: vertex
@@ -410,110 +377,16 @@ pub(super) struct SpriteAtlasTextureCacheEntry {
     pub(super) bind_group: wgpu::BindGroup,
 }
 
-/// Builds the textured-tile render pipeline and sampler on the device,
-/// mirroring the native headless pipeline byte-for-byte.
+/// Builds the shared tile-quad pipeline and sampler.
 pub(super) fn build_tile_pipeline(
     device: &wgpu::Device,
     surface_format: TextureFormat,
 ) -> Result<(wgpu::RenderPipeline, wgpu::Sampler), String> {
-    let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("rustic-maps-web-bindings-tile-quad-shader"),
-        source: wgpu::ShaderSource::Wgsl(TILE_QUAD_SHADER_SOURCE.into()),
-    });
-
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("rustic-maps-web-bindings-tile-bind-group-layout"),
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    multisampled: false,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            },
-        ],
-    });
-
-    let vertex_buffer_layout = wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<ClipSpaceTileVertex>() as wgpu::BufferAddress,
-        step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &[
-            wgpu::VertexAttribute {
-                format: wgpu::VertexFormat::Float32x4,
-                offset: 0,
-                shader_location: 0,
-            },
-            wgpu::VertexAttribute {
-                format: wgpu::VertexFormat::Float32x2,
-                offset: std::mem::offset_of!(ClipSpaceTileVertex, texture_coordinates)
-                    as wgpu::BufferAddress,
-                shader_location: 1,
-            },
-            wgpu::VertexAttribute {
-                format: wgpu::VertexFormat::Float32,
-                offset: std::mem::offset_of!(ClipSpaceTileVertex, opacity) as wgpu::BufferAddress,
-                shader_location: 2,
-            },
-        ],
-    };
-
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("rustic-maps-web-bindings-tile-pipeline-layout"),
-        bind_group_layouts: &[Some(&bind_group_layout)],
-        immediate_size: 0,
-    });
-
-    let tile_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("rustic-maps-web-bindings-tile-pipeline"),
-        layout: Some(&pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &shader_module,
-            entry_point: Some("vertex_main"),
-            compilation_options: Default::default(),
-            buffers: &[Some(vertex_buffer_layout)],
-        },
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            cull_mode: None,
-            ..Default::default()
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState::default(),
-        fragment: Some(wgpu::FragmentState {
-            module: &shader_module,
-            entry_point: Some("fragment_main"),
-            compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: surface_format,
-                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        multiview_mask: None,
-        cache: None,
-    });
-
-    let tile_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-        label: Some("rustic-maps-web-bindings-tile-sampler"),
-        address_mode_u: TILE_TEXTURE_ADDRESS_MODE,
-        address_mode_v: TILE_TEXTURE_ADDRESS_MODE,
-        address_mode_w: TILE_TEXTURE_ADDRESS_MODE,
-        mag_filter: TILE_TEXTURE_FILTER,
-        min_filter: TILE_TEXTURE_FILTER,
-        mipmap_filter: TILE_TEXTURE_MIPMAP_FILTER,
-        ..Default::default()
-    });
-
-    Ok((tile_pipeline, tile_sampler))
+    let label_prefix = "rustic-maps-web-bindings";
+    Ok((
+        create_tile_render_pipeline(device, surface_format, label_prefix),
+        create_tile_sampler(device, label_prefix),
+    ))
 }
 
 /// Builds the solid-color overlay render pipeline on the device, mirroring

@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-20 — one tile GPU pipeline for the three hosts)
+
+- `rustic-maps-rendering::tile_pipeline` owns the textured-quad WGSL, the tile sampler constants, and the pipeline and sampler builders. The native headless renderer, the native surface renderer and the WebAssembly canvas each build the same pipeline and keep only their own upload and draw methods, so the three can no longer drift: before this, the 30-line shader, the vertex layout, the blend state and the sampler descriptor each existed three times.
+- The hosts name their pipeline objects through one label prefix, which changes diagnostics only. `wgpu` becomes a dependency on every target so the shared definition compiles for the browser; the native-only renderers stay behind their target gate.
+
 ### Changed (2026-11-20 — the style zoom bounds and the last `MAX_*` constants take full names)
 
 - `StyleLayer`'s `min_zoom` and `max_zoom` are `minimum_zoom` and `maximum_zoom`, the same names the compiled layer they feed already uses. The MapLibre `minzoom` and `maxzoom` keys, the defaults and the visibility rule are unchanged, and `docs/StyleSupport.md` shows the renamed fields.
