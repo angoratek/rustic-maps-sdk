@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Generates the React Native binding package's sources from the frozen UDL
 # with `ubrn`: the JSI TypeScript + C++ bindings, then the TurboModule glue
-# (`src/NativeRusticMapsSdk.ts`, `src/index.ts`, `cpp/<package>.{h,cpp}`).
+# (`src/NativeRusticMapsSdk.ts`, `src/index.ts`, `cpp/<package>.{h,cpp}`), plus
+# the curated bridge's ordinal layer, which round-trips every UDL enum against
+# the ubrn declaration.
 #
 # The generated trees are gitignored build artifacts, so every consumer that
 # needs them (the app build, the jest/TypeScript gate) generates them here
@@ -33,6 +35,7 @@ readonly UNIFFI_NAMESPACE_NAME="rustic_maps"
 readonly GENERATED_TS_DIR="src/generated"
 readonly GENERATED_CPP_DIR="cpp/generated"
 readonly UBRN_COMMAND="${RN_PROJECT_ROOT}/node_modules/.bin/ubrn"
+readonly CONTRACT_ORDINALS_GENERATOR="${RN_PROJECT_ROOT}/scripts/generate-contract-ordinals.mjs"
 
 readonly REAPPPLIED_CMAKE_LIBANDROID_MARKER="find_library(ANDROID_LIB android)"
 
@@ -329,6 +332,12 @@ generate_bindings_into() {
             --ts-dir "${project_root}/${GENERATED_TS_DIR}" \
             --cpp-dir "${project_root}/${GENERATED_CPP_DIR}"
     )
+    # The curated bridge's ordinal layer comes from the UDL, and the same run
+    # round-trips every UDL enum against the ubrn declaration just generated,
+    # so the two surfaces cannot disagree about an enum's order.
+    node "$CONTRACT_ORDINALS_GENERATOR" \
+        --udl "$FROZEN_UDL_PATH" \
+        --project-root "$project_root"
 }
 
 generate_turbo_module_into() {

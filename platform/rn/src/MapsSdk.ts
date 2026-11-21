@@ -50,6 +50,18 @@ import type {
   TransportationMode,
   VectorTileSourceLayerCount,
 } from './generated/rustic_maps';
+import { regionDownloadPhasesByOrdinal } from './generated/rustic_maps-ordinals';
+import type {
+  PositionSourceFailureReason,
+  RegionDownloadPhase,
+} from './generated/rustic_maps-ordinals';
+
+// The curated lower-camel enums come from the UDL-derived ordinal layer, so
+// their names and order cannot drift from the generated bindings.
+export type {
+  PositionSourceFailureReason,
+  RegionDownloadPhase,
+} from './generated/rustic_maps-ordinals';
 
 // The record types the proxy answers are re-exported beside it, so a
 // consumer imports one module for the SDK handle and its answer shapes.
@@ -98,23 +110,6 @@ export interface DevicePositionFix {
   /** The fix's instant in seconds since the Unix epoch. */
   timestampSeconds: number | null;
 }
-
-/**
- * Why a device positioning source could not produce fixes (the contract's
- * `PositionSourceError`, under its lower-camel JavaScript name): the user
- * denied the permission, location services are disabled, no provider can
- * answer, or the source did not answer inside its timeout.
- *
- * The name is deliberately distinct from the generated contract's
- * `PositionSourceError`: the package's curated surface is a lower-camel
- * string union, while the generated record is the contract's own shape. Two
- * public types with one name would make an import ambiguous.
- */
-export type PositionSourceFailureReason =
-  | 'permissionDenied'
-  | 'serviceDisabled'
-  | 'unavailable'
-  | 'timeout';
 
 /**
  * A raster image format the base-map contract serves: the generated
@@ -317,13 +312,6 @@ export type RegionImageFormat = RasterImageFormat;
  */
 export type RegionTileResolution = RasterTileResolution;
 
-/** The phase of one region download (the contract's lower-camel name). */
-export type RegionDownloadPhase =
-  | 'downloading'
-  | 'completed'
-  | 'cancelled'
-  | 'failed';
-
 /**
  * One offline region selection: the identity the region is stored under, the
  * area it covers, the zoom range and tile form its stored tiles carry, and the
@@ -468,20 +456,11 @@ interface RegionProgressEventPayload {
 function regionDownloadPhaseFromOrdinal(
   phaseOrdinal: number,
 ): RegionDownloadPhase {
-  switch (phaseOrdinal) {
-    case 0:
-      return 'downloading';
-    case 1:
-      return 'completed';
-    case 2:
-      return 'cancelled';
-    case 3:
-      return 'failed';
-    default:
-      throw new Error(
-        `unknown region download phase ordinal ${phaseOrdinal}`,
-      );
+  const phase = regionDownloadPhasesByOrdinal[phaseOrdinal];
+  if (phase === undefined) {
+    throw new Error(`unknown region download phase ordinal ${phaseOrdinal}`);
   }
+  return phase;
 }
 
 /** Decodes one native progress event into the typed report. */
