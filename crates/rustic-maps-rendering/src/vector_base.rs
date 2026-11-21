@@ -11,7 +11,7 @@
 //!   and decoded once and never again while it stays cached; a style change
 //!   restyles the decoded tile instead of refetching it.
 //! - **Styled geometry**, keyed by the tile address, the style revision and the
-//!   style's zoom bucket: the style's zoom span (`min_zoom`/`max_zoom`) and
+//!   style's zoom bucket: the style's zoom span (`minimum_zoom`/`maximum_zoom`) and
 //!   width stops are evaluated at the camera's zoom level, so a camera pan
 //!   across a width stop repaints the tile from the style it already carries —
 //!   no refetch, no decode. The zoom level quantizes to

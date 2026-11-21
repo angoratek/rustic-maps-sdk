@@ -24,7 +24,7 @@ pub const WIRE_TYPE_LENGTH_DELIMITED: u64 = 2;
 pub const WIRE_TYPE_FIXED32: u64 = 5;
 
 /// The most bytes a 64-bit varint occupies (7 bits per byte).
-pub(crate) const MAX_VARINT_LENGTH_BYTES: u32 = 10;
+pub(crate) const MAXIMUM_VARINT_LENGTH_BYTES: u32 = 10;
 
 /// Number of payload bits each varint byte carries.
 const VARINT_BITS_PER_BYTE: u32 = 7;
@@ -67,10 +67,10 @@ impl<'bytes> WireReader<'bytes> {
     }
 
     /// Reads a base-128 varint, rejecting byte counts past
-    /// [`MAX_VARINT_LENGTH_BYTES`] and payloads that overflow 64 bits.
+    /// [`MAXIMUM_VARINT_LENGTH_BYTES`] and payloads that overflow 64 bits.
     pub fn read_varint(&mut self, context: &'static str) -> Result<u64, VectorTileError> {
         let mut value: u64 = 0;
-        for byte_index in 0..MAX_VARINT_LENGTH_BYTES {
+        for byte_index in 0..MAXIMUM_VARINT_LENGTH_BYTES {
             let byte = self.next_byte(context)?;
             let payload = u64::from(byte & 0b0111_1111);
             let shift = byte_index * VARINT_BITS_PER_BYTE;
@@ -84,7 +84,7 @@ impl<'bytes> WireReader<'bytes> {
             }
         }
         Err(VectorTileError::VarintByteCountExceeded {
-            maximum_byte_count: MAX_VARINT_LENGTH_BYTES,
+            maximum_byte_count: MAXIMUM_VARINT_LENGTH_BYTES,
             context,
         })
     }

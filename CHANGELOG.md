@@ -4,6 +4,12 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-20 — the style zoom bounds and the last `MAX_*` constants take full names)
+
+- `StyleLayer`'s `min_zoom` and `max_zoom` are `minimum_zoom` and `maximum_zoom`, the same names the compiled layer they feed already uses. The MapLibre `minzoom` and `maxzoom` keys, the defaults and the visibility rule are unchanged, and `docs/StyleSupport.md` shows the renamed fields.
+- The five remaining `MAX_*` constants are `MAXIMUM_*`: the two routing speed bounds, the storable speed bound, the trace-noise clamp and the varint-length bound.
+- `DeviationInfo` keeps its name until the contract wave that renames it across the bindings.
+
 ### Fixed (2026-11-20 — a docs publish keeps the published downloads)
 
 - `scripts/mirror-docs-site-tree.mjs` mirrors the staged site onto the pages checkout, prints every path it deletes, and keeps the checkout's `downloads/` unless the staged tree carries a complete replacement set: every version directory has a `SHA256SUMS.txt` and every file it lists is present. Publishing from a source checkout that never built the release artifacts no longer deletes them.

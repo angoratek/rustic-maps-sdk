@@ -335,8 +335,8 @@ fn the_layer_zoom_spans_match_the_document() {
     let label = document
         .layer("countries-label")
         .expect("the country label layer");
-    assert_eq!(label.min_zoom, 2.0);
-    assert_eq!(label.max_zoom, 24.0);
+    assert_eq!(label.minimum_zoom, 2.0);
+    assert_eq!(label.maximum_zoom, 24.0);
     assert!(!label.is_visible_at_zoom(1.9));
     assert!(label.is_visible_at_zoom(2.0));
     assert!(label.is_visible_at_zoom(23.9));

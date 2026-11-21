@@ -68,7 +68,7 @@
 //!   which keeps the committed files to tens of kilobytes while giving
 //!   several fixes per step to the step-advance and instruction assertions.
 //! - All fixes carry the same metadata-identical accuracy report; the noise
-//!   model (clamped radially to [`MAX_FIX_NOISE_METERS`]) is deliberately
+//!   model (clamped radially to [`MAXIMUM_FIX_NOISE_METERS`]) is deliberately
 //!   inside that envelope and far inside the deviation threshold, so the
 //!   scenarios deviate (or not) by design rather than by luck.
 //!
@@ -162,7 +162,7 @@ const FIX_NOISE_SIGMA_METERS: f64 = 2.0;
 /// Radial clamp, in meters, of the generated fix noise (three standard
 /// deviations of [`FIX_NOISE_SIGMA_METERS`]): every fix stays within this
 /// radius of its true walk position in every direction.
-pub(crate) const MAX_FIX_NOISE_METERS: f64 = 3.0 * FIX_NOISE_SIGMA_METERS;
+pub(crate) const MAXIMUM_FIX_NOISE_METERS: f64 = 3.0 * FIX_NOISE_SIGMA_METERS;
 
 /// Horizontal accuracy, in meters, recorded for every synthetic fix: wider
 /// than the clamped noise bound (so the fix can never leave its own accuracy
@@ -1028,16 +1028,16 @@ impl SplitMix64 {
 }
 
 /// Clamps an (along, cross) Gaussian noise pair radially: a fix may never sit
-/// farther than [`MAX_FIX_NOISE_METERS`] from its true walk position, in any
+/// farther than [`MAXIMUM_FIX_NOISE_METERS`] from its true walk position, in any
 /// direction (per-axis clamping would allow corners of the noise square
 /// outside the envelope).
 fn clamp_radial_noise(along_noise_meters: f64, cross_noise_meters: f64) -> (f64, f64) {
     let radial_noise_meters =
         (along_noise_meters * along_noise_meters + cross_noise_meters * cross_noise_meters).sqrt();
-    if radial_noise_meters <= MAX_FIX_NOISE_METERS {
+    if radial_noise_meters <= MAXIMUM_FIX_NOISE_METERS {
         return (along_noise_meters, cross_noise_meters);
     }
-    let clamp_scale = MAX_FIX_NOISE_METERS / radial_noise_meters;
+    let clamp_scale = MAXIMUM_FIX_NOISE_METERS / radial_noise_meters;
     (
         along_noise_meters * clamp_scale,
         cross_noise_meters * clamp_scale,
@@ -1651,7 +1651,7 @@ mod tests {
         // constants, so the test compiles the checks as constant assertions.
         const _: () = {
             assert!(
-                MAX_FIX_NOISE_METERS < TRACE_FIX_ACCURACY_METERS,
+                MAXIMUM_FIX_NOISE_METERS < TRACE_FIX_ACCURACY_METERS,
                 "the noise clamp must sit inside the recorded accuracy envelope, \
                  so a snapped fix stays within its own accuracy"
             );

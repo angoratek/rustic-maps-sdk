@@ -11,7 +11,7 @@ use crate::archive::{
 };
 
 /// Highest speed the packed `encoded_value` column can store exactly.
-const MAX_STORABLE_SPEED_KILOMETERS_PER_HOUR: u16 =
+const MAXIMUM_STORABLE_SPEED_KILOMETERS_PER_HOUR: u16 =
     SPEED_CELL_LIMIT * SPEED_QUANTUM_KILOMETERS_PER_HOUR;
 
 /// Default free-flow speed per drivable class, km/h. All values are
@@ -107,7 +107,7 @@ pub(crate) fn posted_speed_override_kilometers_per_hour(
     maxspeed_value: Option<&str>,
 ) -> Option<u16> {
     let parsed = maxspeed_value?.parse::<u16>().ok()?;
-    if !(POSTED_SPEED_MINIMUM_KILOMETERS_PER_HOUR..=MAX_STORABLE_SPEED_KILOMETERS_PER_HOUR)
+    if !(POSTED_SPEED_MINIMUM_KILOMETERS_PER_HOUR..=MAXIMUM_STORABLE_SPEED_KILOMETERS_PER_HOUR)
         .contains(&parsed)
     {
         return None;

@@ -401,8 +401,8 @@ StyleLayer {
     kind: LayerKind,
     source: Option<String>,
     source_layer: Option<String>,
-    min_zoom: f64,                     // 0
-    max_zoom: f64,                     // 24
+    minimum_zoom: f64,                 // 0
+    maximum_zoom: f64,                 // 24
     visibility: Visibility,            // visible
     filter: Option<FilterExpression>,
     layout: LayerLayout,
@@ -626,7 +626,7 @@ version-8 document: one vector source `base`; `source_layer` becomes `source: "b
 plus `source-layer`; `geometry_kind` becomes the layer `type`; `rgba` becomes the
 corresponding paint color with the same channels; `filter` becomes an equivalent
 `all`/`==` expression; `width_zoom_stops` and `text_size_zoom_stops` become
-`["interpolate", ["linear"], ["zoom"], ...]`; `min_zoom`/`max_zoom` become
+`["interpolate", ["linear"], ["zoom"], ...]`; `minimum_zoom`/`maximum_zoom` become
 `minzoom`/`maxzoom`; symbol fields map to `text-field` fallbacks and the other symbol
 properties; `class_minimum_zooms` and `rank_zoom_stops` become an `all` filter with
 `case`/`step` on `["zoom"]` and the feature `class`/`rank`. The converter and its

@@ -461,9 +461,9 @@ pub struct StyleLayer {
     /// The source layer the layer reads.
     pub source_layer: Option<String>,
     /// The lowest zoom (inclusive) the layer draws at.
-    pub min_zoom: f64,
+    pub minimum_zoom: f64,
     /// The zoom (exclusive) the layer stops drawing at.
-    pub max_zoom: f64,
+    pub maximum_zoom: f64,
     /// The layer's filter, when it declares one.
     pub filter: Option<Expression>,
     /// The layer's layout properties.
@@ -479,7 +479,7 @@ pub struct StyleLayer {
 impl StyleLayer {
     /// Whether the layer draws at `zoom`.
     pub fn is_visible_at_zoom(&self, zoom: f64) -> bool {
-        zoom >= self.min_zoom && zoom < self.max_zoom
+        zoom >= self.minimum_zoom && zoom < self.maximum_zoom
     }
 }
 
@@ -1127,11 +1127,11 @@ fn parse_layer(
             .get("source-layer")
             .and_then(JsonValue::as_str)
             .map(str::to_string),
-        min_zoom: object
+        minimum_zoom: object
             .get("minzoom")
             .and_then(JsonValue::as_f64)
             .unwrap_or(DEFAULT_MINIMUM_ZOOM),
-        max_zoom: object
+        maximum_zoom: object
             .get("maxzoom")
             .and_then(JsonValue::as_f64)
             .unwrap_or(DEFAULT_MAXIMUM_ZOOM),
