@@ -217,3 +217,40 @@ tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
         file("src/refapp-core/generated/host").absolutePath,
     )
 }
+
+// The connected device suite starts from a known runtime-permission state.
+// A granted location permission outlives an instrumentation case, and
+// revoking it inside the target process kills the process that hosts the
+// runner, so the reset runs on the host before the instrumentation starts.
+// A fresh install is already ungranted and reinstalling an existing one
+// keeps the revoked state, so a revoke against an application that is not
+// installed yet is allowed to fail: the connected task installs it.
+val resetTargetFineLocationPermission =
+    tasks.register<Exec>("resetTargetFineLocationPermission") {
+        commandLine(
+            "adb",
+            "shell",
+            "pm",
+            "revoke",
+            "com.rusticmaps.sdk.referenceapplication",
+            "android.permission.ACCESS_FINE_LOCATION",
+        )
+        isIgnoreExitValue = true
+    }
+val resetTargetCoarseLocationPermission =
+    tasks.register<Exec>("resetTargetCoarseLocationPermission") {
+        commandLine(
+            "adb",
+            "shell",
+            "pm",
+            "revoke",
+            "com.rusticmaps.sdk.referenceapplication",
+            "android.permission.ACCESS_COARSE_LOCATION",
+        )
+        isIgnoreExitValue = true
+    }
+tasks.matching { task ->
+    task.name == "connectedDebugAndroidTest" || task.name == "connectedAndroidTest"
+}.configureEach {
+    dependsOn(resetTargetFineLocationPermission, resetTargetCoarseLocationPermission)
+}
