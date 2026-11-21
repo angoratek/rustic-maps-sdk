@@ -38,13 +38,17 @@ import type {
   ProviderContract,
   ProviderFailureDiagnostic,
   ProviderRegistration,
+  RasterImageFormat,
+  RasterTileResolution,
   Route,
   RouteCapabilities,
   RouteOptions,
+  SourceHeader,
   TileCacheTerms,
   TrafficFlowData,
   TrafficIncident,
   TransportationMode,
+  VectorTileSourceLayerCount,
 } from './generated/rustic_maps';
 
 // The record types the proxy answers are re-exported beside it, so a
@@ -113,16 +117,17 @@ export type PositionSourceFailureReason =
   | 'timeout';
 
 /**
- * A raster image format the base-map contract serves, by the generated
- * enum's zero-based JavaScript ordinal: `0` is PNG, `1` is JPEG.
+ * A raster image format the base-map contract serves: the generated
+ * `RasterImageFormat` enum, whose zero-based values are PNG and JPEG.
  */
-export type UrlTemplateRasterImageFormat = 0 | 1;
+export type UrlTemplateRasterImageFormat = RasterImageFormat;
 
 /**
- * A pixel resolution the base-map contract serves, by the generated enum's
- * ordinal: `0` is standard, `1` is retina (the `@2x` form).
+ * A pixel resolution the base-map contract serves: the generated
+ * `RasterTileResolution` enum, whose zero-based values are standard and
+ * retina.
  */
-export type UrlTemplateTileResolution = 0 | 1;
+export type UrlTemplateTileResolution = RasterTileResolution;
 
 /**
  * One provider-neutral base-map tile source (the contract's
@@ -163,15 +168,10 @@ export interface UrlTemplateRasterTileSourceDefinition {
 }
 
 /**
- * One header every vector tile request carries (a curated bridge copy of the
- * contract's `SourceHeader`): the header's name and its value.
+ * One header every vector tile request carries: the contract's generated
+ * `SourceHeader` record, re-exported under the curated bridge name.
  */
-export interface SourceHeaderDefinition {
-  /** The header name. */
-  name: string;
-  /** The header value. */
-  value: string;
-}
+export type SourceHeaderDefinition = SourceHeader;
 
 /**
  * One provider-neutral vector base-map source (the contract's
@@ -228,18 +228,9 @@ export interface UrlTemplateVectorTileSource {
   styleHints?: string[] | null;
 }
 
-/**
- * One vector source's layer accounting for the last resolved frame (the
- * contract's `VectorTileSourceLayerCount`).
- */
-export interface VectorTileSourceLayerCount {
-  /** The style source id the counts belong to. */
-  sourceId: string;
-  /** The source's layers whose source layer the painted tileset carries. */
-  matchedLayerCount: number;
-  /** The source's layers that painted in the frame. */
-  drawnLayerCount: number;
-}
+// The vector base's layer accounting is the generated contract record; the
+// proxy re-exports it so a status consumer imports every shape from here.
+export type { VectorTileSourceLayerCount } from './generated/rustic_maps';
 
 /**
  * The vector base source's status readback (the contract's
@@ -314,16 +305,17 @@ function timeToLiveAboveTermsCeilingMessage(ceilingSeconds: bigint): string {
 }
 
 /**
- * The encoded image format a stored region's tiles carry, by the generated
- * enum's zero-based JavaScript ordinal: `0` is PNG, `1` is JPEG.
+ * The encoded image format a stored region's tiles carry: the generated
+ * `RasterImageFormat` enum, whose zero-based values are PNG and JPEG.
  */
-export type RegionImageFormat = 0 | 1;
+export type RegionImageFormat = RasterImageFormat;
 
 /**
- * The pixel resolution a stored region's tiles carry, by the generated enum's
- * ordinal: `0` is standard, `1` is retina (the `@2x` form).
+ * The pixel resolution a stored region's tiles carry: the generated
+ * `RasterTileResolution` enum, whose zero-based values are standard and
+ * retina.
  */
-export type RegionTileResolution = 0 | 1;
+export type RegionTileResolution = RasterTileResolution;
 
 /** The phase of one region download (the contract's lower-camel name). */
 export type RegionDownloadPhase =
