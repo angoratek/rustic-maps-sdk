@@ -118,9 +118,10 @@ class ReferenceApplicationAndroidTest {
             }
         } finally {
             // A runtime permission outlives a test case, and revoking it inside
-            // the process kills the target process that hosts this runner.
-            // Reset the application's permissions between runs (a fresh
-            // emulator, or the host's own revoke) when a case needs the
+            // the process kills the target process that hosts this runner. The
+            // module's host-side reset (`resetTargetFineLocationPermission` and
+            // `resetTargetCoarseLocationPermission`) revokes the location
+            // grants before every connected run, so each run starts from the
             // ungranted state.
         }
     }
@@ -3221,8 +3222,9 @@ class ReferenceApplicationAndroidTest {
     @Test
     fun theMyLocationFieldFlowFillsOnlyTheFieldThatAsked() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        // Grant the runtime permission for this case: the suite's @Before and
-        // @After hooks revoke it, so no other case inherits the grant.
+        // Grant the runtime permission for this run only: the module's
+        // host-side reset revokes the location grants before every connected
+        // run, so no case inherits a grant from an earlier run.
         instrumentation.uiAutomation.grantRuntimePermission(
             instrumentation.targetContext.packageName,
             Manifest.permission.ACCESS_FINE_LOCATION,
