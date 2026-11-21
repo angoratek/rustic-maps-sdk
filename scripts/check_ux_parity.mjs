@@ -96,7 +96,8 @@ const MIRROR_FILES = {
   iosLayout: 'platform/ios/reference-application/Sources/AppLayout.swift',
   iosConfiguration:
     'platform/ios/reference-application/Sources/ReferenceApplicationConfiguration.swift',
-  iosModel: 'platform/ios/reference-application/Sources/ReferenceApplicationModel.swift',
+  iosModel:
+    'platform/ios/reference-application/Sources/ReadinessReportState.swift',
   rnTheme: 'platform/rn/app-shell/src/theme.ts',
   rnMapControls: 'platform/rn/app-shell/src/mapControls.ts',
   rnSheetLayout: 'platform/rn/app-shell/src/sheetLayout.ts',
