@@ -125,6 +125,7 @@ mod fixtures;
 mod javascript;
 mod shader;
 mod statistics;
+mod tile_cache;
 mod tile_fetch;
 mod vector_base;
 

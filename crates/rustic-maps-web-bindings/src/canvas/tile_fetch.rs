@@ -240,21 +240,36 @@ impl BrowserMapView {
     }
 }
 
-/// Fetches one tile's encoded payload: when the page serves them, the
-/// same-origin recorded fixture first, then the installed raster-tile provider
+/// Fetches one tile's encoded payload: the installed payload cache first
+/// (see [`super::tile_cache`]), then, when the page serves them, the
+/// same-origin recorded fixture, then the installed raster-tile provider
 /// (a registered credential or a URL-template source), so panning anywhere in
 /// the world still draws imagery. A page that serves no fixtures skips the
 /// fixture probe and asks the provider directly, issuing no `/tiles` request.
-/// `Failed` means the tile has no payload at this address.
+/// Every fetched payload is offered back to the cache. `Failed` means the tile
+/// has no payload at this address.
 pub(super) async fn fetch_tile_payload_bytes(
     tile_key: TileKey,
     tile_resolution: RasterTileResolution,
     recorded_tile_fixtures_are_served: bool,
 ) -> TilePayloadFetch {
+    let payload_cache = super::tile_cache::current_tile_payload_cache();
+    let cache_address = super::tile_cache::TilePayloadCacheAddress {
+        tile_key,
+        tile_resolution,
+    };
+    if let Some(cached_payload) = payload_cache.cached_payload(&cache_address).await {
+        return TilePayloadFetch::Fetched(cached_payload);
+    }
     let fixture_outcome = if recorded_tile_fixtures_are_served {
         let payload_url = tile_fixture_url(&tile_key, tile_resolution);
         match fetch_same_origin_bytes(&payload_url).await {
-            Ok(encoded_image_bytes) => return TilePayloadFetch::Fetched(encoded_image_bytes),
+            Ok(encoded_image_bytes) => {
+                payload_cache
+                    .store_payload(&cache_address, &encoded_image_bytes)
+                    .await;
+                return TilePayloadFetch::Fetched(encoded_image_bytes);
+            }
             Err(fixture_error) => Some(fixture_error),
         }
     } else {
@@ -284,7 +299,12 @@ pub(super) async fn fetch_tile_payload_bytes(
         )
         .await
     {
-        Ok(tile_data) => TilePayloadFetch::Fetched(tile_data.image_bytes),
+        Ok(tile_data) => {
+            payload_cache
+                .store_payload(&cache_address, &tile_data.image_bytes)
+                .await;
+            TilePayloadFetch::Fetched(tile_data.image_bytes)
+        }
         // The live contract's error does not distinguish a refused address
         // from a transport failure, so it is retried with the back-off rather
         // than blacklisting a tile a later attempt may serve.
