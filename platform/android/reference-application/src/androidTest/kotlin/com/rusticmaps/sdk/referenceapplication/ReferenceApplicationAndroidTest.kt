@@ -13,6 +13,7 @@ import androidx.test.espresso.assertion.ViewAssertions
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.rusticmaps.sdk.MapCameraPose
 import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.HomeSheetState
 import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.ReadinessState
 import com.rusticmaps.sdk.referenceapplication.map.MapLayerBaseSelection
@@ -1737,6 +1738,85 @@ class ReferenceApplicationAndroidTest {
             cameraAfterRightwardPan.centerLongitudeDegrees,
             cameraAfterDownwardPan.centerLongitudeDegrees,
             PAN_STANDSTILL_TOLERANCE_DEGREES,
+        )
+    }
+
+    /**
+     * A camera animation in flight is cancelled by a gesture (§5.2/§5.3): the
+     * view's action-down takes over the camera intent, so the animation stops
+     * advancing where it stands and never reaches its target.
+     *
+     * The animation is the shipped `animateCamera` verb driven to a pose far
+     * from the launch camera; the cancel is a real pointer tap injected into
+     * the view, the same event a visitor's finger delivers. The camera values
+     * are the ones the screen renders, so this pins the wrapper's gesture-
+     * versus-animation rule on a real surface, which the JVM unit suite's stub
+     * `android.jar` cannot drive.
+     */
+    @Test
+    fun aGestureCancelsARunningCameraAnimation() {
+        val activity = launchReferenceApplicationAndAwaitStateConstruction()
+        val applicationState = awaitSettledState(activity)
+        Assume.assumeTrue(
+            "the animation needs the shipped MapView and a drawn surface",
+            applicationState.mapView != null,
+        )
+        // The animation advances inside the frame pump, so the surface must be
+        // attached and drawn first (the keyless raster base serves it).
+        awaitOrTimeout(
+            timeoutMilliseconds = FIRST_FRAME_DRAWN_TIMEOUT_MILLISECONDS,
+            timeoutDescription = "the first drawn frame before the camera animation",
+        ) {
+            applicationState.framesDrawnCount > 0
+        }
+
+        val startLongitudeDegrees = applicationState.centerLongitudeDegrees
+        val targetLongitudeDegrees =
+            startLongitudeDegrees + CAMERA_ANIMATION_TARGET_LONGITUDE_OFFSET_DEGREES
+        driveUserPathOnMainThread { applicationUserState ->
+            val mapView = applicationUserState.mapView ?: return@driveUserPathOnMainThread
+            mapView.animateCamera(
+                MapCameraPose(
+                    latitudeDegrees = applicationUserState.centerLatitudeDegrees,
+                    longitudeDegrees = targetLongitudeDegrees,
+                    zoomLevel = applicationUserState.zoomLevel,
+                    bearingDegrees = applicationUserState.bearingDegrees,
+                    pitchDegrees = applicationUserState.pitchDegrees,
+                ),
+                CAMERA_ANIMATION_DURATION_MILLISECONDS,
+            )
+        }
+
+        // The animation is genuinely running once the rendered center has
+        // advanced toward the target; a no-op animation fails here rather than
+        // passing vacuously below.
+        awaitOrTimeout(
+            timeoutMilliseconds = CAMERA_ANIMATION_PROGRESS_TIMEOUT_MILLISECONDS,
+            timeoutDescription = "the running camera animation's first progress",
+        ) {
+            applicationState.centerLongitudeDegrees >
+                startLongitudeDegrees + CAMERA_ANIMATION_PROGRESS_MINIMUM_DEGREES
+        }
+
+        // One real pointer tap: the view's action-down cancels the animation.
+        injectMapTaps(tapCount = SINGLE_TAP_COUNT)
+
+        // Let the frame already in flight land, then sample the pose twice: an
+        // animation that kept running would advance between the samples.
+        Thread.sleep(CAMERA_ANIMATION_CANCEL_SETTLE_MILLISECONDS)
+        val cancelledLongitudeDegrees = applicationState.centerLongitudeDegrees
+        Thread.sleep(CAMERA_ANIMATION_STILLNESS_MILLISECONDS)
+        assertEquals(
+            "a gesture must stop the running animation where it stands",
+            cancelledLongitudeDegrees,
+            applicationState.centerLongitudeDegrees,
+            CAMERA_ANIMATION_STILLNESS_TOLERANCE_DEGREES,
+        )
+        assertTrue(
+            "a cancelled animation must never reach its target, " +
+                "was ${applicationState.centerLongitudeDegrees} of $targetLongitudeDegrees",
+            targetLongitudeDegrees - applicationState.centerLongitudeDegrees >
+                CAMERA_ANIMATION_TARGET_REMAINING_MINIMUM_DEGREES,
         )
     }
 
@@ -4037,6 +4117,37 @@ class ReferenceApplicationAndroidTest {
 
         /** The camera zoom comparison's tolerance (a double tap is exactly one level). */
         const val CAMERA_ZOOM_TOLERANCE: Double = 1e-6
+
+        /**
+         * The gesture-cancel case's animation length: long enough that a
+         * cancelled animation is unmistakably short of its target, while the
+         * case still settles in seconds.
+         */
+        const val CAMERA_ANIMATION_DURATION_MILLISECONDS: Long = 6_000
+
+        /** How far east of the launch camera the cancelled animation aims, in degrees. */
+        const val CAMERA_ANIMATION_TARGET_LONGITUDE_OFFSET_DEGREES: Double = 8.0
+
+        /** The progress that proves the animation is running before the gesture. */
+        const val CAMERA_ANIMATION_PROGRESS_MINIMUM_DEGREES: Double = 0.02
+
+        /** How long the running animation's first progress may take (software rendering). */
+        const val CAMERA_ANIMATION_PROGRESS_TIMEOUT_MILLISECONDS: Long = 30_000
+
+        /** How long the in-flight frame after the gesture may take to land. */
+        const val CAMERA_ANIMATION_CANCEL_SETTLE_MILLISECONDS: Long = 600
+
+        /** The stillness window: a running animation would adopt several poses here. */
+        const val CAMERA_ANIMATION_STILLNESS_MILLISECONDS: Long = 1_500
+
+        /** The cancelled pose's read-back tolerance (nothing should move at all). */
+        const val CAMERA_ANIMATION_STILLNESS_TOLERANCE_DEGREES: Double = 1e-6
+
+        /**
+         * The minimum distance the cancelled animation must stay short of its
+         * target; an uncancelled animation would arrive (zero remaining).
+         */
+        const val CAMERA_ANIMATION_TARGET_REMAINING_MINIMUM_DEGREES: Double = 1.0
 
         /** The map tap point's horizontal fraction of the view (centered). */
         const val MAP_TAP_HORIZONTAL_FRACTION: Float = 0.5f
