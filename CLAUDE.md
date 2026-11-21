@@ -77,6 +77,7 @@ Every commit must compile standalone; docs commits come last in a slice. Run on 
 - `node platform/web/check-facade-types.mjs` after the wasm package build; it typechecks the browser facade against the generated declarations.
 - `node --test platform/web/tests/contract_sync.mjs`, `node --test platform/web/tests/canvas_declaration_sync.mjs`, the provider-name guard, `platform/web/tests/platform_parity_gate.mjs` and `node scripts/check_ux_parity.mjs`; the first four run in Playwright's `globalSetup`, as does the facade typecheck.
 - `node --test platform/web/tests/fixture_provenance.mjs` when a fixture or the `everymap-*` pin changes: it hashes every committed fixture against `fixtures/provenance.json`, requires an entry for every fixture, and fails on a provider-layer version bump until the provenance is reviewed. It also runs in Playwright's `globalSetup`.
+- `node --test scripts/*.test.mjs`; it includes the index that requires every script in `scripts/` to be classified in `scripts/README.md` with its role and who runs it.
 - `node scripts/check-doc-snippets.mjs` when a chapter or reference app changed; `scripts/build-docs-site.sh` when a site source changed.
 - `scripts/build-{android,ios,rn}.sh` when their seams changed.
 

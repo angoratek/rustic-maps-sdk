@@ -72,6 +72,11 @@ jobs:
       - name: Build the WebAssembly package
         run: ./scripts/build-wasm2-package.sh
 
+      # The API reference generator's suite reads the declaration mirror the
+      # step above produces, so it runs here rather than in `format-and-lint`.
+      - name: API reference generator tests
+        run: node --test scripts/generate-api-reference.test.mjs
+
       # The notices generator resolves with `cargo metadata --offline`, which
       # consults the local registry index cache even with a complete lockfile
       # (verified: with a bare CARGO_HOME it fails "no matching package …
