@@ -11,6 +11,9 @@
 #import <React-RCTAppDelegate/RCTDefaultReactNativeFactoryDelegate.h>
 
 #import "MapsSdkRefappRn-Swift.h"
+// The pod's generated Swift header (Xcode 26 writes it below the pod product
+// directory's `Swift Compatibility Header` folder; the shell's wiring adds
+// that folder to the header search path).
 #import "MapsSdkRn-Swift.h"
 
 namespace {

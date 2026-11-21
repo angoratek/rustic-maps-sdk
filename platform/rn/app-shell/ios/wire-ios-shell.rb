@@ -160,13 +160,25 @@ end
 # The Swift module search for `import rustic_mapsFFI`, conditioned per
 # SDK (both slices carry an identical modulemap; a single unconditioned
 # search path would carry two same-named modulemaps at once). Bare quoted
-# paths — the build system adds the `-I` flags.
+# paths — the build system adds the `-I` flags. `$(inherited)` keeps the
+# Pods xcconfig's own Swift search paths in the conditional variants: it
+# carries `$(PODS_CONFIGURATION_BUILD_DIR)/MapsSdkRn`, without which
+# `import MapsSdkRn` resolves only the pod's Clang module and none of the
+# generated Swift types.
 module_search_root = "$(SRCROOT)/../../../ios/artifacts/rustic_mapsFFI.xcframework"
 target.build_configurations.each do |build_configuration|
   build_configuration.build_settings["SWIFT_INCLUDE_PATHS[sdk=iphonesimulator*]"] =
-    "\"#{module_search_root}/ios-arm64-simulator/Headers\""
+    "$(inherited) \"#{module_search_root}/ios-arm64-simulator/Headers\""
   build_configuration.build_settings["SWIFT_INCLUDE_PATHS[sdk=iphoneos*]"] =
-    "\"#{module_search_root}/ios-arm64/Headers\""
+    "$(inherited) \"#{module_search_root}/ios-arm64/Headers\""
+  # The app's ObjC++ bridge imports the pod's generated Swift header,
+  # `MapsSdkRn-Swift.h`, to reach the pod's Swift classes. Xcode 26 writes
+  # that header below the pod product directory's `Swift Compatibility
+  # Header` folder, so both the product directory and that folder join the
+  # header search; `$(inherited)` keeps the Pods xcconfig's own paths.
+  build_configuration.build_settings["HEADER_SEARCH_PATHS"] =
+    "$(inherited) \"$(PODS_CONFIGURATION_BUILD_DIR)/MapsSdkRn\" " \
+    "\"$(PODS_CONFIGURATION_BUILD_DIR)/MapsSdkRn/Swift Compatibility Header\""
   build_configuration.build_settings["PRODUCT_BUNDLE_IDENTIFIER"] =
     "com.rusticmaps.sdk.refapprn"
 end

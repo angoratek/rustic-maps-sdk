@@ -103,6 +103,40 @@ ensure_codegen_spec_include_on_ios() {
     fi
 }
 
+# The generated podspec lists the package's C++ headers (`cpp/maps-sdk-rn.h`
+# and the generated `cpp/generated/rustic_maps.hpp`) in `source_files`, so
+# CocoaPods exposes them through the pod's public header umbrella. Swift
+# imports the pod's underlying module in Objective-C mode, where the
+# `jsi/jsi.h` those headers include cannot resolve `<cassert>` as a C++ header
+# and the module fails with `could not build Objective-C module 'MapsSdkRn'`.
+# Only the Objective-C headers under `ios/` are public; the C++ headers stay
+# private to the pod's own sources. Idempotent, re-applied after every
+# generation run because the generation rewrites the podspec.
+readonly PODSPEC_PUBLIC_HEADERS_ENTRY='  s.public_header_files = "ios/**/*.h"'
+
+ensure_podspec_public_headers() {
+    local project_root="${1:-$RN_PROJECT_ROOT}"
+    local podspec="${project_root}/MapsSdkRn.podspec"
+    if [ ! -f "${podspec}" ]; then
+        printf 'generate-rn-bindings: the generated TurboModule podspec is missing: %s\n' \
+            "${podspec}" >&2
+        exit 1
+    fi
+    if grep -qF "${PODSPEC_PUBLIC_HEADERS_ENTRY}" "${podspec}"; then
+        return
+    fi
+    awk -v entry="${PODSPEC_PUBLIC_HEADERS_ENTRY}" '
+        { print }
+        /^  s\.source_files/ && !inserted { print entry; inserted = 1 }
+    ' "${podspec}" > "${podspec}.patched"
+    mv "${podspec}.patched" "${podspec}"
+    if ! grep -qF "${PODSPEC_PUBLIC_HEADERS_ENTRY}" "${podspec}"; then
+        printf 'generate-rn-bindings: could not restrict the pod public headers (no source_files line)\n' >&2
+        exit 1
+    fi
+    printf '==> restricted the pod public headers to the Objective-C sources\n'
+}
+
 readonly CMAKE_GENERATED_BINDINGS_GUARD_MARKER="# rustic-maps: generated bindings guard"
 
 ensure_generated_bindings_guard_in_cmake() {
@@ -310,6 +344,7 @@ generate_turbo_module_into() {
     # produces the same buildable tree.
     ensure_libandroid_link_line "$project_root"
     ensure_codegen_spec_include_on_ios "$project_root"
+    ensure_podspec_public_headers "$project_root"
     ensure_generated_bindings_guard_in_cmake "$project_root"
     ensure_curated_root_exports "$project_root"
 }
