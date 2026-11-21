@@ -476,7 +476,7 @@ stage_live_demo() {
         playground_base_map.mjs playground_overlays.mjs playground_navigation.mjs \
         playground_diagnostics.mjs playground_map_surface.mjs \
         map_controls.mjs map_layers.mjs overlay_scenes.mjs vector_layer.mjs tile_switch.mjs \
-        ui_strings.mjs generated/index.js generated/rustic_maps.js \
+        tile_cache.mjs ui_strings.mjs generated/index.js generated/rustic_maps.js \
         generated/rustic_maps-ffi.js generated/rustic_maps_bg.js \
         generated/rustic_maps.wasm; do
         [ -f "${WEB_HARNESS_DIRECTORY}/${demo_input}" ] \
@@ -501,6 +501,7 @@ stage_live_demo() {
         "${WEB_HARNESS_DIRECTORY}/map_controls.mjs" "${WEB_HARNESS_DIRECTORY}/map_layers.mjs" \
         "${WEB_HARNESS_DIRECTORY}/overlay_scenes.mjs" \
         "${WEB_HARNESS_DIRECTORY}/vector_layer.mjs" "${WEB_HARNESS_DIRECTORY}/tile_switch.mjs" \
+        "${WEB_HARNESS_DIRECTORY}/tile_cache.mjs" \
         "${WEB_HARNESS_DIRECTORY}/ui_strings.mjs" \
         "${demo_directory}/"
     cp "${WEB_HARNESS_DIRECTORY}/styles/playground.css" "${demo_directory}/styles/"
@@ -622,7 +623,7 @@ verify_staged_demo() {
         playground_base_map.mjs playground_overlays.mjs playground_navigation.mjs \
         playground_diagnostics.mjs playground_map_surface.mjs \
         map_controls.mjs map_layers.mjs overlay_scenes.mjs vector_layer.mjs tile_switch.mjs \
-        ui_strings.mjs; do
+        tile_cache.mjs ui_strings.mjs; do
         cmp -s "${demo_directory}/${copied_file}" "${WEB_HARNESS_DIRECTORY}/${copied_file}" \
             || fail "the staged demo's ${copied_file} drifted from platform/web/${copied_file}"
     done
