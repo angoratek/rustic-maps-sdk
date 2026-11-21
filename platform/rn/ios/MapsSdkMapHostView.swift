@@ -481,10 +481,15 @@ public final class MapsSdkMapHostView: UIView, MapsSdkMapViewDelegate {
     }
 
     /// Ground meters represented by one screen pixel, or nil before attach.
-    /// Optional `Double` is not Objective-C representable, so the bridge
-    /// reads the boxed form.
+    public func groundMetersPerScreenPixel() -> Double? {
+        rusticMapView.groundMetersPerScreenPixel()
+    }
+
+    /// Objective-C bridge for `groundMetersPerScreenPixel()`: an optional
+    /// `Double` is not Objective-C representable, so the bridge reads the
+    /// boxed form.
     @objc public func groundMetersPerScreenPixelNumber() -> NSNumber? {
-        rusticMapView.groundMetersPerScreenPixel().map { NSNumber(value: $0) }
+        groundMetersPerScreenPixel().map { NSNumber(value: $0) }
     }
 
     /// The render viewport width in pixels (zero before attach).

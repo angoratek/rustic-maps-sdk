@@ -2,12 +2,11 @@
 # Type-checks the React Native pod's Swift sources against the generated
 # UniFFI bindings and the vendored FFI module headers.
 #
-# The pod target cannot yet be compiled by `xcodebuild` on Xcode 26: the
-# `React-Core-prebuilt` explicit-module scan fails before the pod's own
-# sources are compiled. This gate type-checks those sources directly, so a
-# Swift error in the package's iOS bridge (a missing enum case, an
-# Objective-C-representability mistake, a drifted member signature) is caught
-# on every React Native build instead of waiting for the toolchain fix.
+# The app shell's `xcodebuild` build compiles these sources through the pod as
+# well. This direct `swiftc` pass is the fast platform gate for a Swift error
+# in the package's iOS bridge (a missing enum case, an
+# Objective-C-representability mistake, a drifted member signature): it names
+# the offending source without the full app build.
 #
 # Usage: scripts/check-rn-pod-swift.sh
 #

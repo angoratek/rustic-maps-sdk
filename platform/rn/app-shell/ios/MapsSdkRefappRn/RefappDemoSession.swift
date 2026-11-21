@@ -577,7 +577,7 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
             packageHostView.animateCamera(
                 pose,
                 durationMilliseconds: RefappConstants.easedCameraMoveDurationSeconds
-                    * RefappConstants.millisecondsPerSecond
+                    * GeometryConstants.millisecondsPerSecond
             )
         } else {
             packageHostView.setCamera(pose)
@@ -905,7 +905,7 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
                 originName,
                 destinationName
             )
-            emitErrorReport("MissingRecordedRoute", detailText)
+            emitErrorReport(variantLabel: "MissingRecordedRoute", detailText: detailText)
             reject("noRecordedRoute", detailText)
             return
         }
@@ -949,7 +949,7 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
         ) else {
             let detailText =
                 "the bundled offline routing archive is missing from the application bundle"
-            emitErrorReport("OfflineArchiveUnavailable", detailText)
+            emitErrorReport(variantLabel: "OfflineArchiveUnavailable", detailText: detailText)
             reject("offlineArchiveUnavailable", detailText)
             return
         }
@@ -1663,8 +1663,8 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
     func deliverDeviceNavigationFix(
         latitudeDegrees: Double,
         longitudeDegrees: Double,
-        courseHeadingDegrees: Double?,
-        horizontalAccuracyMeters: Double?
+        courseHeadingDegrees: NSNumber?,
+        horizontalAccuracyMeters: NSNumber?
     ) {
         dispatchPrecondition(condition: .onQueue(.main))
         if !isDeviceNavigationActive {
@@ -1675,8 +1675,8 @@ final class RefappDemoSession: NSObject, MapsSdkMapHostViewObserver, @unchecked 
                 latitude: latitudeDegrees,
                 longitude: longitudeDegrees
             ),
-            courseHeadingDegrees: courseHeadingDegrees,
-            horizontalAccuracyMeters: horizontalAccuracyMeters
+            courseHeadingDegrees: courseHeadingDegrees?.doubleValue,
+            horizontalAccuracyMeters: horizontalAccuracyMeters?.doubleValue
                 ?? RefappConstants.deviceNavigationFallbackAccuracyMeters
         )
         if let deliveryFailure = traceDriver.tripDeliveryFailure {

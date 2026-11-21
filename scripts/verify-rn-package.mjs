@@ -53,6 +53,11 @@ const CMAKE_LIBANDROID_MARKER = "find_library(ANDROID_LIB android)";
 const CMAKE_LIBANDROID_LINK_ENTRY = "${ANDROID_LIB}";
 const IOS_CODEGEN_SPEC_INCLUDE =
   "#import <ReactCodegen/MapsSdkRn/MapsSdkRn.h>";
+// Only the Objective-C headers are public. The pod's C++ headers would
+// otherwise enter the public umbrella, which Swift imports in Objective-C
+// mode, and the module fails on `<cassert>` before the app can build.
+const IOS_PODSPEC_PUBLIC_HEADERS =
+  's.public_header_files = "ios/**/*.h"';
 // The generator is required to build a consumer, so it must be a runtime
 // dependency; the CMake guard fails fast when its output is absent.
 const GENERATOR_DEPENDENCY_NAME = "uniffi-bindgen-react-native";
@@ -221,6 +226,11 @@ try {
   const podspec = readPackageFile("MapsSdkRn.podspec", "the release assembly");
   if (podspec) {
     addRequirement("MapsSdkRn.podspec", "the release assembly");
+    if (!podspec.includes(IOS_PODSPEC_PUBLIC_HEADERS)) {
+      problems.push(
+        "MapsSdkRn.podspec is missing the restricted public-header set (only the Objective-C headers under ios/ are public)",
+      );
+    }
     const vendored = podspec.match(
       /s\.vendored_frameworks\s*=\s*(\[[\s\S]*?\]|"[^"]*")/,
     );

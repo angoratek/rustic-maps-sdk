@@ -184,13 +184,13 @@ enum RefappTraceLoader {
         return Route(
             distanceMeters: distanceMeters,
             durationSeconds: durationSeconds,
-            geometry: try (routeObject["geometry"] as? [[String: Any]] ?? []).map {
-                try decodeCoordinate($0)
-            },
             boundingBox: BoundingBox(
                 southWest: try decodeCoordinate(southWestObject),
                 northEast: try decodeCoordinate(northEastObject)
             ),
+            geometry: try (routeObject["geometry"] as? [[String: Any]] ?? []).map {
+                try decodeCoordinate($0)
+            },
             legs: legs
         )
     }
