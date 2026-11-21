@@ -4,6 +4,11 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-20 — the React Native curated enums come from the generated layer)
+
+- `platform/rn/scripts/generate-contract-ordinals.mjs` reads the frozen UDL and emits `src/generated/rustic_maps-ordinals.ts`: for every enum the curated bridge re-exports, the TypeScript union and its ordinal lookup generated from the declaration. `scripts/generate-rn-bindings.sh` runs it with the other generation steps, and `--check` compares its output too.
+- `MapsSdk.ts` re-exports `PositionSourceFailureReason` and `RegionDownloadPhase` from that layer and replaces the hand-written ordinal switch with the generated lookup, so an enum the UDL adds or reorders cannot drift from the JavaScript surface.
+
 ### Fixed (2026-11-20 — the keyed iOS type-ahead runs against a loopback origin)
 
 - `PROVIDER_BASE_URL` is a launch-environment base-URL override for the provider the automation credential names. The model applies it through `setProviderBaseUrl` before the credential configures the provider, so a keyed session answers from a fixture server; it carries no credential, is never persisted and is never logged, and a refused override reports the failure instead of falling through to the public address.
