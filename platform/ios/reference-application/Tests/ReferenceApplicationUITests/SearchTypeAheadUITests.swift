@@ -54,6 +54,10 @@ final class SearchTypeAheadUITests: XCTestCase {
     private static let firstInteractiveTimeoutSeconds: TimeInterval = 120
     /// One suggestion list's bound after a keystroke.
     private static let suggestionTimeoutSeconds: TimeInterval = 10
+    /// The placeholder session credential the keyed case injects. The
+    /// loopback base URL means it never authenticates anywhere; it is never
+    /// persisted by the injection or logged.
+    private static let placeholderProviderCredential = "fixture-credential"
     /// The quiet window the threshold case waits out (longer than the
     /// documented 250 ms).
     private static let quietWindowObservationSeconds: TimeInterval = 0.9
@@ -429,6 +433,75 @@ final class SearchTypeAheadUITests: XCTestCase {
         )
     }
 
+    /// The credentialed provider path, offline: the session supplies a
+    /// placeholder key through the launch-environment automation seam and
+    /// points that provider at the loopback fixture server, so the typed
+    /// query travels the credentialed registration and the provider's
+    /// committed prediction document renders without a network round trip.
+    /// The placeholder authenticates nowhere and is never persisted or
+    /// logged.
+    func testTheCredentialedProviderAnswersFromTheCommittedFixture() throws {
+        let keyedProvider = try keyedPlaceSearchProvider()
+        let predictionBody = try fixtureData(
+            named: keyedProvider.fixtureResourceName
+        )
+        let expectedRowText = try firstPredictionDisplayText(in: predictionBody)
+        let server = try FixtureSearchServer { path, _ in
+            guard path == keyedProvider.endpointPath else {
+                return FixtureSearchResponse(
+                    statusCode: 404,
+                    body: Data(),
+                    delaySeconds: 0
+                )
+            }
+            return FixtureSearchResponse(
+                statusCode: 200,
+                body: predictionBody,
+                delaySeconds: 0
+            )
+        }
+        let port = try server.start()
+        defer { server.stop() }
+        let application = launchApplication(
+            deploymentBaseURL: "",
+            providerKey: keyedProvider.providerKey,
+            providerBaseURL: "http://127.0.0.1:\(port)",
+            providerCredential: Self.placeholderProviderCredential
+        )
+        let destinationField = waitForField(
+            Self.destinationFieldPlaceholder,
+            in: application
+        )
+
+        destinationField.tap()
+        destinationField.typeText("Den")
+
+        XCTAssertTrue(
+            waitForSuggestionRow(
+                expectedRowText, forField: "destination", in: application
+            ),
+            "the credentialed provider must render the committed prediction; "
+                + "requests: \(server.requests().map(\.path))"
+        )
+        XCTAssertTrue(
+            server.requests().contains { request in
+                request.path == keyedProvider.endpointPath
+            },
+            "the credentialed provider must ask its own search endpoint; "
+                + "requests: \(server.requests().map(\.path))"
+        )
+        XCTAssertTrue(
+            server.waitForRequest(queryText: "Den"),
+            "the credentialed provider must ask the loopback fixture"
+        )
+        XCTAssertFalse(
+            element(
+                Self.failureIdentifier(forField: "destination"), in: application
+            ).exists,
+            "a served prediction shows no inline failure sentence"
+        )
+    }
+
     // MARK: Helpers
 
     /// Launches the application with the search view open and the keyless
@@ -453,6 +526,128 @@ final class SearchTypeAheadUITests: XCTestCase {
         application.launch()
         self.application = application
         return application
+    }
+
+    /// Launches the application with the search view open, a placeholder
+    /// session credential for the registry's keyed place-search provider,
+    /// and that provider pointed at the loopback fixture server. The keyless
+    /// deployment override stays empty so no second provider is installed.
+    private func launchApplication(
+        deploymentBaseURL: String,
+        providerKey: String,
+        providerBaseURL: String,
+        providerCredential: String
+    ) -> XCUIApplication {
+        let application = XCUIApplication()
+        application.launchArguments = [
+            "-\(Self.launchArgumentResetRememberedChoices)",
+            Self.launchArgumentTrueValue,
+            "-\(Self.launchArgumentSearchOpen)",
+            Self.launchArgumentTrueValue,
+        ]
+        application.launchEnvironment[
+            Self.deploymentBaseURLEnvironmentKey
+        ] = deploymentBaseURL
+        application.launchEnvironment["PROVIDER_API_KEY"] = providerCredential
+        application.launchEnvironment["PROVIDER_KEY"] = providerKey
+        application.launchEnvironment["PROVIDER_BASE_URL"] = providerBaseURL
+        application.launch()
+        self.application = application
+        return application
+    }
+
+    /// One keyed provider's committed search fixture and the endpoint that
+    /// provider appends to its base URL.
+    private struct KeyedSearchFixture {
+        let providerKey: String
+        let endpointPath: String
+        let fixtureResourceName: String
+    }
+
+    /// Reads the shared registry's raw JSON to find the provider this
+    /// platform registers with a credential for place search, plus its
+    /// committed search fixture route. Nothing names a provider here: the
+    /// registry is the descriptor source, so a second provider needs no
+    /// suite rewrite beyond its own bundled fixture.
+    private func keyedPlaceSearchProvider() throws -> KeyedSearchFixture {
+        let bundle = Bundle(for: Self.self)
+        guard let registryURL = bundle.url(
+            forResource: "providers", withExtension: "json"
+        ) else {
+            throw XCTSkip(
+                "the shared provider registry is missing from the UI test bundle"
+            )
+        }
+        let registryData = try Data(contentsOf: registryURL)
+        guard
+            let registry = try JSONSerialization.jsonObject(
+                with: registryData
+            ) as? [String: Any],
+            let providers = registry["providers"] as? [[String: Any]]
+        else {
+            throw XCTSkip("the shared provider registry did not decode")
+        }
+        for provider in providers {
+            let availability = provider["registration_available"] as? [String: Any]
+            let servedContracts = provider["served_contracts"] as? [String] ?? []
+            let credentialLabel = (provider["credential_label"] as? String ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard
+                availability?["ios"] as? Bool == true,
+                servedContracts.contains("place_search"),
+                !credentialLabel.isEmpty,
+                let providerKey = provider["provider_key"] as? String
+            else {
+                continue
+            }
+            guard
+                let routes = provider["fixture_routes"] as? [[String: Any]],
+                let searchRoute = routes.first(where: { route in
+                    (route["purpose"] as? String) == "search"
+                }),
+                let pathPattern = searchRoute["path_pattern"] as? String,
+                let fixturePath = searchRoute["fixture"] as? String
+            else {
+                throw XCTSkip(
+                    "the keyed place-search provider declares no committed search fixture"
+                )
+            }
+            // The registry spells the route relative to the base URL; the
+            // fixture server records the URL's absolute path.
+            let relativeEndpointPath = pathPattern
+                .replacingOccurrences(of: "^", with: "")
+                .replacingOccurrences(of: "$", with: "")
+            let endpointPath = relativeEndpointPath.hasPrefix("/")
+                ? relativeEndpointPath
+                : "/" + relativeEndpointPath
+            return KeyedSearchFixture(
+                providerKey: providerKey,
+                endpointPath: endpointPath,
+                fixtureResourceName: (fixturePath as NSString)
+                    .lastPathComponent
+                    .replacingOccurrences(of: ".json", with: "")
+            )
+        }
+        throw XCTSkip(
+            "the registry declares no keyed place-search provider for iOS"
+        )
+    }
+
+    /// The first suggestion's display line in a committed prediction
+    /// document, decoded from the same fixture the application's provider
+    /// parses (network-free; the fixture is the single source of the row).
+    private func firstPredictionDisplayText(in body: Data) throws -> String {
+        guard
+            let document = try JSONSerialization.jsonObject(with: body)
+                as? [String: Any],
+            let results = document["results"] as? [[String: Any]],
+            let displayText = results.first?["displayString"] as? String
+        else {
+            throw XCTSkip(
+                "the committed prediction fixture carries no display row"
+            )
+        }
+        return displayText
     }
 
     /// Waits for one search field by its placeholder.

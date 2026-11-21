@@ -156,6 +156,11 @@ targets:
       # committed answer the Rust provider tests parse.
       - path: ../../../fixtures/osrm/sacramento_route.json
         buildPhase: resources
+      # The keyed provider's committed search answer rides the test bundle
+      # too: the credentialed type-ahead case serves it from the loopback
+      # fixture server, the same committed payload the provider tests parse.
+      - path: ../../../fixtures/mapquest/search_prediction_denver.json
+        buildPhase: resources
     dependencies:
       - target: ReferenceApplication
       # The registry's decoded model (the application's own descriptor type),
