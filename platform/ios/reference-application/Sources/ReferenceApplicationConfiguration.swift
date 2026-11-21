@@ -24,6 +24,22 @@ enum ReferenceApplicationConfiguration {
     /// the registry declares available on iOS.
     static let runtimeProviderKeyEnvironmentKey = "PROVIDER_KEY"
 
+    /// The launch-environment variable that points the provider named by the
+    /// automation credential at another http or https origin (the keyed
+    /// type-ahead automation seam). It is not a credential, is never
+    /// persisted, and is read only so an automated session can serve a
+    /// credentialed provider from a loopback fixture server; every ordinary
+    /// session uses the provider's public default.
+    static let runtimeProviderBaseURLEnvironmentKey = "PROVIDER_BASE_URL"
+
+    /// The automation provider base-URL override for this process, or nil
+    /// when the provider's public default serves.
+    static func runtimeProviderBaseURLOverride() -> String? {
+        ProcessInfo.processInfo.environment[
+            runtimeProviderBaseURLEnvironmentKey
+        ].flatMap { value in value.isEmpty ? nil : value }
+    }
+
     /// The launch-environment variable that replaces the registry's keyless
     /// search provider deployment address (the type-ahead automation seam).
     /// It is not a credential, is never persisted, and is read only to point

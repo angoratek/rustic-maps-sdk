@@ -977,9 +977,10 @@ final class ReferenceApplicationModel: ObservableObject {
 
     /// The automation credential seam (§6.5): a launch-environment variable
     /// supplies a provider credential at runtime for local and CI UI
-    /// automation, optionally paired with a provider key. It goes through the
-    /// public registration path, is never persisted by the injection and is
-    /// never logged; it is not a build-time key seam.
+    /// automation, optionally paired with a provider key and a base-URL
+    /// override that points that provider at a loopback fixture origin. It
+    /// goes through the public registration path, is never persisted by the
+    /// injection and is never logged; it is not a build-time key seam.
     private func applyRuntimeInjectedCredentialIfPresent() {
         let environment = ProcessInfo.processInfo.environment
         let environmentCredential = environment[
@@ -1003,6 +1004,32 @@ final class ReferenceApplicationModel: ObservableObject {
             : nil
         guard let providerKey = requestedProviderKey ?? defaultProviderKey else {
             return
+        }
+        // The keyed automation seam: a loopback fixture origin replaces the
+        // provider's public address before the credential configures it, so
+        // the credentialed session answers offline. A refused override never
+        // falls through to the public address.
+        if let baseURLOverride = ReferenceApplicationConfiguration
+            .runtimeProviderBaseURLOverride(),
+            let sessionSdk = mapSdk {
+            do {
+                try sessionSdk.setProviderBaseUrl(
+                    providerKey: providerKey,
+                    baseUrl: baseURLOverride
+                )
+            } catch let sdkError as SdkError {
+                providerCredentialStatuses[providerKey] = .failed(
+                    detailText: sdkFailureDetailText(sdkError)
+                )
+                reportSdkError(sdkError)
+                return
+            } catch {
+                reportLocalError(
+                    origin: "provider credentials",
+                    detail: String(describing: error)
+                )
+                return
+            }
         }
         applyProviderCredential(
             providerKey: providerKey,
