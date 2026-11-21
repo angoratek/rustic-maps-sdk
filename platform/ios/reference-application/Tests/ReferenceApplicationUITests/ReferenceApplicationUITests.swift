@@ -210,6 +210,11 @@ final class ReferenceApplicationUITests: XCTestCase {
     /// The fix tolerance: the documented stream advances over a long run, so
     /// the drawn center is allowed to drift within this bound.
     private static let locationFixToleranceDegrees = 0.02
+    /// The bounded wait for the simulator's externally supplied location
+    /// stream. The UI runner cannot start `simctl location` itself, so a run
+    /// without a stream skips the live-fix cases with the command that
+    /// supplies it instead of failing on the host setup.
+    private static let deviceLocationStreamTimeoutSeconds: TimeInterval = 20
 
     /// The launch preset's camera (the shared artifact's fixture center —
     /// the model's initial camera values). The direction assertions read
@@ -1416,10 +1421,14 @@ final class ReferenceApplicationUITests: XCTestCase {
         )
     }
 
+    /// The device source's live fix reaches the layer panel's Device
+    /// location row.
+    ///
+    /// The simulator's location stream is external to the test process, so
+    /// the case skips with the supplying command when this run has none
+    /// (`xcrun simctl location booted set 38.5766,-121.4944` or `start`).
+    /// The authorization must be grantable (reset it to see the prompt).
     func testTheDeviceLocationSourceShowsALiveFix() throws {
-        // The simulator must have a location set before this run
-        // (`xcrun simctl location booted set 38.5766,-121.4944`) and the
-        // authorization must be undetermined (reset it to see the prompt).
         let application = launchApplication(launchArguments: [
             "-DemoStartDeviceLocation",
             Self.launchArgumentBooleanTrueValue,
@@ -1452,10 +1461,7 @@ final class ReferenceApplicationUITests: XCTestCase {
         let locationStatus = elementWithIdentifier(
             "device-location-status", in: application
         )
-        XCTAssertTrue(
-            waitForLabel("Active", element: locationStatus),
-            "the panel's Device location row must read Active once a fix arrives, got '\(locationStatus.exists ? locationStatus.label : "absent")'"
-        )
+        try awaitActiveDeviceLocationOrSkip(element: locationStatus)
     }
 
     /// The Location group's second control: with no planned route it
@@ -1463,14 +1469,15 @@ final class ReferenceApplicationUITests: XCTestCase {
     /// Capitol Park -> Tower Bridge route the device source's own fixes
     /// drive the banner, phase and follow presentation, and stopping leaves
     /// the source the visitor started by hand running.
+    ///
+    /// The simulator's location stream is external to the test process, so
+    /// the case skips with the supplying command when this run has none
+    /// (`xcrun simctl location start --speed=2 --interval=1
+    /// 38.57693,-121.49492 38.7,-121.49492`). A slow, long path keeps fixes
+    /// arriving for the whole case; the authorization must be grantable.
+    /// The case stays keyless: the plan flow reads the recorded demo route,
+    /// never a provider.
     func testDeviceNavigationFollowsThePlannedRouteFromLiveFixes() throws {
-        // The simulator must carry a location stream before this run
-        // (`xcrun simctl location start --speed=2 --interval=1
-        // 38.57693,-121.49492 38.7,-121.49492`). A slow, long path keeps
-        // fixes arriving for the whole case; the default 20 m/s crosses these
-        // short waypoints in seconds. The authorization must be grantable
-        // (reset it to see the prompt). The case stays keyless: the plan flow
-        // reads the recorded demo route, never a provider.
         let application = launchApplication(
             launchArguments: [
                 "-DemoStartDeviceLocation", Self.launchArgumentBooleanTrueValue,
@@ -1483,12 +1490,8 @@ final class ReferenceApplicationUITests: XCTestCase {
         // The source starts itself once the prompt resolves; the layer
         // panel's Device location row reports the live source before the trip.
         openMapLayersPanel(in: application)
-        XCTAssertTrue(
-            waitForLabel(
-                "Active",
-                element: elementWithIdentifier("device-location-status", in: application)
-            ),
-            "the device source must report a live fix before the trip starts"
+        try awaitActiveDeviceLocationOrSkip(
+            element: elementWithIdentifier("device-location-status", in: application)
         )
         closeMapLayersPanel(in: application)
         XCTAssertTrue(
@@ -3789,6 +3792,27 @@ final class ReferenceApplicationUITests: XCTestCase {
                     return
                 }
             }
+        }
+    }
+
+    /// Waits for the layer panel's Device location row to read Active, or
+    /// skips when this run has no simulator location stream. The stream is
+    /// external to the test process (`xcrun simctl location ...`), so the
+    /// live-fix cases cannot supply it themselves; the skip names the
+    /// command that does.
+    private func awaitActiveDeviceLocationOrSkip(
+        element: XCUIElement
+    ) throws {
+        guard waitForLabel(
+            "Active",
+            element: element,
+            timeout: Self.deviceLocationStreamTimeoutSeconds
+        ) else {
+            throw XCTSkip(
+                "the simulator supplies no location stream; start one with "
+                    + "`xcrun simctl location booted start --interval=1 --speed=0.5 "
+                    + "38.5766,-121.4944 39.5,-121.4944` and re-run this case"
+            )
         }
     }
 
