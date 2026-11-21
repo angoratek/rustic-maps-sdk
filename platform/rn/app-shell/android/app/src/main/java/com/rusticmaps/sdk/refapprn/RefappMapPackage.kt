@@ -10,7 +10,7 @@ import com.facebook.react.uimanager.ViewManager
  * the `RefappMap` demo module only.
  *
  * The map surface, gestures, camera, overlays and the package-owned SDK moved
- * to the shipped package (`com.mapssdkrn.MapsSdkMapHost` registers its module
+ * to the shipped package (`com.angoratek.rusticmaps.MapsSdkMapHost` registers its module
  * and `MapsSdkMapView` view manager); this package carries the demo's trace
  * replay, speech engine, secure credential store and plan/search glue.
  */

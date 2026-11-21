@@ -21,7 +21,8 @@ const runtimeSourcePath = path.join(
   'main',
   'java',
   'com',
-  'mapssdkrn',
+  'angoratek',
+  'rusticmaps',
   'MapsSdkNativeRuntime.kt',
 );
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates the React Native binding package's sources from the frozen UDL
 # with `ubrn`: the JSI TypeScript + C++ bindings, then the TurboModule glue
-# (`src/NativeMapsSdkRn.ts`, `src/index.ts`, `cpp/<package>.{h,cpp}`).
+# (`src/NativeRusticMapsSdk.ts`, `src/index.ts`, `cpp/<package>.{h,cpp}`).
 #
 # The generated trees are gitignored build artifacts, so every consumer that
 # needs them (the app build, the jest/TypeScript gate) generates them here
@@ -72,22 +72,22 @@ ensure_libandroid_link_line() {
 
 # The ubrn-generated module header names the RN codegen spec umbrella by the
 # same basename the module's own header carries (the TurboModule config's
-# `name: MapsSdkRn` equals the codegenConfig name): the quoted
-# `#import "MapsSdkRn.h"` resolves to the header itself (quoted-include
+# `name: RusticMapsSdk` equals the codegenConfig name): the quoted
+# `#import "RusticMapsSdk.h"` resolves to the header itself (quoted-include
 # resolution prefers the including file's directory), so the
-# `@protocol NativeMapsSdkRnSpec` is never seen and the pod's `MapsSdkRn.mm`
-# fails with `no type or protocol named 'NativeMapsSdkRnSpec'`. The
+# `@protocol NativeRusticMapsSdkSpec` is never seen and the pod's `RusticMapsSdk.mm`
+# fails with `no type or protocol named 'NativeRusticMapsSdkSpec'`. The
 # ReactCodegen pod exports the spec umbrella on the public headers path, so
 # the include re-points there. Idempotent, re-applied after every generation
 # run (the generation overwrites the header); the Android side needs no such
 # guard because its codegen spec is discovered by Gradle, not a quoted
 # include.
-readonly CODEGEN_SPEC_INCLUDE_SELF_NAME='#import "MapsSdkRn.h"'
-readonly CODEGEN_SPEC_INCLUDE_REPOINTED='#import <ReactCodegen/MapsSdkRn/MapsSdkRn.h>'
+readonly CODEGEN_SPEC_INCLUDE_SELF_NAME='#import "RusticMapsSdk.h"'
+readonly CODEGEN_SPEC_INCLUDE_REPOINTED='#import <ReactCodegen/RusticMapsSdk/RusticMapsSdk.h>'
 
 ensure_codegen_spec_include_on_ios() {
     local project_root="${1:-$RN_PROJECT_ROOT}"
-    local module_header="${project_root}/ios/MapsSdkRn.h"
+    local module_header="${project_root}/ios/RusticMapsSdk.h"
     if [ ! -f "${module_header}" ]; then
         printf 'generate-rn-bindings: the generated TurboModule iOS module header is missing: %s\n' \
             "${module_header}" >&2
@@ -108,7 +108,7 @@ ensure_codegen_spec_include_on_ios() {
 # CocoaPods exposes them through the pod's public header umbrella. Swift
 # imports the pod's underlying module in Objective-C mode, where the
 # `jsi/jsi.h` those headers include cannot resolve `<cassert>` as a C++ header
-# and the module fails with `could not build Objective-C module 'MapsSdkRn'`.
+# and the module fails with `could not build Objective-C module 'RusticMapsSdk'`.
 # Only the Objective-C headers under `ios/` are public; the C++ headers stay
 # private to the pod's own sources. Idempotent, re-applied after every
 # generation run because the generation rewrites the podspec.
@@ -116,7 +116,7 @@ readonly PODSPEC_PUBLIC_HEADERS_ENTRY='  s.public_header_files = "ios/**/*.h"'
 
 ensure_podspec_public_headers() {
     local project_root="${1:-$RN_PROJECT_ROOT}"
-    local podspec="${project_root}/MapsSdkRn.podspec"
+    local podspec="${project_root}/RusticMapsSdk.podspec"
     if [ ! -f "${podspec}" ]; then
         printf 'generate-rn-bindings: the generated TurboModule podspec is missing: %s\n' \
             "${podspec}" >&2
@@ -280,18 +280,18 @@ readonly BINDING_OUTPUT_PATHS=(
 # list names each output so a drift report points at the file, not a
 # directory.
 readonly TURBO_MODULE_OUTPUT_PATHS=(
-    "MapsSdkRn.podspec"
+    "RusticMapsSdk.podspec"
     "android/CMakeLists.txt"
     "android/build.gradle"
     "android/cpp-adapter.cpp"
     "android/src/main/AndroidManifest.xml"
-    "android/src/main/java/com/mapssdkrn/MapsSdkRnModule.kt"
-    "android/src/main/java/com/mapssdkrn/MapsSdkRnPackage.kt"
-    "cpp/maps-sdk-rn.cpp"
-    "cpp/maps-sdk-rn.h"
-    "ios/MapsSdkRn.h"
-    "ios/MapsSdkRn.mm"
-    "src/NativeMapsSdkRn.ts"
+    "android/src/main/java/com/angoratek/rusticmaps/RusticMapsSdkModule.kt"
+    "android/src/main/java/com/angoratek/rusticmaps/RusticMapsSdkPackage.kt"
+    "cpp/rustic-maps-sdk.cpp"
+    "cpp/rustic-maps-sdk.h"
+    "ios/RusticMapsSdk.h"
+    "ios/RusticMapsSdk.mm"
+    "src/NativeRusticMapsSdk.ts"
     "src/index.ts"
 )
 

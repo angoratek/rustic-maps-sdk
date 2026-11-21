@@ -44,17 +44,17 @@ import {
   type SpeechInstructionEvent,
   type TraceUpdateEvent,
 } from '../RefappNative';
-import { MapView, type MapCamera, type MapViewHandle } from 'maps-sdk-rn/MapView';
-import { FrameClock } from 'maps-sdk-rn/src/frameClock.ts';
-import { FollowBearingMode } from 'maps-sdk-rn/src/followBearingMode.ts';
-import { LocationPoseAnimator } from 'maps-sdk-rn/src/locationPoseAnimator.ts';
+import { MapView, type MapCamera, type MapViewHandle } from '@angoratek/rustic-maps-sdk/MapView';
+import { FrameClock } from '@angoratek/rustic-maps-sdk/src/frameClock.ts';
+import { FollowBearingMode } from '@angoratek/rustic-maps-sdk/src/followBearingMode.ts';
+import { LocationPoseAnimator } from '@angoratek/rustic-maps-sdk/src/locationPoseAnimator.ts';
 import {
   GeocodeQuality,
   LocationIndicatorVisualKind,
   MapOverlayKind,
   ProviderContract,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
-import { MapsSdk } from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
+import { MapsSdk } from '@angoratek/rustic-maps-sdk/MapsSdk';
 import type {
   ProviderRegistration,
   RegionDownloadProgress,
@@ -63,7 +63,7 @@ import type {
   TileCacheStatistics,
   TrafficFlowCacheStatistics,
   TrafficFlowData,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   appStrings,

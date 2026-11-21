@@ -15,11 +15,11 @@ import { DeviceEventEmitter } from 'react-native';
 // The generated bindings' package entry is imported for its compiled-version
 // probe; the SDK proxy and the native view are mocked at their deep entry
 // points (the jest environment has no TurboModule or native view manager).
-jest.mock('maps-sdk-rn', () => ({
+jest.mock('@angoratek/rustic-maps-sdk', () => ({
   getSdkCompiledVersion: () => 'jest-stub-version',
 }));
 
-jest.mock('maps-sdk-rn/MapView', () => {
+jest.mock('@angoratek/rustic-maps-sdk/MapView', () => {
   const React = require('react');
   const { View } = require('react-native');
   const MockMapView = React.forwardRef((props: Record<string, unknown>, ref: unknown) =>
@@ -28,7 +28,7 @@ jest.mock('maps-sdk-rn/MapView', () => {
   return { MapView: MockMapView, default: MockMapView };
 });
 
-jest.mock('maps-sdk-rn/MapsSdk', () => {
+jest.mock('@angoratek/rustic-maps-sdk/MapsSdk', () => {
   const mockSdk = {
     initialize: async () => undefined,
     getCompiledVersion: async () => 'jest-stub-version',

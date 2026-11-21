@@ -29,7 +29,7 @@
     "android/src/main/jniLibs",
     "ios",
     "AngoratekRusticMapsSdkFramework.xcframework",
-    "MapsSdkRn.podspec",
+    "RusticMapsSdk.podspec",
     "react-native.config.js",
     "tsconfig.json",
     "LICENSE-MIT",
@@ -37,11 +37,11 @@
     "THIRD_PARTY_NOTICES.md"
   ],
   "codegenConfig": {
-    "name": "MapsSdkRn",
+    "name": "RusticMapsSdk",
     "type": "modules",
     "jsSrcsDir": "src",
     "android": {
-      "javaPackageName": "com.mapssdkrn"
+      "javaPackageName": "com.angoratek.rusticmaps"
     }
   },
   "dependencies": {

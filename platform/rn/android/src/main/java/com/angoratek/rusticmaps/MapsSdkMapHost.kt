@@ -1,4 +1,4 @@
-package com.mapssdkrn
+package com.angoratek.rusticmaps
 
 import com.facebook.react.BaseReactPackage
 import com.facebook.react.bridge.NativeModule
@@ -15,13 +15,13 @@ import java.util.HashMap
  * `react-native.config.js` names this class. It exposes every native surface
  * the package ships:
  *
- * - the ubrn-generated `MapsSdkRn` TurboModule that installs the Rust crate
+ * - the ubrn-generated `RusticMapsSdk` TurboModule that installs the Rust crate
  *   into Hermes;
  * - `MapsSdkNative`, the package's SDK proxy module; and
  * - `MapsSdkMapView`, the typed `<MapView>` component's view manager.
  *
  * The class deliberately does not end in `Package`: the generated
- * `MapsSdkRnPackage` keeps that filename for autolinking's discovery scan,
+ * `RusticMapsSdkPackage` keeps that filename for autolinking's discovery scan,
  * while this hand-written package is the instance the generated
  * `AndroidRNPackageList` registers.
  */
@@ -31,7 +31,7 @@ class MapsSdkMapHost : BaseReactPackage() {
         name: String,
         reactContext: ReactApplicationContext,
     ): NativeModule? = when (name) {
-        MapsSdkRnModule.NAME -> MapsSdkRnModule(reactContext)
+        RusticMapsSdkModule.NAME -> RusticMapsSdkModule(reactContext)
         MapsSdkNativeModule.MODULE_NAME -> MapsSdkNativeModule(reactContext)
         else -> null
     }
@@ -41,9 +41,9 @@ class MapsSdkMapHost : BaseReactPackage() {
             val moduleInfos: MutableMap<String, ReactModuleInfo> = HashMap()
             // The ubrn TurboModule keeps the same ReactModuleInfo the
             // generated package declared: it is a TurboModule.
-            moduleInfos[MapsSdkRnModule.NAME] = ReactModuleInfo(
-                MapsSdkRnModule.NAME,
-                MapsSdkRnModule.NAME,
+            moduleInfos[RusticMapsSdkModule.NAME] = ReactModuleInfo(
+                RusticMapsSdkModule.NAME,
+                RusticMapsSdkModule.NAME,
                 false, // canOverrideExistingModule
                 false, // needsEagerInit
                 false, // isCxxModule

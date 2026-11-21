@@ -21,7 +21,7 @@ import {
   MapsSdk,
   MapsSdkError,
   MapsSdkErrorCode,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 test('create still answers a handle without the native half', async () => {
   const sdk = await MapsSdk.create();

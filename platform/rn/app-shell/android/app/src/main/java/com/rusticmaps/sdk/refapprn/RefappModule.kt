@@ -76,8 +76,8 @@ class RefappModule(private val reactContext: ReactApplicationContext) :
             // the launch-intent automation credential here as well: the
             // package module's lifecycle callback can run before this shell
             // starts the SDK, and the same call is idempotent once it did.
-            com.mapssdkrn.MapsSdkNativeRuntime.ensureStarted(reactContext)
-            com.mapssdkrn.MapsSdkNativeRuntime.applyLaunchInjectedCredential(
+            com.angoratek.rusticmaps.MapsSdkNativeRuntime.ensureStarted(reactContext)
+            com.angoratek.rusticmaps.MapsSdkNativeRuntime.applyLaunchInjectedCredential(
                 reactContext.currentActivity,
             )
             RefappDemoSession.instance.ensureSdkStarted(
@@ -492,7 +492,7 @@ class RefappModule(private val reactContext: ReactApplicationContext) :
             // WritableArray (a raw Kotlin `List` is not a convertible argument
             // shape — it crashed the React conversion on device).
             val lines = com.facebook.react.bridge.Arguments.createArray()
-            for (line in com.mapssdkrn.MapsSdkNativeRuntime.diagnosticsLines()) {
+            for (line in com.angoratek.rusticmaps.MapsSdkNativeRuntime.diagnosticsLines()) {
                 lines.pushString(line)
             }
             for (line in RefappDemoSession.instance.diagnosticsLines()) {

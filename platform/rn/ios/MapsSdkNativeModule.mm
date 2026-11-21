@@ -3,7 +3,7 @@
 #import <React/RCTUtils.h>
 #import <math.h>
 
-#import "MapsSdkRn-Swift.h"
+#import "RusticMapsSdk-Swift.h"
 
 namespace {
 /// The promise rejection code every package failure carries.

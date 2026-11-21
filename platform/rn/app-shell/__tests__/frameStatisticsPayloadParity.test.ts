@@ -58,7 +58,7 @@ describe('native onFrameStatistics payload parity', () => {
   test('both emitters carry the same six fields nested under statistics', () => {
     const androidFields = androidFrameStatisticsFieldNames(
       readPackageSource(
-        'android/src/main/java/com/mapssdkrn/MapsSdkMapHostView.kt',
+        'android/src/main/java/com/angoratek/rusticmaps/MapsSdkMapHostView.kt',
       ),
     );
     const iosFields = iosFrameStatisticsFieldNames(

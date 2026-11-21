@@ -13,7 +13,7 @@ import {
   followZoomTowardTripEnd,
   navigationFollowZoom,
   navigationFollowZoomMaximum,
-} from 'maps-sdk-rn/src/followBearingMode.ts';
+} from '@angoratek/rustic-maps-sdk/src/followBearingMode.ts';
 
 test('course-up is the default and the trip captures the pre-trip camera', () => {
   const camera = new FollowCamera();

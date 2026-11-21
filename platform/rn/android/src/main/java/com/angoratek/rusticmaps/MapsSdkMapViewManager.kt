@@ -1,4 +1,4 @@
-package com.mapssdkrn
+package com.angoratek.rusticmaps
 
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext

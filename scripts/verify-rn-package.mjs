@@ -42,9 +42,9 @@ const unpackDirectory = fs.mkdtempSync(
 // The tile-cache runtime path is asserted against the packaged source: the
 // package supports the AAR's API 24 floor, where `java.nio.file` is absent.
 const ANDROID_TILE_CACHE_RUNTIME_PATH =
-  "android/src/main/java/com/mapssdkrn/MapsSdkNativeRuntime.kt";
+  "android/src/main/java/com/angoratek/rusticmaps/MapsSdkNativeRuntime.kt";
 const ANDROID_TILE_CACHE_MODULE_PATH =
-  "android/src/main/java/com/mapssdkrn/MapsSdkNativeModule.kt";
+  "android/src/main/java/com/angoratek/rusticmaps/MapsSdkNativeModule.kt";
 const IOS_TILE_CACHE_RUNTIME_PATH = "ios/MapsSdkNativeRuntime.swift";
 const IOS_TILE_CACHE_MODULE_PATH = "ios/MapsSdkNativeModule.mm";
 // The build fixes every generation re-applies. Their absence means the
@@ -52,7 +52,7 @@ const IOS_TILE_CACHE_MODULE_PATH = "ios/MapsSdkNativeModule.mm";
 const CMAKE_LIBANDROID_MARKER = "find_library(ANDROID_LIB android)";
 const CMAKE_LIBANDROID_LINK_ENTRY = "${ANDROID_LIB}";
 const IOS_CODEGEN_SPEC_INCLUDE =
-  "#import <ReactCodegen/MapsSdkRn/MapsSdkRn.h>";
+  "#import <ReactCodegen/RusticMapsSdk/RusticMapsSdk.h>";
 // Only the Objective-C headers are public. The pod's C++ headers would
 // otherwise enter the public umbrella, which Swift imports in Objective-C
 // mode, and the module fails on `<cassert>` before the app can build.
@@ -71,14 +71,14 @@ const CMAKE_GENERATED_BINDINGS_FATAL_MARKER =
 const REACT_NATIVE_CONFIG_FILE = "react-native.config.js";
 const AUTOLINKED_PACKAGE_CLASS = "MapsSdkMapHost";
 const AUTOLINKED_PACKAGE_MODULE_NAMES = [
-  "MapsSdkRnModule",
+  "RusticMapsSdkModule",
   "MapsSdkNativeModule",
   "MapsSdkMapViewManager",
 ];
 // Autolinking's Android discovery scan needs a `*Package` class file in the
 // dependency's source tree; the generated one must stay shipped.
 const GENERATED_PACKAGE_FILE =
-  "android/src/main/java/com/mapssdkrn/MapsSdkRnPackage.kt";
+  "android/src/main/java/com/angoratek/rusticmaps/RusticMapsSdkPackage.kt";
 // `src/index.ts` is generated; the generation step appends the curated
 // surface, and `package.json` advertises that entry as the package root.
 const CURATED_ROOT_EXPORTS_MARKER = "// rustic-maps: curated root exports";
@@ -223,28 +223,28 @@ try {
 
   // The podspec's vendored_frameworks, expanded to each XCFramework slice
   // binary its Info.plist names.
-  const podspec = readPackageFile("MapsSdkRn.podspec", "the release assembly");
+  const podspec = readPackageFile("RusticMapsSdk.podspec", "the release assembly");
   if (podspec) {
-    addRequirement("MapsSdkRn.podspec", "the release assembly");
+    addRequirement("RusticMapsSdk.podspec", "the release assembly");
     if (!podspec.includes(IOS_PODSPEC_PUBLIC_HEADERS)) {
       problems.push(
-        "MapsSdkRn.podspec is missing the restricted public-header set (only the Objective-C headers under ios/ are public)",
+        "RusticMapsSdk.podspec is missing the restricted public-header set (only the Objective-C headers under ios/ are public)",
       );
     }
     const vendored = podspec.match(
       /s\.vendored_frameworks\s*=\s*(\[[\s\S]*?\]|"[^"]*")/,
     );
     if (!vendored) {
-      problems.push("MapsSdkRn.podspec declares no vendored_frameworks");
+      problems.push("RusticMapsSdk.podspec declares no vendored_frameworks");
     } else {
       const frameworks = [...vendored[1].matchAll(/"([^"]+)"/g)].map(
         (match) => match[1],
       );
       if (frameworks.length === 0) {
-        problems.push("MapsSdkRn.podspec declares an empty vendored_frameworks");
+        problems.push("RusticMapsSdk.podspec declares an empty vendored_frameworks");
       }
       for (const framework of frameworks) {
-        addRequirement(framework, "MapsSdkRn.podspec vendored_frameworks");
+        addRequirement(framework, "RusticMapsSdk.podspec vendored_frameworks");
         if (!framework.endsWith(".xcframework")) {
           continue;
         }
@@ -442,10 +442,10 @@ try {
         "android/CMakeLists.txt's generated-bindings guard carries no FATAL_ERROR message",
       );
     }
-    const addLibrary = cmakeLists.match(/add_library\(\s*maps-sdk-rn\b[\s\S]*?\)/);
+    const addLibrary = cmakeLists.match(/add_library\(\s*rustic-maps-sdk\b[\s\S]*?\)/);
     if (!addLibrary) {
       problems.push(
-        "android/CMakeLists.txt does not define the maps-sdk-rn library",
+        "android/CMakeLists.txt does not define the rustic-maps-sdk library",
       );
     } else {
       for (const token of addLibrary[0].match(/[^\s()]+/g) || []) {
@@ -499,19 +499,19 @@ try {
   // by its public path: a bare generation includes its own header by that
   // basename, so the spec protocol is never declared.
   const iosModuleHeader = readPackageFile(
-    "ios/MapsSdkRn.h",
+    "ios/RusticMapsSdk.h",
     "the codegen spec include gate",
   );
   if (iosModuleHeader) {
-    addRequirement("ios/MapsSdkRn.h", "the codegen spec include gate");
+    addRequirement("ios/RusticMapsSdk.h", "the codegen spec include gate");
     if (!iosModuleHeader.includes(IOS_CODEGEN_SPEC_INCLUDE)) {
       problems.push(
-        `ios/MapsSdkRn.h is missing the re-applied codegen spec include (${IOS_CODEGEN_SPEC_INCLUDE})`,
+        `ios/RusticMapsSdk.h is missing the re-applied codegen spec include (${IOS_CODEGEN_SPEC_INCLUDE})`,
       );
     }
-    if (iosModuleHeader.includes('#import "MapsSdkRn.h"')) {
+    if (iosModuleHeader.includes('#import "RusticMapsSdk.h"')) {
       problems.push(
-        'ios/MapsSdkRn.h still self-includes with #import "MapsSdkRn.h"',
+        'ios/RusticMapsSdk.h still self-includes with #import "RusticMapsSdk.h"',
       );
     }
   }

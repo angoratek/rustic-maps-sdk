@@ -11,13 +11,13 @@ import { DeviceEventEmitter, Dimensions, StyleSheet } from 'react-native';
 
 // The native seams are absent in the jest environment: bridge module null
 // (RefappNative guards it), TurboModule require mocked to a stub.
-jest.mock('maps-sdk-rn', () => ({
+jest.mock('@angoratek/rustic-maps-sdk', () => ({
   getSdkCompiledVersion: () => 'jest-stub-version',
 }));
 
 // The package's typed MapView and SDK proxy are mocked at their deep entry
 // points: the jest environment has no native view manager or module.
-jest.mock('maps-sdk-rn/MapView', () => {
+jest.mock('@angoratek/rustic-maps-sdk/MapView', () => {
   const React = require('react');
   const { View } = require('react-native');
   // The host view's imperative surface: the shell calls these from the
@@ -47,7 +47,7 @@ jest.mock('maps-sdk-rn/MapView', () => {
   return { MapView: MockMapView, default: MockMapView };
 });
 
-jest.mock('maps-sdk-rn/MapsSdk', () => {
+jest.mock('@angoratek/rustic-maps-sdk/MapsSdk', () => {
   const mockSdk = {
     initialize: async () => undefined,
     getCompiledVersion: async () => 'jest-stub-version',
@@ -142,12 +142,12 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-import { MapsSdk } from 'maps-sdk-rn/MapsSdk';
+import { MapsSdk } from '@angoratek/rustic-maps-sdk/MapsSdk';
 import {
   ProviderContract,
   RouteStrategy,
   TransportationMode,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
 import App from '../App';
 import {
   cameraPresets,

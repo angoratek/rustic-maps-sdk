@@ -10,7 +10,7 @@
 
 import { NativeModules } from 'react-native';
 
-import { MapsSdk, type RegionDefinition } from 'maps-sdk-rn/MapsSdk';
+import { MapsSdk, type RegionDefinition } from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 jest.mock('react-native', () => {
   const offlineRegionListeners = new Set<any>();

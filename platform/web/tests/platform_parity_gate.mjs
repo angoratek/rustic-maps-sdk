@@ -258,8 +258,8 @@ const PROVIDER_DOCUMENT_VIEW_SOURCES = [
   'platform/rn/ios/MapsSdkRusticMapView.swift',
   'platform/rn/ios/MapsSdkMapHostView.swift',
   'platform/rn/ios/MapsSdkNativeModule.mm',
-  'platform/rn/android/src/main/java/com/mapssdkrn/MapsSdkMapHostView.kt',
-  'platform/rn/android/src/main/java/com/mapssdkrn/MapsSdkNativeModule.kt',
+  'platform/rn/android/src/main/java/com/angoratek/rusticmaps/MapsSdkMapHostView.kt',
+  'platform/rn/android/src/main/java/com/angoratek/rusticmaps/MapsSdkNativeModule.kt',
 ];
 
 /** Asserts every view seam carries the provider-document member. */

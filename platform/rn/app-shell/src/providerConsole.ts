@@ -19,7 +19,7 @@ import type { TrafficLayerAvailability } from './mapLayersPanelState';
 import type {
   TileCacheStatistics,
   TrafficFlowCacheStatistics,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 import {
   type DiagnosticEvent,
   diagnosticsSeverityOrdinals,

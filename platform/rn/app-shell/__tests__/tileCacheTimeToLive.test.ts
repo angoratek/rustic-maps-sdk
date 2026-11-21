@@ -14,7 +14,7 @@ import {
   MapsSdk,
   TILE_CACHE_TIME_TO_LIVE_ERROR_CODE,
   TILE_CACHE_TIME_TO_LIVE_INVALID_MESSAGE,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 jest.mock('react-native', () => ({
   NativeModules: {

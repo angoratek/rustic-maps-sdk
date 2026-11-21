@@ -11,7 +11,7 @@ import {
   LocationPoseAnimator,
   signedAngularDifferenceDegrees,
   type LocationFix,
-} from 'maps-sdk-rn/src/locationPoseAnimator.ts';
+} from '@angoratek/rustic-maps-sdk/src/locationPoseAnimator.ts';
 
 /** One fix at the given position and time. */
 function fixAt(

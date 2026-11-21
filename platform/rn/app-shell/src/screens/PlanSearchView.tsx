@@ -9,7 +9,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import {
   RouteStrategy,
   TransportationMode,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
 import type { PlaceRow } from '../RefappNative';
 import type {
   DirectionsControlState,

@@ -13,10 +13,12 @@ import { name as appName } from './app.json';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require('./src/runtimeProbe');
 
-// The shell imports the package's deep entries (`maps-sdk-rn/MapView` and
-// `maps-sdk-rn/MapsSdk`) rather than the root entry: the root entry installs
-// the generated JSI crate and runs its checksum gate at module scope, while
-// the shell's App needs only the native-module seam those deep entries carry.
+// The shell imports the package's deep entries
+// (`@angoratek/rustic-maps-sdk/MapView` and
+// `@angoratek/rustic-maps-sdk/MapsSdk`) rather than the root entry: the root
+// entry installs the generated JSI crate and runs its checksum gate at
+// module scope, while the shell's App needs only the native-module seam those
+// deep entries carry.
 // The root entry's curated exports (`MapView`, `MapsSdk` and the generated
 // contract namespace) are pinned by the package-root smoke test.
 

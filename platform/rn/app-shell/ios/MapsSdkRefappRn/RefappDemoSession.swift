@@ -20,7 +20,7 @@
 import Foundation
 import QuartzCore
 import Security
-import MapsSdkRn
+import RusticMapsSdk
 import os
 
 /// The demo session (the Kotlin `RefappDemoSession` singleton mirror): the

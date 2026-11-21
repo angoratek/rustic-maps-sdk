@@ -4,7 +4,7 @@
 # Pipeline: npm install of the platform/rn workspace (ubrn, react, react-
 # native, typescript, prettier for formatting) -> `ubrn generate jsi
 # bindings` over the frozen UDL contract (TypeScript + JSI C++) -> `ubrn
-# generate jsi turbo-module` (TurboModule glue: src/NativeMapsSdkRn.ts,
+# generate jsi turbo-module` (TurboModule glue: src/NativeRusticMapsSdk.ts,
 # src/index.ts, cpp/<package-name>.{h,cpp}) -> the two app-build inputs the
 # ubrn TurboModule's Android build needs (the regenerated CMakeLists' missing
 # `libandroid.so` link line, re-applied idempotently, plus the Rust static
@@ -57,7 +57,7 @@ readonly GENERATED_TS_DIR="src/generated"
 # `cpp/generated` for the JSI bindings (the TurboModule glue stays flat in
 # `cpp/`): the generated `android/CMakeLists.txt` compiles
 # `../cpp/generated/rustic_maps.cpp` next to the flat
-# `../cpp/maps-sdk-rn.cpp`, so the uniffi-bindgen-react-native layout the
+# `../cpp/rustic-maps-sdk.cpp`, so the uniffi-bindgen-react-native layout the
 # CMake expects is `cpp/generated` for this step.
 readonly GENERATED_CPP_DIR="cpp/generated"
 readonly UBRN_COMMAND="${RN_PROJECT_ROOT}/node_modules/.bin/ubrn"
@@ -256,9 +256,10 @@ find_pod_command() {
 }
 
 install_ios_pods() {
-    # The workspace resolves the MapsSdkRn pod through `use_native_modules!`
-    # (the ubrn-packaged copy under app-shell/node_modules/maps-sdk-rn, a
-    # symlink to platform/rn): unlike the Android Gradle path, which
+    # The workspace resolves the RusticMapsSdk pod through `use_native_modules!`
+    # (the ubrn-packaged copy under
+    # app-shell/node_modules/@angoratek/rustic-maps-sdk, a symlink to
+    # platform/rn): unlike the Android Gradle path, which
     # consumes the repo workspace package through `project()`, the iOS pod
     # consumes the packaged copy, so this script's earlier re-pack of the
     # generated TypeScript and the vendored xcframework must land before

@@ -16,7 +16,7 @@ class MainApplication : Application(), ReactApplication {
         PackageList(this).packages.apply {
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
-          // The maps-sdk-rn package autolinks its one entry point
+          // The @angoratek/rustic-maps-sdk package autolinks its one entry point
           // (MapsSdkMapHost, from its react-native.config.js), which carries
           // the Rust TurboModule, the SDK proxy module and the map view
           // manager; no manual `add(...)` is needed for it.

@@ -10,11 +10,11 @@
 import React, { useState } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
-jest.mock('maps-sdk-rn', () => ({
+jest.mock('@angoratek/rustic-maps-sdk', () => ({
   getSdkCompiledVersion: () => 'jest-stub-version',
 }));
 
-jest.mock('maps-sdk-rn/MapView', () => {
+jest.mock('@angoratek/rustic-maps-sdk/MapView', () => {
   const React = require('react');
   const { View } = require('react-native');
   const MockMapView = React.forwardRef(
@@ -24,7 +24,7 @@ jest.mock('maps-sdk-rn/MapView', () => {
   return { MapView: MockMapView, default: MockMapView };
 });
 
-jest.mock('maps-sdk-rn/MapsSdk', () => ({
+jest.mock('@angoratek/rustic-maps-sdk/MapsSdk', () => ({
   MapsSdk: { create: jest.fn(), isAvailable: () => false },
   mapsSdk: { create: jest.fn(), isAvailable: () => false },
 }));
@@ -52,8 +52,8 @@ import {
   ProviderContract,
   RouteStrategy,
   TransportationMode,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
-import type { ProviderRegistration } from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
+import type { ProviderRegistration } from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 function suggestionRow(name: string): PlaceRow {
   return {

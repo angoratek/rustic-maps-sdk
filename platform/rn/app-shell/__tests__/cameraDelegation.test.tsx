@@ -12,7 +12,7 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { DeviceEventEmitter, NativeModules } from 'react-native';
 
-import type { MapCamera, MapViewHandle } from 'maps-sdk-rn/MapView';
+import type { MapCamera, MapViewHandle } from '@angoratek/rustic-maps-sdk/MapView';
 
 const boundingBox = {
   southWest: { latitude: 38.4, longitude: -121.7 },
@@ -47,8 +47,8 @@ beforeAll(() => {
 });
 
 function loadMapView() {
-  return jest.requireActual<typeof import('maps-sdk-rn/MapView')>(
-    'maps-sdk-rn/MapView',
+  return jest.requireActual<typeof import('@angoratek/rustic-maps-sdk/MapView')>(
+    '@angoratek/rustic-maps-sdk/MapView',
   ).MapView;
 }
 

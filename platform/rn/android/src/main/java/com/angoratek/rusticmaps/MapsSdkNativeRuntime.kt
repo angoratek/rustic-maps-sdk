@@ -1,4 +1,4 @@
-package com.mapssdkrn
+package com.angoratek.rusticmaps
 
 import android.app.Activity
 import android.content.Context
