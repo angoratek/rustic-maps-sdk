@@ -7,11 +7,10 @@
 //! committed payload, so no test reaches the network. The keyless providers
 //! take their deployment address in the credential slot, which lets each case
 //! point the provider the SDK builds at the fixture server through
-//! `MapSdk.configure_provider`. The credentialed full-service provider builds
-//! its client from a configuration record the native registry does not
-//! override, so its cases construct the same everymap-rs provider the catalog
-//! constructs, point it at the fixture server, and register it through the
-//! bridge; the key readback is proven separately by `configure_provider`.
+//! `MapSdk.configure_provider`. The credentialed full-service provider keeps
+//! its key in the credential slot and takes its origin from
+//! `MapSdk.set_provider_base_url`, so its cases also run entirely through
+//! `configure_provider`; the key readback is proven separately.
 //!
 //! Each case proves the seam the SDK owns: the provider is constructed, the
 //! call crosses the SDK bridge, and the parsed record carries the anchor
@@ -22,12 +21,8 @@ mod common;
 use common::{LoopbackFixtureServer, ScriptedResponse};
 use rustic_maps::{
     AvoidOptions, GeographicCoordinate, MapSdk, ProviderContract, RasterImageFormat,
-    RasterTileResolution, RouteOptions, RouteStrategy, TransportationMode, UnitSystem,
+    RasterTileResolution, RouteOptions, RouteStrategy, SdkError, TransportationMode, UnitSystem,
 };
-use rustic_maps_core::everymap_bridge::{
-    EveryMapDistanceMatrixProvider, EveryMapPlaceSearchProvider, EveryMapRasterTileProvider,
-};
-use std::sync::Arc;
 
 /// HTTP status the scripted server returns for a payload.
 const HTTP_OK_STATUS: u16 = 200;
@@ -39,6 +34,10 @@ const TILE_CONTENT_TYPE: &str = "application/octet-stream";
 /// The placeholder credential a credentialed provider registers with. It is
 /// never sent: the key-readback case makes no request.
 const PLACEHOLDER_CREDENTIAL: &str = "placeholder-key";
+
+/// Serializes the cases that configure the process-wide base URL store, so one
+/// case's loopback origin cannot reach another case's configuration.
+static BASE_URL_OVERRIDE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 /// A valid deployment address used by the key-readback case. Nothing listens
 /// on it and no request is made.
@@ -389,24 +388,35 @@ async fn photon_reverse_geocoding_crosses_the_sdk_bridge() {
 }
 
 // ---------------------------------------------------------------------------
-// The full-service provider's remaining contracts. The native catalog builds
-// these from a configuration record it never derives from the credential, so
-// each case constructs the same provider the catalog constructs, points it at
-// the fixture server, and registers it through the bridge.
+// The full-service provider's remaining contracts. The key stays in the
+// credential slot and the origin comes from the base URL seam, so every case
+// registers through the catalog exactly as an application does.
 // ---------------------------------------------------------------------------
 
-/// Builds the full-service client pointed at the fixture server.
-fn mapquest_client(
+/// Points the full-service provider at the fixture server and registers one of
+/// its capabilities through `configure_provider`.
+///
+/// The base URL test lock is held only through configuration: the client
+/// captures its origin when it is constructed, so the request that follows
+/// cannot pick up another case's override.
+fn configure_mapquest_at_loopback(
+    map_sdk: &MapSdk,
     server: &LoopbackFixtureServer,
-) -> Arc<everymap_providers_mapquest::MapQuestClient> {
-    let configuration = everymap_providers_mapquest::MapQuestProviderConfiguration {
-        api_key: PLACEHOLDER_CREDENTIAL.to_string(),
-        base_url: server.base_url().to_string(),
-        ..everymap_providers_mapquest::MapQuestProviderConfiguration::default()
-    };
-    Arc::new(everymap_providers_mapquest::MapQuestClient::new(
-        configuration,
-    ))
+    contract: ProviderContract,
+) {
+    let _test_lock = BASE_URL_OVERRIDE_TEST_LOCK
+        .lock()
+        .expect("the base URL store test lock is healthy");
+    map_sdk
+        .set_provider_base_url("mapquest".to_string(), Some(server.base_url().to_string()))
+        .expect("the loopback origin is a valid base URL");
+    map_sdk
+        .configure_provider(
+            contract,
+            "mapquest".to_string(),
+            PLACEHOLDER_CREDENTIAL.to_string(),
+        )
+        .expect("the credentialed provider registers against the loopback origin");
 }
 
 #[tokio::test]
@@ -415,14 +425,9 @@ async fn mapquest_place_search_crosses_the_sdk_bridge() {
         "mapquest",
         "search_prediction_denver.json",
     ));
-    let client = mapquest_client(&server);
     let map_sdk = MapSdk::new();
-    map_sdk.register_search_place_provider(Arc::new(EveryMapPlaceSearchProvider::new(
-        Arc::new(
-            everymap_providers_mapquest::MapQuestPlaceSearchProvider::new(Arc::clone(&client)),
-        ),
-        Arc::new(everymap_providers_mapquest::MapQuestAutocompleteProvider::new(client)),
-    )));
+    configure_mapquest_at_loopback(&map_sdk, &server, ProviderContract::PlaceSearch);
+    assert_registration_names(&map_sdk, ProviderContract::PlaceSearch, "mapquest");
 
     let places = map_sdk
         .search("Denver".to_string(), None)
@@ -443,13 +448,9 @@ async fn mapquest_distance_matrix_crosses_the_sdk_bridge() {
         "mapquest",
         "routematrix_three_locations_unit_k.json",
     ));
-    let client = mapquest_client(&server);
     let map_sdk = MapSdk::new();
-    map_sdk.register_distance_matrix_provider(Arc::new(EveryMapDistanceMatrixProvider::new(
-        Arc::new(everymap_providers_mapquest::MapQuestDistanceMatrix::new(
-            client,
-        )),
-    )));
+    configure_mapquest_at_loopback(&map_sdk, &server, ProviderContract::DistanceMatrix);
+    assert_registration_names(&map_sdk, ProviderContract::DistanceMatrix, "mapquest");
 
     // The recording holds three locations; one origin and two destinations
     // keep the requested pair set inside it.
@@ -487,11 +488,9 @@ async fn mapquest_distance_matrix_crosses_the_sdk_bridge() {
 async fn mapquest_raster_tiles_carry_the_recorded_png() {
     let recorded_png = common::fixture_bytes(RASTER_TILE_FIXTURE);
     let server = tile_fixture_server(recorded_png.clone());
-    let client = mapquest_client(&server);
     let map_sdk = MapSdk::new();
-    map_sdk.register_raster_tile_provider(Arc::new(EveryMapRasterTileProvider::new(Arc::new(
-        everymap_providers_mapquest::MapQuestRasterTileProvider::new(client),
-    ))));
+    configure_mapquest_at_loopback(&map_sdk, &server, ProviderContract::RasterTiles);
+    assert_registration_names(&map_sdk, ProviderContract::RasterTiles, "mapquest");
 
     let tile = map_sdk
         .fetch_raster_tile(
@@ -513,6 +512,39 @@ async fn mapquest_raster_tiles_carry_the_recorded_png() {
     assert_eq!(tile.image_format, RasterImageFormat::Png);
     assert_eq!(tile.tile_resolution, RasterTileResolution::Standard);
     assert_eq!(server.request_count(), 1);
+}
+
+// ---------------------------------------------------------------------------
+// The base URL seam refuses an address that would smuggle a credential: the
+// detail names the reason and never echoes the value.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn set_provider_base_url_refuses_an_address_carrying_credentials() {
+    const EMBEDDED_CREDENTIAL: &str = "embedded-secret";
+    let map_sdk = MapSdk::new();
+    let _test_lock = BASE_URL_OVERRIDE_TEST_LOCK
+        .lock()
+        .expect("the base URL store test lock is healthy");
+    for rejected_address in [
+        format!("https://consumer:{EMBEDDED_CREDENTIAL}@example.test"),
+        format!("https://example.test/?key={EMBEDDED_CREDENTIAL}"),
+        format!("https://example.test/#{EMBEDDED_CREDENTIAL}"),
+    ] {
+        match map_sdk.set_provider_base_url("mapquest".to_string(), Some(rejected_address)) {
+            Err(SdkError::ProviderRequestRejected { detail }) => {
+                assert!(
+                    !detail.is_empty(),
+                    "the refusal names the reason it rejected the address"
+                );
+                assert!(
+                    !detail.contains(EMBEDDED_CREDENTIAL),
+                    "the refusal never echoes the value it refused"
+                );
+            }
+            other => panic!("the address carrying credentials is refused: {other:?}"),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

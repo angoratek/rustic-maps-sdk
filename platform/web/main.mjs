@@ -60,7 +60,6 @@ import {
   clearUrlTemplateRasterTileSource,
   devicePixelRatioThreshold,
   registerUrlTemplateRasterTileSource,
-  setProviderBaseUrl,
 } from './generated/rustic_maps_bg.js';
 
 /**
@@ -1288,7 +1287,18 @@ page_window.mapTestReady = (async () => {
       with_adapted_sync_failure(() =>
         generated_map_sdk.configureProviderSet(provider_key, credential),
       ),
-    setProviderBaseUrl,
+    // The contract's base-URL seam: point a provider key at the same-origin
+    // fixture routes before configuring it. A null, undefined or empty URL
+    // clears the override and restores the provider's public endpoint.
+    setProviderBaseUrl: (provider_key, base_url) =>
+      with_adapted_sync_failure(() =>
+        generated_map_sdk.setProviderBaseUrl(
+          provider_key,
+          typeof base_url === 'string' && base_url.trim() !== ''
+            ? base_url
+            : undefined,
+        ),
+      ),
     // The contract has no clear member: drop the provider mirrors the
     // generated registry published to the canvas, clear the canvas' own
     // transport slots, and replace the SDK instance so its native registry

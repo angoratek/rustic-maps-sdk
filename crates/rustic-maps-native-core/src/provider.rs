@@ -427,6 +427,44 @@ impl MapSdk {
         Ok(())
     }
 
+    /// Sets or clears the base URL a provider key is configured with.
+    ///
+    /// The override applies to every later [`Self::configure_provider`],
+    /// [`Self::configure_provider_set`] and
+    /// [`Self::set_provider_credential_with_tile_cache`] call for the key,
+    /// redirecting that provider's requests to another http or https origin,
+    /// such as a same-origin fixture server or a self-hosted deployment. It is
+    /// keyed by the provider's stable registry key and never changes the
+    /// provider's public default. Passing `None` or an empty URL clears the
+    /// override, so the next configuration uses the public default again.
+    ///
+    /// The credential stays in its own parameter and never in the address.
+    /// Registration makes no request; the override takes effect at the next
+    /// configuration of the key.
+    ///
+    /// # Parameters
+    /// - `provider_key` — the stable key of a provider built into this SDK.
+    /// - `base_url` — the http or https origin the provider addresses, or
+    ///   `None` to restore the provider's public default.
+    ///
+    /// # Errors
+    /// Throws `ProviderNotConfigured` when the key is unknown to this build
+    /// and `ProviderRequestRejected` when the URL is not an http or https URL
+    /// with a host, or carries userinfo, a query or a fragment. A refused
+    /// call leaves the previously configured override in place.
+    pub fn set_provider_base_url(
+        &self,
+        provider_key: String,
+        base_url: Option<String>,
+    ) -> Result<(), SdkError> {
+        if crate::provider_catalog::catalog_entry_for_key(&provider_key).is_none() {
+            return Err(SdkError::ProviderNotConfigured {
+                contract_name: format!("provider key {provider_key} is not built into this SDK"),
+            });
+        }
+        crate::provider_catalog::record_provider_base_url(&provider_key, base_url.as_deref())
+    }
+
     /// Reports which provider serves each capability, in the order a settings
     /// surface lists them.
     ///
