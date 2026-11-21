@@ -5,7 +5,7 @@ buildscript {
         compileSdkVersion = 37
         targetSdkVersion = 36
         // The installed NDK revision (scripts/build-android.sh's validated
-        // matrix); the `:maps-sdk-rn` module reads it through its
+        // matrix); the `:rustic-maps-sdk` module reads it through its
         // `getExtOrDefault("ndkVersion")`.
         ndkVersion = "28.2.13676358"
         kotlinVersion = "2.2.0"
@@ -27,13 +27,13 @@ buildscript {
 
 apply plugin: "com.facebook.react.rootproject"
 
-// The RN package's native map module (com.mapssdkrn.MapsSdkMapHost) compiles
-// inside the generated `:maps-sdk-rn` library and draws from the same AAR the
+// The RN package's native map module (com.angoratek.rusticmaps.MapsSdkMapHost) compiles
+// inside the generated `:rustic-maps-sdk` library and draws from the same AAR the
 // app consumes. The generated library's build file is a ubrn artifact, so the
 // two dependencies the package's Kotlin sources need are declared here, on the
 // consumer side, instead of being reapplied after every regeneration.
 subprojects { subproject ->
-    if (subproject.name == "maps-sdk-rn") {
+    if (subproject.name == "rustic-maps-sdk") {
         subproject.repositories {
             flatDir {
                 // The one shipped SDK AAR: bindings, native libraries and the

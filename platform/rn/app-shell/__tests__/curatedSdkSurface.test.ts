@@ -19,8 +19,8 @@ import type {
   ProviderRegistration,
   RouteCapabilities,
   TransportationMode,
-} from 'maps-sdk-rn/MapsSdk';
-import { ProviderContract } from 'maps-sdk-rn/src/generated/rustic_maps.ts';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
+import { ProviderContract } from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
 
 const mockNativeModuleCalls: { [methodName: string]: unknown[] } = {};
 
@@ -167,7 +167,7 @@ afterEach(() => {
 });
 
 // Imported after the react-native mock is registered.
-import { MapsSdk } from 'maps-sdk-rn/MapsSdk';
+import { MapsSdk } from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 const ORIGIN = { latitude: 38.57693, longitude: -121.49492 };
 const DESTINATION = { latitude: 38.57393, longitude: -121.46956 };

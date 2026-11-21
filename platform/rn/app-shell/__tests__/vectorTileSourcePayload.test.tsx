@@ -13,8 +13,8 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { NativeModules } from 'react-native';
 
-import type { MapViewHandle } from 'maps-sdk-rn/MapView';
-import type { UrlTemplateVectorTileSource } from 'maps-sdk-rn/MapsSdk';
+import type { MapViewHandle } from '@angoratek/rustic-maps-sdk/MapView';
+import type { UrlTemplateVectorTileSource } from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 const setVectorTileSource = jest.fn(
   async (_viewIdentifier: string, _sourceJson: string) => true,
@@ -36,8 +36,8 @@ beforeAll(() => {
 
 /** Loads the component after the native module fake is installed. */
 function loadMapView() {
-  return jest.requireActual<typeof import('maps-sdk-rn/MapView')>(
-    'maps-sdk-rn/MapView',
+  return jest.requireActual<typeof import('@angoratek/rustic-maps-sdk/MapView')>(
+    '@angoratek/rustic-maps-sdk/MapView',
   ).MapView;
 }
 

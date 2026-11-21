@@ -10,7 +10,7 @@ import type {
   RegionDefinition,
   RegionImageFormat,
   RegionTileResolution,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 import type { PlaceRow } from './RefappNative';
 
 /** One camera framing row of the artifact's `camera_presets`. */

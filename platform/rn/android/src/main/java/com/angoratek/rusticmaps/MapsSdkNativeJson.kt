@@ -1,4 +1,4 @@
-package com.mapssdkrn
+package com.angoratek.rusticmaps
 
 import com.rusticmaps.sdk.MapCameraPose
 import org.json.JSONArray

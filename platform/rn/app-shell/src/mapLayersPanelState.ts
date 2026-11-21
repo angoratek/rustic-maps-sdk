@@ -13,7 +13,7 @@
  * fields. Consumer copy comes from the shared strings in `theme.ts`.
  */
 
-import type { BoundingBox } from 'maps-sdk-rn/MapView';
+import type { BoundingBox } from '@angoratek/rustic-maps-sdk/MapView';
 
 import {
   vectorBaseChoiceKey,

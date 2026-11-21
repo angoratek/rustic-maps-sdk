@@ -32,7 +32,7 @@ import {
   MapsSdk,
   MapsSdkError,
   MapsSdkErrorCode,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 test('a native rejection surfaces as one typed MapsSdkError with its own code', async () => {
   const sdk = await MapsSdk.create();

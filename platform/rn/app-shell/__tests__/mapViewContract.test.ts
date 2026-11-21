@@ -26,11 +26,11 @@ import type {
   LocationIndicatorVisualKind,
   ProviderVectorTileSource,
   ViewportSize,
-} from 'maps-sdk-rn/MapView';
+} from '@angoratek/rustic-maps-sdk/MapView';
 import type {
   UrlTemplateVectorTileSource,
   VectorTileSourceStatus,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 // The component module is not imported at runtime: this is a type-level
 // assertion test, and loading the native component is covered by the app

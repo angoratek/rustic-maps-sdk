@@ -17,7 +17,7 @@ import type { DiagnosticEvent } from '../src/diagnosticsStream';
 import type {
   TileCacheStatistics,
   TrafficFlowCacheStatistics,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 import type { FrameStatisticsEvent } from '../src/RefappNative';
 import { buildScreenStyles } from '../src/screenStyles';
 import { themeColorsByThemeName } from '../src/theme';

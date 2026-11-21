@@ -4,7 +4,7 @@
 #   npx ubrn generate jsi bindings <frozen UDL>  (see the script for the full
 #   command)  then `npx ubrn generate jsi turbo-module rustic_maps
 #   --config ubrn.config.yaml`.
-name: maps-sdk-rn
+name: rustic-maps-sdk
 version: 0.1.0
 rust:
   # The binding crate on disk, carrying the frozen UDL contract.
@@ -19,8 +19,8 @@ android:
   # armv7-linux-androideabi, x86_64-linux-android).
   targets: [armeabi-v7a, arm64-v8a, x86_64]
 turboModule:
-  specName: NativeMapsSdkRn
-  name: MapsSdkRn
+  specName: NativeRusticMapsSdk
+  name: RusticMapsSdk
   cpp: cpp
   ts: src
   entrypoint: src/index.ts

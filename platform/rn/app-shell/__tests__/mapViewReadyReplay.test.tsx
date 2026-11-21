@@ -17,7 +17,7 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { DeviceEventEmitter, NativeModules } from 'react-native';
 
-import type { MapViewProps } from 'maps-sdk-rn/MapView';
+import type { MapViewProps } from '@angoratek/rustic-maps-sdk/MapView';
 
 interface MapReadyNativeModuleMock {
   isMapReady: jest.Mock<Promise<boolean>, [string]>;
@@ -48,8 +48,8 @@ beforeEach(() => {
  * static import would capture the absent native half.
  */
 function loadMapView(): React.ComponentType<MapViewProps> {
-  const mapViewModule = jest.requireActual<typeof import('maps-sdk-rn/MapView')>(
-    'maps-sdk-rn/MapView',
+  const mapViewModule = jest.requireActual<typeof import('@angoratek/rustic-maps-sdk/MapView')>(
+    '@angoratek/rustic-maps-sdk/MapView',
   );
   return mapViewModule.MapView;
 }

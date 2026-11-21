@@ -144,7 +144,7 @@ dependencies {
     // surface module drives (the Compose reference application's consumption
     // shape; see settings.gradle's note for why it is an AAR and not a source
     // module here).
-    implementation(project(":maps-sdk-rn"))
+    implementation(project(":rustic-maps-sdk"))
 
     // The shipped SDK AAR (the flatDir repository above): the generated
     // bindings and the native map host the package draws through, in one

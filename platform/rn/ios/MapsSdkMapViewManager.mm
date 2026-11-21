@@ -2,7 +2,7 @@
 
 // The pod's generated Swift header (the same pod compiles the Swift host view
 // and the package runtime).
-#import "MapsSdkRn-Swift.h"
+#import "RusticMapsSdk-Swift.h"
 
 /**
  * The view manager exposing `MapsSdkMapHostView` to JavaScript as

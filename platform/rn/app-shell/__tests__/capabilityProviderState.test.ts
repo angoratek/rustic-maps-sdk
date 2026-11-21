@@ -8,8 +8,8 @@
  * shows the SDK's message verbatim without moving the serving provider.
  */
 
-import { ProviderContract } from 'maps-sdk-rn/src/generated/rustic_maps.ts';
-import type { ProviderRegistration } from 'maps-sdk-rn/MapsSdk';
+import { ProviderContract } from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
+import type { ProviderRegistration } from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 import {
   applyCapabilityProviderSelection,

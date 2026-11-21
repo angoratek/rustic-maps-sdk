@@ -9,9 +9,9 @@ import android.util.Log
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.WritableArray
-import com.mapssdkrn.MapsSdkMapHostView
-import com.mapssdkrn.MapsSdkMapViewObserver
-import com.mapssdkrn.MapsSdkNativeRuntime
+import com.angoratek.rusticmaps.MapsSdkMapHostView
+import com.angoratek.rusticmaps.MapsSdkMapViewObserver
+import com.angoratek.rusticmaps.MapsSdkNativeRuntime
 import com.rusticmaps.sdk.MapCameraPose
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

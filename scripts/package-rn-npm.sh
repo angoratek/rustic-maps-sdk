@@ -6,7 +6,7 @@
 # The generated sources are gitignored ubrn output, so this script regenerates
 # them from the frozen UDL before packing: the JSI bindings
 # (src/generated/, cpp/generated/) and the TurboModule glue (src/index.ts,
-# src/NativeMapsSdkRn.ts, cpp/, android/, ios/, MapsSdkRn.podspec). Node
+# src/NativeRusticMapsSdk.ts, cpp/, android/, ios/, RusticMapsSdk.podspec). Node
 # dependencies are installed from the committed lockfile when missing.
 #
 # Two package shapes exist:
@@ -61,7 +61,7 @@ readonly PACKAGE_SOURCE_ENTRIES=(
     "cpp"
     "android"
     "ios"
-    "MapsSdkRn.podspec"
+    "RusticMapsSdk.podspec"
     "react-native.config.js"
     "tsconfig.json"
     "package.json"
@@ -87,7 +87,7 @@ readonly STAGING_TRANSIENT_PATHS=(
 readonly EXPECTED_TARBALL_MEMBERS=(
     "package/LICENSE-APACHE"
     "package/LICENSE-MIT"
-    "package/MapsSdkRn.podspec"
+    "package/RusticMapsSdk.podspec"
     "package/THIRD_PARTY_NOTICES.md"
     "package/android/CMakeLists.txt"
     "package/android/build.gradle"
@@ -95,19 +95,19 @@ readonly EXPECTED_TARBALL_MEMBERS=(
     "package/android/proguard-rules.pro"
     "package/android/src/main/AndroidManifest.xml"
     "package/android/src/main/AndroidManifestNew.xml"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkMapHost.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkMapHostView.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkMapViewManager.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkNativeEventChannel.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkNativeJson.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkNativeModule.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkNativeRuntime.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkRnModule.kt"
-    "package/android/src/main/java/com/mapssdkrn/MapsSdkRnPackage.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/MapsSdkMapHost.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/MapsSdkMapHostView.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/MapsSdkMapViewManager.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/MapsSdkNativeEventChannel.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/MapsSdkNativeJson.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/MapsSdkNativeModule.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/MapsSdkNativeRuntime.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/RusticMapsSdkModule.kt"
+    "package/android/src/main/java/com/angoratek/rusticmaps/RusticMapsSdkPackage.kt"
     "package/cpp/generated/rustic_maps.cpp"
     "package/cpp/generated/rustic_maps.hpp"
-    "package/cpp/maps-sdk-rn.cpp"
-    "package/cpp/maps-sdk-rn.h"
+    "package/cpp/rustic-maps-sdk.cpp"
+    "package/cpp/rustic-maps-sdk.h"
     "package/ios/MapsSdkMapHostView.swift"
     "package/ios/MapsSdkMapViewManager.mm"
     "package/ios/MapsSdkNativeEventChannel.swift"
@@ -115,8 +115,8 @@ readonly EXPECTED_TARBALL_MEMBERS=(
     "package/ios/MapsSdkNativeModule.h"
     "package/ios/MapsSdkNativeModule.mm"
     "package/ios/MapsSdkNativeRuntime.swift"
-    "package/ios/MapsSdkRn.h"
-    "package/ios/MapsSdkRn.mm"
+    "package/ios/RusticMapsSdk.h"
+    "package/ios/RusticMapsSdk.mm"
     "package/ios/MapsSdkRusticMapView.swift"
     "package/ios/generated/rustic_maps.swift"
     "package/package.json"
@@ -124,7 +124,7 @@ readonly EXPECTED_TARBALL_MEMBERS=(
     "package/src/MapView.tsx"
     "package/src/MapsSdk.ts"
     "package/src/MapsSdkError.ts"
-    "package/src/NativeMapsSdkRn.ts"
+    "package/src/NativeRusticMapsSdk.ts"
     "package/src/followBearingMode.ts"
     "package/src/frameClock.ts"
     "package/src/generated/rustic_maps-ffi.ts"

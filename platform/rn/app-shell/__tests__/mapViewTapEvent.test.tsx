@@ -14,7 +14,7 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { DeviceEventEmitter, NativeModules } from 'react-native';
 
-import type { MapViewProps } from 'maps-sdk-rn/MapView';
+import type { MapViewProps } from '@angoratek/rustic-maps-sdk/MapView';
 
 /**
  * Installs the native module fake the component expects at load time. The
@@ -33,8 +33,8 @@ beforeAll(() => {
 
 /** Loads the component after the native module fake is installed. */
 function loadMapView(): React.ComponentType<MapViewProps> {
-  return jest.requireActual<typeof import('maps-sdk-rn/MapView')>(
-    'maps-sdk-rn/MapView',
+  return jest.requireActual<typeof import('@angoratek/rustic-maps-sdk/MapView')>(
+    '@angoratek/rustic-maps-sdk/MapView',
   ).MapView;
 }
 

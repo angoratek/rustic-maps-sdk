@@ -8,7 +8,7 @@
 import {
   RouteStrategy,
   TransportationMode,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
 
 import {
   defaultDirectionsRouteStrategyName,

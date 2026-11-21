@@ -28,10 +28,10 @@ import {
   defaultDeviationPolicy,
   defaultStepAdvancePolicy,
   offlineRouteFromArchiveBytes,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
-import type { MapsSdk, Route, RouteOptions } from 'maps-sdk-rn/MapsSdk';
-import type { MapOverlay, MapViewHandle } from 'maps-sdk-rn/MapView';
-import type { GeographicCoordinate } from 'maps-sdk-rn/MapView';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
+import type { MapsSdk, Route, RouteOptions } from '@angoratek/rustic-maps-sdk/MapsSdk';
+import type { MapOverlay, MapViewHandle } from '@angoratek/rustic-maps-sdk/MapView';
+import type { GeographicCoordinate } from '@angoratek/rustic-maps-sdk/MapView';
 
 /** The fixed-accuracy envelope the worked example's single fix reports. */
 const WALKTHROUGH_FIX_HORIZONTAL_ACCURACY_METERS = 5.0;

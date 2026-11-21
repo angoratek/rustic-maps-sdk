@@ -11,11 +11,11 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { DeviceEventEmitter, Text } from 'react-native';
 
-jest.mock('maps-sdk-rn', () => ({
+jest.mock('@angoratek/rustic-maps-sdk', () => ({
   getSdkCompiledVersion: () => 'jest-stub-version',
 }));
 
-jest.mock('maps-sdk-rn/MapView', () => {
+jest.mock('@angoratek/rustic-maps-sdk/MapView', () => {
   const React = require('react');
   const { View } = require('react-native');
   const MockMapView = React.forwardRef(
@@ -82,7 +82,7 @@ const mockSdk = {
   diagnosticsLines: jest.fn(async () => []),
 };
 
-jest.mock('maps-sdk-rn/MapsSdk', () => ({
+jest.mock('@angoratek/rustic-maps-sdk/MapsSdk', () => ({
   MapsSdk: { create: async () => mockSdk, isAvailable: () => false },
   mapsSdk: { create: async () => mockSdk, isAvailable: () => false },
 }));
@@ -137,7 +137,7 @@ import App from '../App';
 import {
   ProviderContract,
   TransportationMode,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
 import { demoPlaces, demoPlans, demoRoutes } from '../src/referenceScenes';
 import { providerDescriptors } from '../src/providerRegistry';
 import { appStrings } from '../src/theme';

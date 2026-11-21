@@ -7,7 +7,7 @@
 //! RN shell's loader).
 
 import Foundation
-import MapsSdkRn
+import RusticMapsSdk
 
 /// The loaded artifact record the controller consumes: the sections the shell
 /// needs (the Kotlin `RefappScenesArtifact` mirror), including the keyless

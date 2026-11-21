@@ -9,13 +9,13 @@
  * absent in a JavaScript runner) and pins the exported surface.
  */
 
-import * as packageRoot from 'maps-sdk-rn';
-import { MapView as CuratedMapView } from 'maps-sdk-rn/MapView';
-import { MapsSdk as CuratedMapsSdk } from 'maps-sdk-rn/MapsSdk';
+import * as packageRoot from '@angoratek/rustic-maps-sdk';
+import { MapView as CuratedMapView } from '@angoratek/rustic-maps-sdk/MapView';
+import { MapsSdk as CuratedMapsSdk } from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 // The generated installer talks to the native TurboModule; a JavaScript
 // runner has no bridge runtime, so it is stubbed to a no-op installer.
-jest.mock('maps-sdk-rn/src/NativeMapsSdkRn', () => ({
+jest.mock('@angoratek/rustic-maps-sdk/src/NativeRusticMapsSdk', () => ({
   __esModule: true,
   default: {
     installRustCrate: jest.fn(() => true),
@@ -26,7 +26,7 @@ jest.mock('maps-sdk-rn/src/NativeMapsSdkRn', () => ({
 // The generated bindings' `initialize()` runs the native checksum gate.
 // Stub the generated module with one namespace member and an initializer so
 // the root entry's own wiring (namespace export and initialization) runs.
-jest.mock('maps-sdk-rn/src/generated/rustic_maps', () => ({
+jest.mock('@angoratek/rustic-maps-sdk/src/generated/rustic_maps', () => ({
   __esModule: true,
   default: { initialize: jest.fn() },
   MapView: class GeneratedMapView {},

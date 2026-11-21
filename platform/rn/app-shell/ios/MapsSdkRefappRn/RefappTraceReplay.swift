@@ -5,7 +5,7 @@
 //! same committed trace set drives the demo on every platform.
 
 import Foundation
-import MapsSdkRn
+import RusticMapsSdk
 
 /// One recorded trace sample (the fixture's `samples` entry).
 struct RefappTraceSample {

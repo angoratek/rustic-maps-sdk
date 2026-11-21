@@ -10,10 +10,10 @@ target/
 # package.json/package-lock.json, tsconfig.json, ubrn.config.yaml and
 # react-native.config.js (the autolinking descriptor), plus the package's
 # hand-written sources (src/MapView.tsx, src/MapsSdk.ts, the native
-# module/view-manager classes in android/src/main/java/com/mapssdkrn, the
+# module/view-manager classes in android/src/main/java/com/angoratek/rusticmaps, the
 # pod's own ios/ sources, and the two Android files the generated build.gradle
 # names unconditionally). The TurboModule glue (podspec, android/, ios/
-# glue, cpp/ adapters, src/NativeMapsSdkRn.ts, src/index.ts) is ubrn
+# glue, cpp/ adapters, src/NativeRusticMapsSdk.ts, src/index.ts) is ubrn
 # generator output and is rewritten on each `generate jsi turbo-module` run.
 #
 # The patterns are anchored to this package root on purpose: they name the
@@ -24,11 +24,11 @@ target/
 # src/* of its own) and blocked a fresh clone from building it.
 # The generated binding sources (ubrn rewrites these). The package also ships
 # hand-written sources beside them: `src/MapView.tsx`, `src/MapsSdk.ts`, the
-# native module/view-manager classes under `android/src/main/java/com/mapssdkrn`
+# native module/view-manager classes under `android/src/main/java/com/angoratek/rusticmaps`
 # and the pod's own `ios/` sources.
 /src/generated/
 /src/index.ts
-/src/NativeMapsSdkRn.ts
+/src/NativeRusticMapsSdk.ts
 /cpp/
 /android/.cxx/
 /android/build/
@@ -41,16 +41,16 @@ target/
 # fresh checkout without them cannot assemble the Android library. They are
 # package sources, not build outputs.
 /android/src/main/AndroidManifest.xml
-/android/src/main/java/com/mapssdkrn/MapsSdkRnModule.kt
-/android/src/main/java/com/mapssdkrn/MapsSdkRnPackage.kt
+/android/src/main/java/com/angoratek/rusticmaps/RusticMapsSdkModule.kt
+/android/src/main/java/com/angoratek/rusticmaps/RusticMapsSdkPackage.kt
 /android/src/main/jniLibs/
-/ios/MapsSdkRn.h
-/ios/MapsSdkRn.mm
+/ios/RusticMapsSdk.h
+/ios/RusticMapsSdk.mm
 # The staging directory `ubrn build ios --native-bindings` writes the FFI
 # headers and a duplicate Swift binding into before assembling the
 # xcframework; scripts/build-rn.sh removes it after a successful build.
 /ios/swift/
-/MapsSdkRn.podspec
+/RusticMapsSdk.podspec
 # The iOS binary archive the app pod vendors, produced by
 # scripts/build-rn.sh's iOS stage (the platform/ios/artifacts/ equivalent);
 # never committed.

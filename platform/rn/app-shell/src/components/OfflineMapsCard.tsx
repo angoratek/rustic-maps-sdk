@@ -5,7 +5,7 @@ import type { CacheStateEvent, FrameStatisticsEvent } from '../RefappNative';
 import type {
   RegionDownloadProgress,
   RegionRecord,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 import type { buildScreenStyles } from '../screenStyles';
 import { appStrings } from '../theme';
 

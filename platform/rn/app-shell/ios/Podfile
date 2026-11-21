@@ -17,9 +17,9 @@ end
 target 'MapsSdkRefappRn' do
   config = use_native_modules!
 
-  # The maps-sdk-rn TurboModule pod already resolves through
+  # The @angoratek/rustic-maps-sdk TurboModule pod already resolves through
   # `use_native_modules!` (the ubrn-packaged package at
-  # ../node_modules/maps-sdk-rn, whose podspec vendors the
+  # ../node_modules/@angoratek/rustic-maps-sdk, whose podspec vendors the
   # AngoratekRusticMapsSdkFramework.xcframework the ubrn iOS build produced — the
   # guarded deep-import route's installRustCrate seam). Note: unlike the
   # Android Gradle path, which consumes the repo workspace package, the iOS

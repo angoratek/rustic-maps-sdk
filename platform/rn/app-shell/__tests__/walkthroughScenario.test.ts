@@ -11,13 +11,13 @@
  */
 
 import { runWalkthrough } from '../src/walkthroughScenario';
-import type { MapsSdk, Route, RouteOptions } from 'maps-sdk-rn/MapsSdk';
+import type { MapsSdk, Route, RouteOptions } from '@angoratek/rustic-maps-sdk/MapsSdk';
 import type {
   GeographicCoordinate,
   MapCamera,
   MapOverlay,
   MapViewHandle,
-} from 'maps-sdk-rn/MapView';
+} from '@angoratek/rustic-maps-sdk/MapView';
 
 /** What the generated `Navigator` stand-in observed. */
 const mockNavigationRecording: {
@@ -35,7 +35,7 @@ const mockNavigationRecording: {
   }>;
 } = { startCalls: [], fixes: [], offlineRequests: [] };
 
-jest.mock('maps-sdk-rn/src/generated/rustic_maps.ts', () => ({
+jest.mock('@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts', () => ({
   MapOverlayKind: {
     RoutePolyline: 0,
     FilledPolygon: 1,

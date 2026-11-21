@@ -8,22 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		0686BE74E1D530B480782820 /* RefappMapModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8E1CE63C14DE8E755C8546D5 /* RefappMapModule.mm */; };
-		07DF0110DF551B87D613502E /* sacramento_deviation_reroute.json in Resources */ = {isa = PBXBuildFile; fileRef = 4BBC4A73F4FD09C69F422E87 /* sacramento_deviation_reroute.json */; };
 		0C80B921A6F3F58F76C31292 /* libPods-MapsSdkRefappRn.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-MapsSdkRefappRn.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1580622FF80BABE49FF8E26F /* reference-scenes.json in Resources */ = {isa = PBXBuildFile; fileRef = BFD1BB7BC8615F90B5C99655 /* reference-scenes.json */; };
+		22E2F10FA4DE78C9400FCBD0 /* sacramento_deviation_recovery.json in Resources */ = {isa = PBXBuildFile; fileRef = FA65B47725054D499E816C83 /* sacramento_deviation_recovery.json */; };
 		2954527D969A2A4DCF803CD8 /* RefappDemoSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF49077113BFE4CDCE59BE3C /* RefappDemoSession.swift */; };
+		29C761121B15C7B47EF0C697 /* sacramento_clean_walk.json in Resources */ = {isa = PBXBuildFile; fileRef = 4FAF289EBBCE2DF2634EAD16 /* sacramento_clean_walk.json */; };
 		2A6F4C1D9E8B7A3F5C0D12E4 /* routing_grid.rmog in Resources */ = {isa = PBXBuildFile; fileRef = 7F3E2B9C4D1A6E8F0B5C2D37 /* routing_grid.rmog */; };
 		2F0CCA72F8D14C28A4D016BC /* RefappTraceReplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 257939193A21388A2F3208F0 /* RefappTraceReplay.swift */; };
 		41FAB0A7C2C46822A52130BF /* RefappCameraEasing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C7B7FEDFF5AAD1FA4245386 /* RefappCameraEasing.swift */; };
-		4D6AE2D0EDB371F956E34DC9 /* sacramento_deviation_recovery.json in Resources */ = {isa = PBXBuildFile; fileRef = 74A25191C4A6C54BC8A715FF /* sacramento_deviation_recovery.json */; };
 		5271550E212955540839641C /* RefappSpeechSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B58F14D91A024942D9D331 /* RefappSpeechSpeaker.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		761780EF2CA45674006654EF /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EE2CA45674006654EF /* SceneDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		AB51AB89CF8BC45D8E21CAE0 /* RefappConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B02FEA32A2AF3A6907C9DD9D /* RefappConstants.swift */; };
 		AFD5CF07122C9E6F9AAAE30C /* RefappScenesLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB5C82BDB6F78B40DF5D827 /* RefappScenesLoader.swift */; };
-		EACCDCCED7F9820BE31E6CF3 /* sacramento_clean_walk.json in Resources */ = {isa = PBXBuildFile; fileRef = D271EEC1CCFF7284DBC90AE5 /* sacramento_clean_walk.json */; };
+		BFF108AB8AE6A03B9462BBC9 /* sacramento_deviation_reroute.json in Resources */ = {isa = PBXBuildFile; fileRef = 2CAADF8B7DC6651774CEA52C /* sacramento_deviation_reroute.json */; };
 		EB2D1BF021DC38DE5B988F03 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -33,14 +33,14 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MapsSdkRefappRn/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = MapsSdkRefappRn/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		257939193A21388A2F3208F0 /* RefappTraceReplay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RefappTraceReplay.swift; path = MapsSdkRefappRn/RefappTraceReplay.swift; sourceTree = "<group>"; };
+		2CAADF8B7DC6651774CEA52C /* sacramento_deviation_reroute.json */ = {isa = PBXFileReference; includeInIndex = 1; name = sacramento_deviation_reroute.json; path = "../../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_reroute.json"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-MapsSdkRefappRn.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MapsSdkRefappRn.debug.xcconfig"; path = "Target Support Files/Pods-MapsSdkRefappRn/Pods-MapsSdkRefappRn.debug.xcconfig"; sourceTree = "<group>"; };
-		4BBC4A73F4FD09C69F422E87 /* sacramento_deviation_reroute.json */ = {isa = PBXFileReference; includeInIndex = 1; name = sacramento_deviation_reroute.json; path = "../../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_reroute.json"; sourceTree = "<group>"; };
+		4FAF289EBBCE2DF2634EAD16 /* sacramento_clean_walk.json */ = {isa = PBXFileReference; includeInIndex = 1; name = sacramento_clean_walk.json; path = "../../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_clean_walk.json"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-MapsSdkRefappRn.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MapsSdkRefappRn.release.xcconfig"; path = "Target Support Files/Pods-MapsSdkRefappRn/Pods-MapsSdkRefappRn.release.xcconfig"; sourceTree = "<group>"; };
 		5AB5C82BDB6F78B40DF5D827 /* RefappScenesLoader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RefappScenesLoader.swift; path = MapsSdkRefappRn/RefappScenesLoader.swift; sourceTree = "<group>"; };
 		5D4C56EF6A38EAB5D49D1F8F /* RefappMapModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = RefappMapModule.h; path = MapsSdkRefappRn/RefappMapModule.h; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-MapsSdkRefappRn.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MapsSdkRefappRn.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C7B7FEDFF5AAD1FA4245386 /* RefappCameraEasing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RefappCameraEasing.swift; path = MapsSdkRefappRn/RefappCameraEasing.swift; sourceTree = "<group>"; };
-		74A25191C4A6C54BC8A715FF /* sacramento_deviation_recovery.json */ = {isa = PBXFileReference; includeInIndex = 1; name = sacramento_deviation_recovery.json; path = "../../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_recovery.json"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = MapsSdkRefappRn/AppDelegate.swift; sourceTree = "<group>"; };
 		761780EE2CA45674006654EF /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SceneDelegate.swift; path = MapsSdkRefappRn/SceneDelegate.swift; sourceTree = "<group>"; };
 		7F3E2B9C4D1A6E8F0B5C2D37 /* routing_grid.rmog */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; name = routing_grid.rmog; path = "../../../../crates/rustic-maps-offline-graph-compiler/fixtures/rmog/routing_grid.rmog"; sourceTree = "<group>"; };
@@ -49,9 +49,9 @@
 		AF49077113BFE4CDCE59BE3C /* RefappDemoSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RefappDemoSession.swift; path = MapsSdkRefappRn/RefappDemoSession.swift; sourceTree = "<group>"; };
 		B02FEA32A2AF3A6907C9DD9D /* RefappConstants.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RefappConstants.swift; path = MapsSdkRefappRn/RefappConstants.swift; sourceTree = "<group>"; };
 		BFD1BB7BC8615F90B5C99655 /* reference-scenes.json */ = {isa = PBXFileReference; includeInIndex = 1; name = "reference-scenes.json"; path = "../../../reference-scenes.json"; sourceTree = "<group>"; };
-		D271EEC1CCFF7284DBC90AE5 /* sacramento_clean_walk.json */ = {isa = PBXFileReference; includeInIndex = 1; name = sacramento_clean_walk.json; path = "../../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_clean_walk.json"; sourceTree = "<group>"; };
 		E6B58F14D91A024942D9D331 /* RefappSpeechSpeaker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RefappSpeechSpeaker.swift; path = MapsSdkRefappRn/RefappSpeechSpeaker.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		FA65B47725054D499E816C83 /* sacramento_deviation_recovery.json */ = {isa = PBXFileReference; includeInIndex = 1; name = sacramento_deviation_recovery.json; path = "../../../../crates/rustic-maps-navigation/fixtures/navigation/traces/sacramento_deviation_recovery.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,9 +102,9 @@
 			children = (
 				BFD1BB7BC8615F90B5C99655 /* reference-scenes.json */,
 				7F3E2B9C4D1A6E8F0B5C2D37 /* routing_grid.rmog */,
-				D271EEC1CCFF7284DBC90AE5 /* sacramento_clean_walk.json */,
-				74A25191C4A6C54BC8A715FF /* sacramento_deviation_recovery.json */,
-				4BBC4A73F4FD09C69F422E87 /* sacramento_deviation_reroute.json */,
+				4FAF289EBBCE2DF2634EAD16 /* sacramento_clean_walk.json */,
+				FA65B47725054D499E816C83 /* sacramento_deviation_recovery.json */,
+				2CAADF8B7DC6651774CEA52C /* sacramento_deviation_reroute.json */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -220,9 +220,9 @@
 				1580622FF80BABE49FF8E26F /* reference-scenes.json in Resources */,
 				2A6F4C1D9E8B7A3F5C0D12E4 /* routing_grid.rmog in Resources */,
 				EB2D1BF021DC38DE5B988F03 /* PrivacyInfo.xcprivacy in Resources */,
-				EACCDCCED7F9820BE31E6CF3 /* sacramento_clean_walk.json in Resources */,
-				4D6AE2D0EDB371F956E34DC9 /* sacramento_deviation_recovery.json in Resources */,
-				07DF0110DF551B87D613502E /* sacramento_deviation_reroute.json in Resources */,
+				29C761121B15C7B47EF0C697 /* sacramento_clean_walk.json in Resources */,
+				22E2F10FA4DE78C9400FCBD0 /* sacramento_deviation_recovery.json in Resources */,
+				BFF108AB8AE6A03B9462BBC9 /* sacramento_deviation_reroute.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -333,8 +333,8 @@
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(PODS_CONFIGURATION_BUILD_DIR)/MapsSdkRn\"",
-					"\"$(PODS_CONFIGURATION_BUILD_DIR)/MapsSdkRn/Swift Compatibility Header\"",
+					"\"$(PODS_CONFIGURATION_BUILD_DIR)/RusticMapsSdk\"",
+					"\"$(PODS_CONFIGURATION_BUILD_DIR)/RusticMapsSdk/Swift Compatibility Header\"",
 				);
 				INFOPLIST_FILE = MapsSdkRefappRn/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -369,8 +369,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(PODS_CONFIGURATION_BUILD_DIR)/MapsSdkRn\"",
-					"\"$(PODS_CONFIGURATION_BUILD_DIR)/MapsSdkRn/Swift Compatibility Header\"",
+					"\"$(PODS_CONFIGURATION_BUILD_DIR)/RusticMapsSdk\"",
+					"\"$(PODS_CONFIGURATION_BUILD_DIR)/RusticMapsSdk/Swift Compatibility Header\"",
 				);
 				INFOPLIST_FILE = MapsSdkRefappRn/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;

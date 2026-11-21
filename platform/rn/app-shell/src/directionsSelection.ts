@@ -15,8 +15,8 @@
 import {
   RouteStrategy,
   TransportationMode,
-} from 'maps-sdk-rn/src/generated/rustic_maps.ts';
-import type { RouteCapabilities } from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
+import type { RouteCapabilities } from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 import { appStrings } from './theme';
 

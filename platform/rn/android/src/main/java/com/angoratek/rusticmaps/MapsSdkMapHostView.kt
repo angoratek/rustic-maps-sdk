@@ -1,4 +1,4 @@
-package com.mapssdkrn
+package com.angoratek.rusticmaps
 
 import android.content.Context
 import android.widget.FrameLayout

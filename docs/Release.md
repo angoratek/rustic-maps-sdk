@@ -131,9 +131,9 @@ read off its file size. The slices cover arm64 only.
 ### React Native — the TurboModule package
 
 `scripts/build-rn.sh` runs `ubrn generate jsi bindings` over the frozen UDL and `ubrn
-generate jsi turbo-module` (the glue: `src/NativeMapsSdkRn.ts`, `src/index.ts`, `cpp/`),
+generate jsi turbo-module` (the glue: `src/NativeRusticMapsSdk.ts`, `src/index.ts`, `cpp/`),
 builds the Rust static archives for the three ABIs into `android/src/main/jniLibs`, and
-typechecks with `tsc --noEmit`. The generated `MapsSdkRn.podspec` declares
+typechecks with `tsc --noEmit`. The generated `RusticMapsSdk.podspec` declares
 `uniffi-bindgen-react-native` 0.31.0-6; `scripts/check-rn-pod-swift.sh` type-checks the
 pod's Swift sources. The release package renames `package.json` to
 `@angoratek/rustic-maps-sdk`, drops `"private": true`, and adds the `files` allow-list,
@@ -143,7 +143,7 @@ allow-list names exactly the surface the podspec and CMake consume:
 ```json
 "files": [
   "src", "cpp", "android", "android/src/main/jniLibs", "ios",
-  "AngoratekRusticMapsSdkFramework.xcframework", "MapsSdkRn.podspec",
+  "AngoratekRusticMapsSdkFramework.xcframework", "RusticMapsSdk.podspec",
   "tsconfig.json", "LICENSE-MIT", "LICENSE-APACHE",
   "THIRD_PARTY_NOTICES.md"
 ]

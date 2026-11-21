@@ -5,7 +5,7 @@
  * missing seam answers an honest refusal instead of calling one.
  */
 
-import { ProviderContract } from 'maps-sdk-rn/src/generated/rustic_maps.ts';
+import { ProviderContract } from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
 
 import {
   registerProviderCredential,

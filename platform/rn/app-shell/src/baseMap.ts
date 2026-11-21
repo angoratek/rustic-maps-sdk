@@ -15,7 +15,7 @@ import type {
   UrlTemplateRasterTileSourceDefinition,
   UrlTemplateTileResolution,
   UrlTemplateVectorTileSource,
-} from 'maps-sdk-rn/MapsSdk';
+} from '@angoratek/rustic-maps-sdk/MapsSdk';
 
 import type {
   KeylessBaseMapDeclaration,

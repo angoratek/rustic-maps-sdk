@@ -12,7 +12,7 @@
  * with fake handles.
  */
 
-import { ProviderContract } from 'maps-sdk-rn/src/generated/rustic_maps.ts';
+import { ProviderContract } from '@angoratek/rustic-maps-sdk/src/generated/rustic_maps.ts';
 
 import { capabilityContractForRegistryName } from './capabilityProviderState';
 import type { ProviderCredentialDescriptor } from './providerRegistry';

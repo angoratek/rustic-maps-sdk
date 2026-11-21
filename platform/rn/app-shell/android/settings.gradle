@@ -7,8 +7,8 @@ include ':app'
 // The ubrn TurboModule library: the generated Kotlin + JSI glue module that
 // `scripts/build-rn.sh` regenerates over the frozen UDL contract (the ubrn
 // app-integration flow consumes the library's own `android` module).
-include ':maps-sdk-rn'
-project(':maps-sdk-rn').projectDir = file('../../android')
+include ':rustic-maps-sdk'
+project(':rustic-maps-sdk').projectDir = file('../../android')
 
 // NOTE: the SDK is consumed as its one prebuilt AAR from
 // `platform/android/maps-sdk/build/outputs/aar` (app/build.gradle's flatDir)
