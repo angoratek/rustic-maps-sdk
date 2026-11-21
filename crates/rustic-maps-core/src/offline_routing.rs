@@ -97,7 +97,7 @@ const NODE_SNAP_TOLERANCE_METERS: f64 = 50.0;
 /// Fastest speed any edge of the packed speed column can carry; the
 /// admissibility bound for A*'s duration heuristic (the `Fastest` strategy).
 /// Written with primitive casts so it stays a plain constant.
-const MAX_GRAPH_SPEED_KILOMETERS_PER_HOUR: f64 =
+const MAXIMUM_GRAPH_SPEED_KILOMETERS_PER_HOUR: f64 =
     SPEED_CELL_LIMIT as f64 * SPEED_QUANTUM_KILOMETERS_PER_HOUR as f64;
 
 /// Unit conversion for the speed column.
@@ -109,8 +109,8 @@ const SECONDS_PER_HOUR: f64 = 3_600.0;
 /// The admissible heuristic scale for the duration cost function: at the
 /// fastest storable edge speed, the straight-line distance is a lower bound
 /// on every remaining traversal time.
-const MAX_GRAPH_SPEED_METERS_PER_SECOND: f64 =
-    MAX_GRAPH_SPEED_KILOMETERS_PER_HOUR * METERS_PER_KILOMETER / SECONDS_PER_HOUR;
+const MAXIMUM_GRAPH_SPEED_METERS_PER_SECOND: f64 =
+    MAXIMUM_GRAPH_SPEED_KILOMETERS_PER_HOUR * METERS_PER_KILOMETER / SECONDS_PER_HOUR;
 
 /// Instruction text of the departure step (the archive has no street names;
 /// see the module docs).
@@ -857,7 +857,7 @@ pub fn a_star_search(
             match traversal_cost {
                 TraversalCost::DistanceMeters => straight_line_meters,
                 TraversalCost::TimeSeconds => {
-                    straight_line_meters / MAX_GRAPH_SPEED_METERS_PER_SECOND
+                    straight_line_meters / MAXIMUM_GRAPH_SPEED_METERS_PER_SECOND
                 }
             }
         },

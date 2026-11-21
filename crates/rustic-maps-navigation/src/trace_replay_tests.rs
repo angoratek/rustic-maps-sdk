@@ -48,7 +48,7 @@ use crate::step_advance::{
     StepAdvanceCondition,
 };
 use crate::trace_fixture::{
-    ALL_TRACE_SCENARIOS, CLEAN_TRACE_SCENARIO, EXCURSION_METERS, MAX_FIX_NOISE_METERS,
+    ALL_TRACE_SCENARIOS, CLEAN_TRACE_SCENARIO, EXCURSION_METERS, MAXIMUM_FIX_NOISE_METERS,
     NavigationTraceFixture, RECOVERY_TRACE_SCENARIO, REROUTE_TRACE_SCENARIO, RecordedRouteWalk,
     SAMPLE_SPACING_METERS, load_trace_fixture, planar_offset_coordinate,
 };
@@ -66,7 +66,7 @@ const REPLAY_PLANAR_TOLERANCE_METERS: f64 = 0.1;
 /// recorded trace: the radial fix noise can move a snap's along-position by
 /// at most the noise clamp, and the projection adds its planar residual.
 const REPLAY_MONOTONICITY_TOLERANCE_METERS: f64 =
-    MAX_FIX_NOISE_METERS + REPLAY_PLANAR_TOLERANCE_METERS;
+    MAXIMUM_FIX_NOISE_METERS + REPLAY_PLANAR_TOLERANCE_METERS;
 
 /// Tolerance, in meters, for a phrase magnitude's rounding shift: the worst
 /// half increment of the metric bands below one kilometer (the moderate
@@ -94,7 +94,7 @@ const REPLAY_PROPERTY_TEST_CASE_COUNT: u32 = 64;
 /// ceiling plus the Ferrostar-default eager advance window (the projection
 /// may jump up to one advance threshold toward the next maneuver point) plus
 /// the planar reconstruction tolerance.
-const REPLAY_SNAP_ENVELOPE_METERS: f64 = MAX_FIX_NOISE_METERS
+const REPLAY_SNAP_ENVELOPE_METERS: f64 = MAXIMUM_FIX_NOISE_METERS
     + DEFAULT_DISTANCE_TO_END_OF_STEP_THRESHOLD_METERS
     + REPLAY_PLANAR_TOLERANCE_METERS;
 
@@ -390,7 +390,7 @@ fn assert_active_distance_phrase_near(
         &DistanceUnit::Meters,
         "the recorded routes keep every step below the 1 km far band, so the phrase stays in meters"
     );
-    let tolerance_meters = MAX_FIX_NOISE_METERS + REPLAY_PHRASE_ROUNDING_TOLERANCE_METERS;
+    let tolerance_meters = MAXIMUM_FIX_NOISE_METERS + REPLAY_PHRASE_ROUNDING_TOLERANCE_METERS;
     let distance_deviation_meters = (magnitude - expected_distance_meters).abs();
     assert!(
         distance_deviation_meters <= tolerance_meters,
@@ -654,7 +654,7 @@ fn clean_trace_composes_provider_instructions_at_sampled_moments() {
                 let phrase_deviation_meters = (magnitude - raw_distance_to_maneuver_meters).abs();
                 assert!(
                     phrase_deviation_meters
-                        <= MAX_FIX_NOISE_METERS + REPLAY_PHRASE_ROUNDING_TOLERANCE_METERS,
+                        <= MAXIMUM_FIX_NOISE_METERS + REPLAY_PHRASE_ROUNDING_TOLERANCE_METERS,
                     "the phrase magnitude must be the raw distance's band read"
                 );
             }
@@ -741,7 +741,7 @@ fn deviation_trace_freezes_then_recovers_and_reanchors() {
     };
     assert!(
         (first_deviation_measurement - EXCURSION_METERS).abs()
-            <= MAX_FIX_NOISE_METERS + REPLAY_PLANAR_TOLERANCE_METERS,
+            <= MAXIMUM_FIX_NOISE_METERS + REPLAY_PLANAR_TOLERANCE_METERS,
         "the recorded measurement must follow the excursion: {first_deviation_measurement}"
     );
     for deviation_status_change in &outcome.deviation_changes {
@@ -848,7 +848,7 @@ fn reroute_trace_rebuilds_the_trip_on_the_replacement_route() {
     };
     assert!(
         (first_deviation_measurement - EXCURSION_METERS).abs()
-            <= MAX_FIX_NOISE_METERS + REPLAY_PLANAR_TOLERANCE_METERS
+            <= MAXIMUM_FIX_NOISE_METERS + REPLAY_PLANAR_TOLERANCE_METERS
     );
     assert_eq!(outcome.deviation_changes[1], DeviationStatusChange::OnRoute);
 
@@ -1507,7 +1507,7 @@ proptest! {
             recorded_route_walk.walk.total_length_meters() * along_fraction;
         let (route_point, _, _) = recorded_route_walk.walk.position_at_along(along_meters);
         let noise_max_meters =
-            noise_distance_fraction * MAX_FIX_NOISE_METERS;
+            noise_distance_fraction * MAXIMUM_FIX_NOISE_METERS;
         let fix_coordinate = planar_offset_coordinate(
             &recorded_route_walk.base_coordinate,
             route_point.0 + noise_max_meters * noise_bearing_radians.cos(),
