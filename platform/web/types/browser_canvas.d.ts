@@ -245,6 +245,17 @@ export function clearSharedProviderSlots(): void;
 export function registerUrlTemplateRasterTileSource(source: any): void;
 /** Removes the page-registered URL-template raster source. */
 export function clearUrlTemplateRasterTileSource(): void;
+/**
+ * Installs a persistent tile payload cache on the canvas fetch seam: `read`
+ * resolves a stored encoded payload for a `{zoom}_{x}_{y}` storage key (or
+ * `null`), and `write` persists one.
+ */
+export function installTilePayloadCache(
+  read: (storageKey: string) => Promise<Uint8Array | ArrayBuffer | null>,
+  write: (storageKey: string, payload: Uint8Array) => Promise<void>,
+): void;
+/** Removes the installed tile payload cache, returning to the store-nothing default. */
+export function clearTilePayloadCache(): void;
 
 /** The XYZ tile bounds of a vector source's viewport. */
 export function vectorTileGeographicBounds(...args: any[]): any;

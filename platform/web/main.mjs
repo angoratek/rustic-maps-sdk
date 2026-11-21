@@ -57,10 +57,13 @@ import {
   TileResolution,
   clearProviderRegistrations as canvas_clear_provider_registrations,
   clearSharedProviderSlots,
+  clearTilePayloadCache,
   clearUrlTemplateRasterTileSource,
   devicePixelRatioThreshold,
+  installTilePayloadCache,
   registerUrlTemplateRasterTileSource,
 } from './generated/rustic_maps_bg.js';
+import { createIndexedDbTilePayloadCache } from './tile_cache.mjs';
 
 /**
  * A generated `SdkError` variant: the tagged failure the SDK throws and this
@@ -88,6 +91,17 @@ import {
  * @typedef {Error & { code?: string }} PageFailure
  */
 /**
+ * The IndexedDB-backed tile payload cache the page installs with
+ * `?tileCache` (`tile_cache.mjs`); the read and write halves are the canvas
+ * seam's.
+ * @typedef {{
+ *   read: (storage_key: string) => Promise<Uint8Array | null>,
+ *   write: (storage_key: string, payload: Uint8Array) => Promise<void>,
+ *   count: () => Promise<number>,
+ *   clear: () => Promise<void>,
+ * }} PageTilePayloadCache
+ */
+/**
  * The page window with the two members this module installs. The members are
  * assigned before any harness reads them; the map surface is typed only where
  * the façade itself touches it, because its values are the deliberately plain
@@ -95,6 +109,7 @@ import {
  * @typedef {Window & {
  *   mapTestReady: Promise<string>,
  *   mapTest: { mapSdk: GeneratedMapSdk } & Record<string, any>,
+ *   tilePayloadCache?: PageTilePayloadCache,
  * }} PageWindow
  */
 /**
@@ -1524,6 +1539,19 @@ page_window.mapTestReady = (async () => {
     setResponseExcerptCapture: (enabled) =>
       generated_map_sdk.setResponseExcerptCapture(enabled),
   };
+  // The optional persistent tile payload cache (docs/ReferenceAppUX.md §11):
+  // `?tileCache` installs the IndexedDB-backed implementation on the canvas'
+  // documented seam before the canvas is constructed, so the first frame's
+  // fetches consult it. Without the parameter the seam stores nothing.
+  if (new URLSearchParams(page_window.location.search).has('tileCache')) {
+    const tile_payload_cache = createIndexedDbTilePayloadCache();
+    page_window.tilePayloadCache = tile_payload_cache;
+    page_window.mapTest.clearTilePayloadCache = clearTilePayloadCache;
+    installTilePayloadCache(
+      tile_payload_cache.read,
+      tile_payload_cache.write,
+    );
+  }
   const status_element = document.getElementById('harness-status');
   if (status_element) {
     status_element.textContent = `Map ready (version ${compiled_version})`;
