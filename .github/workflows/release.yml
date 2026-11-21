@@ -21,10 +21,12 @@ name: release
 # gates):
 #   - the React Native tarball is self-contained: the `rn` job takes the
 #     compiled payload from the `android` and `ios` jobs (the static archive
-#     cargo emits beside each ABI's cdylib, and the built XCFramework) and
-#     packs it with `scripts/package-rn-npm.sh --with-native-payload`; the
-#     `rn` job therefore waits for both platform builds instead of running on
-#     its own. `scripts/verify-rn-package.mjs` reads the packaged podspec,
+#     cargo emits beside each ABI's cdylib, the built XCFramework, and the
+#     generated Swift binding the pod's committed `ios/generated` symlink
+#     resolves to) and packs it with
+#     `scripts/package-rn-npm.sh --with-native-payload`; the `rn` job
+#     therefore waits for both platform builds instead of running on its
+#     own. `scripts/verify-rn-package.mjs` reads the packaged podspec,
 #     Gradle file, CMakeLists.txt and package.json out of the tarball and
 #     fails the job when any artifact they name is absent.
 #   - the WebAssembly package ships one tarball, the npm-shaped
@@ -609,29 +611,27 @@ jobs:
           name: release-ios-framework
           path: platform/rn
 
+      - name: Download the generated Swift binding
+        # The package's committed `ios/generated/rustic_maps.swift` symlink
+        # resolves to the Swift package's generated binding, which only the
+        # iOS job produces. The packaging step materialises that file into the
+        # tarball and refuses to ship a link into the repository when the
+        # target is absent.
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-ios-sources
+          path: platform/ios
+
       - name: Install the React Native package dependencies
         run: npm ci --no-audit --no-fund
         working-directory: platform/rn
 
       - name: Regenerate the JSI bindings and TurboModule glue (no native build)
-        # The same generation scripts/build-rn.sh performs; the native
-        # Android/iOS app builds stay with that script and the platform
-        # workflows.
-        run: |
-          set -euo pipefail
-          (
-            cd crates/rustic-maps-native-core
-            "${GITHUB_WORKSPACE}/platform/rn/node_modules/.bin/ubrn" generate jsi bindings \
-              "${GITHUB_WORKSPACE}/crates/rustic-maps-native-core/src/rustic_maps.udl" \
-              --crate rustic-maps-native-core \
-              --ts-dir "${GITHUB_WORKSPACE}/platform/rn/src/generated" \
-              --cpp-dir "${GITHUB_WORKSPACE}/platform/rn/cpp/generated"
-          )
-          (
-            cd platform/rn
-            ./node_modules/.bin/ubrn generate jsi turbo-module rustic_maps \
-              --config ubrn.config.yaml
-          )
+        # The same generation scripts/build-rn.sh performs, including the
+        # post-generation build fixes, so the tree that is typechecked is the
+        # tree the packaging step ships. The native Android/iOS app builds
+        # stay with that script and the platform workflows.
+        run: ./scripts/generate-rn-bindings.sh
 
       - name: Typecheck the generated package
         run: npx tsc --noEmit
