@@ -125,9 +125,12 @@ readonly EXPECTED_TARBALL_MEMBERS=(
     "package/src/MapsSdk.ts"
     "package/src/MapsSdkError.ts"
     "package/src/NativeMapsSdkRn.ts"
+    "package/src/followBearingMode.ts"
+    "package/src/frameClock.ts"
     "package/src/generated/rustic_maps-ffi.ts"
     "package/src/generated/rustic_maps.ts"
     "package/src/index.ts"
+    "package/src/locationPoseAnimator.ts"
     "package/tsconfig.json"
 )
 # Fail-closed name guards; the exact-list assertion already rejects these,
