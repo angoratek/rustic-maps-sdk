@@ -974,6 +974,39 @@ jobs:
           --repository "${GITHUB_REPOSITORY}"
           --output "dist/rustic-maps-sdk-v${VERSION}-README.md"
 
+      - name: Assemble the Rust source archive
+        # The crates are path-linked, so their release is the tagged workspace
+        # tree itself. `git archive HEAD` reads the release commit, never the
+        # checkout's working tree; the prefix and format match
+        # scripts/assemble-release-artifacts.sh, which builds the same archive
+        # for a local assembly.
+        run: |
+          set -euo pipefail
+          if [ "$(git rev-parse HEAD)" != "${GITHUB_SHA}" ]; then
+            echo "error: HEAD is not the release commit ${GITHUB_SHA}" >&2
+            exit 1
+          fi
+          archive="dist/rustic-maps-sdk-rust-v${VERSION}.tar.gz"
+          git archive --format=tar.gz \
+            --prefix="rustic-maps-sdk-rust-v${VERSION}/" \
+            -o "${archive}" HEAD
+          test -s "${archive}"
+          listing="$(tar -tzf "${archive}")"
+          for required in \
+            "Cargo.toml" \
+            "Cargo.lock" \
+            "rust-toolchain.toml" \
+            "LICENSE-MIT" \
+            "LICENSE-APACHE" \
+            "crates/rustic-maps-native-core/src/rustic_maps.udl" \
+            "platform/providers.json"; do
+            grep -qxF "rustic-maps-sdk-rust-v${VERSION}/${required}" <<< "${listing}"
+          done
+          if grep -E '/target/|/node_modules/|/\.git/' <<< "${listing}" > /dev/null; then
+            echo "error: the Rust source archive carries a build or checkout directory" >&2
+            exit 1
+          fi
+
       - name: Assert the expected asset set (fail-closed)
         # Exact set equality in both directions: a missing artifact (a build
         # job that silently produced nothing) and an unexpected extra file
@@ -987,6 +1020,7 @@ jobs:
             fi
           done
           expected=(
+            "rustic-maps-sdk-rust-v${VERSION}.tar.gz"
             "rustic-maps-sdk-android-v${VERSION}.aar"
             "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
             "rustic-maps-sdk-web-v${VERSION}.tgz"
@@ -1013,6 +1047,7 @@ jobs:
         run: |
           set -euo pipefail
           assets=(
+            "rustic-maps-sdk-rust-v${VERSION}.tar.gz"
             "rustic-maps-sdk-android-v${VERSION}.aar"
             "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
             "rustic-maps-sdk-web-v${VERSION}.tgz"
@@ -1039,6 +1074,7 @@ jobs:
         run: |
           set -euo pipefail
           assets=(
+            "rustic-maps-sdk-rust-v${VERSION}.tar.gz"
             "rustic-maps-sdk-android-v${VERSION}.aar"
             "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
             "rustic-maps-sdk-web-v${VERSION}.tgz"
@@ -1062,6 +1098,7 @@ jobs:
         run: |
           set -euo pipefail
           assets=(
+            "rustic-maps-sdk-rust-v${VERSION}.tar.gz"
             "rustic-maps-sdk-android-v${VERSION}.aar"
             "rustic-maps-sdk-ios-v${VERSION}.xcframework.zip"
             "rustic-maps-sdk-web-v${VERSION}.tgz"
@@ -1116,6 +1153,7 @@ jobs:
 
           ## Release assets
 
+          - \`rustic-maps-sdk-rust-v${VERSION}.tar.gz\` — the workspace crates' sources at this tag, consumed by path dependency
           - \`rustic-maps-sdk-android-v${VERSION}.aar\` — the Android package: Kotlin bindings, native libraries (arm64-v8a, armeabi-v7a, x86_64) and the \`MapView\` wrapper in one artifact
           - \`rustic-maps-sdk-ios-v${VERSION}.xcframework.zip\` — iOS static XCFramework (arm64 device + arm64 simulator slices)
           - \`rustic-maps-sdk-web-v${VERSION}.tgz\` — the npm package \`@angoratek/rustic-maps-sdk-web\`
