@@ -1030,6 +1030,7 @@ publish_site() {
     [ -n "$pages_repo_dir" ] || fail "--publish requires the PAGES_REPO_DIR environment variable pointing at a checkout of ${PUBLIC_PAGES_REPOSITORY_NAME}"
     [ -d "$pages_repo_dir/.git" ] || fail "${pages_repo_dir} is not a git checkout"
     [ -z "$(git -C "$REPO_ROOT" status --porcelain)" ] || fail "the source tree is dirty; refusing to publish"
+    pages_repo_dir="$(cd "$pages_repo_dir" && pwd)"
 
     cd "$pages_repo_dir"
     # Render commits carry the source repository's configured identity, not
@@ -1051,8 +1052,11 @@ publish_site() {
         git checkout --orphan gh-pages
         git rm -rf --quiet . 2>/dev/null || true
     fi
-    find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-    cp -R "${site_dir}/." .
+    # The mirror prints every path it deletes and keeps an existing
+    # `downloads/` tree unless the staged tree carries a complete replacement
+    # set, so a source checkout that never built the release artifacts cannot
+    # silently delete the published downloads.
+    node "${REPO_ROOT}/scripts/mirror-docs-site-tree.mjs" "$site_dir" "$pages_repo_dir"
     printf 'gates-green-asserted-by-publisher: %s (recorded %s)\n' \
         "$gates_green_commit" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> provenance.txt
     git add -A

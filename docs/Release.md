@@ -334,6 +334,17 @@ and no file is rewritten. Files under the host's limits (100 MB per file, 1 GB s
 mirrored; larger ones ship only with the release. The version page prints the
 verification identity.
 
+The downloads tree comes from `target/release-artifacts/vX.Y.Z`, which
+`scripts/assemble-release-artifacts.sh` produces: each asset, its `.sha256` sidecar,
+`SHA256SUMS.txt` and the Sigstore bundle. `scripts/build-docs-site.sh` stages it under
+the site's `downloads/` when that directory exists and stages nothing when it does not.
+On publish, `scripts/mirror-docs-site-tree.mjs` mirrors the staged tree onto the pages
+checkout, prints every path it deletes, and keeps the checkout's `downloads/` unless
+the staged tree carries a complete replacement set: every version directory has a
+`SHA256SUMS.txt`, and every file that file lists is present. A source checkout that
+never built the artifacts therefore preserves the published downloads instead of
+deleting them, while a full release build replaces them.
+
 ### The live wasm demo at `/demo`
 
 The demo is the browser harness served statically, keyless and gated. It ships a
