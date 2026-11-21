@@ -4,6 +4,51 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-20 — the keyed iOS type-ahead runs against a loopback origin)
+
+- `PROVIDER_BASE_URL` is a launch-environment base-URL override for the provider the automation credential names. The model applies it through `setProviderBaseUrl` before the credential configures the provider, so a keyed session answers from a fixture server; it carries no credential, is never persisted and is never logged, and a refused override reports the failure instead of falling through to the public address.
+- `SearchTypeAheadUITests.swift` drives credential injection, the type-ahead rows and the selection through the public registration path, so the keyed flow is exercised offline with a placeholder key.
+
+### Fixed (2026-11-20 — the RN app shell builds on Xcode 26)
+
+- The generated podspec declares only the Objective-C headers under `ios/` as public. The C++ headers entered the public umbrella, and Swift imports that umbrella in Objective-C mode, where `jsi/jsi.h` cannot resolve `<cassert>` and the module fails to build. The restriction is re-applied after every generation run and asserted by `verify-rn-package.mjs`.
+- `wire-ios-shell.rb` adds the pod product directory's `Swift Compatibility Header` to the Swift search paths, where Xcode 26 writes the generated `<pod>-Swift.h` the app's ObjC++ bridge imports, and keeps `$(inherited)` and the XCFramework header paths.
+
+### Fixed (2026-11-20 — the RN release package resolves its generated Swift binding)
+
+- The package's committed `ios/generated/rustic_maps.swift` is a symlink into the Swift package, which only the iOS job produces. The RN job now downloads the `release-ios-sources` artifact before packing, so the link resolves.
+- The job runs `scripts/generate-rn-bindings.sh` instead of its own inline `ubrn` commands, so the tree that is typechecked is the tree that ships, and the tarball's expected-member list gains the three helper sources it was missing.
+
+### Added (2026-11-20 — a gesture cancels a running camera animation, proved on the device)
+
+- The Android instrumentation suite starts a camera animation, waits until the rendered centre has advanced toward the target so the case cannot pass vacuously, taps the surface once and samples the pose twice. An animation that kept running would advance between the samples; the cancel does not.
+
+### Changed (2026-11-20 — the device suites start from a known permission and location state)
+
+- A location grant outlives an instrumentation case and revoking it inside the target process kills the runner, so two host-side `Exec` tasks revoke the fine and coarse grants over `adb` before every connected Android run. A revoke against an application that is not installed yet is allowed to fail, because the connected task installs it.
+- The iOS live-fix cases wait a bounded 20 seconds for the simulator's external location stream and then `XCTSkip` with the exact `xcrun simctl location` command that supplies it, instead of failing on host setup the test process cannot perform.
+
+### Changed (2026-11-20 — the reference apps keep their readiness and error state in one type)
+
+- `ReadinessReportState` carries the readiness checks, provider statuses, error banner and capability rows on Android and on iOS, each with its own unit suite. `ReferenceApplicationState` and the iOS model keep the map wiring and delegate the presentation state, so the user-visible copy and order are unchanged.
+- `scripts/check_ux_parity.mjs` reads the moved sources at their new paths.
+
+### Added (2026-11-20 — the browser canvas consults an installed tile payload cache)
+
+- `TilePayloadCache` is the seam the wasm tile fetch path consults: a cached encoded payload is served before any request, and a successful payload is offered for storage. `TilePayloadCacheAddress` pairs the tile's XYZ address with the pixel resolution it was fetched at, and its storage key uses the same `@2x` marker the fixture route does.
+- `UncachedTilePayloads` is the default, so a page that installs nothing behaves exactly as before. `installTilePayloadCache(read, write)` accepts two page functions, and `platform/web/tile_cache.mjs` supplies an IndexedDB-backed pair.
+
+### Changed (2026-11-20 — every vector paint transition blends)
+
+- Layer paint cross-fades over its declared transitions: fill, line, circle and symbol colour, opacity, width, radius, blur, offset, stroke, translate, gap width and halo blend from the layer's values in the style being replaced. A discrete value such as the dash pattern, a layer the previous style does not carry and a property with no declared transition take the new value immediately.
+- The background blends through `background_at_with_transition`, and labels cross-fade through `label_candidates_for_compiled_layer_at_zoom_with_transition`, which applies the same transition to each candidate's text, halo and icon paint.
+
+### Changed (2026-11-20 — the style document reports what it cannot draw)
+
+- `first_unsupported_operator()` names the first operator an expression tree uses that this crate recognises but does not evaluate, and `uses_feature_state()` reports reads of per-feature state the renderer has no store for. Both previously evaluated to `null`, so the property silently took its documented default.
+- An unimplemented filter operator now admits every feature and is reported by layer, instead of evaluating to `null`, which is false and would blank the layer.
+- A source whose declared type this crate does not model (`raster-dem`, `image`, `video` or an unrecognised name) is reported for its source id, and a symbol layer under a constant line placement reports the icon properties the renderer does not paint, because it places icons at points only.
+
 ### Added (2026-11-20 — the diagnostics stream gains a subscription handle)
 
 - `subscribe_to_diagnostic_events_with_subscription` returns a `DiagnosticSubscription` object whose `cancel()` removes exactly that registration; cancelling twice is a no-op, and dropping the handle does not unregister. `subscribe_to_diagnostic_events` is unchanged.
