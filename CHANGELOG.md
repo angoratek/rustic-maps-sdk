@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Fixed (2026-11-20 — the staged demo carries the tile payload cache module)
+
+- The docs publication staged the demo from a fixed module list, and `main.mjs` imports `./tile_cache.mjs` since the browser payload-cache seam landed. Staging refused the demo ("main.mjs imports ./tile_cache.mjs") and the publication job failed on `main`; the module is now staged and byte-checked with the rest of the harness.
+
 ### Changed (2026-11-20 — the scripts directory states every tool's role)
 
 - `scripts/README.md` classifies each script as a gate, a pipeline step or a maintainer tool and names who runs it. `scripts/scripts-index.test.mjs` fails when a file is unclassified or a row names a script that is gone, so a new script has to state its role or be deleted instead of joining a pile.
