@@ -81,7 +81,6 @@ import com.rusticmaps.sdk.referenceapplication.map.MapControlCluster
 import com.rusticmaps.sdk.referenceapplication.map.MapLayersCollapsedControl
 import com.rusticmaps.sdk.referenceapplication.map.MapLayersPanel
 import com.rusticmaps.sdk.referenceapplication.map.ScaleBarOverlay
-import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.ReadinessState
 import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.HomeSheetState
 import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.PlanSearchField
 import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.SheetContentMode

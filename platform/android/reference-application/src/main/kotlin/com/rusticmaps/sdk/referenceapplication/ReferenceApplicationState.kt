@@ -169,8 +169,7 @@ class ReferenceApplicationState(
      */
     val mapViewListener: MapViewListener = object : MapViewListener {
         override fun onMapReady() {
-            readinessState = ReadinessState.READY
-            readinessDetail = null
+            readinessReport.noteReady()
             clearErrorReport()
         }
 
@@ -185,20 +184,20 @@ class ReferenceApplicationState(
         override fun onError(failure: MapViewFailure) {
             if (isExpectedKeylessProviderFailure(failure.cause)) {
                 // Expected while keyless; the neutral prompt covers it.
-                readinessState = ReadinessState.LOADING
-                readinessDetail = null
-                clearErrorReport()
+                readinessReport.noteExpectedKeylessFailure()
                 return
             }
             if (failure.phase == MapViewFailurePhase.DRAW) {
                 framesFailedCount += 1
             }
-            readinessState = if (failure.phase == MapViewFailurePhase.SURFACE) {
-                ReadinessState.FAILED
-            } else {
-                ReadinessState.DEGRADED
-            }
-            readinessDetail = failureDetailTextOf(failure.cause)
+            readinessReport.noteFailure(
+                state = if (failure.phase == MapViewFailurePhase.SURFACE) {
+                    ReadinessState.FAILED
+                } else {
+                    ReadinessState.DEGRADED
+                },
+                detailText = failureDetailTextOf(failure.cause),
+            )
             reportFailureOf(failure.cause)
         }
 
@@ -222,8 +221,7 @@ class ReferenceApplicationState(
             }
             framesDrawnCount += 1
             if (readinessState != ReadinessState.READY) {
-                readinessState = ReadinessState.READY
-                readinessDetail = null
+                readinessReport.noteReady()
             }
             clearErrorReport()
         }
@@ -793,88 +791,38 @@ class ReferenceApplicationState(
     // -------------------------------------------------------------------
     // Readiness ladder (§6.1) and the error report (§6.3)
     // -------------------------------------------------------------------
-    var readinessState: ReadinessState by mutableStateOf(ReadinessState.LOADING)
-        private set
+
+    /**
+     * The readiness ladder and the error report, one domain
+     * (docs/ReferenceAppUX.md §6.1, §6.3). The state type owns every transition
+     * and the contract-error wording; the application only feeds it observed
+     * events and renders its readbacks.
+     */
+    private val readinessReport = ReadinessReportState(
+        sdkVersion = sdkVersion,
+        isProviderKeyless = { isProviderKeyless },
+    )
+
+    /** The ladder's current state. */
+    val readinessState: ReadinessState
+        get() = readinessReport.readinessState
 
     /** Verbatim failure detail backing the degraded/failed states. */
-    var readinessDetail: String? by mutableStateOf(null)
-        private set
+    val readinessDetail: String?
+        get() = readinessReport.readinessDetail
 
     /** The provider-echoing error report, or null after a successful action. */
-    var errorReport: SdkExceptionReport? by mutableStateOf(null)
-        private set
-
-    enum class ReadinessState { LOADING, READY, DEGRADED, FAILED }
-
-    /** One reported SDK failure: the variant label plus the verbatim detail. */
-    data class SdkExceptionReport(val variantLabel: String, val detailText: String)
+    val errorReport: SdkExceptionReport?
+        get() = readinessReport.errorReport
 
     /** The readiness chip's short ladder line (§6.1's four states, text form). */
     val readinessChipText: String
-        get() = if (isProviderKeyless && readinessState != ReadinessState.READY) {
-            // The neutral keyless prompt, never an endless "Loading…" or a
-            // provider failure the user has not caused yet (§6.5).
-            ReferenceApplicationConstants.KEYLESS_CREDENTIAL_STATUS_TEXT
-        } else when (readinessState) {
-            ReadinessState.LOADING -> ReferenceApplicationConstants.LOADING_STATUS_TEXT +
-                ReferenceApplicationConstants.READINESS_LOADING_SUFFIX
-            ReadinessState.READY -> ReferenceApplicationConstants.READY_STATUS_TEMPLATE.format(sdkVersion)
-            ReadinessState.DEGRADED -> ReferenceApplicationConstants.DEGRADED_STATUS_TEMPLATE.format(
-                readinessDetail ?: "a frame draw failed",
-            )
-            ReadinessState.FAILED -> ReferenceApplicationConstants.FAILED_STATUS_TEMPLATE.format(
-                readinessDetail ?: "unknown failure",
-            )
-        }
+        get() = readinessReport.readinessChipText
 
-    private fun variantLabelOf(exception: SdkException): String =
-        exception::class.simpleName ?: "SdkException"
+    private fun reportFailure(exception: SdkException) =
+        readinessReport.reportSdkFailure(exception)
 
-    /**
-     * The verbatim detail text of a contract error. The two sentences the
-     * contract does not carry as a detail string are the shared
-     * reference-tokens artifact's `strings.rate_limit_exhausted_detail` and
-     * `strings.provider_not_configured_detail_template`
-     * (platform/reference-tokens.json); scripts/check_ux_parity.mjs gates the
-     * text against that artifact.
-     */
-    private fun failureDetailText(exception: SdkException): String = when (exception) {
-        is SdkException.InvalidCoordinateInput -> exception.detail
-        is SdkException.NetworkRequestFailed -> exception.detail
-        is SdkException.ResponseParsingFailure -> exception.detail
-        is SdkException.ProviderRequestRejected -> exception.detail
-        // platform/reference-tokens.json strings.provider_not_configured_detail_template
-        is SdkException.ProviderNotConfigured -> "no '${exception.contractName}' provider is configured"
-        is SdkException.InvalidRenderInput -> exception.detail
-        is SdkException.RenderingSurfaceUnavailable -> exception.detail
-        is SdkException.InvalidNavigationInput -> exception.detail
-        // The cache and offline variants carry their own verbatim reason; the
-        // screen states it rather than inventing a sentence for it.
-        is SdkException.CacheOperationFailure -> exception.detail
-        is SdkException.OfflineRoutingFailure -> exception.detail
-        // platform/reference-tokens.json strings.rate_limit_exhausted_detail
-        is SdkException.RateLimitExhausted -> "rate limit exhausted; retry after the next refill"
-    }
-
-    private fun reportFailure(exception: SdkException) {
-        if (isExpectedKeylessProviderFailure(exception)) {
-            clearErrorReport()
-            return
-        }
-        val report = SdkExceptionReport(
-            variantLabel = variantLabelOf(exception),
-            detailText = failureDetailText(exception),
-        )
-        // A repeated identical failure (a failing frame) does not retrigger
-        // recomposition; only a new failure replaces the report text.
-        if (errorReport != report) {
-            errorReport = report
-        }
-    }
-
-    private fun clearErrorReport() {
-        errorReport = null
-    }
+    private fun clearErrorReport() = readinessReport.clearErrorReport()
 
     // -------------------------------------------------------------------
     // Home sheet states (docs/ReferenceAppUX.md §1/§4.2)
@@ -1448,8 +1396,7 @@ class ReferenceApplicationState(
         // tiles by coordinate: without this the previous imagery would stay
         // on screen until the camera reached new tiles.
         mapView?.reloadTileSource()
-        readinessState = ReadinessState.LOADING
-        readinessDetail = null
+        readinessReport.noteLoading()
         persistRememberedChoices()
         refreshMapLayersState()
     }
@@ -1568,8 +1515,7 @@ class ReferenceApplicationState(
             rememberedBaseMapStyleId = choice.style.styleId
         }
         clearErrorReport()
-        readinessState = ReadinessState.LOADING
-        readinessDetail = null
+        readinessReport.noteLoading()
         persistRememberedChoices()
         refreshMapLayersState()
     }
@@ -1619,14 +1565,12 @@ class ReferenceApplicationState(
         get() = appliedProviderKeys.isEmpty()
 
     /**
-     * A provider-not-configured failure that is expected while keyless: the
-     * surface attach and tile fetches cannot work before a credential is
-     * applied, so they must not paint a failed readiness state or a red error
-     * strip (§6.5's neutral keyless prompt). Any other failure reports
-     * verbatim.
+     * Whether a failure is the provider-not-configured one expected while
+     * keyless (§6.5's neutral prompt), resolved by the readiness state's own
+     * rule.
      */
     private fun isExpectedKeylessProviderFailure(failure: Throwable): Boolean =
-        isProviderKeyless && failure is SdkException.ProviderNotConfigured
+        readinessReport.isExpectedKeylessProviderFailure(failure)
 
     /**
      * Per-provider status detail: a verbatim refusal, the honest clear note,
@@ -1882,8 +1826,7 @@ class ReferenceApplicationState(
         // A credential applied after a keyless attach attempt must retry it:
         // the shipped view only re-attaches on an explicit retry.
         mapView?.retryAttach()
-        readinessState = ReadinessState.LOADING
-        readinessDetail = null
+        readinessReport.noteLoading()
         // The offline-maps card's cache registration repeats the credential
         // and is only meaningful once one is installed (§4.1, §6.5).
         registerTileCacheAfterCredential()
@@ -3581,7 +3524,7 @@ class ReferenceApplicationState(
         } else {
             ReferenceApplicationConstants.PLAN_FIELD_NO_RESULT_TEMPLATE.format(typedText)
         }
-        errorReport = SdkExceptionReport(
+        readinessReport.reportLocalFailure(
             variantLabel = "UnresolvedPlanField",
             detailText = detailText,
         )
@@ -3634,7 +3577,7 @@ class ReferenceApplicationState(
 
     /** Reports a keyless pair with no recorded route, naming both places. */
     private fun reportMissingRecordedRoute(originName: String, destinationName: String) {
-        errorReport = SdkExceptionReport(
+        readinessReport.reportLocalFailure(
             variantLabel = "MissingRecordedRoute",
             detailText = ReferenceApplicationConstants.NO_RECORDED_ROUTE_HINT_TEMPLATE
                 .format(originName, destinationName),
@@ -4276,37 +4219,15 @@ class ReferenceApplicationState(
      * Rust-side errors as InternalException, which is no SdkException variant)
      * report their class name and message verbatim (§6.3).
      */
-    private fun failureDetailTextOf(failure: Throwable): String = when (failure) {
-        is SdkException -> failureDetailText(failure)
-        else -> failure.message ?: failure::class.simpleName ?: "unknown failure"
-    }
+    private fun failureDetailTextOf(failure: Throwable): String =
+        readinessReport.failureDetailTextOf(failure)
 
-    private fun reportFailureOf(failure: Throwable) {
-        if (isExpectedKeylessProviderFailure(failure)) {
-            // The keyless prompt already tells the user what to do; a red
-            // provider-not-configured strip would be noise (§6.5).
-            clearErrorReport()
-            return
-        }
-        val report = SdkExceptionReport(
-            variantLabel = failure::class.simpleName ?: "UnknownException",
-            detailText = failureDetailTextOf(failure),
-        )
-        // Logcat mirror of every reported failure: the emulator mandate needs
-        // the verbatim native failure text, which the on-screen report can
-        // only carry as a clipped line.
-        if (errorReport != report) {
-            errorReport = report
-        }
-    }
+    private fun reportFailureOf(failure: Throwable) =
+        readinessReport.reportFailure(failure)
 
     fun retrySurfaceAttach() {
         mapView?.retryAttach()
-        if (readinessState == ReadinessState.FAILED || readinessState == ReadinessState.DEGRADED) {
-            readinessState = ReadinessState.LOADING
-            readinessDetail = null
-        }
-        clearErrorReport()
+        readinessReport.prepareSurfaceRetry()
     }
 
     // -------------------------------------------------------------------

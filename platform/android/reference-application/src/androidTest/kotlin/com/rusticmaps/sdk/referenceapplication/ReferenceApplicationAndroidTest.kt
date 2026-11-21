@@ -14,7 +14,6 @@ import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.HomeSheetState
-import com.rusticmaps.sdk.referenceapplication.ReferenceApplicationState.ReadinessState
 import com.rusticmaps.sdk.referenceapplication.map.MapLayerBaseSelection
 import com.rusticmaps.sdk.referenceapplication.navigation.SimulatedTrace
 import com.rusticmaps.sdk.ux.ReferenceAppUXDimensions

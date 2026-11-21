@@ -91,7 +91,7 @@ const MIRROR_FILES = {
   androidDimensions:
     'platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/ux/ReferenceAppUXDimensions.kt',
   androidState:
-    'platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReferenceApplicationState.kt',
+    'platform/android/reference-application/src/main/kotlin/com/rusticmaps/sdk/referenceapplication/ReadinessReportState.kt',
   iosTheme: 'platform/ios/reference-application/Sources/ReferenceAppUXTheme.swift',
   iosLayout: 'platform/ios/reference-application/Sources/AppLayout.swift',
   iosConfiguration:
