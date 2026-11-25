@@ -181,7 +181,7 @@ dependencies {
     // The real org.json implementation for pure-JVM tests of the remembered
     // record's codec: the unit-test runtime's stub android.jar answers JSON
     // calls as "not mocked".
-    testImplementation("org.json:json:20180813")
+    testImplementation("org.json:json:20260814")
 
     // The connected UI-automation suite (round 12): instrumentation drives the
     // same user-path methods the sheet's controls call (the Android analogue

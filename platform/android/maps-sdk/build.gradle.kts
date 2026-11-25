@@ -83,7 +83,7 @@ dependencies {
     // The real org.json implementation for reading the shared provider
     // registry in the unit suite: the stub android.jar answers JSON calls as
     // "not mocked".
-    testImplementation("org.json:json:20180813")
+    testImplementation("org.json:json:20260814")
     testImplementation(composeBom)
     testImplementation("androidx.compose.runtime:runtime")
 
