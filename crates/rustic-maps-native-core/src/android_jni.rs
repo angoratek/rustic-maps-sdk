@@ -16,7 +16,7 @@
 //! (a failed `attach` included) instead of leaking one reference per attempt.
 //! The pointer is opaque on the Kotlin side; it is never dereferenced there.
 
-use jni::sys::{JNIEnv, jlong, jobject};
+use jni_sys::{JNIEnv, jlong, jobject};
 use ndk_sys::{ANativeWindow, ANativeWindow_fromSurface, ANativeWindow_release};
 
 /// The zero pointer value the JVM sees when no window could be acquired.
