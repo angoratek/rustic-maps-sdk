@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-25 — the Android build uses Gradle 9.9.2)
+
+- The Android toolchain pinned Gradle 9.5.1 in `scripts/build-android.sh`, in the two workflows that run it, and in the Gradle wrapper. Android Gradle Plugin 9.5.3 requires Gradle 9.6.0 or newer, so the Dependabot update that moved the plugin could not build: the build script regenerated the wrapper back to 9.5.1 before assembling. The pin moves to the current Gradle release, 9.9.2, in all four places.
+
 ### Security (2026-11-25 — `url` 2.5.9 closes RUSTSEC-2026-0592)
 
 - `url` moves from 2.5.8 to 2.5.9, the release where `Url::origin()` no longer recurses through nested `blob:` prefixes. The advisory was published on 2026-11-20, after the previous lockfile update, so `cargo deny` and the `audit` job failed on `main` and on every pull request. `form_urlencoded` moves to 1.2.3 with it; no source change was needed.
