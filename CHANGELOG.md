@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Security (2026-11-25 — `url` 2.5.9 closes RUSTSEC-2026-0592)
+
+- `url` moves from 2.5.8 to 2.5.9, the release where `Url::origin()` no longer recurses through nested `blob:` prefixes. The advisory was published on 2026-11-20, after the previous lockfile update, so `cargo deny` and the `audit` job failed on `main` and on every pull request. `form_urlencoded` moves to 1.2.3 with it; no source change was needed.
+
 ### Fixed (2026-11-20 — the staged demo carries the tile payload cache module)
 
 - The docs publication staged the demo from a fixed module list, and `main.mjs` imports `./tile_cache.mjs` since the browser payload-cache seam landed. Staging refused the demo ("main.mjs imports ./tile_cache.mjs") and the publication job failed on `main`; the module is now staged and byte-checked with the rest of the harness.
