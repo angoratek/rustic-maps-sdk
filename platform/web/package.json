@@ -8,7 +8,7 @@
     "perf": "node perf/run-frame-budget.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "~1.64",
+    "@playwright/test": "~1.65",
     "typescript": "5.9.3"
   },
   "dependencies": {
