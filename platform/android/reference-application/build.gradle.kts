@@ -6,8 +6,8 @@
 // entered at runtime from the settings surface (docs/ReferenceAppUX.md §6.5),
 // never embedded at build time.
 plugins {
-    id("com.android.application") version "9.0.0"
-    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21"
+    id("com.android.application") version "9.5.3"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.21"
 }
 
 // The repository root two levels above `platform/android`: the single sources
@@ -172,10 +172,10 @@ dependencies {
     implementation(project(":maps-sdk"))
     // The refapp-only generated bindings call through JNA; the SDK's own
     // generated bindings bring the same runtime across the AAR boundary.
-    implementation("net.java.dev.jna:jna:5.18.1@aar")
+    implementation("net.java.dev.jna:jna:5.19.1@aar")
     // The JVM unit suite runs on the host, so it needs the non-AAR JNA
     // artifact with the host dispatch library the AAR does not carry.
-    testImplementation("net.java.dev.jna:jna:5.18.1")
+    testImplementation("net.java.dev.jna:jna:5.19.1")
 
     testImplementation("junit:junit:4.13.2")
     // The real org.json implementation for pure-JVM tests of the remembered
@@ -193,7 +193,7 @@ dependencies {
     androidTestImplementation("androidx.test:core:1.6.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 
-    val composeBom = platform("androidx.compose:compose-bom:2026.06.01")
+    val composeBom = platform("androidx.compose:compose-bom:2026.11.01")
     // The connected suite reads the Compose semantics tree (the removed
     // settings sections, the layers panel's scene home and the shared 40-unit
     // control diameter), so the androidTest source set needs the Compose test

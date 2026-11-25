@@ -5,12 +5,12 @@
 // `scripts/build-android.sh`) and are compiled into this module's source
 // sets; that module is an internal source holder, not a second artifact.
 plugins {
-    id("com.android.library") version "9.0.0"
+    id("com.android.library") version "9.5.3"
     // Compose's compiler plugin matches the Kotlin release the Android Gradle
     // Plugin 9.0.0 embeds (validated matrix: Kotlin 2.2.21). It is needed to
     // compile the optional Compose `MapView` wrapper; the Compose runtime
     // itself is a `compileOnly` input (see the dependencies block).
-    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.21"
     `maven-publish`
 }
 
@@ -71,7 +71,7 @@ kotlin {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2026.06.01")
+    val composeBom = platform("androidx.compose:compose-bom:2026.11.01")
     // The descriptor-driven registration rules resolve their capability names
     // through the frozen contract, so the unit suite loads the host cdylib
     // that `scripts/build-android.sh` stages for `:smoke-jvm` (the generated
@@ -79,7 +79,7 @@ dependencies {
     // still checks the unit-test compile classpath for a Compose runtime, so
     // the test source set carries one (it does not affect the published POM).
     testImplementation("junit:junit:4.13.2")
-    testImplementation("net.java.dev.jna:jna:5.18.1")
+    testImplementation("net.java.dev.jna:jna:5.19.1")
     // The real org.json implementation for reading the shared provider
     // registry in the unit suite: the stub android.jar answers JSON calls as
     // "not mocked".
@@ -87,8 +87,8 @@ dependencies {
     testImplementation(composeBom)
     testImplementation("androidx.compose.runtime:runtime")
 
-    implementation("net.java.dev.jna:jna:5.18.1@aar")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("net.java.dev.jna:jna:5.19.1@aar")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
     // The Compose wrapper is optional: the published POM must not force the
     // Compose runtime on a consumer that never hosts the composable, so the
