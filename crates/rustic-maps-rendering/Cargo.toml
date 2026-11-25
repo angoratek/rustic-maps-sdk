@@ -57,7 +57,7 @@ pollster = "0.4"
 
 [dev-dependencies]
 proptest.workspace = true
-criterion = "0.5"
+criterion = "0.8"
 tokio.workspace = true
 # The shared coordinate, viewport, camera and Sacramento fixtures.
 rustic-maps-test-support.workspace = true
