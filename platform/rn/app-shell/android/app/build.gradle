@@ -153,13 +153,13 @@ dependencies {
 
     // The AAR's own dependencies, re-declared verbatim from the source
     // module's build file (the flatDir artifact carries none of them).
-    implementation("net.java.dev.jna:jna:5.18.1@aar")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("net.java.dev.jna:jna:5.19.1@aar")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
     // kotlinx-coroutines-android ships `withFrameNanos`, the Choreographer-
     // backed frame clock the serialized per-frame draw pump mirrors from the
     // Compose reference application's frame pump.
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 }
 
 kotlin {
