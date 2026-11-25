@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.88.1",
-    "@ubjs/core": "0.31.0-6",
+    "@ubjs/core": "0.31.0-7",
     "@angoratek/rustic-maps-sdk": "file:..",
     "react": "19.3.1",
     "react-native": "0.88.1",
