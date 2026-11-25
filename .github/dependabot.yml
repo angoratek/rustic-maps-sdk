@@ -38,6 +38,12 @@ updates:
       react-native-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    # React Native 0.88's Babel preset and its eslint config still peer on
+    # Babel 7, so a Babel 8 update cannot resolve and never passes the app
+    # shell build. Re-enable once the React Native toolchain moves.
+    ignore:
+      - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-major"]
     open-pull-requests-limit: 5
 
   - package-ecosystem: npm
@@ -48,6 +54,10 @@ updates:
       react-native-app-shell-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    # Same Babel 7 peer constraint as /platform/rn.
+    ignore:
+      - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-major"]
     open-pull-requests-limit: 5
 
   - package-ecosystem: gradle
