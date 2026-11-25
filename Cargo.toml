@@ -75,7 +75,7 @@ proptest = "1.6"
 tokio = { version = "1.47", features = ["macros", "rt-multi-thread", "sync", "time"] }
 wiremock = "0.6"
 r2d2 = "0.8"
-r2d2_sqlite = { version = "0.36", features = ["bundled"] }
+r2d2_sqlite = { version = "0.37", features = ["bundled"] }
 # The free-disk-space probe behind the cache quota; fs4 is the maintained
 # successor to fs2 (unmaintained since 2021) and exposes the same
 # `fs4::available_space(path)` free function.
