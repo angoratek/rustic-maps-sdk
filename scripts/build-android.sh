@@ -21,7 +21,7 @@
 #     linker binaries).
 #   - Java 21 (e.g. Temurin 21) for the Android Gradle Plugin; resolved via
 #     /usr/libexec/java_home when present.
-#   - Gradle 9.5.1 on PATH; the wrapper below is regenerated at the same
+#   - Gradle 9.9.2 on PATH; the wrapper below is regenerated at the same
 #     version.
 # Validated plugin matrix: AGP 9.0.0, Kotlin Android plugin 2.2.21.
 #
@@ -433,8 +433,8 @@ main() {
     echo "==> staging the licenses and third-party notices for the AAR"
     stage_license_notices_assets
 
-    echo "==> regenerating the Gradle wrapper at 9.5.1"
-    (cd "${GRADLE_ROOT}" && gradle --no-daemon -q wrapper --gradle-version 9.5.1)
+    echo "==> regenerating the Gradle wrapper at 9.9.2"
+    (cd "${GRADLE_ROOT}" && gradle --no-daemon -q wrapper --gradle-version 9.9.2)
 
     echo "==> assembling the one AAR"
     # `:maps-sdk` compiles the generated bindings, the ABI libraries and the

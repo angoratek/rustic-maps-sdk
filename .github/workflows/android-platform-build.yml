@@ -67,7 +67,7 @@ jobs:
         with:
           # scripts/build-android.sh regenerates the Gradle wrapper at this
           # exact version; it needs `gradle` on PATH for that step.
-          gradle-version: "9.5.1"
+          gradle-version: "9.9.2"
 
       - name: Install the pinned Android NDK
         # The script would install it itself; doing the no-op-if-present
