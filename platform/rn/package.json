@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@ubjs/core": "0.31.0-6",
-    "@babel/runtime": "^7.25.0",
+    "@babel/runtime": "^7.29.15",
     "uniffi-bindgen-react-native": "0.31.0-6"
   },
   "peerDependencies": {
@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@types/react": "19.3.0",
-    "prettier": "3.9.10",
+    "prettier": "3.10.1",
     "react": "19.3.1",
     "react-native": "0.88.1",
     "typescript": "5.9.3"
