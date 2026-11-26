@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-25 — the benchmark harnesses use the standard `black_box`)
+
+- Both benchmark targets name criterion 0.8, whose `criterion::black_box` re-export is deprecated; with `-D warnings` in the lint gate the bench targets stopped compiling. They import `std::hint::black_box` instead. No benchmark, budget or measurement changed.
+
 ### Changed (2026-11-25 — the Android build uses Gradle 9.9.2)
 
 - The Android toolchain pinned Gradle 9.5.1 in `scripts/build-android.sh`, in the two workflows that run it, and in the Gradle wrapper. Android Gradle Plugin 9.5.3 requires Gradle 9.6.0 or newer, so the Dependabot update that moved the plugin could not build: the build script regenerated the wrapper back to 9.5.1 before assembling. The pin moves to the current Gradle release, 9.9.2, in all four places.

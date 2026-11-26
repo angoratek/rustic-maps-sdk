@@ -15,11 +15,12 @@
 //!
 //! Native-only: benches are never part of the wasm gate.
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use geospatial_types::GeographicCoordinate;
 use rustic_maps_rendering::{
     FilledPolygonOverlay, MapOverlay, VectorBaseFrame, VectorBaseFrameDiagnostics,
 };
+use std::hint::black_box;
 use std::sync::Arc;
 use std::time::Instant;
 

@@ -42,7 +42,7 @@ rustic-maps-offline-graph-compiler.workspace = true
 # Criterion for the offline-search benchmark suite (M7 slice 6): benches run
 # natively only (the wasm gate is lib-only), so the harness is dev-gated the
 # same way the fixture producer above is.
-criterion = "0.5"
+criterion = "0.8"
 
 # The A*-vs-Dijkstra reference benchmark; `harness = false` under the
 # criterion main. Informational — the numbers are the recorded baseline, the
