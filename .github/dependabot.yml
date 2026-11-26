@@ -18,6 +18,13 @@ updates:
       github-actions-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+      # CodeQL reads one configuration across every step that names it: an
+      # update to init, analyze or upload-sarif alone makes the workflow fail
+      # with "Loaded a configuration file for version X, but running version
+      # Y". The group has no update-types so major releases move the three
+      # steps as one pull request.
+      codeql-action:
+        patterns: ["github/codeql-action*"]
     open-pull-requests-limit: 5
 
   - package-ecosystem: npm
@@ -54,9 +61,13 @@ updates:
       react-native-app-shell-minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
-    # Same Babel 7 peer constraint as /platform/rn.
+    # Same Babel 7 peer constraint as /platform/rn. The eslint config of the
+    # same React Native release peers on eslint 8 or 9, so eslint 10 cannot
+    # resolve either.
     ignore:
       - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
     open-pull-requests-limit: 5
 
