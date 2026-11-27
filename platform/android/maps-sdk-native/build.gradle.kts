@@ -7,7 +7,7 @@
 // Regenerate the sources and jniLibs with `scripts/build-android.sh`; both are
 // generated build artifacts and are not committed.
 plugins {
-    id("com.android.library") version "9.0.0"
+    id("com.android.library") version "9.5.3"
     // AGP 9.0 embeds Kotlin support itself, which is why no
     // `org.jetbrains.kotlin.android` plugin is applied here.
 }
@@ -61,8 +61,8 @@ dependencies {
     // JNA drives the FFI calls of the generated bindings; the AAR classifier
     // is required because the plain JAR's native stubs do not resolve on
     // Android.
-    implementation("net.java.dev.jna:jna:5.18.1@aar")
+    implementation("net.java.dev.jna:jna:5.19.1@aar")
     // Uniffi lowers per-member `[Async]` UDL methods to `suspend fun` backed
     // by `CancellableContinuation`.
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 }
