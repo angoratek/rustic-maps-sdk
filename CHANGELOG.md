@@ -4,6 +4,10 @@ All meaningful changes to the SDK are recorded here. Dates are ISO-8601.
 
 ## [Unreleased]
 
+### Changed (2026-11-25 — the Android JNI shim uses the FFI types its NDK prototypes use)
+
+- `rustic-maps-native-core` declared the `jni` crate for the three JNI type names in `android_jni.rs`, while `ndk-sys` 0.6 declares `ANativeWindow_fromSurface` in terms of `jni-sys` 0.3. Moving `jni` to 0.22 put `jni::sys::JNIEnv` on the jni-sys 0.4 union and the shim no longer compiled against the NDK prototype. The shim now depends on `jni-sys` 0.3 directly, the release the prototype uses, and the `jni` dependency is gone, so the two cannot resolve to different releases again.
+
 ### Changed (2026-11-25 — the benchmark harnesses use the standard `black_box`)
 
 - Both benchmark targets name criterion 0.8, whose `criterion::black_box` re-export is deprecated; with `-D warnings` in the lint gate the bench targets stopped compiling. They import `std::hint::black_box` instead. No benchmark, budget or measurement changed.

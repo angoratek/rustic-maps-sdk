@@ -102,12 +102,15 @@ uniffi-runtime-wasm = "0.31.0-6"
 rustic-maps-web-bindings = { path = "../rustic-maps-web-bindings" }
 
 # The Android JNI surface-pointer shim (M17): the fixed `Java_...` symbols
-# compiled into the same `librustic_maps.so` the Kotlin AAR ships. `jni`
-# supplies the JNI types of the exported signatures and `ndk-sys` the
-# `ANativeWindow` declarations plus the `-landroid` link attribute; both are
-# target-gated so the host, wasm and iOS builds never see them.
+# compiled into the same `librustic_maps.so` the Kotlin AAR ships. `jni-sys`
+# supplies exactly the JNI types of the exported signatures that `ndk-sys`
+# declares in its own `ANativeWindow` prototypes, so the two cannot resolve
+# to different jni-sys releases, and `ndk-sys` adds the `-landroid` link
+# attribute; both are target-gated so the host, wasm and iOS builds never
+# see them. The crate exposes no safe JNI API, so the higher-level `jni`
+# crate would add nothing the shim uses.
 [target.'cfg(target_os = "android")'.dependencies]
-jni = "0.21"
+jni-sys = "0.3"
 ndk-sys = "0.6"
 
 [build-dependencies]
