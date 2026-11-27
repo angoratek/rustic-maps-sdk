@@ -86,7 +86,11 @@ tasks.register<Copy>("copyNavigationTraceDeviationReroute") {
 
 android {
     namespace = "com.rusticmaps.sdk.referenceapplication"
-    compileSdk = 36
+    // Compose material3 1.5 and foundation 1.13, which the pinned Compose BOM
+    // resolves, declare that consumers compile against API 37 or later. The
+    // runtime target stays 36; a newer compile SDK only widens the API surface
+    // the build compiles against.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.rusticmaps.sdk.referenceapplication"
