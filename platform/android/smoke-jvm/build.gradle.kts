@@ -1,6 +1,6 @@
 // Gradle root already supplies `google()` and `mavenCentral()`.
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.2.21"
+    id("org.jetbrains.kotlin.jvm") version "2.4.21"
 }
 
 kotlin {
@@ -22,8 +22,8 @@ dependencies {
     implementation(kotlin("stdlib"))
     // The JVM (non-AAR) JNA artifact: the generated bindings drive every FFI
     // call through it.
-    implementation("net.java.dev.jna:jna:5.18.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+    implementation("net.java.dev.jna:jna:5.19.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0")
 }
 
 tasks.register<JavaExec>("smokeRun") {
