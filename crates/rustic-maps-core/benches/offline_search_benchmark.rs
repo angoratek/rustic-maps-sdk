@@ -22,7 +22,7 @@
 //! Native-only (criterion + the wasm-free fixture compiler; benches are
 //! never part of the wasm gate, which is lib-only).
 
-use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use rustic_maps_core::offline_routing::{
     LoadedRoutingGraph, TraversalCost, a_star_search, dijkstra_reference_search,
 };
@@ -34,6 +34,7 @@ use rustic_maps_core::offline_routing_benchmark::{
 };
 use rustic_maps_offline_graph_archive::archive::OfflineRoutingNetworkGraph;
 use rustic_maps_offline_graph_compiler::compile_osm_extract_bytes;
+use std::hint::black_box;
 
 /// The fixture's committed PBF extract, compiled in-process (network-free;
 /// see the module docs' baseline contract).
